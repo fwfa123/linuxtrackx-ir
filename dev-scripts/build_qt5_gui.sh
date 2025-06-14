@@ -12,14 +12,18 @@ echo "Building LinuxTrack GUI with Qt5..."
 echo "Project root: $PROJECT_ROOT"
 
 # Check if we have Qt5
-if ! command -v qmake &> /dev/null; then
-    echo "Error: qmake not found. Please install Qt5 development packages."
-    echo "Run: ./dev-scripts/setup_deps.sh"
-    exit 1
+QMAKE_CMD="qmake-qt5"
+if ! command -v "$QMAKE_CMD" &> /dev/null; then
+    QMAKE_CMD="qmake"
+    if ! command -v "$QMAKE_CMD" &> /dev/null; then
+        echo "Error: qmake not found. Please install Qt5 development packages."
+        echo "Run: ./dev-scripts/setup_deps.sh"
+        exit 1
+    fi
 fi
 
 # Show Qt version
-echo "Qt version: $(qmake -v)"
+echo "Qt version: $($QMAKE_CMD -v)"
 
 # Create build directory
 BUILD_DIR="$PROJECT_ROOT/build_qt5"
@@ -31,8 +35,8 @@ cd src/qt_gui
 echo "Cleaning previous build..."
 rm -f ltr_gui_qt5 Makefile* *.o moc_*.cpp ui_*.h qrc_*.cpp
 
-echo "Generating Makefile with qmake..."
-qmake ltr_gui_qt5.pro
+echo "Generating Makefile with $QMAKE_CMD..."
+$QMAKE_CMD ltr_gui_qt5.pro
 
 echo "Building with make..."
 if make -j$(nproc) 2>&1 | tee "$BUILD_DIR/build.log"; then

@@ -3,7 +3,7 @@
 # Modernized version of ltr_gui.pro for Qt5 compatibility
 ######################################################################
 
-QT += core widgets opengl help
+QT += core widgets opengl help network
 
 CONFIG += qt debug warn_on c++11
 TEMPLATE = app
@@ -38,7 +38,7 @@ unix:!macx {
 
 macx {
     HEADERS += macps3eye_prefs.h macwebcam_info.h ../ps3_prefs.h macps3eyeft_prefs.h \
-               macwebcam_prefs.h macwebcamft_prefs.h macwebcam_info.h
+               macwebcam_prefs.h macwebcamft_prefs.h
 }
 
 # UI Forms
@@ -80,7 +80,7 @@ macx {
 }
 
 # Compiler flags - Modern C++ and security features
-QMAKE_CXXFLAGS += -Wall -Wextra -std=c++11 -DHAVE_CONFIG_H
+QMAKE_CXXFLAGS += -Wall -Wextra -std=c++11 -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'"
 QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI
 
 # Platform-specific configuration

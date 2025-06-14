@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "ltr_srv_comm.h"
 #include "ltr_srv_master.h"
 #include "linuxtrack.h"
