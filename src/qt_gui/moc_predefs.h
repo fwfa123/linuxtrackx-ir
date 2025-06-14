@@ -193,6 +193,7 @@
 #define __FLT64_MIN_10_EXP__ (-307)
 #define __FLT16_MIN_10_EXP__ (-4)
 #define __FLT64X_DECIMAL_DIG__ 21
+#define HELP_BASE "ltr_gui/"
 #define __DEC128_MIN__ 1E-6143DL
 #define __REGISTER_PREFIX__ 
 #define __UINT16_MAX__ 0xffff
