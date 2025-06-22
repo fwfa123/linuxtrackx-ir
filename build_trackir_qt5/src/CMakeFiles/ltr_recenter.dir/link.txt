@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -Wl,--dependency-file=CMakeFiles/ltr_recenter.dir/link.d CMakeFiles/ltr_recenter.dir/ltr_recenter.c.o -o ltr_recenter  liblinuxtrack_core.a -lm -lusb-1.0 -lmxml

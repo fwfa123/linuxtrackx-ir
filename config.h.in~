@@ -1,0 +1,35 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+/* Define to 1 if you have OpenCV support */
+#cmakedefine HAVE_OPENCV 1
+
+/* Define to 1 if you have TrackIR support */
+#cmakedefine HAVE_TRACKIR 1
+
+/* Define to 1 if you have Wiimote support */
+#cmakedefine HAVE_WIIMOTE 1
+
+/* Define to 1 if you have V4L2 support */
+#cmakedefine V4L2 1
+
+/* Define to 1 if you have libv4l2 support */
+#cmakedefine LIBV4L2 1
+
+/* Define to 1 if you have new liblo with lo_bundle_free_recursive */
+#cmakedefine HAVE_NEW_LIBLO 1
+
+/* Define to 1 if building on Darwin/macOS */
+#cmakedefine DARWIN 1
+
+/* Package information */
+#define PACKAGE_NAME "@PROJECT_NAME@"
+#define PACKAGE_VERSION "@PROJECT_VERSION@"
+#define PACKAGE_STRING "@PROJECT_NAME@ @PROJECT_VERSION@"
+#define PACKAGE_BUGREPORT "https://github.com/uglyDwarf/linuxtrack/issues"
+
+/* Installation paths */
+#define LINUXTRACK_PREFIX "@CMAKE_INSTALL_PREFIX@"
+#define LINUXTRACK_SHARE "@CMAKE_INSTALL_PREFIX@/share/linuxtrack"
+
+#endif /* CONFIG_H */

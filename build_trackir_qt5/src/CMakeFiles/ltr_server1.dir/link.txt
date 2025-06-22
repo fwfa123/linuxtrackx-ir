@@ -1,0 +1,1 @@
+/usr/bin/c++ -g -Wl,--dependency-file=CMakeFiles/ltr_server1.dir/link.d CMakeFiles/ltr_server1.dir/ltr_server1.c.o -o ltr_server1  liblinuxtrack_core.a -lm -lusb-1.0 -lmxml

@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -g -Wl,--dependency-file=CMakeFiles/libfakeusb.dir/link.d -shared -Wl,-soname,libfakeusb.so.0 -o libfakeusb.so.0.0.0 CMakeFiles/libfakeusb.dir/fakeusb.c.o CMakeFiles/libfakeusb.dir/utils.c.o
