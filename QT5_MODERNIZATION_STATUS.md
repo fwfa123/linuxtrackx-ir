@@ -66,6 +66,16 @@ Now you can test:
 - **Config**: `/home/mario/.config/linuxtrack/linuxtrack1.conf`
 - **Logs**: Check GUI log viewer or system logs
 
+## ⚠️ Wayland Compatibility Notice
+
+**Issue Discovered**: Real-time blob tracking display has issues on Wayland.  
+**Workaround**: Use X11 mode for full functionality:
+```bash
+XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_qt5_gui.sh
+```
+**Details**: See `WAYLAND_COMPATIBILITY_ISSUE.md`
+
 ---
 **Qt5 Modernization: COMPLETE** ✅  
-**Ready for TrackIR Hardware Testing** 🎯 
+**TrackIR Hardware: WORKING** ✅  
+**Wayland Issue: DOCUMENTED with WORKAROUND** ⚠️ 
