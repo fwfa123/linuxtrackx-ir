@@ -191,8 +191,25 @@ sudo cp src/.libs/libltusb1.so* /usr/local/lib/linuxtrack/
 **Symptoms**: 
 - `kf.windowsystem: Could not find any platform plugin`
 - `QTextBrowser: No document for qthelp://...`
+- `qt.qpa.wayland: Wayland does not support QWindow::requestActivate()`
 
 **Status**: **Cosmetic only** - does not affect TrackIR functionality
+
+### Issue 5: Real-time Blob Tracking Display (Wayland Compatibility)
+**Problem**: Blob tracking images only appear when paused, not during live tracking
+
+**Root Cause**: Wayland restrictions on Qt5 OpenGL rendering affect real-time image buffer display
+
+**Solution**: Use X11 mode for full functionality:
+```bash
+# Method 1: Environment variables
+XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_qt5_gui.sh
+
+# Method 2: Convenience script (automatically sets X11 mode)
+./run_qt5_gui_x11.sh
+```
+
+**Status**: **Workaround available** - see `WAYLAND_COMPATIBILITY_ISSUE.md` for details
 
 ---
 
@@ -239,6 +256,8 @@ libltusb1.so.0   -> 38KB  (USB interface) ← **KEY COMPONENT**
 - **Hardware Activation**: ✅ TrackIR 5 working perfectly
 - **Modern Compatibility**: ✅ Running on Fedora 42 with Qt5
 - **Real-time Processing**: ✅ Camera data streaming confirmed
+- **Tracking Functionality**: ✅ Full head tracking operational
+- **Wayland Compatibility**: ⚠️ Use X11 mode for optimal blob display
 - **Development Ready**: ✅ Debug build with full functionality
 
 ## 📝 Files Created/Modified

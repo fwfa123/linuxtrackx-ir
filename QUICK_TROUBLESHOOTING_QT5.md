@@ -49,9 +49,26 @@ Prefix = "/mnt/Local_Git/git-repos/linuxtrack-clean-june14"
 ```
 kf.windowsystem: Could not find any platform plugin
 QTextBrowser: No document for qthelp://...
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
 ```
 
 **Status**: **Cosmetic only** - TrackIR functionality works perfectly
+
+### 5. Real-time Blob Tracking Display Issues (Wayland)
+```
+# Blob tracking images only appear when paused, not during live tracking
+```
+
+**Cause**: Wayland compatibility issue with Qt5 OpenGL rendering  
+**Quick Fix**: Force X11 mode for full functionality:
+```bash
+XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_qt5_gui.sh
+
+# OR use the convenience script:
+./run_qt5_gui_x11.sh
+```
+
+**Details**: See `WAYLAND_COMPATIBILITY_ISSUE.md`
 
 ---
 
