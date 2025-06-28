@@ -54,7 +54,7 @@ SOURCES += main.cpp ltr_gui.cpp ltr_show.cpp ltr_dev_help.cpp \
            macps3eye_prefs.cpp macwebcam_info.cpp macps3eyeft_prefs.cpp \
            help_viewer.cpp ../extract.c ../digest.c
 
-QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'" -I /usr/local/include
+QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\"".."\"'" -I /usr/local/include
 QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI  -I /usr/local/include
 
 QMAKE_CXXFLAGS += $$(CXXFLAGS)
