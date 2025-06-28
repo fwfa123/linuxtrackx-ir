@@ -37,6 +37,9 @@ cd linuxtrack
 
 # Launch the application
 ./run_qt5_gui.sh
+
+# For Wayland users (force X11 mode for better compatibility)
+./run_qt5_gui.sh --force-x11
 ```
 
 ### Manual Installation
@@ -80,7 +83,9 @@ sudo ./setup.sh
 
 ### Display Server Compatibility
 - ✅ **X11**: Fully supported (recommended)
-- ⚠️ **Wayland**: Functional but may require `--force-x11` for some features
+- ⚠️ **Wayland**: Functional via XWayland compatibility layer
+  - Use `./run_qt5_gui.sh --force-x11` for optimal experience
+  - Launcher automatically detects Wayland and provides guidance
 
 ## 🔍 Troubleshooting
 

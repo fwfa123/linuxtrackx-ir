@@ -8,19 +8,19 @@ Your LinuxTrack Qt5 repository is now ready for testing! The changes have been c
 
 The prepared repository is available at:
 ```
-/mnt/Local_Git/git-repos/linuxtrack-modernized (branch: trackir2winebridge)
+/mnt/Local_Git/git-repos/linuxtrack-clean-june14 (branch: trackir2winebridge)
 ```
 
 ### 📋 **Testing Process for Another OS**
 
-#### Step 1: Clone the Repository
+#### Step 1: Copy the Repository
 ```bash
-# From your other OS, clone the repository
-git clone /mnt/Local_Git/git-repos/linuxtrack-modernized linuxtrack-test
+# Since this is a local development setup, copy the prepared repository
+cp -r /mnt/Local_Git/git-repos/linuxtrack-clean-june14 linuxtrack-test
 cd linuxtrack-test
 
-# Switch to the prepared branch
-git checkout trackir2winebridge
+# Verify you're on the prepared branch
+git branch
 ```
 
 #### Step 2: Quick Test Build (Automated)
@@ -30,6 +30,9 @@ git checkout trackir2winebridge
 
 # If successful, launch the application
 ./run_qt5_gui.sh
+
+# For Wayland sessions (if needed)
+./run_qt5_gui.sh --force-x11
 ```
 
 #### Step 3: Manual Build Test (Alternative)
@@ -56,6 +59,11 @@ sudo ./setup.sh
 - [ ] Device permissions are correct
 - [ ] LinuxTrack GUI detects TrackIR without "permission errors"
 - [ ] Tracking works and responds to head movement
+
+#### ✅ **Display Server Testing**
+- [ ] **X11**: Application launches normally with `./run_qt5_gui.sh`
+- [ ] **Wayland**: Launcher detects Wayland and provides guidance
+- [ ] **Wayland + Force X11**: `./run_qt5_gui.sh --force-x11` works without warnings
 
 ### 🎯 **Success Confirmation**
 
