@@ -1,0 +1,95 @@
+# Build artifacts
+*.o
+*.lo
+*.la
+*.a
+*.so
+*.so.*
+*.exe
+
+# Autotools generated files
+/config.h
+/config.h.in~
+/config.log
+/config.status
+/config.cache
+/config.sub
+/config.guess
+/configure
+/aclocal.m4
+/autom4te.cache/
+/compile
+/depcomp
+/install-sh
+/libtool
+/ltmain.sh
+/missing
+/ylwrap
+/ar-lib
+/stamp-h1
+Makefile
+Makefile.in
+
+# Build directories
+build_*/
+.libs/
+.deps/
+
+# Qt generated files
+*.gch/
+ui_*.h
+moc_*.h
+moc_*.cpp
+qrc_*.cpp
+moc_predefs.h
+.qmake.stash
+
+# Executables and binaries
+ltr_gui
+ltr_gui_qt5_debug
+ltr_gui_qt5_standalone_debug
+ltr_server*
+ltr_extractor
+ltr_pipe
+ltr_recenter
+osc_server
+test_*
+
+# Library files
+*.lai
+*.ver
+
+# Local configuration
+local_config.h
+
+# Log files
+*.log
+gui_output.log
+
+# Backup files
+*~
+*.backup
+*.bak
+
+# IDE files
+.vscode/
+.idea/
+*.pro.user*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Package files
+*.rpm
+*.deb
+*.tar.gz
+*.zip
+
+# Wine build artifacts
+*.dll.so
+
+# CMake files (if using hybrid build)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake 
