@@ -619,6 +619,7 @@ PACKAGE_STRING='LinuxTrack 0.99.20'
 PACKAGE_BUGREPORT='https://github.com/uglyDwarf/linuxtrack/issues'
 PACKAGE_URL=''
 
+ac_default_prefix=/opt
 ac_unique_file="src/tir4_driver.h"
 # Factoring default headers for most tests.
 ac_includes_default="\
@@ -3958,6 +3959,9 @@ fi
 
 
 
+
+
+# Set default installation prefix to /opt for LinuxTrack
 
 
 ac_config_headers="$ac_config_headers config.h"

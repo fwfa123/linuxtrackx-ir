@@ -294,6 +294,15 @@ mickey/mickey : mickey/help.qhc mickey/help.qch
 
 
 install-exec-hook: $(hook_inst_targets)
+if TRACKIR_SUPPORT
+	@echo "Installing udev rules for TrackIR devices..."
+	$(MKDIR_P) $(DESTDIR)/lib/udev/rules.d/
+	$(INSTALL_DATA) $(srcdir)/99-TIR.rules $(DESTDIR)/lib/udev/rules.d/
+	$(INSTALL_DATA) $(srcdir)/99-Mickey.rules $(DESTDIR)/lib/udev/rules.d/
+	@echo "Reloading udev rules..."
+	-udevadm control --reload-rules 2>/dev/null || true
+	@echo "udev rules installation complete."
+endif
 
 LTR_QT_GUI_TARGET_INST: qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
@@ -305,6 +314,14 @@ LTR_MICKEY_TARGET_INST: mickey/help.qhc mickey/help.qch
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
 
 uninstall-hook: $(hook_uninst_targets)
+if TRACKIR_SUPPORT
+	@echo "Removing udev rules for TrackIR devices..."
+	-rm -f $(DESTDIR)/lib/udev/rules.d/99-TIR.rules
+	-rm -f $(DESTDIR)/lib/udev/rules.d/99-Mickey.rules
+	@echo "Reloading udev rules..."
+	-udevadm control --reload-rules 2>/dev/null || true
+	@echo "udev rules removal complete."
+endif
 
 LTR_QT_GUI_TARGET_UNINST:
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} uninstall; popd

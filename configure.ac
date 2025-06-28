@@ -4,6 +4,9 @@
 AC_PREREQ([2.71])
 AC_INIT([LinuxTrack],[0.99.20],[https://github.com/uglyDwarf/linuxtrack/issues])
 AM_INIT_AUTOMAKE([subdir-objects no-dependencies -Wall -Werror])
+
+# Set default installation prefix to /opt for LinuxTrack
+AC_PREFIX_DEFAULT([/opt])
 AC_CONFIG_SRCDIR([src/tir4_driver.h])
 AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX

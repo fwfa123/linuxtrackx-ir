@@ -1,1 +1,0 @@
-/usr/bin/cc -fPIC -g -Wl,--dependency-file=CMakeFiles/libltusb1.dir/link.d -shared -Wl,-soname,libltusb1.so.0 -o libltusb1.so.0.0.0 CMakeFiles/libltusb1.dir/libusb_ifc.c.o CMakeFiles/libltusb1.dir/utils.c.o  -lusb-1.0
