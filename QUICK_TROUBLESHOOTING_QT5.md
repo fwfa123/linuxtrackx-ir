@@ -2,6 +2,25 @@
 
 ## 🚨 Common Issues & Quick Fixes
 
+### ⚠️ CRITICAL: System Upgrade Broke Working LinuxTrack
+```
+Previously working LinuxTrack stops functioning after system upgrade
+Missing executable after Qt6 upgrade
+```
+
+**Quick Fix:**
+```bash
+# System upgraded to Qt6, need to force Qt5
+qmake-qt5 --version  # Verify Qt5 still available
+cd src/qt_gui
+rm -f Makefile ltr_gui
+qmake-qt5 ltr_gui.pro  # Force Qt5 build
+make -j$(nproc)
+./../../run_qt5_gui.sh
+```
+
+**Complete Guide**: See `QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md`
+
 ### 1. Library Loading Error
 ```
 ./ltr_gui_qt5_debug: error while loading shared libraries: libltr.so.0: cannot open shared object file

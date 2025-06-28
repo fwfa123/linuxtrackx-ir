@@ -91,6 +91,20 @@ sudo ./setup.sh
 
 ### Common Issues
 
+#### "System Upgrade Broke My Working LinuxTrack"
+**Critical Issue**: System upgrades from Qt5 to Qt6 can break working LinuxTrack installations.
+**[📖 Complete Qt5/Qt6 System Upgrade Resolution Guide](QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
+
+**Quick Fix**:
+```bash
+# Force Qt5 usage after system upgrade
+qmake-qt5 --version  # Verify Qt5 is still available
+cd src/qt_gui
+rm -f Makefile ltr_gui
+qmake-qt5 ltr_gui.pro  # Force Qt5 instead of Qt6
+make -j$(nproc)
+```
+
 #### "TrackIR found but permission errors"
 This is a complex issue that can have multiple causes. See our comprehensive guide:
 **[📖 TrackIR Permission Troubleshooting Guide](TRACKIR_PERMISSION_TROUBLESHOOTING.md)**
@@ -115,10 +129,14 @@ export LD_LIBRARY_PATH="$(pwd)/src/.libs:$LD_LIBRARY_PATH"
 
 ### Getting Help
 
-1. **Check the troubleshooting guide**: [TRACKIR_PERMISSION_TROUBLESHOOTING.md](TRACKIR_PERMISSION_TROUBLESHOOTING.md)
-2. **Run diagnostics**: `./build.sh --check`
-3. **Enable debug logging**: Edit `~/.config/linuxtrack/linuxtrack1.conf` and set debug flags
-4. **Check device detection**: `lsusb | grep -i trackir`
+1. **📚 Complete Documentation Index**: [DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md) - Navigate all guides
+2. **🔍 Health Check**: `./linuxtrack_health_check.sh` - Automated diagnosis
+3. **🚑 Quick Recovery**: `./linuxtrack_quick_recovery.sh` - Automated fixes
+4. **📖 Troubleshooting Guides**:
+   - **System Upgrade Issues**: [QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)
+   - **TrackIR Hardware**: [TRACKIR_PERMISSION_TROUBLESHOOTING.md](TRACKIR_PERMISSION_TROUBLESHOOTING.md)
+   - **Quick Fixes**: [QUICK_TROUBLESHOOTING_QT5.md](QUICK_TROUBLESHOOTING_QT5.md)
+5. **🔧 System Maintenance**: [SYSTEM_MAINTENANCE_GUIDE.md](SYSTEM_MAINTENANCE_GUIDE.md)
 
 ## 🏗️ Development
 
@@ -197,6 +215,36 @@ sudo usermod -a -G plugdev,linuxtrack $USER
 # Reboot or re-login for group changes to take effect
 ```
 
+## 🔧 Automated Maintenance
+
+### Health Monitoring
+```bash
+# Comprehensive system health check
+./linuxtrack_health_check.sh
+
+# Expected output: All systems operational
+# Exit codes: 0=Good, 1=Warning, 2=Critical
+```
+
+### Quick Recovery
+```bash
+# Automatic problem resolution
+./linuxtrack_quick_recovery.sh
+
+# Handles: Qt5/Qt6 conflicts, missing executables, configuration issues
+# Exit codes: 0=Success, 1=Partial recovery
+```
+
+### System Upgrade Protection
+```bash
+# Before system upgrade
+cp src/qt_gui/ltr_gui src/qt_gui/ltr_gui.backup
+cp ~/.config/linuxtrack/linuxtrack1.conf ~/.config/linuxtrack/linuxtrack1.conf.backup
+
+# After system upgrade (if broken)
+./linuxtrack_quick_recovery.sh
+```
+
 ## 📈 Performance Tips
 
 ### Optimal Settings
@@ -209,6 +257,11 @@ sudo usermod -a -G plugdev,linuxtrack $USER
 - **TrackIR 5**: Best overall experience
 - **USB 2.0 ports**: Directly connected to motherboard (avoid hubs if possible)
 - **Good lighting**: For face/point tracking modes
+
+### System Maintenance
+- **Monthly**: Run `./linuxtrack_health_check.sh`
+- **Before Updates**: Backup working configuration
+- **After Updates**: Run `./linuxtrack_quick_recovery.sh` if needed
 
 ## 🤝 Contributing
 

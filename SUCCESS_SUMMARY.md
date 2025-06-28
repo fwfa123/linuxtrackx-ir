@@ -31,10 +31,12 @@ Type: 8
 - [x] **Pose Calculation**: ✅ Head movement → tracking output functional
 - [x] **Hardware Communication**: ✅ TrackIR 5 fully operational
 
-**⚠️ WAYLAND COMPATIBILITY NOTE:**
-- Real-time blob tracking display requires X11 mode on Wayland systems
-- Use: `XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_qt5_gui.sh`
-- See `WAYLAND_COMPATIBILITY_ISSUE.md` for details
+**⚠️ SYSTEM MAINTENANCE NOTE:**
+- **Qt5/Qt6 System Upgrades**: Documented complete resolution for Qt version conflicts
+- **See**: `QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md` for upgrade issues
+- **Wayland Compatibility**: Real-time blob tracking requires X11 mode on Wayland systems
+- **Use**: `XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_qt5_gui.sh`
+- **Details**: See `WAYLAND_COMPATIBILITY_ISSUE.md` for Wayland specifics
 
 ### 📊 **Technical Status:**
 - **Hardware**: TrackIR 5 (USB ID: 131d:0159) ✅ DETECTED
