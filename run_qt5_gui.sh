@@ -7,7 +7,8 @@ echo "📍 Working directory: $(pwd)"
 
 # Get absolute path to libraries
 LIB_PATH="$(pwd)/src/.libs"
-export LD_LIBRARY_PATH="$LIB_PATH:$LD_LIBRARY_PATH"
+# FORCE our libraries first to override conflicting system installation
+export LD_LIBRARY_PATH="$LIB_PATH:/usr/local/lib:$LD_LIBRARY_PATH"
 
 echo "🔧 Library path: $LIB_PATH"
 echo "📂 Available libraries:"
@@ -18,6 +19,6 @@ cd src/qt_gui
 echo "📂 GUI directory: $(pwd)"
 echo "✨ Launching Qt5 GUI..."
 
-./ltr_gui_qt5_debug
+LD_LIBRARY_PATH="$LIB_PATH:/usr/local/lib:$LD_LIBRARY_PATH" ./ltr_gui
 
 echo "�� Qt5 GUI closed." 

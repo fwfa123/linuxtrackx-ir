@@ -296,7 +296,7 @@ PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
-QMAKE_PATH = /usr/bin/qmake
+QMAKE_PATH = /usr/bin/qmake-qt5
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
@@ -363,7 +363,7 @@ target_alias =
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
-with_makensis = 
+with_makensis = yes
 with_wine64 = yes
 EXTRA_DIST = Info.plist PkgInfo English.lproj/InfoPlist.strings linuxtrack_wii.icns \
 English.lproj/MainMenu.nib/keyedobjects.nib English.lproj/MainMenu.nib/designable.nib

@@ -71,25 +71,49 @@ gui_output.log
 *.backup
 *.bak
 
-# IDE files
+# IDE and editor files
 .vscode/
 .idea/
-*.pro.user*
+*.swp
+*.swo
+*~
 
-# System files
+# OS specific files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# Package files
-*.rpm
+# Distribution packages
 *.deb
+*.rpm
 *.tar.gz
-*.zip
+*.tar.bz2
+*.tar.xz
 
-# Wine build artifacts
-*.dll.so
+# Runtime files
+core
+*.core
+.gdb_history
 
-# CMake files (if using hybrid build)
-CMakeCache.txt
-CMakeFiles/
-cmake_install.cmake 
+# Personal config overrides
+local_config.h
+user_config.h
+
+# Test data
+test_data/
+sample_data/
+
+# Documentation build artifacts
+doc/html/
+doc/latex/
+*.pdf
+*.ps
+
+# Package manager files
+node_modules/
+package-lock.json
+yarn.lock 

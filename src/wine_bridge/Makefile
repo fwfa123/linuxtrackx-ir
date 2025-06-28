@@ -230,7 +230,7 @@ PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
-QMAKE_PATH = /usr/bin/qmake
+QMAKE_PATH = /usr/bin/qmake-qt5
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
@@ -297,11 +297,11 @@ target_alias =
 top_build_prefix = ../../
 top_builddir = ../..
 top_srcdir = ../..
-with_makensis = 
+with_makensis = yes
 with_wine64 = yes
-#nodist_pkgdata_DATA = linuxtrack-wine.exe
-#MYLDFLAGS = -Wl,--no-warn-search-mismatch
-##MYLDFLAGS = -Wl,-no_arch_warnings
+nodist_pkgdata_DATA = linuxtrack-wine.exe
+MYLDFLAGS = -Wl,--no-warn-search-mismatch
+#MYLDFLAGS = -Wl,-no_arch_warnings
 dist_pkgdata_DATA = README.wine
 EXTRA_DIST = linuxtrack.ico linuxtrack1.ico
 all: all-am
@@ -464,8 +464,8 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean-local:
-distclean-local:
+#clean-local:
+#distclean-local:
 clean: clean-am
 
 clean-am: clean-generic clean-libtool clean-local mostlyclean-am
@@ -551,37 +551,37 @@ uninstall-am: uninstall-dist_pkgdataDATA uninstall-nodist_pkgdataDATA
 
 .PRECIOUS: Makefile
 
-##  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester.exe.so controller/Controller.exe.so \
-##             client/NPClient.dll.so ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so \
-##             client/check_data.exe.so views/TrackIR.exe.so
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib tester/Tester.exe.so
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib controller/Controller.exe.so 
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib client/NPClient.dll.so
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib ft_client/FreeTrackClient.dll.so
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib ft_tester/ftc.exe.so
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib client/check_data.exe.so
-##	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib views/TrackIR.exe.so
-##	makensis $<
+#  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester.exe.so controller/Controller.exe.so \
+#             client/NPClient.dll.so ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so \
+#             client/check_data.exe.so views/TrackIR.exe.so
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib tester/Tester.exe.so
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib controller/Controller.exe.so 
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib client/NPClient.dll.so
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib ft_client/FreeTrackClient.dll.so
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib ft_tester/ftc.exe.so
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib client/check_data.exe.so
+#	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib views/TrackIR.exe.so
+#	makensis $<
 
-##  linuxtrack-wine.exe : ltr_wine64.nsi tester/Tester.exe.so tester/Tester64.exe.so \
-##                        controller/Controller.exe.so client/NPClient.dll.so client/NPClient64.dll.so \
-##                        ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so client/check_data.exe.so \
-##			views/TrackIR.exe.so
-##	makensis $<
+  linuxtrack-wine.exe : ltr_wine64.nsi tester/Tester.exe.so tester/Tester64.exe.so \
+                        controller/Controller.exe.so client/NPClient.dll.so client/NPClient64.dll.so \
+                        ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so client/check_data.exe.so \
+			views/TrackIR.exe.so
+	makensis $<
 #  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester.exe.so controller/Controller.exe.so client/NPClient.dll.so \
 #                        ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so client/check_data.exe.so \
 #			views/TrackIR.exe.so
 #	makensis $<
 
-#clean-local: clean-local-check
-#.PHONY: clean-local-check
-#clean-local-check:
-#	rm -f *.exe
+clean-local: clean-local-check
+.PHONY: clean-local-check
+clean-local-check:
+	rm -f *.exe
 
-#distclean-local: distclean-local-check
-#.PHONY: distclean-local-check
-#distclean-local-check:
-#	rm -f *.exe
+distclean-local: distclean-local-check
+.PHONY: distclean-local-check
+distclean-local-check:
+	rm -f *.exe
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

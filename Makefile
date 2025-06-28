@@ -98,8 +98,8 @@ host_triplet = x86_64-pc-linux-gnu
 #endif
 #endif
 #endif
-#am__append_1 = src/wine_bridge/client src/wine_bridge/controller src/wine_bridge/tester \
-#  src/wine_bridge/ft_client src/wine_bridge/ft_tester src/wine_bridge/views src/wine_bridge
+am__append_1 = src/wine_bridge/client src/wine_bridge/controller src/wine_bridge/tester \
+  src/wine_bridge/ft_client src/wine_bridge/ft_tester src/wine_bridge/views src/wine_bridge
 
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -331,7 +331,7 @@ PATH_SEPARATOR = :
 PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
-QMAKE_PATH = /usr/bin/qmake
+QMAKE_PATH = /usr/bin/qmake-qt5
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
@@ -398,7 +398,7 @@ target_alias =
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
-with_makensis = 
+with_makensis = yes
 with_wine64 = yes
 SUBDIRS = src src/mac doc src/osc_server_mac $(am__append_1)
 dist_pkgdata_DATA = README README.devel README.xplane
