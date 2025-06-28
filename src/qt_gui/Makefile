@@ -1817,6 +1817,7 @@ uninstall_data: FORCE
 
 install_help: first FORCE
 	@test -d $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui || mkdir -p $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui
+	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help.qch $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qch
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/3dPreview.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/3dPreview.png
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/CamPreview.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/CamPreview.png
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Controller.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Controller.png
@@ -1885,6 +1886,7 @@ uninstall_help: FORCE
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Controller.png
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/CamPreview.png
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/3dPreview.png
+	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qch
 	-$(DEL_DIR) $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/ 
 
 

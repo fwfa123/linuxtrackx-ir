@@ -1862,7 +1862,7 @@ qt_gui/help.qhc qt_gui/help.qch : qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp qt_gui/
   qt_gui/help/3dPreview.png qt_gui/help/ModelCreate.png qt_gui/help/JoyButtonsSetup3.png qt_gui/help/CamPreview.png \
   qt_gui/help/Tracking.png qt_gui/help/JoyButtonsSetup2.png qt_gui/help/Model.png qt_gui/help/Trackir.png \
   qt_gui/help/Controller.png qt_gui/help/Facetracker.png
-	pushd qt_gui; qcollectiongenerator -o help.qhc ltr_gui.qhcp; popd
+	pushd qt_gui; qhelpgenerator-qt5 ltr_gui.qhp -o help.qch && qhelpgenerator-qt5 ltr_gui.qhcp -o help.qhc; popd
 qt_gui/ltr_gui : qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui; ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE); popd
 
@@ -1871,7 +1871,7 @@ wii_server/wii_server :
 
 mickey/help.qhc mickey/help.qch : mickey/mickey.qhcp mickey/mickey.qhp \
   mickey/help/tracking.htm mickey/help/misc.htm mickey/help/news.htm mickey/help/welcome.htm
-	pushd mickey; qcollectiongenerator -o help.qhc mickey.qhcp; popd
+	pushd mickey; qhelpgenerator-qt5 mickey.qhp -o help.qch && qhelpgenerator-qt5 mickey.qhcp -o help.qhc; popd
 mickey/mickey : mickey/help.qhc mickey/help.qch
 	pushd mickey; ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE); popd
 
