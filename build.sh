@@ -55,7 +55,7 @@ install_dependencies() {
             sudo apt-get update
             sudo apt-get install -y \
                 build-essential autotools-dev automake libtool \
-                qtbase5-dev qttools5-dev-tools qmake-qt5 \
+                qtbase5-dev qttools5-dev-tools qt5-qmake \
                 libusb-1.0-0-dev libmxml-dev \
                 libv4l-dev libcwiid-dev liblo-dev \
                 bison flex pkg-config
