@@ -304,6 +304,13 @@ if TRACKIR_SUPPORT
 	@echo "udev rules installation complete."
 endif
 
+install-data-hook:
+	@echo "Updating desktop database..."
+	-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true
+	@echo "Updating icon cache..."
+	-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true
+	@echo "Desktop integration update complete."
+
 LTR_QT_GUI_TARGET_INST: qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
 
@@ -322,6 +329,13 @@ if TRACKIR_SUPPORT
 	-udevadm control --reload-rules 2>/dev/null || true
 	@echo "udev rules removal complete."
 endif
+	@echo "Updating desktop database after uninstall..."
+	-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true
+	@echo "Updating icon cache after uninstall..."
+	-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true
+	@echo "Desktop integration cleanup complete."
+
+
 
 LTR_QT_GUI_TARGET_UNINST:
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} uninstall; popd
@@ -398,6 +412,15 @@ qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey
 
 desktopdir = $(datadir)/applications
 desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop
+
+# Install icons in freedesktop icon theme directories
+hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
+hicolor_scalable_apps_DATA = linuxtrack.svg linuxtrack-wii.svg
+
+hicolor_48x48_appsdir = $(datadir)/icons/hicolor/48x48/apps  
+hicolor_48x48_apps_DATA = linuxtrack.png linuxtrack-wii.png
+
+# Legacy pixmaps directory for compatibility
 icondir = $(datadir)/pixmaps
 icon_DATA = linuxtrack.svg linuxtrack.png linuxtrack.xpm \
             linuxtrack-wii.svg linuxtrack-wii.png linuxtrack-wii.xpm

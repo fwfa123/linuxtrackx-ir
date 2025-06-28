@@ -133,7 +133,9 @@ am__EXEEXT_1 = osc_server$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(l32libdir)" \
 	"$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(man1dir)" \
 	"$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgdatadir)" \
-	"$(DESTDIR)$(icondir)" "$(DESTDIR)$(includedir)"
+	"$(DESTDIR)$(hicolor_48x48_appsdir)" \
+	"$(DESTDIR)$(hicolor_scalable_appsdir)" "$(DESTDIR)$(icondir)" \
+	"$(DESTDIR)$(includedir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
@@ -463,7 +465,8 @@ MANS = $(man_MANS)
 am__dist_pkgdata_DATA_DIST = linuxtrack1.conf linuxtrack.c \
 	linuxtrack_hello_world.c linuxtrack_hello_world_adv.c \
 	99-TIR.rules 99-Mickey.rules haarcascade_frontalface_alt2.xml
-DATA = $(desktop_DATA) $(dist_pkgdata_DATA) $(icon_DATA)
+DATA = $(desktop_DATA) $(dist_pkgdata_DATA) $(hicolor_48x48_apps_DATA) \
+	$(hicolor_scalable_apps_DATA) $(icon_DATA)
 HEADERS = $(include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
@@ -854,6 +857,14 @@ qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey
 
 desktopdir = $(datadir)/applications
 desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop
+
+# Install icons in freedesktop icon theme directories
+hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
+hicolor_scalable_apps_DATA = linuxtrack.svg linuxtrack-wii.svg
+hicolor_48x48_appsdir = $(datadir)/icons/hicolor/48x48/apps  
+hicolor_48x48_apps_DATA = linuxtrack.png linuxtrack-wii.png
+
+# Legacy pixmaps directory for compatibility
 icondir = $(datadir)/pixmaps
 icon_DATA = linuxtrack.svg linuxtrack.png linuxtrack.xpm \
             linuxtrack-wii.svg linuxtrack-wii.png linuxtrack-wii.xpm
@@ -1482,6 +1493,48 @@ uninstall-dist_pkgdataDATA:
 	@list='$(dist_pkgdata_DATA)'; test -n "$(pkgdatadir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pkgdatadir)'; $(am__uninstall_files_from_dir)
+install-hicolor_48x48_appsDATA: $(hicolor_48x48_apps_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(hicolor_48x48_apps_DATA)'; test -n "$(hicolor_48x48_appsdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(hicolor_48x48_appsdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(hicolor_48x48_appsdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(hicolor_48x48_appsdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(hicolor_48x48_appsdir)" || exit $$?; \
+	done
+
+uninstall-hicolor_48x48_appsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(hicolor_48x48_apps_DATA)'; test -n "$(hicolor_48x48_appsdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(hicolor_48x48_appsdir)'; $(am__uninstall_files_from_dir)
+install-hicolor_scalable_appsDATA: $(hicolor_scalable_apps_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(hicolor_scalable_apps_DATA)'; test -n "$(hicolor_scalable_appsdir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(hicolor_scalable_appsdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(hicolor_scalable_appsdir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(hicolor_scalable_appsdir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(hicolor_scalable_appsdir)" || exit $$?; \
+	done
+
+uninstall-hicolor_scalable_appsDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(hicolor_scalable_apps_DATA)'; test -n "$(hicolor_scalable_appsdir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(hicolor_scalable_appsdir)'; $(am__uninstall_files_from_dir)
 install-iconDATA: $(icon_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(icon_DATA)'; test -n "$(icondir)" || list=; \
@@ -1615,7 +1668,7 @@ check: $(BUILT_SOURCES)
 all-am: Makefile $(PROGRAMS) $(LTLIBRARIES) $(SCRIPTS) $(MANS) $(DATA) \
 		$(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(l32libdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(icondir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(l32libdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(hicolor_48x48_appsdir)" "$(DESTDIR)$(hicolor_scalable_appsdir)" "$(DESTDIR)$(icondir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1678,9 +1731,11 @@ info: info-am
 info-am:
 
 install-data-am: install-desktopDATA install-dist_pkgdataDATA \
-	install-iconDATA install-includeHEADERS \
-	install-l32libLTLIBRARIES install-man
-
+	install-hicolor_48x48_appsDATA \
+	install-hicolor_scalable_appsDATA install-iconDATA \
+	install-includeHEADERS install-l32libLTLIBRARIES install-man
+	@$(NORMAL_INSTALL)
+	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
 install-dvi: install-dvi-am
 
 install-dvi-am:
@@ -1726,15 +1781,16 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-desktopDATA \
-	uninstall-dist_pkgdataDATA uninstall-iconDATA \
+	uninstall-dist_pkgdataDATA uninstall-hicolor_48x48_appsDATA \
+	uninstall-hicolor_scalable_appsDATA uninstall-iconDATA \
 	uninstall-includeHEADERS uninstall-l32libLTLIBRARIES \
 	uninstall-man uninstall-pkglibLTLIBRARIES
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) uninstall-hook
 uninstall-man: uninstall-man1
 
-.MAKE: all check install install-am install-exec install-exec-am \
-	install-strip uninstall-am
+.MAKE: all check install install-am install-data-am install-exec \
+	install-exec-am install-strip uninstall-am
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean \
 	clean-binPROGRAMS clean-generic clean-l32libLTLIBRARIES \
@@ -1743,21 +1799,25 @@ uninstall-man: uninstall-man1
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-local distclean-tags distdir dvi dvi-am html html-am \
 	info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-desktopDATA \
-	install-dist_pkgdataDATA install-dvi install-dvi-am \
-	install-exec install-exec-am install-exec-hook install-html \
-	install-html-am install-iconDATA install-includeHEADERS \
-	install-info install-info-am install-l32libLTLIBRARIES \
-	install-man install-man1 install-pdf install-pdf-am \
+	install-data install-data-am install-data-hook \
+	install-desktopDATA install-dist_pkgdataDATA install-dvi \
+	install-dvi-am install-exec install-exec-am install-exec-hook \
+	install-hicolor_48x48_appsDATA \
+	install-hicolor_scalable_appsDATA install-html install-html-am \
+	install-iconDATA install-includeHEADERS install-info \
+	install-info-am install-l32libLTLIBRARIES install-man \
+	install-man1 install-pdf install-pdf-am \
 	install-pkglibLTLIBRARIES install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
 	uninstall-binPROGRAMS uninstall-desktopDATA \
-	uninstall-dist_pkgdataDATA uninstall-hook uninstall-iconDATA \
-	uninstall-includeHEADERS uninstall-l32libLTLIBRARIES \
-	uninstall-man uninstall-man1 uninstall-pkglibLTLIBRARIES
+	uninstall-dist_pkgdataDATA uninstall-hicolor_48x48_appsDATA \
+	uninstall-hicolor_scalable_appsDATA uninstall-hook \
+	uninstall-iconDATA uninstall-includeHEADERS \
+	uninstall-l32libLTLIBRARIES uninstall-man uninstall-man1 \
+	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
@@ -1824,6 +1884,13 @@ install-exec-hook: $(hook_inst_targets)
 	-udevadm control --reload-rules 2>/dev/null || true
 	@echo "udev rules installation complete."
 
+install-data-hook:
+	@echo "Updating desktop database..."
+	-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true
+	@echo "Updating icon cache..."
+	-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true
+	@echo "Desktop integration update complete."
+
 LTR_QT_GUI_TARGET_INST: qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
 
@@ -1840,6 +1907,11 @@ uninstall-hook: $(hook_uninst_targets)
 	@echo "Reloading udev rules..."
 	-udevadm control --reload-rules 2>/dev/null || true
 	@echo "udev rules removal complete."
+	@echo "Updating desktop database after uninstall..."
+	-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true
+	@echo "Updating icon cache after uninstall..."
+	-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true
+	@echo "Desktop integration cleanup complete."
 
 LTR_QT_GUI_TARGET_UNINST:
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} uninstall; popd
