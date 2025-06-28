@@ -74,9 +74,12 @@ unix:!macx {
 
   data.path += /opt/linuxtrack/share/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png sources.txt spec.txt \
-                 sphere.obj sphere.png sources_mfc.txt win7.reg
+                 sphere.obj sphere.png sphere.txt sources_mfc.txt win7.reg \
+                 cap.png cap_small.png cap_1.png cap_np.png \
+                 clip.png clip_small.png clip_1.png clip_np.png \
+                 face.png single.png
   help.path += /opt/linuxtrack/share/linuxtrack/help/ltr_gui
-  help.files += help.qhc help.qch 
+  help.files += help.qhc help.qch help/*.png help/*.htm 
   target.path = /opt/linuxtrack/bin
   INSTALLS += target data help
 }
@@ -91,9 +94,12 @@ macx {
   LIBS += -L../.libs "-L$${LIBDIR}" -L/opt/linuxtrack/lib -lm -lltr -lmxml
   data.path += ltr_gui.app/Contents/Resources/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png ../linuxtrack1.conf \
-                sources_mac.txt spec.txt sphere.obj sphere.png sources_mfc.txt win7.reg
+                sources_mac.txt spec.txt sphere.obj sphere.png sphere.txt sources_mfc.txt win7.reg \
+                cap.png cap_small.png cap_1.png cap_np.png \
+                clip.png clip_small.png clip_1.png clip_np.png \
+                face.png single.png
   help.path += ltr_gui.app/Contents/Resources/linuxtrack/help/ltr_gui
-  help.files += help.qhc help.qch 
+  help.files += help.qhc help.qch help/*.png help/*.htm 
   INSTALLS += data help
   ICON = linuxtrack.icns
 }
