@@ -15,8 +15,10 @@ if DARWIN
   ltr_pipe_CPPFLAGS =
   FT_LDFLAGS =
 else
-  LINUXFLAGS = '-DLIB_PATH="$(pkglibdir)/"'
-  LINUXLDLFAGS = '-Wl,-rpath,$(pkglibdir)'
+  # Use relative path that works with DESTDIR installations
+  LINUXFLAGS = '-DLIB_PATH="../lib/linuxtrack/"'
+  # Use relative rpath that works with DESTDIR installations
+  LINUXLDLFAGS = '-Wl,-rpath,$$ORIGIN/../lib/linuxtrack'
   SYSFLAGS = -DIBM=0 -DAPL=0 -DLIN=1
   QMAKE_FLAGS = -spec linux-g++
   LIBLINUXTRACK_FLAGS = -fpic -fPIC
@@ -24,7 +26,7 @@ else
   XLINUXTRACK_CFLAGS =
   XLINUXTRACK_LDFLAGS =  -L/lib32 -L/usr/lib32 -Wl,--no-warn-search-mismatch
   ltr_pipe_CPPFLAGS = -DLINUX
-  FT_LDFLAGS = '-Wl,-rpath,$(libdir)'
+  FT_LDFLAGS = '-Wl,-rpath,$$ORIGIN/../lib/linuxtrack'
 endif
 
 man_MANS = ltr_gui.1 ltr_server1.1 mickey.1
@@ -270,6 +272,11 @@ if CWIID
   hook_uninst_targets += LTR_WII_TARGET_UNINST
 endif
 
+# Qt5 command detection and fallback - using simpler approach
+# These will be set by configure script or use defaults
+QT5_QHELPGENERATOR ?= qhelpgenerator-qt5
+QT5_QMAKE ?= qmake-qt5
+
 qt_gui/help.qhc qt_gui/help.qch : qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp qt_gui/help/xpl_setup.htm \
   qt_gui/help/extractor.htm qt_gui/help/misc.htm qt_gui/help/news.htm qt_gui/help/dev_setup.htm \
   qt_gui/help/interface.htm qt_gui/help/axes_setup.htm qt_gui/help/mickey.htm qt_gui/help/model_setup.htm \
@@ -280,7 +287,12 @@ qt_gui/help.qhc qt_gui/help.qch : qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp qt_gui/
   qt_gui/help/3dPreview.png qt_gui/help/ModelCreate.png qt_gui/help/JoyButtonsSetup3.png qt_gui/help/CamPreview.png \
   qt_gui/help/Tracking.png qt_gui/help/JoyButtonsSetup2.png qt_gui/help/Model.png qt_gui/help/Trackir.png \
   qt_gui/help/Controller.png qt_gui/help/Facetracker.png
-	pushd qt_gui; qhelpgenerator-qt5 ltr_gui.qhp -o help.qch && qhelpgenerator-qt5 ltr_gui.qhcp -o help.qhc; popd
+	@if command -v $(QT5_QHELPGENERATOR) >/dev/null 2>&1; then \
+		pushd qt_gui; $(QT5_QHELPGENERATOR) ltr_gui.qhp -o help.qch && $(QT5_QHELPGENERATOR) ltr_gui.qhcp -o help.qhc; popd; \
+	else \
+		echo "Warning: $(QT5_QHELPGENERATOR) not found, skipping help generation"; \
+		touch qt_gui/help.qhc qt_gui/help.qch; \
+	fi
 qt_gui/ltr_gui : qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui; ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE); popd
 
@@ -289,7 +301,12 @@ wii_server/wii_server :
 
 mickey/help.qhc mickey/help.qch : mickey/mickey.qhcp mickey/mickey.qhp \
   mickey/help/tracking.htm mickey/help/misc.htm mickey/help/news.htm mickey/help/welcome.htm
-	pushd mickey; qhelpgenerator-qt5 mickey.qhp -o help.qch && qhelpgenerator-qt5 mickey.qhcp -o help.qhc; popd
+	@if command -v $(QT5_QHELPGENERATOR) >/dev/null 2>&1; then \
+		pushd mickey; $(QT5_QHELPGENERATOR) mickey.qhp -o help.qch && $(QT5_QHELPGENERATOR) mickey.qhcp -o help.qhc; popd; \
+	else \
+		echo "Warning: $(QT5_QHELPGENERATOR) not found, skipping mickey help generation"; \
+		touch mickey/help.qhc mickey/help.qch; \
+	fi
 mickey/mickey : mickey/help.qhc mickey/help.qch
 	pushd mickey; ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE); popd
 

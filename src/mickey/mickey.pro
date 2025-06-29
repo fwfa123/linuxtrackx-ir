@@ -16,7 +16,7 @@ INCLUDEPATH += ./..
 INCLUDEPATH += ./../qt_gui
 
 contains(QT_VERSION, ^5.*){
-       QT += widgets x11extras
+       QT += widgets
        DEFINES += QT5_OVERRIDES
 }
 

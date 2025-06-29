@@ -1777,34 +1777,12 @@ install_data: first FORCE
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/spec.txt $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/spec.txt
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/sphere.obj $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sphere.obj
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/sphere.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sphere.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/sphere.txt $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sphere.txt
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/sources_mfc.txt $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sources_mfc.txt
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/win7.reg $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/win7.reg
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/cap.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/cap_small.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap_small.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/cap_1.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap_1.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/cap_np.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap_np.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/clip.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/clip_small.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip_small.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/clip_1.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip_1.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/clip_np.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip_np.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/face.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/face.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/single.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/single.png
 
 uninstall_data: FORCE
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/single.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/face.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip_np.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip_1.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip_small.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/clip.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap_np.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap_1.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap_small.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/cap.png
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/win7.reg
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sources_mfc.txt
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sphere.txt
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sphere.png
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/sphere.obj
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/spec.txt
@@ -1817,76 +1795,12 @@ uninstall_data: FORCE
 
 install_help: first FORCE
 	@test -d $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui || mkdir -p $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui
+	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help.qhc $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qhc
 	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help.qch $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qch
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/3dPreview.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/3dPreview.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/CamPreview.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/CamPreview.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Controller.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Controller.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/DetAxis.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/DetAxis.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Extractor.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Extractor.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Facetracker.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Facetracker.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/JoyButtonsSetup1.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup1.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/JoyButtonsSetup2.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup2.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/JoyButtonsSetup3.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup3.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/JoyButtonsSetup4.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup4.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/JoyButtonsSetup5.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup5.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/KeysSetup1.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/KeysSetup1.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Misc.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Misc.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Model.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Model.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/ModelCreate.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/ModelCreate.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Tracking.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Tracking.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Trackir.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Trackir.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Webcam.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Webcam.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/Wiimote.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Wiimote.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/XplBrowse.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/XplBrowse.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/XplInstall.png $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/XplInstall.png
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/axes_setup.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/axes_setup.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/dev_setup.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/dev_setup.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/extractor.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/extractor.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/hall_of_fame.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/hall_of_fame.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/interface.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/interface.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/mickey.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/mickey.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/misc.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/misc.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/model_setup.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/model_setup.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/news.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/news.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/welcome.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/welcome.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/wine.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/wine.htm
-	$(QINSTALL) /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src/qt_gui/help/xpl_setup.htm $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/xpl_setup.htm
 
 uninstall_help: FORCE
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/xpl_setup.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/wine.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/welcome.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/news.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/model_setup.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/misc.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/mickey.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/interface.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/hall_of_fame.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/extractor.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/dev_setup.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/axes_setup.htm
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/XplInstall.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/XplBrowse.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Wiimote.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Webcam.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Trackir.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Tracking.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/ModelCreate.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Model.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Misc.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/KeysSetup1.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup5.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup4.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup3.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup2.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/JoyButtonsSetup1.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Facetracker.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Extractor.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/DetAxis.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/Controller.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/CamPreview.png
-	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/3dPreview.png
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qch
+	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qhc
 	-$(DEL_DIR) $(INSTALL_ROOT)/opt/linuxtrack/share/linuxtrack/help/ltr_gui/ 
 
 

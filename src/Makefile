@@ -131,9 +131,9 @@ CONFIG_CLEAN_FILES = pathconfig.h local_config.h linuxtrack.pc
 CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = osc_server$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(l32libdir)" \
-	"$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(man1dir)" \
-	"$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgdatadir)" \
-	"$(DESTDIR)$(hicolor_48x48_appsdir)" \
+	"$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(man1dir)" "$(DESTDIR)$(desktopdir)" \
+	"$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(hicolor_48x48_appsdir)" \
 	"$(DESTDIR)$(hicolor_scalable_appsdir)" "$(DESTDIR)$(icondir)" \
 	"$(DESTDIR)$(includedir)"
 PROGRAMS = $(bin_PROGRAMS)
@@ -360,7 +360,7 @@ osc_server_LDADD = $(LDADD)
 osc_server_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(osc_server_CFLAGS) \
 	$(CFLAGS) $(osc_server_LDFLAGS) $(LDFLAGS) -o $@
-SCRIPTS = $(noinst_SCRIPTS)
+SCRIPTS = $(bin_SCRIPTS) $(noinst_SCRIPTS)
 AM_V_P = $(am__v_P_$(V))
 am__v_P_ = $(am__v_P_$(AM_DEFAULT_VERBOSITY))
 am__v_P_0 = false
@@ -660,6 +660,7 @@ pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la \
 	$(am__append_1) $(am__append_2) $(am__append_5) \
 	$(am__append_6) $(am__append_8) libfakeusb.la libp3e.la \
 	$(am__append_11) $(am__append_12) $(am__append_13)
+bin_SCRIPTS = ../verify_installation.sh
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c \
 	linuxtrack_hello_world.c linuxtrack_hello_world_adv.c \
 	$(am__append_7) $(am__append_9)
@@ -843,6 +844,7 @@ wii_server/wii_server.cpp wii_server/wiimote.h wii_server/wiimote.cpp wii_server
 wii_server/main.cpp wii_server/wii_server.h wii_server/wii_server.ui wii_server/wii_server.qrc \
 linuxtrack-wii.desktop linuxtrack-wii.png linuxtrack-wii.svg linuxtrack-wii.xpm \
 linuxtrack.desktop linuxtrack.png linuxtrack.svg linuxtrack.xpm \
+mickey.desktop \
 ltr_gui.1 ltr_pipe.1 ltr_server1.1 wii_server.1 mickey.1 mickey/uinput_ifc.h \
 mickey/piper.h mickey/keyb_qxt.h mickey/mickey.ui mickey/mickey.cpp mickey/hotkey.cpp mickey/hotkey.h mickey/hotkey.ui \
 mickey/piper.c mickey/mickey.pro.in mickey/transform.h mickey/keyb.h mickey/mickey.h mickey/my_line_edit.cpp \
@@ -856,7 +858,7 @@ mickey/precomp_headers.h wii_server/precomp_headers.h qt_gui/precomp_headers.h l
 qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey/mickey.qhp
 
 desktopdir = $(datadir)/applications
-desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop
+desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop mickey.desktop
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
@@ -1105,6 +1107,41 @@ ltr_server1$(EXEEXT): $(ltr_server1_OBJECTS) $(ltr_server1_DEPENDENCIES) $(EXTRA
 osc_server$(EXEEXT): $(osc_server_OBJECTS) $(osc_server_DEPENDENCIES) $(EXTRA_osc_server_DEPENDENCIES) 
 	@rm -f osc_server$(EXEEXT)
 	$(AM_V_CCLD)$(osc_server_LINK) $(osc_server_OBJECTS) $(osc_server_LDADD) $(LIBS)
+install-binSCRIPTS: $(bin_SCRIPTS)
+	@$(NORMAL_INSTALL)
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(bindir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(bindir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  if test -f "$$d$$p"; then echo "$$d$$p"; echo "$$p"; else :; fi; \
+	done | \
+	sed -e 'p;s,.*/,,;n' \
+	    -e 'h;s|.*|.|' \
+	    -e 'p;x;s,.*/,,;$(transform)' | sed 'N;N;N;s,\n, ,g' | \
+	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1; } \
+	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
+	    if ($$2 == $$4) { files[d] = files[d] " " $$1; \
+	      if (++n[d] == $(am__install_max)) { \
+		print "f", d, files[d]; n[d] = 0; files[d] = "" } } \
+	    else { print "f", d "/" $$4, $$1 } } \
+	  END { for (d in files) print "f", d, files[d] }' | \
+	while read type dir files; do \
+	     if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
+	     test -z "$$files" || { \
+	       echo " $(INSTALL_SCRIPT) $$files '$(DESTDIR)$(bindir)$$dir'"; \
+	       $(INSTALL_SCRIPT) $$files "$(DESTDIR)$(bindir)$$dir" || exit $$?; \
+	     } \
+	; done
+
+uninstall-binSCRIPTS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || exit 0; \
+	files=`for p in $$list; do echo "$$p"; done | \
+	       sed -e 's,.*/,,;$(transform)'`; \
+	dir='$(DESTDIR)$(bindir)'; $(am__uninstall_files_from_dir)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -1668,7 +1705,7 @@ check: $(BUILT_SOURCES)
 all-am: Makefile $(PROGRAMS) $(LTLIBRARIES) $(SCRIPTS) $(MANS) $(DATA) \
 		$(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(l32libdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(hicolor_48x48_appsdir)" "$(DESTDIR)$(hicolor_scalable_appsdir)" "$(DESTDIR)$(icondir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(l32libdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(desktopdir)" "$(DESTDIR)$(pkgdatadir)" "$(DESTDIR)$(hicolor_48x48_appsdir)" "$(DESTDIR)$(hicolor_scalable_appsdir)" "$(DESTDIR)$(icondir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1740,7 +1777,8 @@ install-dvi: install-dvi-am
 
 install-dvi-am:
 
-install-exec-am: install-binPROGRAMS install-pkglibLTLIBRARIES
+install-exec-am: install-binPROGRAMS install-binSCRIPTS \
+	install-pkglibLTLIBRARIES
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-am
@@ -1780,8 +1818,9 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-desktopDATA \
-	uninstall-dist_pkgdataDATA uninstall-hicolor_48x48_appsDATA \
+uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	uninstall-desktopDATA uninstall-dist_pkgdataDATA \
+	uninstall-hicolor_48x48_appsDATA \
 	uninstall-hicolor_scalable_appsDATA uninstall-iconDATA \
 	uninstall-includeHEADERS uninstall-l32libLTLIBRARIES \
 	uninstall-man uninstall-pkglibLTLIBRARIES
@@ -1799,10 +1838,10 @@ uninstall-man: uninstall-man1
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-local distclean-tags distdir dvi dvi-am html html-am \
 	info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-data-hook \
-	install-desktopDATA install-dist_pkgdataDATA install-dvi \
-	install-dvi-am install-exec install-exec-am install-exec-hook \
-	install-hicolor_48x48_appsDATA \
+	install-binSCRIPTS install-data install-data-am \
+	install-data-hook install-desktopDATA install-dist_pkgdataDATA \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-exec-hook install-hicolor_48x48_appsDATA \
 	install-hicolor_scalable_appsDATA install-html install-html-am \
 	install-iconDATA install-includeHEADERS install-info \
 	install-info-am install-l32libLTLIBRARIES install-man \
@@ -1812,8 +1851,9 @@ uninstall-man: uninstall-man1
 	maintainer-clean maintainer-clean-generic mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-desktopDATA \
-	uninstall-dist_pkgdataDATA uninstall-hicolor_48x48_appsDATA \
+	uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	uninstall-desktopDATA uninstall-dist_pkgdataDATA \
+	uninstall-hicolor_48x48_appsDATA \
 	uninstall-hicolor_scalable_appsDATA uninstall-hook \
 	uninstall-iconDATA uninstall-includeHEADERS \
 	uninstall-l32libLTLIBRARIES uninstall-man uninstall-man1 \
@@ -1921,6 +1961,20 @@ LTR_WII_TARGET_UNINST:
 
 LTR_MICKEY_TARGET_UNINST:
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} uninstall; popd
+
+# Installation verification target
+verify:
+	@echo "Running LinuxTrack installation verification..."
+	@if [ -x "$(DESTDIR)$(bindir)/verify_installation.sh" ]; then \
+		$(DESTDIR)$(bindir)/verify_installation.sh; \
+	elif [ -x "../verify_installation.sh" ]; then \
+		../verify_installation.sh; \
+	else \
+		echo "ERROR: verify_installation.sh not found"; \
+		exit 1; \
+	fi
+
+.PHONY: verify
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

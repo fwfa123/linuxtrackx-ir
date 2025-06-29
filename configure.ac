@@ -44,8 +44,15 @@ AC_CHECK_LIB([mxml], [mxmlNewXML], [LIBMXML=true], [AC_MSG_FAILURE([libmxml not 
 AC_CHECK_HEADER([mxml.h], [], [AC_MSG_FAILURE([mxml.h is needed for ltr_gui compilation!])])
 
 # Qt5 is needed for the GUI
-AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qmake5 qmake])
+AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qt5-qmake qmake5 qmake])
 
+# Detect Qt5 help generator
+AC_PATH_PROGS(QT5_QHELPGENERATOR, [qhelpgenerator-qt5 qhelpgenerator], [qhelpgenerator-qt5])
+AC_SUBST([QT5_QHELPGENERATOR])
+
+# Detect Qt5 qmake (for compatibility)
+AC_PATH_PROGS(QT5_QMAKE, [qmake-qt5 qt5-qmake qmake5 qmake], [qmake-qt5])
+AC_SUBST([QT5_QMAKE])
 
 # used to decompress the TrackIR firmware, if necessary
 AC_CHECK_LIB([z], [gzopen], [LIBZ=true])

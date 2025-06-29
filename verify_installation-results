@@ -1,0 +1,343 @@
+tmp/linuxtrack-install-test/opt/bin$ ./verify_installation.sh 
+========================================
+ LinuxTrack Installation Verification 
+========================================
+
+Installation prefix: /opt/linuxtrack
+Date: Sun Jun 29 10:42:12 AM EDT 2025
+
+1. Core Installation Files
+  ✓ Installation directory exists: /opt/linuxtrack
+  ✓ Binaries directory exists: /opt/linuxtrack/bin
+  ✓ Libraries directory exists: /opt/linuxtrack/lib/linuxtrack
+  ✓ Data directory exists: /opt/linuxtrack/share/linuxtrack
+  ✓ Main GUI application is executable: /opt/linuxtrack/bin/ltr_gui
+  ✗ Mickey standalone application not executable: /opt/linuxtrack/bin/mickey
+  ✓ LinuxTrack server is executable: /opt/linuxtrack/bin/ltr_server1
+  ✓ Recenter utility is executable: /opt/linuxtrack/bin/ltr_recenter
+  ✓ Data pipe utility is executable: /opt/linuxtrack/bin/ltr_pipe
+  ✓ Main library exists: /opt/linuxtrack/lib/linuxtrack/liblinuxtrack.so
+  ✓ Core library exists: /opt/linuxtrack/lib/linuxtrack/libltr.so
+  ✓ Default configuration exists: /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf
+  ✓ Face tracking model exists: /opt/linuxtrack/share/linuxtrack/haarcascade_frontalface_alt2.xml
+
+2. GUI Resources and 3D Models
+  ✓ Help directory exists: /opt/linuxtrack/share/linuxtrack/help
+  ✗ Qt Help collection missing: /opt/linuxtrack/share/linuxtrack/help.qhc
+  ✗ Qt Help compressed missing: /opt/linuxtrack/share/linuxtrack/help.qch
+  ✓ Sparrow opaque 3D model exists: /opt/linuxtrack/share/linuxtrack/sparow_opaq.obj
+  ✓ Sparrow glass 3D model exists: /opt/linuxtrack/share/linuxtrack/sparow_glass.obj
+  ✓ Sphere 3D model exists: /opt/linuxtrack/share/linuxtrack/sphere.obj
+  ⚠ Cap tracking graphic missing (optional): /opt/linuxtrack/share/linuxtrack/cap_1.png
+  ⚠ Cap NP graphic missing (optional): /opt/linuxtrack/share/linuxtrack/cap_np.png
+  ⚠ Clip tracking graphic missing (optional): /opt/linuxtrack/share/linuxtrack/clip_1.png
+  ⚠ Clip NP graphic missing (optional): /opt/linuxtrack/share/linuxtrack/clip_np.png
+
+3. udev Rules Installation
+  ✓ TrackIR udev rules exists: /lib/udev/rules.d/99-TIR.rules
+  ✓ Mickey device udev rules exists: /lib/udev/rules.d/99-Mickey.rules
+  ⚠ udev rules reload failed (may need root privileges)
+  ✓ User is in plugdev group
+
+4. Desktop Integration
+  ✓ Main desktop entry exists: /usr/local/share/applications/linuxtrack.desktop
+  ✓ Wii desktop entry exists: /usr/local/share/applications/linuxtrack-wii.desktop
+  ✗ Mickey desktop entry missing: /usr/local/share/applications/mickey.desktop
+  ✗ 48x48 icon missing: /usr/local/share/icons/hicolor/48x48/apps/linuxtrack.png
+  ✗ Scalable icon missing: /usr/local/share/icons/hicolor/scalable/apps/linuxtrack.svg
+  ✓ Legacy PNG icon exists: /usr/local/share/pixmaps/linuxtrack.png
+  ✓ Legacy SVG icon exists: /usr/local/share/pixmaps/linuxtrack.svg
+  ✓ Legacy XPM icon exists: /usr/local/share/pixmaps/linuxtrack.xpm
+  ✓ Desktop database update utility available
+
+5. Configuration System
+  ✓ Default configuration file exists: /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf
+  ✓ User configuration directory exists
+  ✓ User configuration file exists
+
+6. Application Startup Test
+  ⚠ ltr_gui may require X11/Wayland environment
+./verify_installation.sh: line 231: 17050 Segmentation fault      timeout 5s "$INSTALL_PREFIX/bin/ltr_server1" --help > /dev/null 2>&1
+  ⚠ ltr_server1 may require configuration
+
+7. Runtime Dependencies
+  ✓ ltr_gui library dependencies satisfied
+  ✓ Qt5 development tools available
+  ✓ OpenCV libraries found in system
+
+8. Troubleshooting Information
+Common Issues and Solutions:
+
+• Missing files in /opt/linuxtrack:
+  → Run: make install (with appropriate permissions)
+  → Check: ./configure --prefix=/opt/linuxtrack was used
+
+• udev rules not installed:
+  → Run: sudo make install-udev-rules
+  → Or manually copy rules to /lib/udev/rules.d/
+  → Run: sudo udevadm control --reload-rules
+
+• Desktop integration missing:
+  → Run: make install-desktop
+  → Run: update-desktop-database ~/.local/share/applications
+  → Run: gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor
+
+• Permission issues:
+  → Add user to plugdev group: sudo usermod -a -G plugdev $USER
+  → Log out and log back in for group changes to take effect
+
+• Missing dependencies:
+  → Install Qt5: sudo apt install qtbase5-dev qttools5-dev-tools
+  → Install OpenCV: sudo apt install libopencv-dev
+  → Install other deps: sudo apt install libusb-1.0-0-dev libmxml-dev
+
+Warnings can usually be ignored but may affect functionality.
+
+For additional help:
+• Check log files: ~/.config/linuxtrack/
+• Visit: https://github.com/uglyDwarf/linuxtrack
+• Run applications with --help for options
+
+========================================
+ Verification Summary 
+========================================
+
+Total checks: 44
+Passed: 31
+Failed: 6
+Warnings: 7
+
+✗ LinuxTrack installation verification FAILED!
+
+Please review the failed checks above and follow the troubleshooting guidance.
+mario@mario-g707:/tmp/linuxtrack-install-test/opt/bin$ ./verify_installation.sh 
+========================================
+ LinuxTrack Installation Verification 
+========================================
+
+Installation prefix: /opt/linuxtrack
+Date: Sun Jun 29 10:42:24 AM EDT 2025
+
+1. Core Installation Files
+  ✓ Installation directory exists: /opt/linuxtrack
+  ✓ Binaries directory exists: /opt/linuxtrack/bin
+  ✓ Libraries directory exists: /opt/linuxtrack/lib/linuxtrack
+  ✓ Data directory exists: /opt/linuxtrack/share/linuxtrack
+  ✓ Main GUI application is executable: /opt/linuxtrack/bin/ltr_gui
+  ✗ Mickey standalone application not executable: /opt/linuxtrack/bin/mickey
+  ✓ LinuxTrack server is executable: /opt/linuxtrack/bin/ltr_server1
+  ✓ Recenter utility is executable: /opt/linuxtrack/bin/ltr_recenter
+  ✓ Data pipe utility is executable: /opt/linuxtrack/bin/ltr_pipe
+  ✓ Main library exists: /opt/linuxtrack/lib/linuxtrack/liblinuxtrack.so
+  ✓ Core library exists: /opt/linuxtrack/lib/linuxtrack/libltr.so
+  ✓ Default configuration exists: /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf
+  ✓ Face tracking model exists: /opt/linuxtrack/share/linuxtrack/haarcascade_frontalface_alt2.xml
+
+2. GUI Resources and 3D Models
+  ✓ Help directory exists: /opt/linuxtrack/share/linuxtrack/help
+  ✗ Qt Help collection missing: /opt/linuxtrack/share/linuxtrack/help.qhc
+  ✗ Qt Help compressed missing: /opt/linuxtrack/share/linuxtrack/help.qch
+  ✓ Sparrow opaque 3D model exists: /opt/linuxtrack/share/linuxtrack/sparow_opaq.obj
+  ✓ Sparrow glass 3D model exists: /opt/linuxtrack/share/linuxtrack/sparow_glass.obj
+  ✓ Sphere 3D model exists: /opt/linuxtrack/share/linuxtrack/sphere.obj
+  ⚠ Cap tracking graphic missing (optional): /opt/linuxtrack/share/linuxtrack/cap_1.png
+  ⚠ Cap NP graphic missing (optional): /opt/linuxtrack/share/linuxtrack/cap_np.png
+  ⚠ Clip tracking graphic missing (optional): /opt/linuxtrack/share/linuxtrack/clip_1.png
+  ⚠ Clip NP graphic missing (optional): /opt/linuxtrack/share/linuxtrack/clip_np.png
+
+3. udev Rules Installation
+  ✓ TrackIR udev rules exists: /lib/udev/rules.d/99-TIR.rules
+  ✓ Mickey device udev rules exists: /lib/udev/rules.d/99-Mickey.rules
+  ⚠ udev rules reload failed (may need root privileges)
+  ✓ User is in plugdev group
+
+4. Desktop Integration
+  ✓ Main desktop entry exists: /usr/local/share/applications/linuxtrack.desktop
+  ✓ Wii desktop entry exists: /usr/local/share/applications/linuxtrack-wii.desktop
+  ✗ Mickey desktop entry missing: /usr/local/share/applications/mickey.desktop
+  ✗ 48x48 icon missing: /usr/local/share/icons/hicolor/48x48/apps/linuxtrack.png
+  ✗ Scalable icon missing: /usr/local/share/icons/hicolor/scalable/apps/linuxtrack.svg
+  ✓ Legacy PNG icon exists: /usr/local/share/pixmaps/linuxtrack.png
+  ✓ Legacy SVG icon exists: /usr/local/share/pixmaps/linuxtrack.svg
+  ✓ Legacy XPM icon exists: /usr/local/share/pixmaps/linuxtrack.xpm
+  ✓ Desktop database update utility available
+
+5. Configuration System
+  ✓ Default configuration file exists: /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf
+  ✓ User configuration directory exists
+  ✓ User configuration file exists
+
+6. Application Startup Test
+  ⚠ ltr_gui may require X11/Wayland environment
+./verify_installation.sh: line 231: 17145 Segmentation fault      timeout 5s "$INSTALL_PREFIX/bin/ltr_server1" --help > /dev/null 2>&1
+  ⚠ ltr_server1 may require configuration
+
+7. Runtime Dependencies
+  ✓ ltr_gui library dependencies satisfied
+  ✓ Qt5 development tools available
+  ✓ OpenCV libraries found in system
+
+8. Troubleshooting Information
+Common Issues and Solutions:
+
+• Missing files in /opt/linuxtrack:
+  → Run: make install (with appropriate permissions)
+  → Check: ./configure --prefix=/opt/linuxtrack was used
+
+• udev rules not installed:
+  → Run: sudo make install-udev-rules
+  → Or manually copy rules to /lib/udev/rules.d/
+  → Run: sudo udevadm control --reload-rules
+
+• Desktop integration missing:
+  → Run: make install-desktop
+  → Run: update-desktop-database ~/.local/share/applications
+  → Run: gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor
+
+• Permission issues:
+  → Add user to plugdev group: sudo usermod -a -G plugdev $USER
+  → Log out and log back in for group changes to take effect
+
+• Missing dependencies:
+  → Install Qt5: sudo apt install qtbase5-dev qttools5-dev-tools
+  → Install OpenCV: sudo apt install libopencv-dev
+  → Install other deps: sudo apt install libusb-1.0-0-dev libmxml-dev
+
+Warnings can usually be ignored but may affect functionality.
+
+For additional help:
+• Check log files: ~/.config/linuxtrack/
+• Visit: https://github.com/uglyDwarf/linuxtrack
+• Run applications with --help for options
+
+========================================
+ Verification Summary 
+========================================
+
+Total checks: 44
+Passed: 31
+Failed: 6
+Warnings: 7
+
+✗ LinuxTrack installation verification FAILED!
+
+Please review the failed checks above and follow the troubleshooting guidance.
+mario@mario-g707:/tmp/linuxtrack-install-test/opt/bin$ ./ltr_gui 
+Found device 8
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+Type: 8
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
+mario@mario-g707:/tmp/linuxtrack-install-test/opt/bin$ ./verify_installation.sh 
+========================================
+ LinuxTrack Installation Verification 
+========================================
+
+Installation prefix: /opt/linuxtrack
+Date: Sun Jun 29 10:46:08 AM EDT 2025
+
+1. Core Installation Files
+  ✓ Installation directory exists: /opt/linuxtrack
+  ✓ Binaries directory exists: /opt/linuxtrack/bin
+  ✓ Libraries directory exists: /opt/linuxtrack/lib/linuxtrack
+  ✓ Data directory exists: /opt/linuxtrack/share/linuxtrack
+  ✓ Main GUI application is executable: /opt/linuxtrack/bin/ltr_gui
+  ✗ Mickey standalone application not executable: /opt/linuxtrack/bin/mickey
+  ✓ LinuxTrack server is executable: /opt/linuxtrack/bin/ltr_server1
+  ✓ Recenter utility is executable: /opt/linuxtrack/bin/ltr_recenter
+  ✓ Data pipe utility is executable: /opt/linuxtrack/bin/ltr_pipe
+  ✓ Main library exists: /opt/linuxtrack/lib/linuxtrack/liblinuxtrack.so
+  ✓ Core library exists: /opt/linuxtrack/lib/linuxtrack/libltr.so
+  ✓ Default configuration exists: /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf
+  ✓ Face tracking model exists: /opt/linuxtrack/share/linuxtrack/haarcascade_frontalface_alt2.xml
+
+2. GUI Resources and 3D Models
+  ✓ Help directory exists: /opt/linuxtrack/share/linuxtrack/help
+  ✗ Qt Help collection missing: /opt/linuxtrack/share/linuxtrack/help.qhc
+  ✗ Qt Help compressed missing: /opt/linuxtrack/share/linuxtrack/help.qch
+  ✓ Sparrow opaque 3D model exists: /opt/linuxtrack/share/linuxtrack/sparow_opaq.obj
+  ✓ Sparrow glass 3D model exists: /opt/linuxtrack/share/linuxtrack/sparow_glass.obj
+  ✓ Sphere 3D model exists: /opt/linuxtrack/share/linuxtrack/sphere.obj
+  ⚠ Cap tracking graphic missing (optional): /opt/linuxtrack/share/linuxtrack/cap_1.png
+  ⚠ Cap NP graphic missing (optional): /opt/linuxtrack/share/linuxtrack/cap_np.png
+  ⚠ Clip tracking graphic missing (optional): /opt/linuxtrack/share/linuxtrack/clip_1.png
+  ⚠ Clip NP graphic missing (optional): /opt/linuxtrack/share/linuxtrack/clip_np.png
+
+3. udev Rules Installation
+  ✓ TrackIR udev rules exists: /lib/udev/rules.d/99-TIR.rules
+  ✓ Mickey device udev rules exists: /lib/udev/rules.d/99-Mickey.rules
+  ⚠ udev rules reload failed (may need root privileges)
+  ✓ User is in plugdev group
+
+4. Desktop Integration
+  ✓ Main desktop entry exists: /usr/local/share/applications/linuxtrack.desktop
+  ✓ Wii desktop entry exists: /usr/local/share/applications/linuxtrack-wii.desktop
+  ✗ Mickey desktop entry missing: /usr/local/share/applications/mickey.desktop
+  ✗ 48x48 icon missing: /usr/local/share/icons/hicolor/48x48/apps/linuxtrack.png
+  ✗ Scalable icon missing: /usr/local/share/icons/hicolor/scalable/apps/linuxtrack.svg
+  ✓ Legacy PNG icon exists: /usr/local/share/pixmaps/linuxtrack.png
+  ✓ Legacy SVG icon exists: /usr/local/share/pixmaps/linuxtrack.svg
+  ✓ Legacy XPM icon exists: /usr/local/share/pixmaps/linuxtrack.xpm
+  ✓ Desktop database update utility available
+
+5. Configuration System
+  ✓ Default configuration file exists: /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf
+  ✓ User configuration directory exists
+  ✓ User configuration file exists
+
+6. Application Startup Test
+  ⚠ ltr_gui may require X11/Wayland environment
+./verify_installation.sh: line 231: 17340 Segmentation fault      timeout 5s "$INSTALL_PREFIX/bin/ltr_server1" --help > /dev/null 2>&1
+  ⚠ ltr_server1 may require configuration
+
+7. Runtime Dependencies
+  ✓ ltr_gui library dependencies satisfied
+  ✓ Qt5 development tools available
+  ✓ OpenCV libraries found in system
+
+8. Troubleshooting Information
+Common Issues and Solutions:
+
+• Missing files in /opt/linuxtrack:
+  → Run: make install (with appropriate permissions)
+  → Check: ./configure --prefix=/opt/linuxtrack was used
+
+• udev rules not installed:
+  → Run: sudo make install-udev-rules
+  → Or manually copy rules to /lib/udev/rules.d/
+  → Run: sudo udevadm control --reload-rules
+
+• Desktop integration missing:
+  → Run: make install-desktop
+  → Run: update-desktop-database ~/.local/share/applications
+  → Run: gtk-update-icon-cache -f -t ~/.local/share/icons/hicolor
+
+• Permission issues:
+  → Add user to plugdev group: sudo usermod -a -G plugdev $USER
+  → Log out and log back in for group changes to take effect
+
+• Missing dependencies:
+  → Install Qt5: sudo apt install qtbase5-dev qttools5-dev-tools
+  → Install OpenCV: sudo apt install libopencv-dev
+  → Install other deps: sudo apt install libusb-1.0-0-dev libmxml-dev
+
+Warnings can usually be ignored but may affect functionality.
+
+For additional help:
+• Check log files: ~/.config/linuxtrack/
+• Visit: https://github.com/uglyDwarf/linuxtrack
+• Run applications with --help for options
+
+========================================
+ Verification Summary 
+========================================
+
+Total checks: 44
+Passed: 31
+Failed: 6
+Warnings: 7
+
+✗ LinuxTrack installation verification FAILED!
+
+Please review the failed checks above and follow the troubleshooting guidance.
