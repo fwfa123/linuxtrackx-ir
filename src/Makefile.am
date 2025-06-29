@@ -31,6 +31,7 @@ man_MANS = ltr_gui.1 ltr_server1.1 mickey.1
 
 pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la
 bin_PROGRAMS = ltr_server1
+bin_SCRIPTS = ../verify_installation.sh
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c linuxtrack_hello_world.c linuxtrack_hello_world_adv.c
 
 l32libdir = $(prefix)/$(LIB32DIR)/linuxtrack
@@ -398,6 +399,7 @@ wii_server/wii_server.cpp wii_server/wiimote.h wii_server/wiimote.cpp wii_server
 wii_server/main.cpp wii_server/wii_server.h wii_server/wii_server.ui wii_server/wii_server.qrc \
 linuxtrack-wii.desktop linuxtrack-wii.png linuxtrack-wii.svg linuxtrack-wii.xpm \
 linuxtrack.desktop linuxtrack.png linuxtrack.svg linuxtrack.xpm \
+mickey.desktop \
 ltr_gui.1 ltr_pipe.1 ltr_server1.1 wii_server.1 mickey.1 mickey/uinput_ifc.h \
 mickey/piper.h mickey/keyb_qxt.h mickey/mickey.ui mickey/mickey.cpp mickey/hotkey.cpp mickey/hotkey.h mickey/hotkey.ui \
 mickey/piper.c mickey/mickey.pro.in mickey/transform.h mickey/keyb.h mickey/mickey.h mickey/my_line_edit.cpp \
@@ -411,7 +413,7 @@ mickey/precomp_headers.h wii_server/precomp_headers.h qt_gui/precomp_headers.h l
 qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey/mickey.qhp
 
 desktopdir = $(datadir)/applications
-desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop
+desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop mickey.desktop
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
@@ -424,4 +426,18 @@ hicolor_48x48_apps_DATA = linuxtrack.png linuxtrack-wii.png
 icondir = $(datadir)/pixmaps
 icon_DATA = linuxtrack.svg linuxtrack.png linuxtrack.xpm \
             linuxtrack-wii.svg linuxtrack-wii.png linuxtrack-wii.xpm
+
+# Installation verification target
+verify:
+	@echo "Running LinuxTrack installation verification..."
+	@if [ -x "$(DESTDIR)$(bindir)/verify_installation.sh" ]; then \
+		$(DESTDIR)$(bindir)/verify_installation.sh; \
+	elif [ -x "../verify_installation.sh" ]; then \
+		../verify_installation.sh; \
+	else \
+		echo "ERROR: verify_installation.sh not found"; \
+		exit 1; \
+	fi
+
+.PHONY: verify
 
