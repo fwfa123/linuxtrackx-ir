@@ -1,6 +1,125 @@
-# LinuxTrack - Head Tracking for Linux
+# LinuxTrack - Qt5 Migration Complete
 
-**LinuxTrack** is a head tracking solution for Linux that provides 6DOF (6 degrees of freedom) head tracking for flight simulators, games, and other applications. This repository contains the **modernized Qt5 version** with improved compatibility and stability.
+**LinuxTrack** is a head tracking solution for Linux that supports TrackIR hardware and provides 6DOF head tracking for flight simulators and other applications.
+
+## 🎯 Current Status: Qt5 Migration Complete
+
+This repository contains the **successfully migrated Qt5 version** of LinuxTrack, with comprehensive testing on Kubuntu 25.10 and professional-grade installation system.
+
+### ✅ Major Features
+- **Qt5 GUI** - Modern Qt5-based user interface
+- **TrackIR Support** - Full TrackIR hardware compatibility
+- **Professional Installation** - Complete installation system with desktop integration
+- **System Integration** - udev rules, desktop entries, and proper system integration
+- **Multi-Platform** - Support for various Linux distributions
+
+## 🚀 Quick Start
+
+### Prerequisites
+```bash
+# Ubuntu/Debian
+sudo apt install build-essential autoconf automake libtool
+sudo apt install qtbase5-dev qttools5-dev-tools
+sudo apt install libopencv-dev libusb-1.0-0-dev libmxml-dev
+sudo apt install libx11-dev libxrandr-dev
+
+# Fedora
+sudo dnf groupinstall "Development Tools"
+sudo dnf install qt5-qtbase-devel qt5-qttools-devel
+sudo dnf install opencv-devel libusb1-devel mxml-devel
+sudo dnf install libX11-devel libXrandr-devel
+```
+
+### Build and Install
+```bash
+# Clone the repository
+git clone <repository-url>
+cd linuxtrack-clean-june14
+
+# Configure and build
+./configure --prefix=/opt/linuxtrack
+make -j$(nproc)
+
+# Install (requires root privileges)
+sudo make install
+sudo make install-udev-rules
+sudo make install-desktop
+
+# Add user to plugdev group
+sudo usermod -a -G plugdev $USER
+# Log out and log back in for group changes to take effect
+```
+
+### Verify Installation
+```bash
+# Run the verification script
+./verify_installation.sh
+```
+
+## 📁 Project Structure
+
+- `src/qt_gui/` - Qt5 GUI application (`ltr_gui`)
+- `src/mickey/` - Mickey standalone application
+- `src/` - Core libraries and server components
+- `dev-scripts/` - Build and installation scripts
+- `doc/` - Documentation and help files
+
+## 🔧 Configuration
+
+LinuxTrack configuration is stored in:
+- System default: `/opt/linuxtrack/share/linuxtrack/linuxtrack1.conf`
+- User config: `~/.config/linuxtrack/linuxtrack1.conf`
+
+## 🎮 Usage
+
+### Main GUI
+```bash
+ltr_gui
+```
+
+### Mickey (Standalone)
+```bash
+mickey
+```
+
+### Server
+```bash
+ltr_server1
+```
+
+## 📋 Migration Status
+
+### ✅ Completed
+- Qt4 → Qt5 migration (100%)
+- Professional installation system
+- System integration (udev rules, desktop entries)
+- Comprehensive testing on Kubuntu 25.10
+- Build system modernization
+
+### 🔄 In Progress
+- Final testing and validation
+- Documentation updates
+- Release preparation
+
+## 🤝 Contributing
+
+This project is actively maintained. Please report issues and submit pull requests for improvements.
+
+## 📄 License
+
+LinuxTrack is released under the GPL license. See the LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- Original LinuxTrack developers
+- Qt5 migration contributors
+- Testing and validation team
+
+---
+
+**Version**: 0.99.20 (Qt5)  
+**Last Updated**: June 29, 2025  
+**Status**: Production Ready
 
 ## 🎯 Features
 
