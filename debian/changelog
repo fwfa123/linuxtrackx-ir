@@ -1,0 +1,23 @@
+linuxtrack (0.99.20-1) unstable; urgency=medium
+
+  * Qt5 modernization release
+  * Complete installation system implementation
+  * Fixed installation paths to use /opt/linuxtrack
+  * Added comprehensive desktop integration
+  * Implemented automatic udev rules installation
+  * Added installation verification system
+  * Enhanced troubleshooting documentation
+  * Improved resource files and help system deployment
+  * Added Mickey standalone application support
+  * Fixed GUI resources and 3D model installation
+  * Comprehensive Debian packaging support
+
+ -- LinuxTrack Project <linuxtrack@users.noreply.github.com>  Sun, 29 Jun 2025 07:30:00 -0400
+
+linuxtrack (0.99.19-1) unstable; urgency=medium
+
+  * Previous Qt4 release (reference)
+  * Legacy installation system
+  * Basic functionality
+
+ -- LinuxTrack Project <linuxtrack@users.noreply.github.com>  Wed, 01 Jan 2025 00:00:00 -0500 

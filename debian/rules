@@ -1,0 +1,66 @@
+#!/usr/bin/make -f
+
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+export DH_VERBOSE = 1
+
+# Enable hardening
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+# Configure options for LinuxTrack
+CONFIGURE_OPTS = --prefix=/opt/linuxtrack \
+                 --enable-static=no \
+                 --enable-shared=yes
+
+%:
+	dh $@ --with autotools-dev
+
+override_dh_auto_configure:
+	# Generate configure script if needed
+	if [ ! -f configure ]; then autoreconf -fiv; fi
+	dh_auto_configure -- $(CONFIGURE_OPTS)
+
+override_dh_auto_build:
+	# Build main LinuxTrack components
+	dh_auto_build
+	
+override_dh_auto_install:
+	# Install to debian/tmp first
+	dh_auto_install --destdir=debian/tmp
+	
+	# Create necessary directories
+	mkdir -p debian/tmp/usr/share/doc/linuxtrack
+	
+	# Install documentation
+	cp -f README* debian/tmp/usr/share/doc/linuxtrack/ || true
+	cp -f CHANGELOG* debian/tmp/usr/share/doc/linuxtrack/ || true
+	cp -f TROUBLESHOOTING.md debian/tmp/usr/share/doc/linuxtrack/ || true
+	
+	# Ensure verify_installation.sh is executable
+	chmod +x debian/tmp/opt/linuxtrack/bin/verify_installation.sh || true
+
+override_dh_installudev:
+	# Install udev rules to correct location for Debian
+	dh_installudev --name=99-TIR --priority=99
+	dh_installudev --name=99-Mickey --priority=99
+
+override_dh_installsystemd:
+	# No systemd service currently - skip
+	
+override_dh_auto_clean:
+	dh_auto_clean
+	# Clean up generated files
+	rm -f configure
+	rm -f aclocal.m4
+	rm -rf autom4te.cache/
+	rm -f config.h.in
+	rm -f Makefile.in
+	rm -f src/Makefile.in
+
+# Don't strip debug symbols for now (helps with debugging)
+override_dh_strip:
+	dh_strip --dbg-package=linuxtrack-dbg
+
+.PHONY: override_dh_auto_configure override_dh_auto_build override_dh_auto_install override_dh_installudev override_dh_auto_clean 

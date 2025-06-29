@@ -1,0 +1,60 @@
+#!/bin/bash
+
+set -e
+
+case "$1" in
+    remove|purge)
+        echo "LinuxTrack: Cleaning up system configuration..."
+        
+        # Remove symbolic links
+        rm -f /usr/bin/ltr_gui
+        rm -f /usr/bin/mickey  
+        rm -f /usr/bin/ltr_server1
+        rm -f /usr/bin/linuxtrack-verify
+        
+        # Remove library configuration
+        rm -f /etc/ld.so.conf.d/linuxtrack.conf
+        ldconfig || true
+        
+        # Update desktop database
+        if command -v update-desktop-database >/dev/null 2>&1; then
+            update-desktop-database /usr/share/applications || true
+        fi
+        
+        # Update icon cache  
+        if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+            gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
+        fi
+        
+        # Reload udev rules
+        if command -v udevadm >/dev/null 2>&1; then
+            udevadm control --reload-rules || true
+            udevadm trigger || true
+        fi
+        
+        echo "LinuxTrack: System cleanup completed"
+        ;;
+        
+    purge)
+        # On purge, also remove user data directories if empty
+        # (Don't remove if user has data)
+        echo "LinuxTrack: Checking for leftover user configurations..."
+        
+        # Note: We don't automatically remove ~/.config/linuxtrack/
+        # as this may contain user data. Users can remove manually if desired.
+        echo "LinuxTrack: User configurations in ~/.config/linuxtrack/ preserved"
+        echo "LinuxTrack: Remove manually if no longer needed"
+        ;;
+        
+    upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+        ;;
+        
+    *)
+        echo "postrm called with unknown argument \`$1'" >&2
+        exit 1
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0 
