@@ -64,7 +64,7 @@ make -j$(nproc)
 ./dev-scripts/build_wine_bridge.sh
 
 # Install (requires root privileges)
-sudo ./install.sh
+sudo ./linuxtrack_install.sh
 
 # Or manually:
 # sudo make install

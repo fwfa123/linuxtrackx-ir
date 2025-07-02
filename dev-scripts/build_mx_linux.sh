@@ -178,4 +178,5 @@ fi
 echo ""
 print_success "LinuxTrack build completed successfully!"
 print_status "You can now run 'sudo make install' to install LinuxTrack"
+print_status "Or run 'sudo ./linuxtrack_install.sh' for complete installation with setup"
 print_status "Or run './dev-scripts/build_wine_bridge.sh' for wine bridge specific options" 

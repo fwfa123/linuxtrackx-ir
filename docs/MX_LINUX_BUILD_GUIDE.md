@@ -202,7 +202,7 @@ qmake-qt5 --version
 ### Install LinuxTrack
 ```bash
 # Use the installation script (recommended)
-sudo ./install.sh
+sudo ./linuxtrack_install.sh
 
 # Or manually:
 sudo make install
