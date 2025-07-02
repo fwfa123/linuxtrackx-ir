@@ -21,9 +21,14 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   tirViews(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/TIRViews.dll"))
 {
 #ifndef DARWIN
-  if(!QFile::exists(PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe")))){
-    enableButtons(false);
-    return;
+  // Check for wine installer in the new wine directory location
+  QString wineInstallerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
+  if(!QFile::exists(wineInstallerPath)){
+    // Fallback to old location for compatibility
+    if(!QFile::exists(PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe")))){
+      enableButtons(false);
+      return;
+    }
   }
 #endif
   inst = new WineLauncher();
@@ -120,7 +125,12 @@ void PluginInstall::installLinuxtrackWine()
 #ifndef DARWIN
   QString prefix = QFileDialog::getExistingDirectory(NULL, QString::fromUtf8("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
-  QString installerPath = PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe"));
+  
+  // Try new wine directory location first, then fallback to old location
+  QString installerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
+  if(!QFile::exists(installerPath)){
+    installerPath = PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe"));
+  }
 
   inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
   inst->run(installerPath);

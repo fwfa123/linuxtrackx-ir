@@ -34,6 +34,10 @@ man_MANS = ltr_gui.1 ltr_server1.1 mickey.1
 pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la
 bin_PROGRAMS = ltr_server1
 bin_SCRIPTS = ../verify_installation.sh
+
+if WINE_PLUGIN
+  bin_SCRIPTS += linuxtrack-wine-launcher.sh
+endif
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c linuxtrack_hello_world.c linuxtrack_hello_world_adv.c
 
 l32libdir = $(prefix)/$(LIB32DIR)/linuxtrack
@@ -254,11 +258,17 @@ distclean-local-check:
 
 .PHONY: LTR_QT_GUI_TARGET_INST LTR_QT_GUI_TARGET_UNINST \
   LTR_MICKEY_TARGET_INST LTR_MICKEY_TARGET_UNINST \
-  LTR_WII_TARGET_INST LTR_WII_TARGET_UNINST
+  LTR_WII_TARGET_INST LTR_WII_TARGET_UNINST \
+  LTR_WINE_TARGET_INST LTR_WINE_TARGET_UNINST
 
 noinst_SCRIPTS = qt_gui/ltr_gui
 hook_inst_targets = LTR_QT_GUI_TARGET_INST
 hook_uninst_targets = LTR_QT_GUI_TARGET_UNINST
+
+if WINE_PLUGIN
+  hook_inst_targets += LTR_WINE_TARGET_INST
+  hook_uninst_targets += LTR_WINE_TARGET_UNINST
+endif
 
 if MICKEY
   noinst_SCRIPTS += mickey/mickey
@@ -338,6 +348,15 @@ LTR_WII_TARGET_INST:
 LTR_MICKEY_TARGET_INST: mickey/help.qhc mickey/help.qch
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
 
+LTR_WINE_TARGET_INST:
+	@echo "Installing wine bridge components..."
+	$(MKDIR_P) $(DESTDIR)$(pkgdatadir)/wine
+	$(INSTALL_DATA) $(srcdir)/wine_bridge/linuxtrack-wine.exe $(DESTDIR)$(pkgdatadir)/wine/
+	$(INSTALL_DATA) $(srcdir)/wine_bridge/README.wine $(DESTDIR)$(pkgdatadir)/wine/
+	$(INSTALL_DATA) $(srcdir)/wine_bridge/WINE_SETUP.md $(DESTDIR)$(pkgdatadir)/wine/
+	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+	@echo "Wine bridge installation complete."
+
 uninstall-hook: $(hook_uninst_targets)
 if TRACKIR_SUPPORT
 	@echo "Removing udev rules for TrackIR devices..."
@@ -363,6 +382,15 @@ LTR_WII_TARGET_UNINST:
 
 LTR_MICKEY_TARGET_UNINST:
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} uninstall; popd
+
+LTR_WINE_TARGET_UNINST:
+	@echo "Removing wine bridge components..."
+	-rm -f $(DESTDIR)$(pkgdatadir)/wine/linuxtrack-wine.exe
+	-rm -f $(DESTDIR)$(pkgdatadir)/wine/README.wine
+	-rm -f $(DESTDIR)$(pkgdatadir)/wine/WINE_SETUP.md
+	-rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+	-rmdir $(DESTDIR)$(pkgdatadir)/wine 2>/dev/null || true
+	@echo "Wine bridge removal complete."
 
 
 EXTRA_DIST = qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
@@ -417,6 +445,9 @@ wii_server/main.cpp wii_server/wii_server.h wii_server/wii_server.ui wii_server/
 linuxtrack-wii.desktop linuxtrack-wii.png linuxtrack-wii.svg linuxtrack-wii.xpm \
 linuxtrack.desktop linuxtrack.png linuxtrack.svg linuxtrack.xpm \
 mickey.desktop \
+linuxtrack-wine.desktop \
+linuxtrack-wine-launcher.sh \
+wine_bridge/WINE_SETUP.md \
 ltr_gui.1 ltr_pipe.1 ltr_server1.1 wii_server.1 mickey.1 mickey/uinput_ifc.h \
 mickey/piper.h mickey/keyb_qxt.h mickey/mickey.ui mickey/mickey.cpp mickey/hotkey.cpp mickey/hotkey.h mickey/hotkey.ui \
 mickey/piper.c mickey/mickey.pro.in mickey/transform.h mickey/keyb.h mickey/mickey.h mickey/my_line_edit.cpp \
@@ -431,6 +462,10 @@ qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey
 
 desktopdir = $(datadir)/applications
 desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop mickey.desktop
+
+if WINE_PLUGIN
+  desktop_DATA += linuxtrack-wine.desktop
+endif
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps

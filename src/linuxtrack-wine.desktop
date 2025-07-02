@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=LinuxTrack Wine Bridge
+Name[en_US]=LinuxTrack Wine Bridge
+Comment=Head tracking support for Windows applications running under Wine
+Comment[en_US]=Head tracking support for Windows applications running under Wine
+Exec=linuxtrack-wine-launcher.sh
+Icon=linuxtrack
+Terminal=false
+Categories=Game;Utility;
+Keywords=head tracking;wine;trackir;facetrack; 
