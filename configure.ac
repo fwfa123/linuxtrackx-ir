@@ -139,17 +139,73 @@ AC_ARG_ENABLE([ltr_32lib_on_x64],
 
 # needed to have the right libraries to link against
 WINE_LIBS=
+WINE_LIBS_DEFAULT=""
+
+# Enhanced wine library path detection for modern distributions
+case "$host_os" in
+  linux*)
+    # Modern Ubuntu/Debian (22.04+)
+    if test -d "/usr/lib/i386-linux-gnu/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib/i386-linux-gnu/wine"
+    elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+    # Modern Fedora (38+)
+    elif test -d "/usr/lib/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+    # Arch Linux
+    elif test -d "/usr/lib/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+    # OpenSUSE
+    elif test -d "/usr/lib/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+    # Legacy paths for older distributions
+    elif test -d "/usr/lib/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+    elif test -d "/usr/local/lib/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/local/lib/wine"
+    fi
+    ;;
+esac
+
 AC_ARG_WITH([wine-libs],
             [AS_HELP_STRING([--with-wine-libs],
-              [specify Wine libraries to link aginst])],
-            [WINE_LIBS=${with_wine_libs}]
+              [specify Wine libraries to link against @<:@default=auto-detect@:>@])],
+            [WINE_LIBS=${with_wine_libs}],
+            [WINE_LIBS=${WINE_LIBS_DEFAULT}]
 )
 
 WINE64_LIBS=
+WINE64_LIBS_DEFAULT=""
+
+# Enhanced wine64 library path detection for modern distributions
+case "$host_os" in
+  linux*)
+    # Modern Ubuntu/Debian (22.04+)
+    if test -d "/usr/lib/x86_64-linux-gnu/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+    # Modern Fedora (38+)
+    elif test -d "/usr/lib64/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+    # Arch Linux
+    elif test -d "/usr/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+    # OpenSUSE
+    elif test -d "/usr/lib64/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+    # Legacy paths for older distributions
+    elif test -d "/usr/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+    elif test -d "/usr/local/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/local/lib/wine"
+    fi
+    ;;
+esac
+
 AC_ARG_WITH([wine64-libs],
             [AS_HELP_STRING([--with-wine64-libs],
-              [specify Wine64 libraries to link aginst])],
-            [WINE64_LIBS=${with_wine64_libs}]
+              [specify Wine64 libraries to link against @<:@default=auto-detect@:>@])],
+            [WINE64_LIBS=${with_wine64_libs}],
+            [WINE64_LIBS=${WINE64_LIBS_DEFAULT}]
 )
 
 # is this needed anymore?

@@ -287,8 +287,91 @@ check_dependencies() {
     echo ""
 }
 
+check_wine_bridge() {
+    echo -e "${BLUE}8. Wine Bridge Functionality${NC}"
+    
+    # Check if wine bridge was built and installed
+    WINE_DIR="$INSTALL_PREFIX/share/linuxtrack/wine"
+    
+    if [[ -d "$WINE_DIR" ]]; then
+        print_result "PASS" "Wine bridge directory exists"
+        
+        # Check wine bridge installer
+        check_file_exists "$WINE_DIR/linuxtrack-wine.exe" "Wine bridge installer" "required"
+        check_file_exists "$WINE_DIR/README.wine" "Wine bridge documentation" "optional"
+        check_file_exists "$WINE_DIR/WINE_SETUP.md" "Wine setup guide" "optional"
+        
+        # Check wine launcher script
+        check_executable "$INSTALL_PREFIX/bin/linuxtrack-wine-launcher.sh" "Wine bridge launcher script"
+        
+        # Check wine desktop entry
+        check_file_exists "$DESKTOP_DIR/linuxtrack-wine.desktop" "Wine bridge desktop entry" "optional"
+        
+    else
+        print_result "WARN" "Wine bridge not installed (wine plugin may not have been enabled during build)"
+    fi
+    
+    # Check wine development tools availability
+    if command -v winegcc >/dev/null 2>&1; then
+        print_result "PASS" "winegcc available for wine development"
+    else
+        print_result "WARN" "winegcc not found (wine development tools not installed)"
+    fi
+    
+    if command -v wineg++ >/dev/null 2>&1; then
+        print_result "PASS" "wineg++ available for wine development"
+    else
+        print_result "WARN" "wineg++ not found (wine development tools not installed)"
+    fi
+    
+    if command -v makensis >/dev/null 2>&1; then
+        print_result "PASS" "makensis available for installer generation"
+    else
+        print_result "WARN" "makensis not found (NSIS not installed)"
+    fi
+    
+    # Check wine availability
+    if command -v wine >/dev/null 2>&1; then
+        print_result "PASS" "wine runtime available"
+        
+        # Test wine version
+        WINE_VERSION=$(wine --version 2>/dev/null | head -n1)
+        if [[ -n "$WINE_VERSION" ]]; then
+            print_result "PASS" "Wine version: $WINE_VERSION"
+        else
+            print_result "WARN" "Could not determine wine version"
+        fi
+    else
+        print_result "WARN" "wine runtime not found (wine not installed)"
+    fi
+    
+    # Check wine library paths
+    WINE_LIB_PATHS=(
+        "/usr/lib/i386-linux-gnu/wine"
+        "/usr/lib/x86_64-linux-gnu/wine"
+        "/usr/lib/wine"
+        "/usr/lib64/wine"
+        "/usr/local/lib/wine"
+    )
+    
+    WINE_LIBS_FOUND=false
+    for path in "${WINE_LIB_PATHS[@]}"; do
+        if [[ -d "$path" ]]; then
+            print_result "PASS" "Wine libraries found at: $path"
+            WINE_LIBS_FOUND=true
+            break
+        fi
+    done
+    
+    if [[ "$WINE_LIBS_FOUND" == "false" ]]; then
+        print_result "WARN" "Wine libraries not found in standard locations"
+    fi
+    
+    echo ""
+}
+
 provide_troubleshooting() {
-    echo -e "${BLUE}8. Troubleshooting Information${NC}"
+    echo -e "${BLUE}9. Troubleshooting Information${NC}"
     
     if [[ $FAILED -gt 0 ]]; then
         echo -e "${RED}Common Issues and Solutions:${NC}"
@@ -320,6 +403,13 @@ provide_troubleshooting() {
         echo "  → Install Qt5: sudo apt install qtbase5-dev qttools5-dev-tools"
         echo "  → Install OpenCV: sudo apt install libopencv-dev"
         echo "  → Install other deps: sudo apt install libusb-1.0-0-dev libmxml-dev"
+        echo ""
+        
+        echo "• Wine bridge issues:"
+        echo "  → Install wine: sudo apt install wine-development wine32-development"
+        echo "  → Install NSIS: sudo apt install nsis"
+        echo "  → Rebuild with wine: ./configure --enable-wine-plugin && make"
+        echo "  → See: $INSTALL_PREFIX/share/linuxtrack/wine/WINE_SETUP.md"
         echo ""
     fi
     
@@ -370,6 +460,7 @@ main() {
     check_configuration_system
     test_application_startup
     check_dependencies
+    check_wine_bridge
     provide_troubleshooting
     print_summary
 }
