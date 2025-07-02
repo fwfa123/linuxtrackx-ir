@@ -116,6 +116,10 @@ AC_CHECK_PROG([with_wine64], [wine64], [yes])
 #needed to create an installer for the linuxtrack-wine
 AC_CHECK_PROG([with_makensis], [makensis], [yes])
 
+# Check for MinGW cross-compilation toolchains (alternative to wine-devel)
+AC_CHECK_PROG([with_mingw32], [i686-w64-mingw32-gcc], [yes])
+AC_CHECK_PROG([with_mingw64], [x86_64-w64-mingw32-gcc], [yes])
+
 XPL_CPPFLAGS=
 AC_ARG_WITH([xplane_sdk],
             [AS_HELP_STRING([--with-xplane-sdk],
@@ -307,6 +311,20 @@ AS_IF([(test "x$WINEGCC32_COMPILES" = xyes) && (test "x$WINEGPP32_COMPILES" = xy
 AS_IF([(test "x$WINEGCC_COMPILES" = xyes) && (test "x$WINEGPP_COMPILES" = xyes) &&
   (test "x$with_makensis" = xyes) ], [build_wine64_plugin=yes], [build_wine64_plugin=no])
 
+# MinGW cross-compilation alternatives (if wine-devel not available)
+AS_IF([(test "x$with_mingw32" = xyes) && (test "x$with_makensis" = xyes) ],
+      [build_wine_plugin_mingw=yes], [build_wine_plugin_mingw=no])
+
+AS_IF([(test "x$with_mingw64" = xyes) && (test "x$with_makensis" = xyes) ],
+      [build_wine64_plugin_mingw=yes], [build_wine64_plugin_mingw=no])
+
+# Enable MinGW builds if wine-devel is not available
+AS_IF([(test "x$build_wine_plugin" = xno) && (test "x$build_wine_plugin_mingw" = xyes) ],
+      [build_wine_plugin=yes; WINE_USE_MINGW=yes], [])
+
+AS_IF([(test "x$build_wine64_plugin" = xno) && (test "x$build_wine64_plugin_mingw" = xyes) ],
+      [build_wine64_plugin=yes; WINE64_USE_MINGW=yes], [])
+
 AS_IF([test  "x$ac_cv_lib_lo_lo_send_bundle" = xyes],
                                 [build_osc_support=yes], [buildt_osc_support=no])
 
@@ -329,6 +347,8 @@ AM_CONDITIONAL(FACE_TRACKER, [test x$build_face_tracker = xyes])
 AM_CONDITIONAL(MICKEY, [test x$build_mickey = xyes])
 AM_CONDITIONAL(WINE_PLUGIN, [test x$build_wine_plugin = xyes])
 AM_CONDITIONAL(WINE64, [test x$build_wine64_plugin = xyes])
+AM_CONDITIONAL(WINE_USE_MINGW, [test x$WINE_USE_MINGW = xyes])
+AM_CONDITIONAL(WINE64_USE_MINGW, [test x$WINE64_USE_MINGW = xyes])
 
 AC_CONFIG_FILES([
  Makefile
@@ -381,6 +401,9 @@ AS_IF([test  "x$build_mickey" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([n
 
 AC_MSG_CHECKING([Wine plugin])
 AS_IF([test  "x$build_wine_plugin" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([Wine plugin (MinGW)])
+AS_IF([test  "x$build_wine_plugin_mingw" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
 
 AC_MSG_CHECKING([OSC support])
 AS_IF([test  "x$build_osc_support" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
