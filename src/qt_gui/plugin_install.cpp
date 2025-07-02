@@ -25,9 +25,9 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   QString wineInstallerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
   if(!QFile::exists(wineInstallerPath)){
     // Fallback to old location for compatibility
-    if(!QFile::exists(PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe")))){
-      enableButtons(false);
-      return;
+  if(!QFile::exists(PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe")))){
+    enableButtons(false);
+    return;
     }
   }
 #endif

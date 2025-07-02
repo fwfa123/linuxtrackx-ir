@@ -1,6 +1,6 @@
 # 🍷 Wine Bridge Build Guide - No Wine-Dev Required
 
-**Date**: December 2024  
+**Date**: July 2025  
 **Purpose**: Complete guide for building LinuxTrack wine bridge without wine-devel packages  
 **Status**: **PRODUCTION READY**
 
@@ -29,6 +29,23 @@ The easiest way to build the wine bridge is using our smart build script:
 # Run the smart build script
 ./dev-scripts/build_wine_bridge.sh
 ```
+line 85: aclocal-1.17: command not found
+WARNING: 'aclocal-1.17' is missing on your system.
+         You should only need it if you modified 'acinclude.m4' or
+         'configure.ac' or m4 files included by 'configure.ac'.
+make: *** [Makefile:444: aclocal.m4] Error 127
+
+autoreconf -f -i
+In file included from ltlib.c:1:
+/usr/include/stdlib.h:26:10: fatal error: bits/libc-header-start.h: No such file or directory
+   26 | #include <bits/libc-header-start.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~
+compilation terminated.
+make[2]: *** [Makefile:1200: liblinuxtrack32_la-ltlib.lo] Error 1
+make[2]: Leaving directory '/home/mario/linuxtrack-clean-june14/src'
+make[1]: *** [Makefile:1732: install] Error 2
+make[1]: Leaving directory '/home/mario/linuxtrack-clean-june14/src'
+make: *** [Makefile:504: install-recursive] Error 1
 
 This script will:
 - ✅ Automatically detect available build tools

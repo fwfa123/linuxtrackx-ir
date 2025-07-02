@@ -12,6 +12,11 @@
 //#include "config.h"
 #define __WINESRC__
 
+// Define DLL_WINE_PREATTACH for modern wine compatibility
+#ifndef DLL_WINE_PREATTACH
+#define DLL_WINE_PREATTACH 0x8000
+#endif
+
 #include <stdarg.h>
 #include <string.h>
 #include <stdbool.h>

@@ -90,8 +90,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@WINE_PLUGIN_TRUE@am__append_1 = Tester.exe
-@WINE64_TRUE@@WINE_PLUGIN_TRUE@am__append_2 = Tester64.exe
+@WINE_PLUGIN_TRUE@am__append_1 = Tester.exe.so
+@WINE64_TRUE@@WINE_PLUGIN_TRUE@am__append_2 = Tester64.exe.so
 @DARWIN_TRUE@am__append_3 = -Wl,-no_arch_warnings
 @DARWIN_FALSE@am__append_4 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/tester
@@ -208,6 +208,8 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 QMAKE_PATH = @QMAKE_PATH@
+QT5_QHELPGENERATOR = @QT5_QHELPGENERATOR@
+QT5_QMAKE = @QT5_QMAKE@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -275,6 +277,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
+with_mingw32 = @with_mingw32@
+with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 noinst_SCRIPTS = $(am__append_1) $(am__append_2)
 SUFFIXES = .o .cpp .c .rc 64.o
@@ -498,11 +502,11 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-Tester64.exe : main64.o rest64.o npifc64.o npview.o
-	wineg++ -g -o Tester64 -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
+Tester64.exe.so : main64.o rest64.o npifc64.o npview.o
+	wineg++ -g -o Tester64.exe.so -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
 
-Tester.exe : main.o npview.o rest.o npifc.o
-	wineg++ -g -o Tester -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+Tester.exe.so : main.o npview.o rest.o npifc.o
+	wineg++ -g -o Tester.exe.so -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 main.o : main.cpp Makefile
 

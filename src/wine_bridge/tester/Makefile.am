@@ -1,8 +1,8 @@
 noinst_SCRIPTS = 
 if WINE_PLUGIN
-  noinst_SCRIPTS += Tester.exe
+  noinst_SCRIPTS += Tester.exe.so
 if WINE64
-  noinst_SCRIPTS += Tester64.exe
+  noinst_SCRIPTS += Tester64.exe.so
 endif #WINE64
 endif #WINE_PLUGIN
 
@@ -43,11 +43,11 @@ vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
 
-Tester64.exe : main64.o rest64.o npifc64.o npview.o
-	wineg++ -g -o Tester64 -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
+Tester64.exe.so : main64.o rest64.o npifc64.o npview.o
+	wineg++ -g -o Tester64.exe.so -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
 
-Tester.exe : main.o npview.o rest.o npifc.o
-	wineg++ -g -o Tester -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+Tester.exe.so : main.o npview.o rest.o npifc.o
+	wineg++ -g -o Tester.exe.so -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 main.o : main.cpp Makefile
 

@@ -12,6 +12,12 @@
 #include <stdlib.h>
 
 #define __WINESRC__
+
+// Define DLL_WINE_PREATTACH for modern wine compatibility
+#ifndef DLL_WINE_PREATTACH
+#define DLL_WINE_PREATTACH 0x8000
+#endif
+
 #include "windef.h"
 #include "winbase.h"
 #include "FreeTrackClient_dll.h"
@@ -19,7 +25,7 @@
 #include "wine/debug.h"
 #include <linuxtrack.h>
 
-WINE_DEFAULT_DEBUG_CHANNEL(FreeTrackClient);
+WINE_DEFAULT_DEBUG_CHANNEL(FTClient);
 
 
 typedef enum {DBG_CHECK, DBG_ON, DBG_OFF} dbg_flag_type; 

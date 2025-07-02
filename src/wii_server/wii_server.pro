@@ -38,7 +38,7 @@ unix:!macx {
   LIBS += "-L../.libs" "-L$${LIBDIR}" -lm -lltr -lcwiid\
            "-Wl,-rpath,$${LIBDIR}"
   
-  target.path = /opt/linuxtrack/bin
+  target.path = /opt/bin
   INSTALLS += target
 }
 

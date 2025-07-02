@@ -231,6 +231,8 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 QMAKE_PATH = @QMAKE_PATH@
+QT5_QHELPGENERATOR = @QT5_QHELPGENERATOR@
+QT5_QMAKE = @QT5_QMAKE@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -298,8 +300,32 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
+with_mingw32 = @with_mingw32@
+with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 @WINE_PLUGIN_TRUE@nodist_pkgdata_DATA = linuxtrack-wine.exe
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_FALSE@WINE_CC = winegcc
+
+# Set toolchain based on build method
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_TRUE@WINE_CC = i686-w64-mingw32-gcc
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_FALSE@WINE_CXX = wineg++
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_TRUE@WINE_CXX = i686-w64-mingw32-g++
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_FALSE@WINE_RC = wrc
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_TRUE@WINE_RC = i686-w64-mingw32-windres
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_FALSE@WINE_EXT = .exe.so
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_TRUE@WINE_EXT = .exe
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_FALSE@WINE_DLL_EXT = .dll.so
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_TRUE@WINE_DLL_EXT = .dll
+@WINE64_USE_MINGW_FALSE@@WINE_PLUGIN_TRUE@WINE64_CC = winegcc
+@WINE64_USE_MINGW_TRUE@@WINE_PLUGIN_TRUE@WINE64_CC = x86_64-w64-mingw32-gcc
+@WINE64_USE_MINGW_FALSE@@WINE_PLUGIN_TRUE@WINE64_CXX = wineg++
+@WINE64_USE_MINGW_TRUE@@WINE_PLUGIN_TRUE@WINE64_CXX = x86_64-w64-mingw32-g++
+@WINE64_USE_MINGW_FALSE@@WINE_PLUGIN_TRUE@WINE64_RC = wrc
+@WINE64_USE_MINGW_TRUE@@WINE_PLUGIN_TRUE@WINE64_RC = x86_64-w64-mingw32-windres
+@WINE64_USE_MINGW_FALSE@@WINE_PLUGIN_TRUE@WINE64_EXT = .exe.so
+@WINE64_USE_MINGW_TRUE@@WINE_PLUGIN_TRUE@WINE64_EXT = .exe
+@WINE64_USE_MINGW_FALSE@@WINE_PLUGIN_TRUE@WINE64_DLL_EXT = .dll.so
+@WINE64_USE_MINGW_TRUE@@WINE_PLUGIN_TRUE@WINE64_DLL_EXT = .dll
 @DARWIN_FALSE@@WINE_PLUGIN_TRUE@MYLDFLAGS = -Wl,--no-warn-search-mismatch
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@MYLDFLAGS = -Wl,-no_arch_warnings
 dist_pkgdata_DATA = README.wine
@@ -551,9 +577,9 @@ uninstall-am: uninstall-dist_pkgdataDATA uninstall-nodist_pkgdataDATA
 
 .PRECIOUS: Makefile
 
-@DARWIN_TRUE@@WINE_PLUGIN_TRUE@  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester.exe.so controller/Controller.exe.so \
-@DARWIN_TRUE@@WINE_PLUGIN_TRUE@             client/NPClient.dll.so ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so \
-@DARWIN_TRUE@@WINE_PLUGIN_TRUE@             client/check_data.exe.so views/TrackIR.exe.so
+@DARWIN_TRUE@@WINE_PLUGIN_TRUE@  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester$(WINE_EXT) controller/Controller$(WINE_EXT) \
+@DARWIN_TRUE@@WINE_PLUGIN_TRUE@             client/NPClient$(WINE_DLL_EXT) ft_client/FreeTrackClient$(WINE_DLL_EXT) ft_tester/ftc$(WINE_EXT) \
+@DARWIN_TRUE@@WINE_PLUGIN_TRUE@             client/check_data$(WINE_EXT) views/TrackIR$(WINE_EXT)
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib tester/Tester.exe.so
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib controller/Controller.exe.so 
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib client/NPClient.dll.so
@@ -563,14 +589,14 @@ uninstall-am: uninstall-dist_pkgdataDATA uninstall-nodist_pkgdataDATA
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@	install_name_tool -change $(WINE_PREFIX)/lib/libwine.1.dylib libwine.1.dylib views/TrackIR.exe.so
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@	makensis $<
 
-@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@  linuxtrack-wine.exe : ltr_wine64.nsi tester/Tester.exe.so tester/Tester64.exe.so \
-@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@                        controller/Controller.exe.so client/NPClient.dll.so client/NPClient64.dll.so \
-@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@                        ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so client/check_data.exe.so \
-@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@			views/TrackIR.exe.so
+@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@  linuxtrack-wine.exe : ltr_wine64.nsi tester/Tester$(WINE_EXT) tester/Tester64$(WINE64_EXT) \
+@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@                        controller/Controller$(WINE_EXT) client/NPClient$(WINE_DLL_EXT) client/NPClient64$(WINE64_DLL_EXT) \
+@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@                        ft_client/FreeTrackClient$(WINE_DLL_EXT) ft_tester/ftc$(WINE_EXT) client/check_data$(WINE_EXT) \
+@DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@			views/TrackIR$(WINE_EXT)
 @DARWIN_FALSE@@WINE64_TRUE@@WINE_PLUGIN_TRUE@	makensis $<
-@DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester.exe.so controller/Controller.exe.so client/NPClient.dll.so \
-@DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@                        ft_client/FreeTrackClient.dll.so ft_tester/ftc.exe.so client/check_data.exe.so \
-@DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@			views/TrackIR.exe.so
+@DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@  linuxtrack-wine.exe : ltr_wine.nsi tester/Tester$(WINE_EXT) controller/Controller$(WINE_EXT) client/NPClient$(WINE_DLL_EXT) \
+@DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@                        ft_client/FreeTrackClient$(WINE_DLL_EXT) ft_tester/ftc$(WINE_EXT) client/check_data$(WINE_EXT) \
+@DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@			views/TrackIR$(WINE_EXT)
 @DARWIN_FALSE@@WINE64_FALSE@@WINE_PLUGIN_TRUE@	makensis $<
 
 @WINE_PLUGIN_TRUE@clean-local: clean-local-check

@@ -90,9 +90,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@WINE_PLUGIN_TRUE@am__append_1 = Controller.exe
-@DARWIN_TRUE@am__append_2 = -Wl,-no_arch_warnings
-@DARWIN_FALSE@am__append_3 = -Wl,--no-warn-search-mismatch
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_TRUE@am__append_1 = Controller.exe
+@WINE_PLUGIN_TRUE@@WINE_USE_MINGW_FALSE@am__append_2 = Controller.exe.so
+@DARWIN_TRUE@am__append_3 = -Wl,-no_arch_warnings
+@DARWIN_FALSE@am__append_4 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/controller
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -140,12 +141,12 @@ AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BISON = @BISON@
-CC = winegcc
+CC = @CC@
 CFLAGS = @CFLAGS@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
-CXX = wineg++
+CXX = @CXX@
 CXXCPP = @CXXCPP@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -168,7 +169,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
-LDFLAGS = @LDFLAGS@ $(am__append_2) $(am__append_3)
+LDFLAGS = @LDFLAGS@ $(am__append_3) $(am__append_4)
 LEX = @LEX@
 LEXLIB = @LEXLIB@
 LEX_OUTPUT_ROOT = @LEX_OUTPUT_ROOT@
@@ -205,6 +206,8 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 QMAKE_PATH = @QMAKE_PATH@
+QT5_QHELPGENERATOR = @QT5_QHELPGENERATOR@
+QT5_QMAKE = @QT5_QMAKE@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -272,13 +275,28 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
+with_mingw32 = @with_mingw32@
+with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
-noinst_SCRIPTS = $(am__append_1)
-CXXFLAGS_PRE = -isystem/usr/include/wine/windows -DHAVE_CONFIG_H \
-	   -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
+noinst_SCRIPTS = $(am__append_1) $(am__append_2)
+@WINE_USE_MINGW_FALSE@WINE_CC = winegcc
+@WINE_USE_MINGW_TRUE@WINE_CC = i686-w64-mingw32-gcc
+@WINE_USE_MINGW_FALSE@WINE_CXX = wineg++
+@WINE_USE_MINGW_TRUE@WINE_CXX = i686-w64-mingw32-g++
+@WINE_USE_MINGW_FALSE@WINE_RC = wrc
+@WINE_USE_MINGW_TRUE@WINE_RC = i686-w64-mingw32-windres
+@WINE_USE_MINGW_TRUE@MINGW_LIBS = -lkernel32 -luser32 -lgdi32 -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -luuid -lodbc32 -lodbccp32
+@WINE_USE_MINGW_FALSE@CXXFLAGS_PRE = -isystem/usr/include/wine/windows -DHAVE_CONFIG_H \
+@WINE_USE_MINGW_FALSE@	   -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
 
-CFLAGS_PRE = -I../.. -I../../.. -DHAVE_CONFIG_H \
-	-I@srcdir@/../.. -I@top_builddir@
+@WINE_USE_MINGW_TRUE@CXXFLAGS_PRE = -DWIN32 -D_WINDOWS -DHAVE_CONFIG_H \
+@WINE_USE_MINGW_TRUE@	   -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
+
+@WINE_USE_MINGW_FALSE@CFLAGS_PRE = -I../.. -I../../.. -DHAVE_CONFIG_H \
+@WINE_USE_MINGW_FALSE@	-I@srcdir@/../.. -I@top_builddir@
+
+@WINE_USE_MINGW_TRUE@CFLAGS_PRE = -DWIN32 -D_WINDOWS -I../.. -I../../.. -DHAVE_CONFIG_H \
+@WINE_USE_MINGW_TRUE@	-I@srcdir@/../.. -I@top_builddir@
 
 EXTRA_DIST = linuxtrack1.ico linuxtrack.ico dinput.cpp kbi_interface.h \
 main.cpp resource.h resources.rc
@@ -480,13 +498,13 @@ uninstall-am:
 
 
 .cpp.o :
-	$(CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -m32 -o $@ $<
+	$(WINE_CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .c.o :
-	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
+	$(WINE_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .rc.o :
-	wrc -o $@ $<
+	$(WINE_RC) -o $@ $<
 
 #VPATH = ../..:@srcdir@/../..:@top_builddir@:@srcdir@
 vpath %.h @srcdir@/../..
@@ -494,9 +512,12 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-Controller.exe : main.o resources.o dinput.o linuxtrack.o
-	wineg++ -o Controller   $(LDFLAGS) $(WINE_LIBS) -m32 \
-           $^ -lshell32 -ldxguid -ldinput -ldinput8 -luuid -ldl
+@WINE_USE_MINGW_TRUE@Controller.exe : main.o resources.o dinput.o linuxtrack.o
+@WINE_USE_MINGW_TRUE@	$(WINE_CXX) -o Controller.exe $(LDFLAGS) -m32 -static-libgcc -static-libstdc++ \
+@WINE_USE_MINGW_TRUE@           $^ $(MINGW_LIBS) -ldxguid -ldinput -ldinput8
+@WINE_USE_MINGW_FALSE@Controller.exe.so : main.o resources.o dinput.o linuxtrack.o
+@WINE_USE_MINGW_FALSE@	$(WINE_CXX) -o Controller.exe.so   $(LDFLAGS) $(WINE_LIBS) -m32 \
+@WINE_USE_MINGW_FALSE@           $^ -lshell32 -ldxguid -ldinput -ldinput8 -luuid -ldl
 
 main.o : main.cpp @top_builddir@/config.h
 

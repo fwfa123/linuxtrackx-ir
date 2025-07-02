@@ -273,6 +273,8 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 QMAKE_PATH = @QMAKE_PATH@
+QT5_QHELPGENERATOR = @QT5_QHELPGENERATOR@
+QT5_QMAKE = @QT5_QMAKE@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -340,6 +342,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
+with_mingw32 = @with_mingw32@
+with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 EXTRA_DIST = OscServer-Info.plist English.lproj/InfoPlist.strings \
 English.lproj/MainMenu.xib PkgInfo linuxtrack.icns 

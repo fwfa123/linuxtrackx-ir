@@ -96,25 +96,29 @@ build_triplet = x86_64-pc-linux-gnu
 host_triplet = x86_64-pc-linux-gnu
 bin_PROGRAMS = ltr_server1$(EXEEXT) $(am__EXEEXT_1) \
 	ltr_recenter$(EXEEXT) ltr_extractor$(EXEEXT) ltr_pipe$(EXEEXT)
-am__append_1 = libjoy.la
-#am__append_2 = libwii.la
-#am__append_3 = wii_server.1
-am__append_4 = osc_server
-am__append_5 = libwc.la
-am__append_6 = libtir.la libltusb1.la
-am__append_7 = 99-TIR.rules 99-Mickey.rules
-am__append_8 = libft.la libp3eft.la
-am__append_9 = haarcascade_frontalface_alt2.xml
-am__append_10 = libfacetrack_int.la
-#am__append_11 = libmacwc.la
-#am__append_12 = xlinuxtrack9.la
-#am__append_13 = xlinuxtrack9_32.la
-am__append_14 = mickey/mickey
-am__append_15 = LTR_MICKEY_TARGET_INST
-am__append_16 = LTR_MICKEY_TARGET_UNINST
-#am__append_17 = wii_server/wii_server
-#am__append_18 = LTR_WII_TARGET_INST
-#am__append_19 = LTR_WII_TARGET_UNINST
+am__append_1 = linuxtrack-wine-launcher.sh
+am__append_2 = libjoy.la
+#am__append_3 = libwii.la
+#am__append_4 = wii_server.1
+am__append_5 = osc_server
+am__append_6 = libwc.la
+am__append_7 = libtir.la libltusb1.la
+am__append_8 = 99-TIR.rules 99-Mickey.rules
+am__append_9 = libft.la libp3eft.la
+am__append_10 = haarcascade_frontalface_alt2.xml
+am__append_11 = libfacetrack_int.la
+#am__append_12 = libmacwc.la
+#am__append_13 = xlinuxtrack9.la
+#am__append_14 = xlinuxtrack9_32.la
+am__append_15 = LTR_WINE_TARGET_INST
+am__append_16 = LTR_WINE_TARGET_UNINST
+am__append_17 = mickey/mickey
+am__append_18 = LTR_MICKEY_TARGET_INST
+am__append_19 = LTR_MICKEY_TARGET_UNINST
+#am__append_20 = wii_server/wii_server
+#am__append_21 = LTR_WII_TARGET_INST
+#am__append_22 = LTR_WII_TARGET_UNINST
+am__append_23 = linuxtrack-wine.desktop
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -564,14 +568,16 @@ PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 QMAKE_PATH = /usr/bin/qmake-qt5
+QT5_QHELPGENERATOR = /usr/bin/qhelpgenerator-qt5
+QT5_QMAKE = /usr/bin/qmake-qt5
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
 VERSION = 0.99.20
-WINE64_LIBS = 
-WINE_LIBS = 
+WINE64_LIBS = -L/usr/lib64/wine
+WINE_LIBS = -L/usr/lib/wine
 XPL_CPPFLAGS =  -I/usr/include/xplane_sdk/XPLM -I/usr/include/xplane_sdk/Widgets 
 YACC = bison -y
 YFLAGS = 
@@ -618,7 +624,7 @@ mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /opt/linuxtrack
+prefix = /opt
 program_transform_name = s,x,x,
 psdir = ${docdir}
 runstatedir = ${localstatedir}/run
@@ -631,6 +637,8 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 with_makensis = yes
+with_mingw32 = 
+with_mingw64 = 
 with_wine64 = yes
 #SLEOPARD_LDFLAG = -headerpad_max_install_names
 #DARWINFLAGS = -undefined dynamic_lookup
@@ -646,24 +654,24 @@ XLINUXTRACK_CFLAGS =
 #XLINUXTRACK_CFLAGS = -arch i386 -arch x86_64
 XLINUXTRACK_LDFLAGS = -L/lib32 -L/usr/lib32 -Wl,--no-warn-search-mismatch
 #XLINUXTRACK_LDFLAGS = -Wl,-no_arch_warnings -arch i386 -arch x86_64
-LINUXFLAGS = '-DLIB_PATH="$(pkglibdir)/"'
+LINUXFLAGS = '-DLIB_PATH="../lib/linuxtrack/"'
 #LINUXFLAGS = 
 #LINUXLDFLAGS = 
 ltr_pipe_CPPFLAGS = -DLINUX -D_GNU_SOURCE
 #ltr_pipe_CPPFLAGS = -D_GNU_SOURCE
-FT_LDFLAGS = '-Wl,-rpath,$(libdir)'
+FT_LDFLAGS = '-Wl,-rpath,$$ORIGIN/../lib/linuxtrack'
 #FT_LDFLAGS = 
-LINUXLDLFAGS = '-Wl,-rpath,$(pkglibdir)'
-man_MANS = ltr_gui.1 ltr_server1.1 mickey.1 $(am__append_3) \
+LINUXLDLFAGS = '-Wl,-rpath,$$ORIGIN/../lib/linuxtrack'
+man_MANS = ltr_gui.1 ltr_server1.1 mickey.1 $(am__append_4) \
 	ltr_extractor.1 ltr_pipe.1
 pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la \
-	$(am__append_1) $(am__append_2) $(am__append_5) \
-	$(am__append_6) $(am__append_8) libfakeusb.la libp3e.la \
-	$(am__append_11) $(am__append_12) $(am__append_13)
-bin_SCRIPTS = ../verify_installation.sh
+	$(am__append_2) $(am__append_3) $(am__append_6) \
+	$(am__append_7) $(am__append_9) libfakeusb.la libp3e.la \
+	$(am__append_12) $(am__append_13) $(am__append_14)
+bin_SCRIPTS = ../verify_installation.sh $(am__append_1)
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c \
 	linuxtrack_hello_world.c linuxtrack_hello_world_adv.c \
-	$(am__append_7) $(am__append_9)
+	$(am__append_8) $(am__append_10)
 l32libdir = $(prefix)/$(LIB32DIR)/linuxtrack
 l32lib_LTLIBRARIES = liblinuxtrack32.la
 liblinuxtrack32_la_SOURCES = ltlib.c linuxtrack.h utils.c utils.h \
@@ -671,7 +679,7 @@ liblinuxtrack32_la_SOURCES = ltlib.c linuxtrack.h utils.c utils.h \
 
 liblinuxtrack32_la_CFLAGS = $(LINUXFLAGS) -m32
 liblinuxtrack32_la_LDFLAGS = -export-symbols "${srcdir}/liblt.sym" -m32 $(LINUXLDFLAGS)
-noinst_LTLIBRARIES = liblinuxtrack_int.la $(am__append_10)
+noinst_LTLIBRARIES = liblinuxtrack_int.la $(am__append_11)
 liblinuxtrack_int_la_SOURCES = linuxtrack.c linuxtrack.h
 libfacetrack_int_la_SOURCES = facetrack.cpp facetrack.h
 libfacetrack_int_la_CFLAGS = $(OPENCV_CFLAGS)
@@ -788,11 +796,11 @@ osc_server_LDFLAGS = $(LINUXLDFLAGS) -pthread -llo -ldl
 AM_YFLAGS = -d --name-prefix ltr_int_parser_
 AM_LFLAGS = -i
 BUILT_SOURCES = pref_flex.cpp pref_bison.cpp pref_bison.hpp
-noinst_SCRIPTS = qt_gui/ltr_gui $(am__append_14) $(am__append_17)
+noinst_SCRIPTS = qt_gui/ltr_gui $(am__append_17) $(am__append_20)
 hook_inst_targets = LTR_QT_GUI_TARGET_INST $(am__append_15) \
-	$(am__append_18)
+	$(am__append_18) $(am__append_21)
 hook_uninst_targets = LTR_QT_GUI_TARGET_UNINST $(am__append_16) \
-	$(am__append_19)
+	$(am__append_19) $(am__append_22)
 EXTRA_DIST = qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
 qt_gui/scp_form.ui qt_gui/logview.ui qt_gui/clip.png qt_gui/webcam_prefs.cpp \
 qt_gui/scview.h qt_gui/webcam_ft_prefs.h qt_gui/scview.cpp qt_gui/dl.ui \
@@ -845,6 +853,9 @@ wii_server/main.cpp wii_server/wii_server.h wii_server/wii_server.ui wii_server/
 linuxtrack-wii.desktop linuxtrack-wii.png linuxtrack-wii.svg linuxtrack-wii.xpm \
 linuxtrack.desktop linuxtrack.png linuxtrack.svg linuxtrack.xpm \
 mickey.desktop \
+linuxtrack-wine.desktop \
+linuxtrack-wine-launcher.sh \
+wine_bridge/WINE_SETUP.md \
 ltr_gui.1 ltr_pipe.1 ltr_server1.1 wii_server.1 mickey.1 mickey/uinput_ifc.h \
 mickey/piper.h mickey/keyb_qxt.h mickey/mickey.ui mickey/mickey.cpp mickey/hotkey.cpp mickey/hotkey.h mickey/hotkey.ui \
 mickey/piper.c mickey/mickey.pro.in mickey/transform.h mickey/keyb.h mickey/mickey.h mickey/my_line_edit.cpp \
@@ -858,7 +869,8 @@ mickey/precomp_headers.h wii_server/precomp_headers.h qt_gui/precomp_headers.h l
 qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey/mickey.qhp
 
 desktopdir = $(datadir)/applications
-desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop mickey.desktop
+desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop \
+	mickey.desktop $(am__append_23)
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
@@ -1864,6 +1876,8 @@ uninstall-man: uninstall-man1
 #  #If ltr_server is not linked against CoreFoundation, loading libusb-1.0 would
 #  #  cause SIG_TRAP, since CoreFoundation expects the init takes place
 #  #  in the main thread. Linking ltr_server against CoreFoundation solves that.
+  # Use relative path that works with DESTDIR installations
+  # Use relative rpath that works with DESTDIR installations
 
 #dirty hack to allow usage of automake > 1.12,
 #  that changed naming of headers generated by bison
@@ -1890,7 +1904,13 @@ distclean-local-check:
 
 .PHONY: LTR_QT_GUI_TARGET_INST LTR_QT_GUI_TARGET_UNINST \
   LTR_MICKEY_TARGET_INST LTR_MICKEY_TARGET_UNINST \
-  LTR_WII_TARGET_INST LTR_WII_TARGET_UNINST
+  LTR_WII_TARGET_INST LTR_WII_TARGET_UNINST \
+  LTR_WINE_TARGET_INST LTR_WINE_TARGET_UNINST
+
+# Qt5 command detection and fallback - using simpler approach
+# These will be set by configure script or use defaults
+QT5_QHELPGENERATOR ?= qhelpgenerator-qt5
+QT5_QMAKE ?= qmake-qt5
 
 qt_gui/help.qhc qt_gui/help.qch : qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp qt_gui/help/xpl_setup.htm \
   qt_gui/help/extractor.htm qt_gui/help/misc.htm qt_gui/help/news.htm qt_gui/help/dev_setup.htm \
@@ -1902,7 +1922,12 @@ qt_gui/help.qhc qt_gui/help.qch : qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp qt_gui/
   qt_gui/help/3dPreview.png qt_gui/help/ModelCreate.png qt_gui/help/JoyButtonsSetup3.png qt_gui/help/CamPreview.png \
   qt_gui/help/Tracking.png qt_gui/help/JoyButtonsSetup2.png qt_gui/help/Model.png qt_gui/help/Trackir.png \
   qt_gui/help/Controller.png qt_gui/help/Facetracker.png
-	pushd qt_gui; qhelpgenerator-qt5 ltr_gui.qhp -o help.qch && qhelpgenerator-qt5 ltr_gui.qhcp -o help.qhc; popd
+	@if command -v $(QT5_QHELPGENERATOR) >/dev/null 2>&1; then \
+		pushd qt_gui; $(QT5_QHELPGENERATOR) ltr_gui.qhp -o help.qch && $(QT5_QHELPGENERATOR) ltr_gui.qhcp -o help.qhc; popd; \
+	else \
+		echo "Warning: $(QT5_QHELPGENERATOR) not found, skipping help generation"; \
+		touch qt_gui/help.qhc qt_gui/help.qch; \
+	fi
 qt_gui/ltr_gui : qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui; ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE); popd
 
@@ -1911,7 +1936,12 @@ wii_server/wii_server :
 
 mickey/help.qhc mickey/help.qch : mickey/mickey.qhcp mickey/mickey.qhp \
   mickey/help/tracking.htm mickey/help/misc.htm mickey/help/news.htm mickey/help/welcome.htm
-	pushd mickey; qhelpgenerator-qt5 mickey.qhp -o help.qch && qhelpgenerator-qt5 mickey.qhcp -o help.qhc; popd
+	@if command -v $(QT5_QHELPGENERATOR) >/dev/null 2>&1; then \
+		pushd mickey; $(QT5_QHELPGENERATOR) mickey.qhp -o help.qch && $(QT5_QHELPGENERATOR) mickey.qhcp -o help.qhc; popd; \
+	else \
+		echo "Warning: $(QT5_QHELPGENERATOR) not found, skipping mickey help generation"; \
+		touch mickey/help.qhc mickey/help.qch; \
+	fi
 mickey/mickey : mickey/help.qhc mickey/help.qch
 	pushd mickey; ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE); popd
 
@@ -1940,6 +1970,15 @@ LTR_WII_TARGET_INST:
 LTR_MICKEY_TARGET_INST: mickey/help.qhc mickey/help.qch
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
 
+LTR_WINE_TARGET_INST:
+	@echo "Installing wine bridge components..."
+	$(MKDIR_P) $(DESTDIR)$(pkgdatadir)/wine
+	$(INSTALL_DATA) $(srcdir)/wine_bridge/linuxtrack-wine.exe $(DESTDIR)$(pkgdatadir)/wine/
+	$(INSTALL_DATA) $(srcdir)/wine_bridge/README.wine $(DESTDIR)$(pkgdatadir)/wine/
+	$(INSTALL_DATA) $(srcdir)/wine_bridge/WINE_SETUP.md $(DESTDIR)$(pkgdatadir)/wine/
+	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+	@echo "Wine bridge installation complete."
+
 uninstall-hook: $(hook_uninst_targets)
 	@echo "Removing udev rules for TrackIR devices..."
 	-rm -f $(DESTDIR)/lib/udev/rules.d/99-TIR.rules
@@ -1961,6 +2000,15 @@ LTR_WII_TARGET_UNINST:
 
 LTR_MICKEY_TARGET_UNINST:
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} uninstall; popd
+
+LTR_WINE_TARGET_UNINST:
+	@echo "Removing wine bridge components..."
+	-rm -f $(DESTDIR)$(pkgdatadir)/wine/linuxtrack-wine.exe
+	-rm -f $(DESTDIR)$(pkgdatadir)/wine/README.wine
+	-rm -f $(DESTDIR)$(pkgdatadir)/wine/WINE_SETUP.md
+	-rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+	-rmdir $(DESTDIR)$(pkgdatadir)/wine 2>/dev/null || true
+	@echo "Wine bridge removal complete."
 
 # Installation verification target
 verify:

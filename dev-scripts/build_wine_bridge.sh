@@ -53,7 +53,7 @@ install_mingw_deps() {
     print_status "Installing MinGW dependencies for $distro..."
     
     case $distro in
-        ubuntu|debian)
+        ubuntu|debian|mx)
             sudo apt update
             sudo apt install -y mingw-w64 gcc-mingw-w64 g++-mingw-w64
             ;;
@@ -69,13 +69,106 @@ install_mingw_deps() {
         *)
             print_error "Unsupported distribution: $distro"
             print_status "Please install MinGW toolchain manually:"
-            print_status "  Ubuntu/Debian: sudo apt install mingw-w64 gcc-mingw-w64 g++-mingw-w64"
+            print_status "  Ubuntu/Debian/MX: sudo apt install mingw-w64 gcc-mingw-w64 g++-mingw-w64"
             print_status "  Fedora: sudo dnf install mingw64-gcc mingw64-gcc-c++"
             print_status "  Arch: sudo pacman -S mingw-w64-gcc"
             print_status "  OpenSUSE: sudo zypper install cross-mingw64-gcc cross-mingw64-gcc-c++"
             return 1
             ;;
     esac
+}
+
+# Function to install 32-bit development libraries
+install_32bit_deps() {
+    local distro=$(detect_distro)
+    
+    print_status "Installing 32-bit development libraries for $distro..."
+    
+    case $distro in
+        ubuntu|debian|mx)
+            sudo apt update
+            sudo apt install -y gcc-multilib g++-multilib libc6-dev-i386
+            sudo apt install -y lib32gcc-s1 lib32stdc++6
+            ;;
+        fedora|rhel|centos)
+            sudo dnf install -y glibc-devel.i686 libstdc++-devel.i686
+            ;;
+        arch|manjaro)
+            sudo pacman -S --noconfirm lib32-glibc lib32-gcc-libs
+            ;;
+        opensuse|suse)
+            sudo zypper install -y glibc-devel-32bit libstdc++6-devel-32bit
+            ;;
+        *)
+            print_error "Unsupported distribution: $distro"
+            print_status "Please install 32-bit development libraries manually"
+            return 1
+            ;;
+    esac
+}
+
+# Function to fix autotools version issues
+fix_autotools() {
+    print_status "Checking and fixing autotools version issues..."
+    
+    # Check if aclocal-1.17 exists
+    if ! command_exists aclocal-1.17; then
+        print_warning "aclocal-1.17 not found, checking available versions..."
+        
+        # Find available aclocal versions
+        local aclocal_versions=($(ls /usr/bin/aclocal-* 2>/dev/null | grep -E 'aclocal-[0-9]+\.[0-9]+' | sort -V))
+        
+        if [ ${#aclocal_versions[@]} -gt 0 ]; then
+            local latest_version=${aclocal_versions[-1]}
+            print_status "Found aclocal version: $latest_version"
+            
+            # Create symlink if needed
+            if [ ! -L "/usr/bin/aclocal-1.17" ]; then
+                print_status "Creating symlink: $latest_version -> aclocal-1.17"
+                sudo ln -sf "$latest_version" "/usr/bin/aclocal-1.17"
+            fi
+        else
+            print_error "No aclocal versions found"
+            print_status "Installing automake..."
+            local distro=$(detect_distro)
+            case $distro in
+                ubuntu|debian|mx)
+                    sudo apt update
+                    sudo apt install -y automake
+                    ;;
+                fedora|rhel|centos)
+                    sudo dnf install -y automake
+                    ;;
+                arch|manjaro)
+                    sudo pacman -S --noconfirm automake
+                    ;;
+                opensuse|suse)
+                    sudo zypper install -y automake
+                    ;;
+            esac
+        fi
+    fi
+    
+    # Check if automake-1.17 exists
+    if ! command_exists automake-1.17; then
+        print_warning "automake-1.17 not found, checking available versions..."
+        
+        # Find available automake versions
+        local automake_versions=($(ls /usr/bin/automake-* 2>/dev/null | grep -E 'automake-[0-9]+\.[0-9]+' | sort -V))
+        
+        if [ ${#automake_versions[@]} -gt 0 ]; then
+            local latest_version=${automake_versions[-1]}
+            print_status "Found automake version: $latest_version"
+            
+            # Create symlink if needed
+            if [ ! -L "/usr/bin/automake-1.17" ]; then
+                print_status "Creating symlink: $latest_version -> automake-1.17"
+                sudo ln -sf "$latest_version" "/usr/bin/automake-1.17"
+            fi
+        fi
+    fi
+    
+    print_success "Autotools version issues resolved"
 }
 
 # Function to install NSIS
@@ -85,7 +178,7 @@ install_nsis() {
     print_status "Installing NSIS for $distro..."
     
     case $distro in
-        ubuntu|debian)
+        ubuntu|debian|mx)
             sudo apt install -y nsis
             ;;
         fedora|rhel|centos)
@@ -100,7 +193,7 @@ install_nsis() {
         *)
             print_error "Unsupported distribution: $distro"
             print_status "Please install NSIS manually:"
-            print_status "  Ubuntu/Debian: sudo apt install nsis"
+            print_status "  Ubuntu/Debian/MX: sudo apt install nsis"
             print_status "  Fedora: sudo dnf install nsis"
             print_status "  Arch: sudo pacman -S nsis"
             print_status "  OpenSUSE: sudo zypper install nsis"
@@ -113,9 +206,13 @@ install_nsis() {
 check_build_requirements() {
     print_status "Checking build requirements..."
     
+    # Fix autotools version issues first
+    fix_autotools
+    
     local has_wine_devel=false
     local has_mingw=false
     local has_nsis=false
+    local has_32bit_deps=false
     
     # Check for wine-devel tools
     if command_exists winegcc && command_exists wineg++; then
@@ -139,6 +236,14 @@ check_build_requirements() {
         print_success "NSIS installer found"
     else
         print_warning "NSIS installer not found"
+    fi
+    
+    # Check for 32-bit development libraries
+    if [ -f "/usr/include/i386-linux-gnu/bits/libc-header-start.h" ] || [ -f "/usr/include/bits/libc-header-start.h" ]; then
+        has_32bit_deps=true
+        print_success "32-bit development libraries found"
+    else
+        print_warning "32-bit development libraries not found"
     fi
     
     # Determine build method
@@ -178,6 +283,18 @@ check_build_requirements() {
         else
             print_error "Still no suitable build method available"
             return 1
+        fi
+    fi
+    
+    # Offer to install 32-bit dependencies if missing
+    if [ "$has_32bit_deps" = false ]; then
+        print_warning "32-bit development libraries are required for building 32-bit components"
+        read -p "Install 32-bit development libraries? (y/n): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            install_32bit_deps
+        else
+            print_warning "Build may fail without 32-bit development libraries"
         fi
     fi
 }

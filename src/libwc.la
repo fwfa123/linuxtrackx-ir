@@ -38,5 +38,5 @@ dlopen=''
 dlpreopen=''
 
 # Directory that this library needs to be installed in:
-libdir='/opt/linuxtrack/lib/linuxtrack'
-relink_command="(cd /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src; /bin/sh \"/mnt/Local_Git/git-repos/linuxtrack-clean-june14/libtool\"  --tag CC --mode=relink gcc -g -O2 -Wall -Wextra -Wformat -Wformat-security --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 -export-symbols ./webcam_driver.sym -o libwc.la -rpath /opt/linuxtrack/lib/linuxtrack libwc_la-webcam_driver.lo libwc_la-runloop.lo libltr.la -lv4l2 @inst_prefix_dir@)"
+libdir='/opt/lib/linuxtrack'
+relink_command="(cd /mnt/Local_Git/git-repos/linuxtrack-clean-june14/src; /bin/sh \"/mnt/Local_Git/git-repos/linuxtrack-clean-june14/libtool\"  --tag CC --mode=relink gcc -g -O2 -Wall -Wextra -Wformat -Wformat-security --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 -export-symbols ./webcam_driver.sym -o libwc.la -rpath /opt/lib/linuxtrack libwc_la-webcam_driver.lo libwc_la-runloop.lo libltr.la -lv4l2 @inst_prefix_dir@)"

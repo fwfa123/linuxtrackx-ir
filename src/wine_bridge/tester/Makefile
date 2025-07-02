@@ -90,8 +90,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = x86_64-pc-linux-gnu
 host_triplet = x86_64-pc-linux-gnu
-am__append_1 = Tester.exe
-am__append_2 = Tester64.exe
+am__append_1 = Tester.exe.so
+am__append_2 = Tester64.exe.so
 #am__append_3 = -Wl,-no_arch_warnings
 am__append_4 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/tester
@@ -208,14 +208,16 @@ PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 QMAKE_PATH = /usr/bin/qmake-qt5
+QT5_QHELPGENERATOR = /usr/bin/qhelpgenerator-qt5
+QT5_QMAKE = /usr/bin/qmake-qt5
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
 VERSION = 0.99.20
-WINE64_LIBS = 
-WINE_LIBS = 
+WINE64_LIBS = -L/usr/lib64/wine
+WINE_LIBS = -L/usr/lib/wine
 XPL_CPPFLAGS =  -I/usr/include/xplane_sdk/XPLM -I/usr/include/xplane_sdk/Widgets 
 YACC = bison -y
 YFLAGS = 
@@ -262,7 +264,7 @@ mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /opt/linuxtrack
+prefix = /opt
 program_transform_name = s,x,x,
 psdir = ${docdir}
 runstatedir = ${localstatedir}/run
@@ -275,6 +277,8 @@ top_build_prefix = ../../../
 top_builddir = ../../..
 top_srcdir = ../../..
 with_makensis = yes
+with_mingw32 = 
+with_mingw64 = 
 with_wine64 = yes
 noinst_SCRIPTS = $(am__append_1) $(am__append_2)
 SUFFIXES = .o .cpp .c .rc 64.o
@@ -498,11 +502,11 @@ vpath %.h ../../..
 vpath %.c .
 vpath %.c ./../..
 
-Tester64.exe : main64.o rest64.o npifc64.o npview.o
-	wineg++ -g -o Tester64 -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
+Tester64.exe.so : main64.o rest64.o npifc64.o npview.o
+	wineg++ -g -o Tester64.exe.so -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
 
-Tester.exe : main.o npview.o rest.o npifc.o
-	wineg++ -g -o Tester -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+Tester.exe.so : main.o npview.o rest.o npifc.o
+	wineg++ -g -o Tester.exe.so -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 main.o : main.cpp Makefile
 

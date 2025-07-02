@@ -90,9 +90,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = x86_64-pc-linux-gnu
 host_triplet = x86_64-pc-linux-gnu
-am__append_1 = Controller.exe
-#am__append_2 = -Wl,-no_arch_warnings
-am__append_3 = -Wl,--no-warn-search-mismatch
+#am__append_1 = Controller.exe
+am__append_2 = Controller.exe.so
+#am__append_3 = -Wl,-no_arch_warnings
+am__append_4 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/controller
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -140,12 +141,12 @@ AUTOHEADER = ${SHELL} '/mnt/Local_Git/git-repos/linuxtrack-clean-june14/missing'
 AUTOMAKE = ${SHELL} '/mnt/Local_Git/git-repos/linuxtrack-clean-june14/missing' automake-1.17
 AWK = gawk
 BISON = yes
-CC = winegcc
+CC = gcc
 CFLAGS =  -g -O2 -Wall -Wextra -Wformat -Wformat-security          --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 
 CPPFLAGS =  -D_FORTIFY_SOURCE=2 -O2 
 CSCOPE = cscope
 CTAGS = ctags
-CXX = wineg++
+CXX = g++
 CXXCPP = g++ -E
 CXXFLAGS = -g -O2 -g -O2 -Wall -Wextra -Wformat -Wformat-security          --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 
 CYGPATH_W = echo
@@ -168,7 +169,7 @@ INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
 LD = /usr/bin/ld -m elf_x86_64
-LDFLAGS =  $(am__append_2) $(am__append_3)
+LDFLAGS =  $(am__append_3) $(am__append_4)
 LEX = flex
 LEXLIB = 
 LEX_OUTPUT_ROOT = lex.yy
@@ -205,14 +206,16 @@ PKG_CONFIG = /usr/bin/pkg-config
 PKG_CONFIG_LIBDIR = 
 PKG_CONFIG_PATH = 
 QMAKE_PATH = /usr/bin/qmake-qt5
+QT5_QHELPGENERATOR = /usr/bin/qhelpgenerator-qt5
+QT5_QMAKE = /usr/bin/qmake-qt5
 RANLIB = ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
 STRIP = strip
 VERSION = 0.99.20
-WINE64_LIBS = 
-WINE_LIBS = 
+WINE64_LIBS = -L/usr/lib64/wine
+WINE_LIBS = -L/usr/lib/wine
 XPL_CPPFLAGS =  -I/usr/include/xplane_sdk/XPLM -I/usr/include/xplane_sdk/Widgets 
 YACC = bison -y
 YFLAGS = 
@@ -259,7 +262,7 @@ mandir = ${datarootdir}/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /opt/linuxtrack
+prefix = /opt
 program_transform_name = s,x,x,
 psdir = ${docdir}
 runstatedir = ${localstatedir}/run
@@ -272,13 +275,28 @@ top_build_prefix = ../../../
 top_builddir = ../../..
 top_srcdir = ../../..
 with_makensis = yes
+with_mingw32 = 
+with_mingw64 = 
 with_wine64 = yes
-noinst_SCRIPTS = $(am__append_1)
+noinst_SCRIPTS = $(am__append_1) $(am__append_2)
+WINE_CC = winegcc
+#WINE_CC = i686-w64-mingw32-gcc
+WINE_CXX = wineg++
+#WINE_CXX = i686-w64-mingw32-g++
+WINE_RC = wrc
+#WINE_RC = i686-w64-mingw32-windres
+#MINGW_LIBS = -lkernel32 -luser32 -lgdi32 -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -luuid -lodbc32 -lodbccp32
 CXXFLAGS_PRE = -isystem/usr/include/wine/windows -DHAVE_CONFIG_H \
 	   -I../../.. -I. -I./../.. -I../../..
 
+#CXXFLAGS_PRE = -DWIN32 -D_WINDOWS -DHAVE_CONFIG_H \
+#	   -I../../.. -I. -I./../.. -I../../..
+
 CFLAGS_PRE = -I../.. -I../../.. -DHAVE_CONFIG_H \
 	-I./../.. -I../../..
+
+#CFLAGS_PRE = -DWIN32 -D_WINDOWS -I../.. -I../../.. -DHAVE_CONFIG_H \
+#	-I./../.. -I../../..
 
 EXTRA_DIST = linuxtrack1.ico linuxtrack.ico dinput.cpp kbi_interface.h \
 main.cpp resource.h resources.rc
@@ -480,13 +498,13 @@ uninstall-am:
 
 
 .cpp.o :
-	$(CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -m32 -o $@ $<
+	$(WINE_CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .c.o :
-	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
+	$(WINE_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .rc.o :
-	wrc -o $@ $<
+	$(WINE_RC) -o $@ $<
 
 #VPATH = ../..:./../..:../../..:.
 vpath %.h ./../..
@@ -494,8 +512,11 @@ vpath %.h ../../..
 vpath %.c .
 vpath %.c ./../..
 
-Controller.exe : main.o resources.o dinput.o linuxtrack.o
-	wineg++ -o Controller   $(LDFLAGS) $(WINE_LIBS) -m32 \
+#Controller.exe : main.o resources.o dinput.o linuxtrack.o
+#	$(WINE_CXX) -o Controller.exe $(LDFLAGS) -m32 -static-libgcc -static-libstdc++ \
+#           $^ $(MINGW_LIBS) -ldxguid -ldinput -ldinput8
+Controller.exe.so : main.o resources.o dinput.o linuxtrack.o
+	$(WINE_CXX) -o Controller.exe.so   $(LDFLAGS) $(WINE_LIBS) -m32 \
            $^ -lshell32 -ldxguid -ldinput -ldinput8 -luuid -ldl
 
 main.o : main.cpp ../../../config.h

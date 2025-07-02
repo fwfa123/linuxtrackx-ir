@@ -64,12 +64,11 @@ make -j$(nproc)
 ./dev-scripts/build_wine_bridge.sh
 
 # Install (requires root privileges)
-sudo make install
-sudo make install-udev-rules
-sudo make install-desktop
+sudo ./install.sh
 
-# Add user to plugdev group
-sudo usermod -a -G plugdev $USER
+# Or manually:
+# sudo make install
+# sudo usermod -a -G plugdev $USER
 # Log out and log back in for group changes to take effect
 ```
 
@@ -153,7 +152,7 @@ LinuxTrack is released under the GPL license. See the LICENSE file for details.
 ---
 
 **Version**: 0.99.20 (Qt5 + Wine Bridge)  
-**Last Updated**: July 2, 2025  
+**Last Updated**: July 2025  
 **Status**: Production Ready with Complete Wine Integration
 
 ## 🎯 Features
@@ -197,6 +196,20 @@ cd linuxtrack
 ./run_qt5_gui.sh --force-x11
 ```
 
+### MX Linux Users (Specialized Build)
+
+If you're using MX Linux or similar Debian-based distributions:
+
+```bash
+# Use the specialized MX Linux build script
+./dev-scripts/build_mx_linux.sh
+
+# Or use the smart wine bridge build script
+./dev-scripts/build_wine_bridge.sh
+```
+
+See [docs/MX_LINUX_BUILD_GUIDE.md](docs/MX_LINUX_BUILD_GUIDE.md) for detailed MX Linux instructions.
+
 ### Manual Installation
 
 If you prefer to install dependencies manually:
@@ -233,6 +246,7 @@ sudo ./setup.sh
 - ✅ **Fedora 40+** (Primary development platform)
 - ✅ **Ubuntu 22.04+** 
 - ✅ **Debian 11+**
+- ✅ **MX Linux 23.6+** (Specialized build script available)
 - ✅ **openSUSE Leap 15.4+**
 - ✅ **Arch Linux** (current)
 - ✅ **Wine Bridge**: Tested on all major distributions
