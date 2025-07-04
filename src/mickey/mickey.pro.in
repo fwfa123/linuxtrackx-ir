@@ -16,7 +16,7 @@ INCLUDEPATH += @srcdir@/..
 INCLUDEPATH += @srcdir@/../qt_gui
 VPATH     = @srcdir@
 contains(QT_VERSION, ^5.*){
-       QT += widgets
+       QT += widgets x11extras
        DEFINES += QT5_OVERRIDES
 }
 
