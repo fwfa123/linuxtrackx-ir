@@ -362,17 +362,28 @@ AS_IF([(test "x$build_wine_plugin" = xno) && (test "x$build_wine_plugin_mingw" =
 AS_IF([(test "x$build_wine64_plugin" = xno) && (test "x$build_wine64_plugin_mingw" = xyes) ],
       [build_wine64_plugin=yes; WINE64_USE_MINGW=yes], [])
 
+# Add configure option to disable PIE for native builds
+AC_ARG_ENABLE([pie],
+              [AS_HELP_STRING([--disable-pie],
+                [disable Position Independent Executable (PIE) for native Linux builds @<:@default=enabled@:>@])],
+              [enable_pie=$enableval],
+              [enable_pie=yes])
+
 # Add stack protector and fortify source only for native builds, not MinGW
 AS_IF([test "x$WINE_USE_MINGW" != xyes && test "x$WINE64_USE_MINGW" != xyes],
       [CFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
        CXXFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
        CPPFLAGS+=" -D_FORTIFY_SOURCE=2 -O2 "])
 
-# Add PIE support for native builds (not MinGW cross-compilation)
-AS_IF([test "x$WINE_USE_MINGW" != xyes && test "x$WINE64_USE_MINGW" != xyes],
+# Add PIE support for native Linux builds
+# PIE is enabled by default for security on modern Linux distributions
+# Note: MinGW cross-compilation for Windows components doesn't affect native Linux PIE
+AS_IF([test "x$enable_pie" = xyes],
       [CFLAGS+=" -fPIE "
        CXXFLAGS+=" -fPIE "
-       LDFLAGS+=" -pie "])
+       LDFLAGS+=" -pie "
+       AC_MSG_NOTICE([PIE enabled for native Linux builds (security feature)])],
+      [AC_MSG_NOTICE([PIE disabled by user request])])
 
 AS_IF([test  "x$ac_cv_lib_lo_lo_send_bundle" = xyes],
                                 [build_osc_support=yes], [buildt_osc_support=no])
@@ -456,6 +467,11 @@ AS_IF([test  "x$build_wine_plugin_mingw" = xyes], [AC_MSG_RESULT([yes])], [AC_MS
 
 AC_MSG_CHECKING([OSC support])
 AS_IF([test  "x$build_osc_support" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+
+AC_MSG_CHECKING([PIE support for native builds])
+AS_IF([test "x$enable_pie" = xyes],
+      [AC_MSG_RESULT([enabled (security feature)])],
+      [AC_MSG_RESULT([disabled by user])])
 
 
 

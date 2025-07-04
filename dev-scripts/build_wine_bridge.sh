@@ -2,6 +2,7 @@
 
 # LinuxTrack Wine Bridge Smart Build Script
 # Automatically detects and uses the best available build method
+# PIE (Position Independent Executable) is enabled by default for security
 
 set -e
 
@@ -291,10 +292,15 @@ check_build_requirements() {
 build_mingw() {
     print_status "Building wine bridge with MinGW cross-compilation..."
     
-    # Configure with MinGW support
+    # Configure with MinGW support (PIE enabled by default for native Linux builds)
+    print_status "Configuring build system..."
+    print_status "Note: PIE is enabled by default for security on native Linux builds"
+    print_status "      Use --disable-pie if you encounter PIE/relocation errors"
+    
     ./configure
     
     # Build wine bridge components
+    print_status "Building components..."
     make -j$(nproc)
     
     print_success "Wine bridge built successfully with MinGW"

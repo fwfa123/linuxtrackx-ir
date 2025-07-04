@@ -93,6 +93,11 @@ LinuxTrack works with games and simulators that support:
 ### Windows Compatibility (MinGW Only)
 - **MinGW** (required): mingw-w64, gcc-mingw-w64, g++-mingw-w64
 
+### Security Features (Enabled by Default)
+- **PIE (Position Independent Executable)**: Enabled by default for native Linux builds
+- **Stack Protector**: Built-in buffer overflow protection
+- **Fortify Source**: Enhanced security checks for standard library functions
+
 ## 📖 Documentation
 
 - **[MX Linux Build Guide](docs/MX_LINUX_BUILD_GUIDE.md)** - Complete guide for MX Linux users
@@ -109,7 +114,7 @@ make distclean 2>/dev/null || true
 # Regenerate build system
 autoreconf -fiv
 
-# Configure
+# Configure (PIE enabled by default for security)
 ./configure --prefix=/opt
 
 # Build
@@ -124,6 +129,9 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 ```bash
 # Debug build
 ./configure --prefix=/opt --enable-debug
+
+# Disable PIE (not recommended for security)
+./configure --prefix=/opt --disable-pie
 
 # Disable Windows components
 ./configure --prefix=/opt --disable-wine-bridge
@@ -176,6 +184,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
+| PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
 
 ### Getting Help
 1. **Check the docs**: Start with distribution-specific guides
