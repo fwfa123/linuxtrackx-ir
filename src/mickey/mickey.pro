@@ -20,7 +20,7 @@ contains(QT_VERSION, ^5.*){
        DEFINES += QT5_OVERRIDES
 }
 
-QT += help x11extras
+QT += help
 
 RESOURCES = mickey.qrc
 DEFINES += QT_NO_CAST_FROM_ASCII QT_NO_CAST_TO_ASCII

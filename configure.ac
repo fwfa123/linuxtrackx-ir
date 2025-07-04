@@ -117,12 +117,14 @@ AC_CHECK_PROG([with_makensis], [makensis], [yes])
 # Check for MinGW compilers (preferred over winegcc for better portability)
 # MinGW produces native Windows PE binaries that work on both Windows and Wine
 # winegcc produces Linux ELF binaries with Wine wrappers (.exe.so/.dll.so)
-AC_CHECK_PROG([MINGW32_CC], [i686-w64-mingw32-gcc], [i686-w64-mingw32-gcc])
-AC_CHECK_PROG([MINGW64_CC], [x86_64-w64-mingw32-gcc], [x86_64-w64-mingw32-gcc])
+AC_CHECK_PROG([with_mingw32], [i686-w64-mingw32-gcc], [yes])
+AC_CHECK_PROG([with_mingw64], [x86_64-w64-mingw32-gcc], [yes])
+
+# Set MinGW compiler variables for substitution\nAS_IF([test "x$with_mingw32" = xyes],\n      [MINGW32_CC="i686-w64-mingw32-gcc"\n       MINGW32_CXX="i686-w64-mingw32-g++"\n       MINGW32_WINDRES="i686-w64-mingw32-windres"],\n      [MINGW32_CC=""\n       MINGW32_CXX=""\n       MINGW32_WINDRES=""])\n\nAS_IF([test "x$with_mingw64" = xyes],\n      [MINGW64_CC="x86_64-w64-mingw32-gcc"\n       MINGW64_CXX="x86_64-w64-mingw32-g++"\n       MINGW64_WINDRES="x86_64-w64-mingw32-windres"],\n      [MINGW64_CC=""\n       MINGW64_CXX=""\n       MINGW64_WINDRES=""])\n\nAC_SUBST([MINGW32_CC])\nAC_SUBST([MINGW32_CXX])\nAC_SUBST([MINGW32_WINDRES])\nAC_SUBST([MINGW64_CC])\nAC_SUBST([MINGW64_CXX])\nAC_SUBST([MINGW64_WINDRES])\n
 
 # Set conditional flags for MinGW usage
-AM_CONDITIONAL([WINE_USE_MINGW], [test "x$MINGW32_CC" != "x"])
-AM_CONDITIONAL([WINE64_USE_MINGW], [test "x$MINGW64_CC" != "x"])
+AM_CONDITIONAL([WINE_USE_MINGW], [test "x$with_mingw32" = xyes])
+AM_CONDITIONAL([WINE64_USE_MINGW], [test "x$with_mingw64" = xyes])
 
 # Display MinGW status
 AS_IF([test "x$MINGW32_CC" != x], 
