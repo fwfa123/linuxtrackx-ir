@@ -64,7 +64,7 @@ LinuxTrack works with games and simulators that support:
 
 ### Core Dependencies
 - **Build Tools**: gcc, g++, make, autoconf, automake, libtool
-- **GUI Framework**: Qt5 (qtbase5-dev, qttools5-dev-tools)
+- **GUI Framework**: Qt5 (qtbase5-dev, qttools5-dev-tools, libqt5x11extras5-dev)
 - **Computer Vision**: OpenCV (libopencv-dev)
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
 - **X11 Support**: libx11-dev, libxrandr-dev
@@ -153,7 +153,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 |---------|----------|
 | `aclocal-1.17: command not found` | See [MX Linux Guide](docs/MX_LINUX_BUILD_GUIDE.md#troubleshooting) |
 | `winegcc: command not found` | Install MinGW: `sudo apt install mingw-w64` |
-| Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools` |
+| Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
 

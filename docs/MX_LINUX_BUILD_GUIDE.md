@@ -151,7 +151,7 @@ make clean && make -j$(nproc)
 ### Problem: Qt5 not found
 **Solution**:
 ```bash
-sudo apt install -y qtbase5-dev qttools5-dev-tools qt5-qmake
+sudo apt install -y qtbase5-dev qttools5-dev-tools qt5-qmake libqt5x11extras5-dev
 # Reconfigure with explicit Qt5 path if needed
 ./configure --prefix=/opt QMAKE=/usr/bin/qmake-qt5
 ```

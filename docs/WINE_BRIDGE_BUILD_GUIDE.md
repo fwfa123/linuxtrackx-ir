@@ -17,6 +17,9 @@
 - **No wine-devel Required**: Eliminated dependency completely
 - **All Target Distributions**: Tested on MX Linux, Ubuntu, Fedora
 
+### NSIS Script Fix
+- The installer script now uses correct `.exe` and `.dll` file extensions (no more `.exe.so`/`.dll.so` errors).
+
 ---
 
 ## 🎉 What We Built Successfully
