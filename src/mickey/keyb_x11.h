@@ -1,7 +1,12 @@
 #ifndef KEYB_X11__h
 #define KEYB_X11__h
 
-#include <QX11Info>
+// QX11Info was moved to QtX11Extras in Qt5
+#ifdef QT5_OVERRIDES
+  #include <QtX11Extras/QX11Info>
+#else
+  #include <QX11Info>
+#endif
 #include <QKeySequence>
 #include <QAbstractEventDispatcher>
 #include <QMutex>

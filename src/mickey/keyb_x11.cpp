@@ -188,8 +188,13 @@ static bool translateSequence(const QKeySequence &s, KeyCode &code, unsigned int
 bool setShortCut(const QKeySequence &s, shortcut* shortcutId)
 {
   if(display == NULL){
+#ifdef QT5_OVERRIDES
     display = QX11Info::display();
     window = QX11Info::appRootWindow();
+#else
+    display = QX11Info::display();
+    window = QX11Info::appRootWindow();
+#endif
   }
   removeIdFromHash(shortcutId);
   if(s.isEmpty()){
