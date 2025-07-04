@@ -6,6 +6,8 @@
 *.so
 *.so.*
 *.exe
+*.dll
+*.dylib
 
 # Autotools generated files
 /config.h
@@ -31,7 +33,8 @@ Makefile
 Makefile.in
 
 # Build directories
-build_*/
+build/
+dist/
 .libs/
 .deps/
 
@@ -43,6 +46,8 @@ moc_*.cpp
 qrc_*.cpp
 moc_predefs.h
 .qmake.stash
+*.pro.user
+*.pro.user.*
 
 # Executables and binaries
 ltr_gui
@@ -68,15 +73,14 @@ gui_output.log
 
 # Backup files
 *~
-*.backup
 *.bak
+*.tmp
 
 # IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS specific files
 .DS_Store
@@ -93,6 +97,7 @@ Thumbs.db
 *.tar.gz
 *.tar.bz2
 *.tar.xz
+*.zip
 
 # Runtime files
 core
@@ -116,4 +121,8 @@ doc/latex/
 # Package manager files
 node_modules/
 package-lock.json
-yarn.lock 
+yarn.lock
+
+# Test outputs
+test_results/
+*.test 
