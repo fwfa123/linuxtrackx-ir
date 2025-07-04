@@ -58,11 +58,25 @@ sudo apt install -y libx11-dev libxrandr-dev
 sudo apt install -y mingw-w64 gcc-mingw-w64 g++-mingw-w64
 ```
 
-#### Option B: Wine Development Tools (Legacy)
+**Why MinGW is Better:**
+- ✅ **Future-Proof**: Industry standard cross-compilation
+- ✅ **Portable**: PE binaries work on Windows and Wine
+- ✅ **Efficient**: No Wine runtime overhead
+- ✅ **Maintainable**: Simpler build process
+
+#### Option B: Wine Development Tools (Legacy) ⚠️ **NOT RECOMMENDED**
 ```bash
 # Larger, requires Wine runtime
 sudo apt install -y wine-development wine32-development wine64-development
 ```
+
+**Why wine-devel is Deprecated:**
+- ❌ **Wine-Specific**: Only works with Wine, not native Windows
+- ❌ **Heavy Dependencies**: Large wine-devel packages
+- ❌ **Performance Overhead**: Wine translation layer
+- ❌ **Maintenance Burden**: Complex build environment
+
+**Note**: The winegcc approach produces `.exe.so`/`.dll.so` files that are Linux ELF binaries with Wine wrappers, not genuine Windows PE binaries.
 
 ### Optional: 32-bit Support (if needed)
 ```bash

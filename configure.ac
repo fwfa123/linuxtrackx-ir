@@ -114,33 +114,24 @@ AC_CHECK_PROG([with_wine64], [wine64], [yes])
 #needed to create an installer for the linuxtrack-wine
 AC_CHECK_PROG([with_makensis], [makensis], [yes])
 
-# Check for MinGW cross-compilation toolchains (alternative to wine-devel)
-AC_CHECK_PROG([with_mingw32], [i686-w64-mingw32-gcc], [yes])
-AC_CHECK_PROG([with_mingw64], [x86_64-w64-mingw32-gcc], [yes])
+# Check for MinGW compilers (preferred over winegcc for better portability)
+# MinGW produces native Windows PE binaries that work on both Windows and Wine
+# winegcc produces Linux ELF binaries with Wine wrappers (.exe.so/.dll.so)
+AC_CHECK_PROG([MINGW32_CC], [i686-w64-mingw32-gcc], [i686-w64-mingw32-gcc])
+AC_CHECK_PROG([MINGW64_CC], [x86_64-w64-mingw32-gcc], [x86_64-w64-mingw32-gcc])
 
-# Set MinGW compiler variables for substitution
-AS_IF([test "x$with_mingw32" = xyes],
-      [MINGW32_CC="i686-w64-mingw32-gcc"
-       MINGW32_CXX="i686-w64-mingw32-g++"
-       MINGW32_WINDRES="i686-w64-mingw32-windres"],
-      [MINGW32_CC=""
-       MINGW32_CXX=""
-       MINGW32_WINDRES=""])
+# Set conditional flags for MinGW usage
+AM_CONDITIONAL([WINE_USE_MINGW], [test "x$MINGW32_CC" != "x"])
+AM_CONDITIONAL([WINE64_USE_MINGW], [test "x$MINGW64_CC" != "x"])
 
-AS_IF([test "x$with_mingw64" = xyes],
-      [MINGW64_CC="x86_64-w64-mingw32-gcc"
-       MINGW64_CXX="x86_64-w64-mingw32-g++"
-       MINGW64_WINDRES="x86_64-w64-mingw32-windres"],
-      [MINGW64_CC=""
-       MINGW64_CXX=""
-       MINGW64_WINDRES=""])
+# Display MinGW status
+AS_IF([test "x$MINGW32_CC" != x], 
+      [AC_MSG_NOTICE([MinGW 32-bit compiler found: $MINGW32_CC])],
+      [AC_MSG_WARN([MinGW 32-bit compiler not found - wine bridge 32-bit components will not be built])])
 
-AC_SUBST([MINGW32_CC])
-AC_SUBST([MINGW32_CXX])
-AC_SUBST([MINGW32_WINDRES])
-AC_SUBST([MINGW64_CC])
-AC_SUBST([MINGW64_CXX])
-AC_SUBST([MINGW64_WINDRES])
+AS_IF([test "x$MINGW64_CC" != x], 
+      [AC_MSG_NOTICE([MinGW 64-bit compiler found: $MINGW64_CC])],
+      [AC_MSG_WARN([MinGW 64-bit compiler not found - wine bridge 64-bit components will not be built])])
 
 XPL_CPPFLAGS=
 AC_ARG_WITH([xplane_sdk],
@@ -352,6 +343,12 @@ AS_IF([test "x$WINE_USE_MINGW" != xyes && test "x$WINE64_USE_MINGW" != xyes],
       [CFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
        CXXFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
        CPPFLAGS+=" -D_FORTIFY_SOURCE=2 -O2 "])
+
+# Add PIE support for native builds (not MinGW cross-compilation)
+AS_IF([test "x$WINE_USE_MINGW" != xyes && test "x$WINE64_USE_MINGW" != xyes],
+      [CFLAGS+=" -fPIE "
+       CXXFLAGS+=" -fPIE "
+       LDFLAGS+=" -pie "])
 
 AS_IF([test  "x$ac_cv_lib_lo_lo_send_bundle" = xyes],
                                 [build_osc_support=yes], [buildt_osc_support=no])

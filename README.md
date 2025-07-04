@@ -27,7 +27,7 @@ sudo make install
 ### For Other Linux Distributions
 See our distribution-specific guides in the `docs/` directory.
 
-## ✨ What's New
+## 🎉 What's New
 
 ### 🎉 MinGW Cross-Compilation Support
 LinuxTrack now supports building Windows compatibility components using MinGW, eliminating the need for wine-devel packages:
@@ -36,6 +36,20 @@ LinuxTrack now supports building Windows compatibility components using MinGW, e
 - ✅ **Smaller Footprint**: Fewer packages to install
 - ✅ **Better Compatibility**: Standard Windows PE binaries
 - ✅ **Faster Builds**: No Wine runtime overhead
+
+### Why MinGW is the Best Approach
+**MinGW vs winegcc Comparison:**
+
+| Aspect | MinGW (Recommended) | winegcc (Legacy) |
+|--------|-------------------|------------------|
+| **Binary Format** | Native Windows PE (.exe/.dll) | Linux ELF with Wine wrapper (.exe.so/.dll.so) |
+| **Portability** | Works on Windows and Wine | Only works with Wine |
+| **Performance** | Native Windows performance | Wine runtime overhead |
+| **Dependencies** | Minimal (mingw-w64 only) | Heavy (wine-devel packages) |
+| **Future-Proof** | ✅ Industry standard | ❌ Wine-specific |
+| **CI/CD** | Easy automated builds | Complex Wine environment |
+
+**Bottom Line**: MinGW produces genuine Windows binaries that work everywhere, while winegcc produces Wine-specific wrappers with limited portability.
 
 ### Built Windows Components
 - **NPClient.dll** / **NPClient64.dll** - TrackIR API compatibility (32/64-bit)

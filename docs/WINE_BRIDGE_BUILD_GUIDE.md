@@ -84,6 +84,39 @@ sudo zypper install cross-mingw64-gcc cross-mingw64-gcc-c++
 
 ## 🏗️ Implementation Details
 
+### **Why MinGW is Superior to winegcc**
+
+**Technical Comparison:**
+
+| Feature | MinGW Approach | winegcc Approach |
+|---------|---------------|------------------|
+| **Compiler** | `i686-w64-mingw32-gcc` | `winegcc` |
+| **Output Format** | Native Windows PE32/PE32+ | Linux ELF with Wine wrapper |
+| **File Extensions** | `.exe`, `.dll` | `.exe.so`, `.dll.so` |
+| **Runtime** | Direct Windows API calls | Wine translation layer |
+| **Portability** | Works on Windows + Wine | Wine only |
+| **Performance** | Native speed | Wine overhead |
+| **Debugging** | Windows debuggers | Wine debug tools |
+| **Distribution** | Standard Windows installers | Wine-specific packaging |
+
+**Binary Analysis:**
+```bash
+# MinGW output (PE format)
+file NPClient.dll
+# NPClient.dll: PE32 executable (DLL) (GUI) Intel 80386, for MS Windows
+
+# winegcc output (ELF format)
+file NPClient.dll.so
+# NPClient.dll.so: ELF 32-bit LSB shared object, Intel 80386, version 1 (SYSV)
+```
+
+**Future-Proofing Benefits:**
+- ✅ **Industry Standard**: MinGW is the de facto cross-compilation toolchain
+- ✅ **Wine Compatibility**: PE binaries work perfectly with Wine
+- ✅ **Windows Native**: Can be distributed to Windows users directly
+- ✅ **Maintenance**: Simpler build process, fewer dependencies
+- ✅ **CI/CD**: Easier automated testing and deployment
+
 ### **Configure.ac Changes**
 Our implementation adds MinGW compiler detection:
 
