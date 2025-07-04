@@ -45,11 +45,11 @@ LinuxTrack now supports building Windows compatibility components using MinGW, e
 | **Binary Format** | Native Windows PE (.exe/.dll) | Linux ELF with Wine wrapper (.exe.so/.dll.so) |
 | **Portability** | Works on Windows and Wine | Only works with Wine |
 | **Performance** | Native Windows performance | Wine runtime overhead |
-| **Dependencies** | Minimal (mingw-w64 only) | Heavy (wine-devel packages) |
+| **Dependencies** | Minimal (mingw-w64 only) | Heavy (wine-devel packages, not supported) |
 | **Future-Proof** | ✅ Industry standard | ❌ Wine-specific |
 | **CI/CD** | Easy automated builds | Complex Wine environment |
 
-**Bottom Line**: MinGW produces genuine Windows binaries that work everywhere, while winegcc produces Wine-specific wrappers with limited portability.
+**Bottom Line**: MinGW produces genuine Windows binaries that work everywhere. winegcc and wine-devel are no longer supported in this project.
 
 ### Built Windows Components
 - **NPClient.dll** / **NPClient64.dll** - TrackIR API compatibility (32/64-bit)
@@ -83,9 +83,8 @@ LinuxTrack works with games and simulators that support:
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
 - **X11 Support**: libx11-dev, libxrandr-dev
 
-### Windows Compatibility (Choose One)
-- **MinGW** (recommended): mingw-w64, gcc-mingw-w64, g++-mingw-w64
-- **Wine Development** (legacy): wine-development, wine32-development, wine64-development
+### Windows Compatibility (MinGW Only)
+- **MinGW** (required): mingw-w64, gcc-mingw-w64, g++-mingw-w64
 
 ## 📖 Documentation
 
@@ -166,7 +165,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | Problem | Solution |
 |---------|----------|
 | `aclocal-1.17: command not found` | See [MX Linux Guide](docs/MX_LINUX_BUILD_GUIDE.md#troubleshooting) |
-| `winegcc: command not found` | Install MinGW: `sudo apt install mingw-w64` |
+| `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` |
 | Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |

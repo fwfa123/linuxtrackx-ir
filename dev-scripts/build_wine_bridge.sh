@@ -209,18 +209,9 @@ check_build_requirements() {
     # Fix autotools version issues first
     fix_autotools
     
-    local has_wine_devel=false
     local has_mingw=false
     local has_nsis=false
     local has_32bit_deps=false
-    
-    # Check for wine-devel tools
-    if command_exists winegcc && command_exists wineg++; then
-        has_wine_devel=true
-        print_success "Wine development tools found"
-    else
-        print_warning "Wine development tools not found"
-    fi
     
     # Check for MinGW tools
     if command_exists i686-w64-mingw32-gcc && command_exists i686-w64-mingw32-g++; then
@@ -247,10 +238,7 @@ check_build_requirements() {
     fi
     
     # Determine build method
-    if [ "$has_wine_devel" = true ] && [ "$has_nsis" = true ]; then
-        BUILD_METHOD="wine_devel"
-        print_success "Will use wine-devel build method"
-    elif [ "$has_mingw" = true ] && [ "$has_nsis" = true ]; then
+    if [ "$has_mingw" = true ] && [ "$has_nsis" = true ]; then
         BUILD_METHOD="mingw"
         print_success "Will use MinGW cross-compilation method"
     else
@@ -299,16 +287,6 @@ check_build_requirements() {
     fi
 }
 
-# Function to build with wine-devel
-build_wine_devel() {
-    print_status "Building wine bridge with wine-devel..."
-    
-    ./configure
-    make -j$(nproc)
-    
-    print_success "Wine bridge built successfully with wine-devel"
-}
-
 # Function to build with MinGW
 build_mingw() {
     print_status "Building wine bridge with MinGW cross-compilation..."
@@ -341,13 +319,13 @@ verify_build() {
     
     local wine_dir="src/wine_bridge"
     local required_files=(
-        "NPClient.dll.so"
-        "Controller.exe.so"
-        "Tester.exe.so"
-        "FreeTrackClient.dll.so"
-        "ftc.exe.so"
-        "check_data.exe.so"
-        "TrackIR.exe.so"
+        "NPClient.dll"
+        "Controller.exe"
+        "Tester.exe"
+        "FreeTrackClient.dll"
+        "ftc.exe"
+        "check_data.exe"
+        "TrackIR.exe"
     )
     
     local missing_files=()
@@ -372,7 +350,7 @@ verify_build() {
 
 # Main function
 main() {
-    print_status "LinuxTrack Wine Bridge Smart Build Script"
+    print_status "LinuxTrack Wine Bridge Smart Build Script (MinGW-only)"
     print_status "=========================================="
     
     # Check if we're in the right directory
@@ -386,9 +364,6 @@ main() {
     
     # Build based on available method
     case $BUILD_METHOD in
-        "wine_devel")
-            build_wine_devel
-            ;;
         "mingw")
             build_mingw
             ;;
@@ -397,18 +372,8 @@ main() {
             ;;
         *)
             print_error "No build method available"
-            exit 1
             ;;
     esac
-    
-    # Verify the build
-    if verify_build; then
-        print_success "Wine bridge build completed successfully!"
-        print_status "You can now run 'make install' to install LinuxTrack"
-    else
-        print_error "Wine bridge build verification failed"
-        exit 1
-    fi
 }
 
 # Run main function
