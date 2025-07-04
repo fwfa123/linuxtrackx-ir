@@ -1,199 +1,176 @@
-# Wine Dependencies for LinuxTrack
+# MinGW Dependencies for LinuxTrack
 
-This document provides distribution-specific installation instructions for Wine dependencies required to build and use the LinuxTrack Wine Bridge.
+This document provides distribution-specific installation instructions for MinGW dependencies required to build and use the LinuxTrack Wine Bridge.
 
 ## Overview
 
-The LinuxTrack Wine Bridge requires Wine development tools and libraries to compile Windows-compatible components that provide head tracking support for Windows applications running under Wine.
+The LinuxTrack Wine Bridge now uses MinGW cross-compilation to build Windows-compatible components that provide head tracking support for Windows applications running under Wine. This approach eliminates the need for complex wine-devel packages and produces native Windows PE binaries.
 
 ## Distribution-Specific Installation
 
 ### Ubuntu/Debian (22.04+)
 
 ```bash
-# Install Wine development packages
+# Install MinGW cross-compilation packages
 sudo apt update
-sudo apt install wine-development wine32-development wine64-development
-
-# Install multilib support for 32-bit compilation
-sudo apt install gcc-multilib libc6-dev-i386
+sudo apt install mingw-w64 gcc-mingw-w64 g++-mingw-w64
 
 # Install NSIS for installer generation
 sudo apt install nsis
 
 # Install additional dependencies
-sudo apt install libwine-development-dev wine-development-dev
+sudo apt install build-essential autoconf automake libtool
 ```
 
 **Package Details:**
-- `wine-development`: Latest Wine development version
-- `wine32-development`: 32-bit Wine support
-- `wine64-development`: 64-bit Wine support
-- `gcc-multilib`: Multilib compiler support
-- `libc6-dev-i386`: 32-bit development libraries
+- `mingw-w64`: MinGW-w64 cross-compilation toolchain
+- `gcc-mingw-w64`: MinGW C compiler
+- `g++-mingw-w64`: MinGW C++ compiler
 - `nsis`: Nullsoft Scriptable Install System
-- `libwine-development-dev`: Wine development headers
+- `build-essential`: Essential build tools
+- `autoconf automake libtool`: Autotools for build system
 
 ### Fedora (38+)
 
 ```bash
-# Install Wine development packages
-sudo dnf install wine-devel wine-core wine-desktop
-
-# Install multilib support
-sudo dnf install gcc-multilib glibc-devel.i686
+# Install MinGW cross-compilation packages
+sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-winpthreads
 
 # Install NSIS
 sudo dnf install nsis
 
 # Install additional dependencies
-sudo dnf install wine-devel-headers wine-devel-libs
+sudo dnf install gcc gcc-c++ autoconf automake libtool
 ```
 
 **Package Details:**
-- `wine-devel`: Wine development version
-- `wine-core`: Core Wine components
-- `wine-desktop`: Wine desktop integration
-- `gcc-multilib`: Multilib compiler support
-- `glibc-devel.i686`: 32-bit glibc development
+- `mingw64-gcc`: MinGW-w64 C compiler
+- `mingw64-gcc-c++`: MinGW-w64 C++ compiler
+- `mingw64-winpthreads`: MinGW pthreads library
 - `nsis`: NSIS installer system
-- `wine-devel-headers`: Wine development headers
-- `wine-devel-libs`: Wine development libraries
+- `gcc gcc-c++`: Native compilers
+- `autoconf automake libtool`: Autotools for build system
 
 ### Arch Linux
 
 ```bash
-# Install Wine development packages
-sudo pacman -S wine wine-staging
-
-# Install multilib support
-sudo pacman -S mingw-w64-gcc
+# Install MinGW cross-compilation packages
+sudo pacman -S mingw-w64-gcc mingw-w64-gcc-fortran
 
 # Install NSIS
 sudo pacman -S nsis
 
 # Install additional dependencies
-sudo pacman -S wine-mono wine-gecko
+sudo pacman -S base-devel autoconf automake libtool
 ```
 
 **Package Details:**
-- `wine`: Standard Wine package
-- `wine-staging`: Wine with additional patches
-- `mingw-w64-gcc`: Cross-compiler for Windows
+- `mingw-w64-gcc`: MinGW-w64 cross-compilation toolchain
+- `mingw-w64-gcc-fortran`: MinGW-w64 Fortran compiler (optional)
 - `nsis`: NSIS installer system
-- `wine-mono`: .NET runtime for Wine
-- `wine-gecko`: Gecko engine for Wine
+- `base-devel`: Base development tools
+- `autoconf automake libtool`: Autotools for build system
 
 ### OpenSUSE (Tumbleweed/Leap 15.5+)
 
 ```bash
-# Install Wine development packages
-sudo zypper install wine-devel wine-core wine-desktop
-
-# Install multilib support
-sudo zypper install gcc-multilib glibc-devel-32bit
+# Install MinGW cross-compilation packages
+sudo zypper install cross-mingw64-gcc cross-mingw64-gcc-c++
 
 # Install NSIS
 sudo zypper install nsis
 
 # Install additional dependencies
-sudo zypper install wine-devel-headers wine-devel-libs
+sudo zypper install gcc gcc-c++ autoconf automake libtool
 ```
 
 **Package Details:**
-- `wine-devel`: Wine development version
-- `wine-core`: Core Wine components
-- `wine-desktop`: Wine desktop integration
-- `gcc-multilib`: Multilib compiler support
-- `glibc-devel-32bit`: 32-bit glibc development
+- `cross-mingw64-gcc`: MinGW-w64 C compiler
+- `cross-mingw64-gcc-c++`: MinGW-w64 C++ compiler
 - `nsis`: NSIS installer system
-- `wine-devel-headers`: Wine development headers
-- `wine-devel-libs`: Wine development libraries
+- `gcc gcc-c++`: Native compilers
+- `autoconf automake libtool`: Autotools for build system
 
 ### Gentoo
 
 ```bash
-# Install Wine development packages
-sudo emerge --ask app-emulation/wine
-
-# Install multilib support
-sudo emerge --ask sys-devel/gcc[multilib]
+# Install MinGW cross-compilation packages
+sudo emerge --ask cross-x86_64-w64-mingw32/gcc
 
 # Install NSIS
 sudo emerge --ask dev-util/nsis
 
 # Install additional dependencies
-sudo emerge --ask app-emulation/wine-staging
+sudo emerge --ask sys-devel/autoconf sys-devel/automake sys-devel/libtool
 ```
 
 **Package Details:**
-- `app-emulation/wine`: Wine package
-- `sys-devel/gcc[multilib]`: GCC with multilib support
+- `cross-x86_64-w64-mingw32/gcc`: MinGW-w64 cross-compilation toolchain
 - `dev-util/nsis`: NSIS installer system
-- `app-emulation/wine-staging`: Wine with additional patches
+- `sys-devel/autoconf`: Autoconf build system
+- `sys-devel/automake`: Automake build system
+- `sys-devel/libtool`: Libtool build system
 
 ## Verification
 
-After installation, verify that Wine development tools are available:
+After installation, verify that MinGW cross-compilation tools are available:
 
 ```bash
-# Check winegcc availability
-which winegcc
-winegcc --version
+# Check MinGW C compiler availability
+which i686-w64-mingw32-gcc
+i686-w64-mingw32-gcc --version
 
-# Check wineg++ availability
-which wineg++
-wineg++ --version
+# Check MinGW C++ compiler availability
+which i686-w64-mingw32-g++
+i686-w64-mingw32-g++ --version
+
+# Check 64-bit MinGW C compiler availability
+which x86_64-w64-mingw32-gcc
+x86_64-w64-mingw32-gcc --version
 
 # Check makensis availability
 which makensis
 makensis /VERSION
-
-# Check wine availability
-which wine
-wine --version
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### 1. Wine Development Tools Not Found
+#### 1. MinGW Compilers Not Found
 
-**Problem**: `winegcc` or `wineg++` not found in PATH
-
-**Solution**:
-```bash
-# Ubuntu/Debian
-sudo apt install wine-development-dev
-
-# Fedora
-sudo dnf install wine-devel-headers
-
-# Arch
-sudo pacman -S wine
-
-# OpenSUSE
-sudo zypper install wine-devel-headers
-```
-
-#### 2. 32-bit Compilation Fails
-
-**Problem**: Cannot compile 32-bit components
+**Problem**: `i686-w64-mingw32-gcc` or `x86_64-w64-mingw32-gcc` not found in PATH
 
 **Solution**:
 ```bash
 # Ubuntu/Debian
-sudo apt install gcc-multilib libc6-dev-i386
+sudo apt install mingw-w64 gcc-mingw-w64 g++-mingw-w64
 
 # Fedora
-sudo dnf install gcc-multilib glibc-devel.i686
+sudo dnf install mingw64-gcc mingw64-gcc-c++
 
 # Arch
 sudo pacman -S mingw-w64-gcc
 
 # OpenSUSE
-sudo zypper install gcc-multilib glibc-devel-32bit
+sudo zypper install cross-mingw64-gcc cross-mingw64-gcc-c++
+```
+
+#### 2. Cross-Compilation Fails
+
+**Problem**: Cannot compile Windows components
+
+**Solution**:
+```bash
+# Ensure MinGW toolchain is properly installed
+sudo apt install mingw-w64
+
+# Verify compiler availability
+which i686-w64-mingw32-gcc
+which x86_64-w64-mingw32-gcc
+
+# Check if build system detects MinGW
+./configure --help | grep -i mingw
 ```
 
 #### 3. NSIS Not Found
