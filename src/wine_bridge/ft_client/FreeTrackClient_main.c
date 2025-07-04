@@ -22,7 +22,13 @@
 #include "winbase.h"
 #include "FreeTrackClient_dll.h"
 #include <ltlib.h>
+#ifndef __MINGW32__
 #include "wine/debug.h"
+#else
+// Stub Wine debug macros for MinGW
+#define WINE_DEFAULT_DEBUG_CHANNEL(x)
+#define TRACE(...) do { } while(0)
+#endif
 #include <linuxtrack.h>
 
 WINE_DEFAULT_DEBUG_CHANNEL(FTClient);

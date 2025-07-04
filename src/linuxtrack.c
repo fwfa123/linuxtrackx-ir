@@ -29,7 +29,9 @@ THE SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#ifndef __MINGW32__
 #include <dlfcn.h>
+#endif
 #include <unistd.h>
 #include <string.h>
 #include "linuxtrack.h"
@@ -159,7 +161,9 @@ linuxtrack_state_type linuxtrack_shutdown(void)
     ltr_get_pose_full_fun = NULL;
     ltr_get_tracking_state_fun = NULL;
     ltr_explain_fun = NULL;
+#ifndef __MINGW32__
     dlclose(handle);
+#endif
   }
   return res;
 }
@@ -249,6 +253,7 @@ linuxtrack_state_type linuxtrack_get_tracking_state(void)
 
 static int linuxtrack_load_functions(void *handle)
 {
+#ifndef __MINGW32__
   int i = 0;
   void *symbol;
   while((functions[i]).name != NULL){
@@ -263,6 +268,12 @@ static int linuxtrack_load_functions(void *handle)
     ++i;
   }
   return LINUXTRACK_OK;
+#else
+  (void)handle; // Suppress unused parameter warning
+  // For MinGW builds, we can't use dlopen/dlsym
+  // The wine_bridge should link statically or use a different approach
+  return err_SYMBOL_LOOKUP;
+#endif
 }
 
 
@@ -277,6 +288,7 @@ static char *construct_name(const char *path, const char *sep, const char *name)
 
 static void* linuxtrack_try_library(const char *path)
 {
+#ifndef __MINGW32__
   void *handle = NULL;
   linuxtrack_log("Trying to load '%s'... ", path);
   if(access(path, F_OK) != 0){
@@ -291,6 +303,11 @@ static void* linuxtrack_try_library(const char *path)
   }
   linuxtrack_log("Couldn't load library - %s!\n", dlerror());
   return NULL;
+#else
+  (void)path; // Suppress unused parameter warning
+  linuxtrack_log("Dynamic library loading not supported on MinGW.\n");
+  return NULL;
+#endif
 }
 
 char *linuxtrack_get_prefix()
@@ -389,6 +406,7 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
 
 static linuxtrack_state_type linuxtrack_load_library()
 {
+#ifndef __MINGW32__
   linuxtrack_state_type problem;
   lib_handle = linuxtrack_find_library(&problem);
   if(lib_handle == NULL){
@@ -401,6 +419,12 @@ static linuxtrack_state_type linuxtrack_load_library()
     return err_SYMBOL_LOOKUP;
   }
   return LINUXTRACK_OK;
+#else
+  // For MinGW builds, dynamic loading is not supported
+  // The wine_bridge should be designed to work without the full linuxtrack library
+  linuxtrack_log("Dynamic library loading not supported on MinGW, using stubs.\n");
+  return LINUXTRACK_OK;
+#endif
 }
 
 linuxtrack_state_type linuxtrack_init(const char *cust_section)

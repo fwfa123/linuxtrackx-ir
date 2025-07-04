@@ -11,12 +11,10 @@ AC_CONFIG_SRCDIR([src/tir4_driver.h])
 AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
 AC_PROG_OBJC
+# Set basic CFLAGS/CXXFLAGS - stack protector will be added later if not using MinGW
 AS_IF([test "$debug" != "no"],
-      [CFLAGS+=" -g -O2 -Wall -Wextra -Wformat -Wformat-security \
-         --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
-       CXXFLAGS+=" -g -O2 -Wall -Wextra -Wformat -Wformat-security \
-         --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
-       CPPFLAGS+=" -D_FORTIFY_SOURCE=2 -O2 "],
+      [CFLAGS+=" -g -O2 -Wall -Wextra -Wformat -Wformat-security "
+       CXXFLAGS+=" -g -O2 -Wall -Wextra -Wformat -Wformat-security "],
       [CFLAGS+=" -O3 " CXXFLAGS+=" -O3 "])
 
 # Checks for programs.
@@ -119,6 +117,30 @@ AC_CHECK_PROG([with_makensis], [makensis], [yes])
 # Check for MinGW cross-compilation toolchains (alternative to wine-devel)
 AC_CHECK_PROG([with_mingw32], [i686-w64-mingw32-gcc], [yes])
 AC_CHECK_PROG([with_mingw64], [x86_64-w64-mingw32-gcc], [yes])
+
+# Set MinGW compiler variables for substitution
+AS_IF([test "x$with_mingw32" = xyes],
+      [MINGW32_CC="i686-w64-mingw32-gcc"
+       MINGW32_CXX="i686-w64-mingw32-g++"
+       MINGW32_WINDRES="i686-w64-mingw32-windres"],
+      [MINGW32_CC=""
+       MINGW32_CXX=""
+       MINGW32_WINDRES=""])
+
+AS_IF([test "x$with_mingw64" = xyes],
+      [MINGW64_CC="x86_64-w64-mingw32-gcc"
+       MINGW64_CXX="x86_64-w64-mingw32-g++"
+       MINGW64_WINDRES="x86_64-w64-mingw32-windres"],
+      [MINGW64_CC=""
+       MINGW64_CXX=""
+       MINGW64_WINDRES=""])
+
+AC_SUBST([MINGW32_CC])
+AC_SUBST([MINGW32_CXX])
+AC_SUBST([MINGW32_WINDRES])
+AC_SUBST([MINGW64_CC])
+AC_SUBST([MINGW64_CXX])
+AC_SUBST([MINGW64_WINDRES])
 
 XPL_CPPFLAGS=
 AC_ARG_WITH([xplane_sdk],
@@ -324,6 +346,12 @@ AS_IF([(test "x$build_wine_plugin" = xno) && (test "x$build_wine_plugin_mingw" =
 
 AS_IF([(test "x$build_wine64_plugin" = xno) && (test "x$build_wine64_plugin_mingw" = xyes) ],
       [build_wine64_plugin=yes; WINE64_USE_MINGW=yes], [])
+
+# Add stack protector and fortify source only for native builds, not MinGW
+AS_IF([test "x$WINE_USE_MINGW" != xyes && test "x$WINE64_USE_MINGW" != xyes],
+      [CFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
+       CXXFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
+       CPPFLAGS+=" -D_FORTIFY_SOURCE=2 -O2 "])
 
 AS_IF([test  "x$ac_cv_lib_lo_lo_send_bundle" = xyes],
                                 [build_osc_support=yes], [buildt_osc_support=no])

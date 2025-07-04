@@ -21,13 +21,24 @@ int main()
   char *home = getenv("HOME");
   char *path1 = malloc(200 + strlen(home));
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/TIRViews.dll", home);
+#ifndef __MINGW32__
   if(symlink(path1, "TIRViews.dll") != 0){
     MessageBox(NULL,
     "Failed to create symlink to TIRViews.dll!\nSome games will not have headtracking available.",
     "Linuxtrack-wine check",
     MB_OK);
   }
+#else
+  // On MinGW/Windows, copy the file instead of creating a symlink
+  if(!CopyFile(path1, "TIRViews.dll", FALSE)){
+    MessageBox(NULL,
+    "Failed to copy TIRViews.dll!\nSome games will not have headtracking available.",
+    "Linuxtrack-wine check",
+    MB_OK);
+  }
+#endif
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42u.dll", home);
+#ifndef __MINGW32__
   if(symlink(path1, "mfc42u.dll") != 0){
     MessageBox(NULL,
     "Failed to create symlink to mfc42u.dll!\n"
@@ -36,6 +47,17 @@ int main()
     "Linuxtrack-wine check",
     MB_OK);
   }
+#else
+  // On MinGW/Windows, copy the file instead of creating a symlink
+  if(!CopyFile(path1, "mfc42u.dll", FALSE)){
+    MessageBox(NULL,
+    "Failed to copy mfc42u.dll!\n"
+    "Try to install TIRViews support in ltr_gui,\n"
+    "or install mfc42 into this bottle using winetricks.",
+    "Linuxtrack-wine check",
+    MB_OK);
+  }
+#endif
   return 0;
 }
 

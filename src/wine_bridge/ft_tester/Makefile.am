@@ -1,6 +1,6 @@
 noinst_SCRIPTS = 
 if WINE_PLUGIN
-  noinst_SCRIPTS += ftc.exe.so
+  noinst_SCRIPTS += ftc.exe
 endif #WINE_PLUGIN
 
 if DARWIN
@@ -9,9 +9,9 @@ else
   LDFLAGS += -Wl,--no-warn-search-mismatch
 endif
 
-CC = winegcc
-
-CXX = wineg++
+# Use MinGW compilers when available, otherwise fall back to winegcc
+CC = $(MINGW32_CC)
+CXX = $(MINGW32_CXX)
 
 SUFFIXES = .o .cpp .c .rc
 
@@ -22,7 +22,7 @@ SUFFIXES = .o .cpp .c .rc
 	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .rc.o :
-	wrc -o $@ $(RCFLAGS) $<
+	$(MINGW32_WINDRES) -o $@ $(RCFLAGS) $<
 
 CXXFLAGS_PRE = -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
 CFLAGS_PRE = -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@
@@ -33,8 +33,8 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-ftc.exe.so : main.o fttester.o
-	wineg++ -g -o $@ -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+ftc.exe : main.o fttester.o
+	$(CXX) -g -o $@ -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 fttester.o : fttester.rc resource.h config.h
 

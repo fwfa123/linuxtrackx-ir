@@ -61,12 +61,10 @@ void write_prefs()
     printf("Can't create registry key...\n");
     return;
   }
-  char *val = NULL;
+  char val[64];  // Fixed buffer for the key value
   
-  if(asprintf(&val, "0X%X 0X%X", pause_code, recenter_code) > 0){
+  if(snprintf(val, sizeof(val), "0X%X 0X%X", pause_code, recenter_code) > 0){
     result = RegSetValueEx(hkey, "DIKeys", 0, REG_SZ, (unsigned char *)val, strlen(val)+1);
-    free(val);
-    val = NULL;
     if(result != ERROR_SUCCESS){
       printf("Can't store registry key...\n");
     }

@@ -10,7 +10,9 @@
 #define __WINE_NPCLIENT_DLL_H
 
 #include "windef.h"
+#ifndef __MINGW32__
 #include "wine/debug.h"
+#endif
 #include "winbase.h"
 #include "winnt.h"
 

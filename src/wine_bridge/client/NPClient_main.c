@@ -26,7 +26,12 @@
 #include "windef.h"
 #include "winbase.h"
 #include "NPClient_dll.h"
+#ifndef __MINGW32__
 #include "wine/debug.h"
+#else
+#define WINE_DEFAULT_DEBUG_CHANNEL(x)
+#define TRACE(...) do {} while(0)
+#endif
 
 WINE_DEFAULT_DEBUG_CHANNEL(NPClient);
 

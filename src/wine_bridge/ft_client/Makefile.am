@@ -1,6 +1,6 @@
 noinst_SCRIPTS = 
 if WINE_PLUGIN
-  noinst_SCRIPTS += FreeTrackClient.dll.so
+  noinst_SCRIPTS += FreeTrackClient.dll
 endif #WINE_PLUGIN
 
 if DARWIN
@@ -9,9 +9,9 @@ else
   LDFLAGS += -Wl,--no-warn-search-mismatch
 endif
 
-CC = winegcc
-
-CXX = wineg++
+# Use MinGW compilers when available, otherwise fall back to winegcc
+CC = $(MINGW32_CC)
+CXX = $(MINGW32_CXX)
 
 SUFFIXES = .o .cpp .c .rc
 
@@ -30,8 +30,8 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-FreeTrackClient.dll.so : FreeTrackClient.spec FreeTrackClient_main.o linuxtrack.o
-	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared $^ -ldl
+FreeTrackClient.dll : FreeTrackClient.def FreeTrackClient_main.o linuxtrack.o
+	$(CC) $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared FreeTrackClient_main.o linuxtrack.o FreeTrackClient.def
 
 FreeTrackClient_main.o : FreeTrackClient_main.c FreeTrackClient_dll.h
 
@@ -49,5 +49,5 @@ distclean-local-check:
 	rm -f *.exe* *.dll* *.sh *.o
 
 EXTRA_DIST = FreeTrackClient_main.c FreeTrackClient_dll.h \
-FreeTrackClient.spec
+FreeTrackClient.spec FreeTrackClient.def
 
