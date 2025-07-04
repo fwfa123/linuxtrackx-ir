@@ -63,7 +63,7 @@ libfacetrack_int_la_CXXFLAGS = $(OPENCV_CFLAGS)
 
 ltr_server1_SOURCES = ltr_srv_comm.c ltr_srv_comm.h ltr_srv_slave.c ltr_srv_slave.h \
 	ltr_srv_master.cpp ltr_srv_master.h ltr_server1.c ipc_utils.c ipc_utils.h
-ltr_server1_CFLAGS = ${AM_CFLAGS} $(LINUXFLAGS)
+ltr_server1_CFLAGS = $(CFLAGS) $(LINUXFLAGS)
 ltr_server1_LDADD = -lpthread libltr.la
 ltr_server1_LDFLAGS = $(LINUXLDFLAGS) ${SLEOPARD_LDFLAG} ${LTR_SERVER_FLAGS}
 
@@ -87,7 +87,7 @@ endif
 bin_PROGRAMS += ltr_recenter
 
 ltr_recenter_SOURCES = ltr_recenter.c ipc_utils.h ltr_srv_comm.c ltr_srv_comm.h
-ltr_recenter_CFLAGS = ${AM_CFLAGS} $(LINUXFLAGS)
+ltr_recenter_CFLAGS = $(CFLAGS) $(LINUXFLAGS)
 ltr_recenter_LDADD = -ldl liblinuxtrack.la libltr.la
 ltr_recenter_LDFLAGS = $(LINUXLDFLAGS) ${SLEOPARD_LDFLAG} -pthread
 
@@ -96,7 +96,7 @@ bin_PROGRAMS += ltr_extractor
 man_MANS += ltr_extractor.1
 
 ltr_extractor_SOURCES = hashing.c digest.c digest.h game_data.c game_data.h utils.c utils.h extract.c extract.h
-ltr_extractor_CFLAGS = ${AM_CFLAGS} $(LINUXFLAGS) -Iqt_gui
+ltr_extractor_CFLAGS = $(CFLAGS) $(LINUXFLAGS) -Iqt_gui
 ltr_extractor_LDADD = -lmxml
 ltr_extractor_LDFLAGS = $(LINUXLDFLAGS) ${SLEOPARD_LDFLAG} -pthread
 
@@ -202,11 +202,11 @@ man_MANS += ltr_pipe.1
 bin_PROGRAMS += ltr_pipe
 ltr_pipe_CPPFLAGS += -D_GNU_SOURCE
 ltr_pipe_SOURCES = ../config.h ltr_pipe.c linuxtrack.h utils.h utils.c linuxtrack.c
-ltr_pipe_CFLAGS = ${AM_CFLAGS} $(LINUXFLAGS)
+ltr_pipe_CFLAGS = $(CFLAGS) $(LINUXFLAGS)
 ltr_pipe_LDFLAGS = $(LINUXLDFLAGS) ${LTR_PIPE_FLAGS} -ldl
 
 osc_server_SOURCES = osc_server.c linuxtrack.h linuxtrack.c
-osc_server_CFLAGS = ${AM_CFLAGS} $(LINUXFLAGS)
+osc_server_CFLAGS = $(CFLAGS) $(LINUXFLAGS)
 osc_server_LDFLAGS = $(LINUXLDFLAGS) -pthread -llo -ldl
 
 if XPLANE_PLUGIN
