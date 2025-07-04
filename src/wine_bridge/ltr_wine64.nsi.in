@@ -13,14 +13,14 @@ UninstPage instfiles
 Section "Linuxtrack / TrackIR Interface"
   SectionIn RO
   SetOutPath $INSTDIR
-  File /oname=Controller.exe controller\Controller.exe.so
-  File /oname=Tester.exe tester\Tester.exe.so
-  File /oname=Tester64.exe tester\Tester64.exe.so
-  File /oname=NPClient.dll client\NPClient.dll.so
-  File /oname=NPClient64.dll client\NPClient64.dll.so
-  File /oname=check_data.exe client\check_data.exe.so
+  File /oname=Controller.exe controller\Controller.exe
+  File /oname=Tester.exe tester\Tester.exe
+  File /oname=Tester64.exe tester\Tester64.exe
+  File /oname=NPClient.dll client\NPClient.dll
+  File /oname=NPClient64.dll client\NPClient64.dll
+  File /oname=check_data.exe client\check_data.exe
   File /oname=linuxtrack.ico @srcdir@\controller\linuxtrack.ico
-  File /oname=TrackIR.exe views\TrackIR.exe.so
+  File /oname=TrackIR.exe views\TrackIR.exe
   WriteRegStr HKLM SOFTWARE\Linuxtrack "Install_dir" "$INSTDIR"
   WriteRegStr HKCU "Software\NaturalPoint\NATURALPOINT\NPClient Location" "Path" "$INSTDIR\"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" "DisplayName" "Linuxtrack wine bridge"
@@ -33,8 +33,8 @@ SectionEnd
 
 Section "Linuxtrack / Freetrack Interface"
   SetOutPath $INSTDIR
-  File /oname=FreeTrackTester.exe ft_tester\ftc.exe.so
-  File /oname=FreeTrackClient.dll ft_client\FreeTrackClient.dll.so
+  File /oname=FreeTrackTester.exe ft_tester\ftc.exe
+  File /oname=FreeTrackClient.dll ft_client\FreeTrackClient.dll
   WriteRegStr HKCU "Software\Freetrack\FreetrackClient" "Path" "$INSTDIR\"
 SectionEnd
 

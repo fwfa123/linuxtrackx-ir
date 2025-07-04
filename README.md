@@ -29,13 +29,14 @@ See our distribution-specific guides in the `docs/` directory.
 
 ## 🎉 What's New
 
-### 🎉 MinGW Cross-Compilation Support
+### 🎉 MinGW Cross-Compilation Support (Phase 1 Complete)
 LinuxTrack now supports building Windows compatibility components using MinGW, eliminating the need for wine-devel packages:
 
 - ✅ **Simplified Dependencies**: No wine-devel required
 - ✅ **Smaller Footprint**: Fewer packages to install
 - ✅ **Better Compatibility**: Standard Windows PE binaries
 - ✅ **Faster Builds**: No Wine runtime overhead
+- ✅ **NSIS Installers Updated**: All installer scripts now use native .exe/.dll files
 
 ### Why MinGW is the Best Approach
 **MinGW vs winegcc Comparison:**
@@ -50,6 +51,12 @@ LinuxTrack now supports building Windows compatibility components using MinGW, e
 | **CI/CD** | Easy automated builds | Complex Wine environment |
 
 **Bottom Line**: MinGW produces genuine Windows binaries that work everywhere. winegcc and wine-devel are no longer supported in this project.
+
+### 🚧 Build System Modernization Progress
+- ✅ **Phase 1 Complete**: NSIS installer scripts updated for MinGW
+- 🔄 **Phase 2**: Update Makefile.am files for native Windows binaries
+- 🔄 **Phase 3**: Update documentation and build scripts
+- 🔄 **Phase 4**: Final testing and validation
 
 ### Built Windows Components
 - **NPClient.dll** / **NPClient64.dll** - TrackIR API compatibility (32/64-bit)
