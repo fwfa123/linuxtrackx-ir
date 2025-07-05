@@ -6,26 +6,63 @@
 
 LinuxTrack is a project that brings head tracking to Linux and macOS, enabling immersive gaming and simulation experiences. Track your head movement using webcams, IR cameras, or specialized hardware and translate that into game input.
 
+## 🙏 Acknowledgments
+
+### Original Author
+This project would not exist without the incredible work of **uglyDwarf**, the original creator of LinuxTrack. His pioneering work in reverse engineering the TrackIR protocol and creating a Linux-compatible head tracking solution has enabled countless Linux users to enjoy immersive gaming experiences. We owe him a tremendous debt of gratitude for his contributions to the open-source gaming community.
+
+**Original Project**: [LinuxTrack on GitHub](https://github.com/uglyDwarf/linuxtrack)
+
+### Current Maintainer
+This fork is maintained by a developer with limited C/C++ experience (primarily Python and JavaScript background). The modernization work was made possible through the assistance of **Cursor AI**, which helped navigate the complex build system updates and Qt4 to Qt5 migration challenges.
+
+## 🎯 Project Scope & Focus
+
+### Primary Goals
+- **TrackIR Support**: Full compatibility with TrackIR 4 & 5 devices
+- **Modern Linux Compatibility**: Updated build system for current distributions
+- **Qt5 Migration**: Modernized GUI framework support
+- **MinGW Integration**: Improved Windows compatibility layer
+
+### Limited/Untested Features
+⚠️ **Important**: The following features were **not tested** and are **not current development priorities**:
+
+- **Wii Remote Support**: Wii tracking functionality may not work
+- **Webcam/Face Tracking**: Optical tracking features untested
+- **macOS Support**: Mac compatibility not verified
+- **X-Plane Plugin**: Requires X-Plane SDK (see [XPlane Plugin Support](#xplane-plugin-support-optional))
+
+### What This Means
+- **TrackIR users**: Full support and testing focus
+- **Other tracking methods**: May work but not guaranteed
+- **Mac users**: Use at your own risk
+- **Contributors**: Welcome to test and improve untested features
+
 ## 🚀 Quick Start
 
-### For MX Linux / Debian Users (Recommended)
+### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool
-sudo apt install -y qtbase5-dev qttools5-dev-tools libopencv-dev
-sudo apt install -y libusb-1.0-0-dev libmxml-dev mingw-w64
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64
+
+### For Fedora / RHEL / CentOS Users
+```bash
+# Install dependencies
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++
+
+### For Arch Linux / Manjaro Users
+```bash
+# Install dependencies
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb libmxml libx11 libxrandr mingw-w64-gcc
 
 # Build LinuxTrack
 git clone <repository-url>
-cd linuxtrack-clean-june14
+cd linuxtrackx-ir
 autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
 sudo make install
 ```
-
-### For Other Linux Distributions
-See our distribution-specific guides in the `docs/` directory.
 
 ## 🎉 What's New
 
@@ -80,6 +117,7 @@ LinuxTrack works with games and simulators that support:
 - Elite Dangerous
 - Euro Truck Simulator 2
 - American Truck Simulator
+- **X-Plane** (requires XPlane SDK for plugin support)
 
 ## 🔧 Build Requirements
 
@@ -98,11 +136,19 @@ LinuxTrack works with games and simulators that support:
 - **Stack Protector**: Built-in buffer overflow protection
 - **Fortify Source**: Enhanced security checks for standard library functions
 
+### XPlane Plugin Support (Optional)
+- **XPlane SDK** (required for X-Plane plugin): Download from [Laminar Research Developer Site](https://developer.x-plane.com/sdk/plugin-sdk-downloads/)
+- **Default location**: `/usr/include/xplane_sdk/`
+- **Custom location**: Use `--with-xplane-sdk=/path/to/sdk` during configure
+
+**Note**: Without the XPlane SDK, configure will show "XPlane plugin... no". The SDK is only needed if you want to build X-Plane compatibility plugins.
+
 ## 📖 Documentation
 
-- **[MX Linux Build Guide](docs/MX_LINUX_BUILD_GUIDE.md)** - Complete guide for MX Linux users
+- **[MX Linux Build Guide](docs/MX_LINUX_BUILD_GUIDE.md)** - Detailed guide for MX Linux users
 - **[Wine Bridge Guide](docs/WINE_BRIDGE_BUILD_GUIDE.md)** - Windows compatibility details
 - **[Qt4 to Qt5 Migration](docs/QT4_TO_QT5_MIGRATION.md)** - Technical migration notes
+- **[Distribution Support](#-quick-start)** - Build instructions for Debian, Ubuntu, Fedora, and Arch Linux
 
 ## 🏗️ Build Process
 
@@ -138,6 +184,9 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 
 # Custom Qt5 location
 ./configure --prefix=/opt QMAKE=/usr/bin/qmake-qt5
+
+# Enable XPlane plugin support
+./configure --prefix=/opt --with-xplane-sdk=/usr/include/xplane_sdk
 ```
 
 ## 🎯 Supported Hardware
@@ -179,18 +228,20 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 
 | Problem | Solution |
 |---------|----------|
-| `aclocal-1.17: command not found` | See [MX Linux Guide](docs/MX_LINUX_BUILD_GUIDE.md#troubleshooting) |
-| `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` |
-| Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` |
+| `aclocal-1.17: command not found` | Install autoconf: `sudo apt install autoconf` (Debian/Ubuntu) or `sudo dnf install autoconf` (Fedora) or `sudo pacman -S autoconf` (Arch) |
+| `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` (Debian/Ubuntu) or `sudo dnf install mingw64-gcc` (Fedora) or `sudo pacman -S mingw-w64-gcc` (Arch) |
+| Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` (Debian/Ubuntu) or `sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel` (Fedora) or `sudo pacman -S qt5-base qt5-tools qt5-x11extras` (Arch) |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
+| XPlane plugin shows "no" | Install XPlane SDK from [Laminar Research](https://developer.x-plane.com/sdk/plugin-sdk-downloads/) or use `--with-xplane-sdk=/path/to/sdk` |
 
 ### Getting Help
-1. **Check the docs**: Start with distribution-specific guides
+1. **Check the docs**: Start with the [Quick Start](#-quick-start) section for your distribution
 2. **Verify installation**: Run `ltr_gui` to test basic functionality
 3. **Check logs**: Look for error messages in terminal output
 4. **Hardware test**: Verify USB devices are detected
+5. **Distribution guides**: See the `docs/` directory for detailed guides
 
 ## 📁 Project Structure
 
@@ -243,7 +294,8 @@ LinuxTrack is released under the GNU General Public License v2.0. See the [COPYI
 - **Community Contributors**: All developers who have contributed code and testing
 - **Reverse Engineering**: TrackIR protocol reverse engineering efforts
 - **Hardware Support**: Community-driven hardware compatibility testing
+- **AI Assistance**: Cursor AI for helping with build system modernization
 
 ---
 
-**Ready to start tracking?** Follow the [MX Linux Build Guide](docs/MX_LINUX_BUILD_GUIDE.md) for step-by-step instructions!
+**Ready to start tracking?** Follow the [Quick Start](#-quick-start) section for your distribution!
