@@ -41,8 +41,22 @@ AC_CHECK_LIB([pthread], [pthread_create], [LIBPTHREAD=true], [AC_MSG_FAILURE([li
 AC_CHECK_LIB([mxml], [mxmlNewXML], [LIBMXML=true], [AC_MSG_FAILURE([libmxml not found!])], [-pthread])
 AC_CHECK_HEADER([mxml.h], [], [AC_MSG_FAILURE([mxml.h is needed for ltr_gui compilation!])])
 
+# Check for Qt5 development headers
+AC_CHECK_HEADER([QtCore/QtCore], [], [AC_MSG_FAILURE([Qt5 development headers not found. Please install qtbase5-dev.])])
+AC_CHECK_HEADER([QtWidgets/QtWidgets], [], [AC_MSG_FAILURE([Qt5 Widgets headers not found. Please install qtbase5-dev.])])
+
 # Qt5 is needed for the GUI
 AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qt5-qmake qmake5 qmake])
+
+# Verify that the found qmake is Qt5 by checking its version
+AS_IF([test -n "$QMAKE_PATH"],
+      [AC_MSG_CHECKING([if $QMAKE_PATH is Qt5])
+       QT5_VERSION=`$QMAKE_PATH -query QT_VERSION 2>/dev/null`
+       AS_IF([test -n "$QT5_VERSION" && test "$QT5_VERSION" != "unknown"],
+             [AC_MSG_RESULT([yes - Qt $QT5_VERSION])],
+             [AC_MSG_RESULT([no - Qt5 not found])
+              AC_MSG_ERROR([Qt5 qmake not found. Please install qt5-qmake or qtbase5-dev.])])],
+      [AC_MSG_ERROR([qmake not found. Please install Qt5 development packages.])])
 
 # Detect Qt5 help generator
 AC_PATH_PROGS(QT5_QHELPGENERATOR, [qhelpgenerator-qt5 qhelpgenerator], [qhelpgenerator-qt5])

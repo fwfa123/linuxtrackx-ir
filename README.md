@@ -69,17 +69,17 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex
 
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb libmxml libx11 libxrandr mingw-w64-gcc
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -148,7 +148,7 @@ LinuxTrack works with games and simulators that support:
 ## 🔧 Build Requirements
 
 ### Core Dependencies
-- **Build Tools**: gcc, g++, make, autoconf, automake, libtool
+- **Build Tools**: gcc, g++, make, autoconf, automake, libtool, bison, flex
 - **GUI Framework**: Qt5 (qtbase5-dev, qttools5-dev-tools, libqt5x11extras5-dev)
 - **Computer Vision**: OpenCV (libopencv-dev)
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
@@ -261,6 +261,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | Problem | Solution |
 |---------|----------|
 | `aclocal-1.17: command not found` | Install autoconf: `sudo apt install autoconf` (Debian/Ubuntu) or `sudo dnf install autoconf` (Fedora) or `sudo pacman -S autoconf` (Arch) |
+| `flex: command not found` | Install flex: `sudo apt install flex` (Debian/Ubuntu) or `sudo dnf install flex` (Fedora) or `sudo pacman -S flex` (Arch) |
 | `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` (Debian/Ubuntu) or `sudo dnf install mingw64-gcc` (Fedora) or `sudo pacman -S mingw-w64-gcc` (Arch) |
 | Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` (Debian/Ubuntu) or `sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel` (Fedora) or `sudo pacman -S qt5-base qt5-tools qt5-x11extras` (Arch) |
 | Permission denied on device | Add user to plugdev group |
