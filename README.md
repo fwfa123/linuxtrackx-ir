@@ -350,3 +350,187 @@ This project is a fork of the original LinuxTrack project. The original project 
 **Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)  
 **License**: MIT License (same as original)  
 **Fork Purpose**: Modernization and continued development
+
+## 🔍 Comprehensive Dependency Analysis
+
+### Dependency Verification Checklist
+
+To ensure you have all required dependencies, you can run these verification commands on your system:
+
+#### Core Build Tools
+```bash
+# Verify build tools
+which gcc g++ make autoconf automake libtool bison flex pkg-config
+```
+
+#### Qt5 Dependencies (Critical)
+```bash
+# Verify Qt5 installation
+qmake-qt5 -query QT_VERSION
+pkg-config --exists Qt5Core Qt5Widgets Qt5OpenGL Qt5Help Qt5Network Qt5X11Extras
+```
+
+#### Library Dependencies
+```bash
+# Verify core libraries
+pkg-config --exists opencv4
+pkg-config --exists libusb-1.0
+pkg-config --exists mxml
+pkg-config --exists liblo  # Optional: OSC support
+pkg-config --exists libcwiid  # Optional: Wii support
+```
+
+#### Development Headers
+```bash
+# Verify development headers
+ls /usr/include/qt5/QtCore/QtCore
+ls /usr/include/qt5/QtWidgets/QtWidgets
+ls /usr/include/qt5/QtOpenGL/QtOpenGL
+ls /usr/include/qt5/QtHelp/QtHelp
+ls /usr/include/qt5/QtNetwork/QtNetwork
+ls /usr/include/qt5/QtX11Extras/QtX11Extras
+ls /usr/include/opencv4/opencv2/opencv.hpp
+ls /usr/include/libusb-1.0/libusb.h
+ls /usr/include/mxml.h
+ls /usr/include/libv4l2.h
+ls /usr/include/linux/videodev2.h
+ls /usr/include/linux/uinput.h
+```
+
+#### X11 Dependencies
+```bash
+# Verify X11 development
+pkg-config --exists x11 xrandr
+ls /usr/include/X11/Xlib.h
+ls /usr/include/X11/extensions/Xrandr.h
+```
+
+#### MinGW Dependencies (Windows Components)
+```bash
+# Verify MinGW installation
+which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc
+which i686-w64-mingw32-g++ x86_64-w64-mingw32-g++
+which makensis
+```
+
+#### 32-bit Development (Optional)
+```bash
+# Verify 32-bit development headers
+ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || echo "32-bit headers not found"
+```
+
+### Complete Dependency Matrix
+
+| Component | Debian/Ubuntu/MX | Fedora/RHEL | Arch Linux | Purpose |
+|-----------|------------------|-------------|------------|---------|
+| **Build Tools** |
+| gcc, g++ | build-essential | gcc gcc-c++ | base-devel | C/C++ compilation |
+| make | build-essential | make | base-devel | Build system |
+| autoconf | autoconf | autoconf | autoconf | Configure script generation |
+| automake | automake | automake | automake | Makefile generation |
+| libtool | libtool | libtool | libtool | Library building |
+| bison | bison | bison | bison | Parser generator |
+| flex | flex | flex | flex | Lexical analyzer |
+| pkg-config | pkg-config | pkgconfig | pkgconf | Package configuration |
+| **Qt5 Framework** |
+| Qt5 Core | qtbase5-dev | qt5-qtbase-devel | qt5-base | Core Qt functionality |
+| Qt5 Widgets | qtbase5-dev | qt5-qtbase-devel | qt5-base | GUI widgets |
+| Qt5 OpenGL | qtbase5-dev | qt5-qtbase-devel | qt5-base | OpenGL integration |
+| Qt5 Help | libqt5help5-dev | qt5-qtbase-devel | qt5-help | Help system |
+| Qt5 Network | qtbase5-dev | qt5-qtbase-devel | qt5-base | Network support |
+| Qt5 X11Extras | libqt5x11extras5-dev | qt5-qtx11extras-devel | qt5-x11extras | X11 integration |
+| Qt5 Tools | qttools5-dev-tools | qt5-qttools-devel | qt5-tools | Qt development tools |
+| **Computer Vision** |
+| OpenCV | libopencv-dev | opencv-devel | opencv | Face tracking, image processing |
+| **Hardware Access** |
+| libusb | libusb-1.0-0-dev | libusb1-devel | libusb | USB device access |
+| mxml | libmxml-dev | libmxml-devel | libmxml | XML parsing |
+| **Video Support** |
+| V4L2 | libv4l-dev | v4l-utils-devel | v4l-utils | Video4Linux2 support |
+| **X11 Support** |
+| X11 | libx11-dev | libX11-devel | libx11 | X11 window system |
+| Xrandr | libxrandr-dev | libXrandr-devel | libxrandr | X11 resolution management |
+| **Windows Compatibility** |
+| MinGW 32-bit | mingw-w64 | mingw64-gcc | mingw-w64-gcc | Windows 32-bit compilation |
+| MinGW 64-bit | mingw-w64 | mingw64-gcc-c++ | mingw-w64-gcc | Windows 64-bit compilation |
+| NSIS | nsis | nsis | nsis | Windows installer creation |
+| **32-bit Development** |
+| 32-bit libc | libc6-dev-i386 | glibc-devel.i686 | lib32-glibc | 32-bit library support |
+| 32-bit gcc | gcc-multilib | libstdc++-devel.i686 | lib32-gcc-libs | 32-bit compilation |
+| **Optional Features** |
+| liblo | liblo-dev | liblo-devel | liblo | OSC protocol support |
+| libcwiid | libcwiid-dev | libcwiid-devel | libcwiid | Wii remote support |
+| libcrypto | libssl-dev | openssl-devel | openssl | Cryptographic functions |
+
+### Dependency Verification Script
+
+Create a script to verify all dependencies:
+
+```bash
+#!/bin/bash
+# dependency_check.sh - Verify all LinuxTrack dependencies
+
+echo "=== LinuxTrack Dependency Check ==="
+echo
+
+# Build tools
+echo "Checking build tools..."
+for tool in gcc g++ make autoconf automake libtool bison flex pkg-config; do
+    if command -v $tool >/dev/null 2>&1; then
+        echo "✓ $tool found"
+    else
+        echo "✗ $tool missing"
+    fi
+done
+echo
+
+# Qt5 verification
+echo "Checking Qt5..."
+if command -v qmake-qt5 >/dev/null 2>&1; then
+    echo "✓ qmake-qt5 found: $(qmake-qt5 -query QT_VERSION)"
+else
+    echo "✗ qmake-qt5 missing"
+fi
+
+# Qt5 modules
+for module in Qt5Core Qt5Widgets Qt5OpenGL Qt5Help Qt5Network Qt5X11Extras; do
+    if pkg-config --exists $module 2>/dev/null; then
+        echo "✓ $module found"
+    else
+        echo "✗ $module missing"
+    fi
+done
+echo
+
+# Libraries
+echo "Checking libraries..."
+for lib in opencv4 libusb-1.0 mxml; do
+    if pkg-config --exists $lib 2>/dev/null; then
+        echo "✓ $lib found"
+    else
+        echo "✗ $lib missing"
+    fi
+done
+echo
+
+# MinGW
+echo "Checking MinGW..."
+for mingw in i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc; do
+    if command -v $mingw >/dev/null 2>&1; then
+        echo "✓ $mingw found"
+    else
+        echo "✗ $mingw missing"
+    fi
+done
+
+if command -v makensis >/dev/null 2>&1; then
+    echo "✓ makensis found"
+else
+    echo "✗ makensis missing"
+fi
+echo
+
+echo "=== Check Complete ==="
+```
+
+Save this as `dependency_check.sh`, make it executable with `chmod +x dependency_check.sh`, and run it to verify your system has all required dependencies.
