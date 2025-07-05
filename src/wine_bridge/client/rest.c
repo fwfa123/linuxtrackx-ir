@@ -12,7 +12,29 @@
 static ssize_t my_getline(char **lineptr, size_t *n, FILE *f)
 {
 #ifndef DARWIN
+#ifdef __MINGW32__
+  // MinGW doesn't have getline, implement a simple version
+  char buffer[4096];
+  if (fgets(buffer, sizeof(buffer), f) == NULL) {
+    return -1;
+  }
+  size_t len = strlen(buffer);
+  if (len > 0 && buffer[len-1] == '\n') {
+    buffer[len-1] = '\0';
+    len--;
+  }
+  if (*lineptr == NULL) {
+    *n = 4096;
+    *lineptr = (char *)malloc(*n);
+  } else if (*n < len + 1) {
+    *n = len + 1;
+    *lineptr = (char *)realloc(*lineptr, *n);
+  }
+  strcpy(*lineptr, buffer);
+  return len;
+#else
   return getline(lineptr, n, f);
+#endif
 #else
   size_t cnt = 0;
   char *res = fgetln(f, &cnt);

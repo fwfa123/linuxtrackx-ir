@@ -2,7 +2,7 @@
 Version=1.0
 Name=LinuxTrack
 Comment=Head tracking configuration and setup
-Exec=/opt/linuxtrack/bin/ltr_gui
+Exec=/opt/bin/ltr_gui
 Icon=linuxtrack
 Terminal=false
 Type=Application

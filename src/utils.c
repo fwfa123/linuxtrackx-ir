@@ -328,19 +328,25 @@ char *ltr_int_get_data_path_prefix(const char *data, const char *prefix)
 
 char *ltr_int_get_lib_path(const char *libname)
 {
-  #ifdef DARWIN
-    char *app_path = ltr_int_get_app_path(LIB_PATH);
-    if(app_path == NULL){
-      return NULL;
-    }
-  #else
-    char *app_path = ltr_int_my_strdup(LIB_PATH);
-  #endif
-    char *lib_path1 = ltr_int_my_strcat(app_path, libname);
-    char *lib_path = ltr_int_my_strcat(lib_path1, LIB_SUFFIX);
-    free(app_path);
-    free(lib_path1);
+#ifdef DARWIN
+  char *app_path = ltr_int_get_app_path(LIB_PATH);
+  if(app_path == NULL){
+    return NULL;
+  }
+  char *lib_path1 = ltr_int_my_strcat(app_path, libname);
+  char *lib_path = ltr_int_my_strcat(lib_path1, LIB_SUFFIX);
+  free(app_path);
+  free(lib_path1);
   return lib_path;
+#else
+  // On Linux, just return the library name with .so.0 so dlopen uses the system path
+  size_t len = strlen(libname) + strlen(LIB_SUFFIX) + 1;
+  char *lib_path = (char *)malloc(len);
+  if (lib_path) {
+    snprintf(lib_path, len, "%s%s", libname, LIB_SUFFIX);
+  }
+  return lib_path;
+#endif
 }
 
 char *ltr_int_get_resource_path(const char *section, const char *rsrc)

@@ -121,7 +121,7 @@ doc/latex/
 # Package manager files
 node_modules/
 package-lock.json
-yarn.lock
+yarn.lock 
 
 # Test outputs
 test_results/

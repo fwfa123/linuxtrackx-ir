@@ -5,7 +5,7 @@
 #ifdef QT5_OVERRIDES
   #include <QtX11Extras/QX11Info>
 #else
-  #include <QX11Info>
+#include <QX11Info>
 #endif
 #include <QKeySequence>
 #include <QAbstractEventDispatcher>

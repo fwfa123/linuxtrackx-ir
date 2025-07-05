@@ -322,6 +322,24 @@ mickey/mickey : mickey/help.qhc mickey/help.qch
 
 
 install-exec-hook: $(hook_inst_targets)
+	@echo "Setting up system integration..."
+	@echo "Registering library path in system library cache..."
+	@if [ -d "$(DESTDIR)$(pkglibdir)" ]; then \
+		echo "$(pkglibdir)" > $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf; \
+		echo "Library path registered: $(pkglibdir)"; \
+	else \
+		echo "Warning: Library directory $(pkglibdir) not found for library path registration."; \
+	fi
+	@echo "Updating system library cache..."
+	@if [ -x "$(DESTDIR)/sbin/ldconfig" ]; then \
+		$(DESTDIR)/sbin/ldconfig 2>/dev/null || true; \
+		echo "System library cache updated."; \
+	elif command -v ldconfig >/dev/null 2>&1; then \
+		ldconfig 2>/dev/null || true; \
+		echo "System library cache updated."; \
+	else \
+		echo "Warning: ldconfig not found, library cache not updated."; \
+	fi
 if TRACKIR_SUPPORT
 	@echo "Installing udev rules for TrackIR devices..."
 	$(MKDIR_P) $(DESTDIR)/lib/udev/rules.d/
@@ -331,12 +349,29 @@ if TRACKIR_SUPPORT
 	-udevadm control --reload-rules 2>/dev/null || true
 	@echo "udev rules installation complete."
 endif
+	@echo "System integration setup complete."
 
 install-data-hook:
 	@echo "Updating desktop database..."
-	-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true
+	@if [ -d "$(DESTDIR)/usr/share/applications" ]; then \
+		-update-desktop-database $(DESTDIR)/usr/share/applications 2>/dev/null || true; \
+		echo "Desktop database updated for system applications directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/applications" ]; then \
+		-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true; \
+		echo "Desktop database updated for local applications directory."; \
+	else \
+		echo "Warning: No applications directory found for desktop database update."; \
+	fi
 	@echo "Updating icon cache..."
-	-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true
+	@if [ -d "$(DESTDIR)/usr/share/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)/usr/share/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for system icon directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for local icon directory."; \
+	else \
+		echo "Warning: No icon directory found for icon cache update."; \
+	fi
 	@echo "Desktop integration update complete."
 
 LTR_QT_GUI_TARGET_INST: qt_gui/help.qhc qt_gui/help.qch
@@ -358,6 +393,19 @@ LTR_WINE_TARGET_INST:
 	@echo "Wine bridge installation complete."
 
 uninstall-hook: $(hook_uninst_targets)
+	@echo "Cleaning up system integration..."
+	@echo "Removing library path from system library cache..."
+	-rm -f $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf
+	@echo "Updating system library cache after removal..."
+	@if [ -x "$(DESTDIR)/sbin/ldconfig" ]; then \
+		$(DESTDIR)/sbin/ldconfig 2>/dev/null || true; \
+		echo "System library cache updated."; \
+	elif command -v ldconfig >/dev/null 2>&1; then \
+		ldconfig 2>/dev/null || true; \
+		echo "System library cache updated."; \
+	else \
+		echo "Warning: ldconfig not found, library cache not updated."; \
+	fi
 if TRACKIR_SUPPORT
 	@echo "Removing udev rules for TrackIR devices..."
 	-rm -f $(DESTDIR)/lib/udev/rules.d/99-TIR.rules
@@ -367,10 +415,26 @@ if TRACKIR_SUPPORT
 	@echo "udev rules removal complete."
 endif
 	@echo "Updating desktop database after uninstall..."
-	-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true
+	@if [ -d "$(DESTDIR)/usr/share/applications" ]; then \
+		-update-desktop-database $(DESTDIR)/usr/share/applications 2>/dev/null || true; \
+		echo "Desktop database updated for system applications directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/applications" ]; then \
+		-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true; \
+		echo "Desktop database updated for local applications directory."; \
+	else \
+		echo "Warning: No applications directory found for desktop database update."; \
+	fi
 	@echo "Updating icon cache after uninstall..."
-	-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true
-	@echo "Desktop integration cleanup complete."
+	@if [ -d "$(DESTDIR)/usr/share/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)/usr/share/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for system icon directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for local icon directory."; \
+	else \
+		echo "Warning: No icon directory found for icon cache update."; \
+	fi
+	@echo "System integration cleanup complete."
 
 
 
@@ -460,8 +524,9 @@ mickey/mouse.h mickey/mouse_linux.cpp mickey/mouse_mac.cpp mickey/mickey.qrc sn4
 mickey/precomp_headers.h wii_server/precomp_headers.h qt_gui/precomp_headers.h ltr_extractor.1 \
 qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey/mickey.qhp
 
-desktopdir = $(datadir)/applications
-desktop_DATA = linuxtrack.desktop linuxtrack-wii.desktop mickey.desktop
+# Install desktop files to system applications directory
+desktopdir = /usr/share/applications
+desktop_DATA = linuxtrack.desktop mickey.desktop
 
 if WINE_PLUGIN
   desktop_DATA += linuxtrack-wine.desktop
@@ -482,14 +547,42 @@ icon_DATA = linuxtrack.svg linuxtrack.png linuxtrack.xpm \
 # Installation verification target
 verify:
 	@echo "Running LinuxTrack installation verification..."
-	@if [ -x "$(DESTDIR)$(bindir)/verify_installation.sh" ]; then \
-		$(DESTDIR)$(bindir)/verify_installation.sh; \
-	elif [ -x "../verify_installation.sh" ]; then \
-		../verify_installation.sh; \
+	@echo "Checking desktop files..."
+	@if [ -f "$(DESTDIR)/usr/share/applications/linuxtrack.desktop" ]; then \
+		echo "✓ Desktop files installed in system applications directory"; \
+	elif [ -f "$(DESTDIR)$(datadir)/applications/linuxtrack.desktop" ]; then \
+		echo "✓ Desktop files installed in local applications directory"; \
 	else \
-		echo "ERROR: verify_installation.sh not found"; \
-		exit 1; \
+		echo "✗ Desktop files not found"; \
 	fi
+	@echo "Checking library path registration..."
+	@if [ -f "$(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf" ]; then \
+		echo "✓ Library path registered in system"; \
+	else \
+		echo "✗ Library path not registered"; \
+	fi
+	@echo "Checking library cache..."
+	@if command -v ldconfig >/dev/null 2>&1; then \
+		if ldconfig -p | grep -q linuxtrack; then \
+			echo "✓ Libraries found in system library cache"; \
+		else \
+			echo "✗ Libraries not found in system library cache"; \
+		fi; \
+	else \
+		echo "⚠ ldconfig not available for verification"; \
+	fi
+	@echo "Checking binary executables..."
+	@if [ -x "$(DESTDIR)$(bindir)/ltr_gui" ]; then \
+		echo "✓ Main GUI executable found"; \
+	else \
+		echo "✗ Main GUI executable not found"; \
+	fi
+	@if [ -x "$(DESTDIR)$(bindir)/mickey" ]; then \
+		echo "✓ Mickey executable found"; \
+	else \
+		echo "✗ Mickey executable not found"; \
+	fi
+	@echo "Installation verification complete."
 
 .PHONY: verify
 

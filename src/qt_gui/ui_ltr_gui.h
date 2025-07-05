@@ -1,7 +1,7 @@
 /********************************************************************************
 ** Form generated from reading UI file 'ltr_gui.ui'
 **
-** Created by: Qt User Interface Compiler version 5.15.17
+** Created by: Qt User Interface Compiler version 5.15.8
 **
 ** WARNING! All changes made in this file will be lost when recompiling UI file!
 ********************************************************************************/

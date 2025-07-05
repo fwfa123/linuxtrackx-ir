@@ -2,7 +2,7 @@
 Version=1.0
 Name=LinuxTrack Wii Server
 Comment=Wiimote proxy server for LinuxTrack head tracking
-Exec=/opt/linuxtrack/bin/wii_server
+Exec=/opt/bin/wii_server
 Icon=linuxtrack-wii
 Terminal=false
 Type=Application
