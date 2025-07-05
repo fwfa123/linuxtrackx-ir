@@ -42,6 +42,19 @@ AC_CHECK_LIB([mxml], [mxmlNewXML], [LIBMXML=true], [AC_MSG_FAILURE([libmxml not 
 AC_CHECK_HEADER([mxml.h], [], [AC_MSG_FAILURE([mxml.h is needed for ltr_gui compilation!])])
 
 # Note: Qt5 headers will be checked during compilation, qmake version check is sufficient here
+# Qt5 header check - try multiple possible paths for Qt5 headers
+AC_MSG_CHECKING([for Qt5 development headers])
+QT5_HEADERS_FOUND=no
+for qt5_include_path in "/usr/include/x86_64-linux-gnu/qt5" "/usr/include/qt5" "/usr/include/qt" "/opt/qt5/include"; do
+  if test -d "$qt5_include_path/QtCore" && test -d "$qt5_include_path/QtWidgets"; then
+    QT5_HEADERS_FOUND=yes
+    AC_MSG_RESULT([found in $qt5_include_path])
+    break
+  fi
+done
+if test "$QT5_HEADERS_FOUND" = "no"; then
+  AC_MSG_RESULT([not found - will check during compilation])
+fi
 
 # Qt5 is needed for the GUI
 AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qt5-qmake qmake5 qmake])
@@ -56,7 +69,7 @@ AS_IF([test -n "$QMAKE_PATH"],
               AC_MSG_ERROR([Qt5 qmake not found. Please install qt5-qmake or qtbase5-dev.])])],
       [AC_MSG_ERROR([qmake not found. Please install Qt5 development packages.])])
 
-# Detect Qt5 help generator
+# Detect Qt5 help generator (optional)
 AC_PATH_PROGS(QT5_QHELPGENERATOR, [qhelpgenerator-qt5 qhelpgenerator], [qhelpgenerator-qt5])
 AC_SUBST([QT5_QHELPGENERATOR])
 
