@@ -1,2 +1,26 @@
-Tulthix
-uglyDwarf
+# LinuxTrack Contributors
+
+## Original Authors
+uglyDwarf - Original creator and main developer of LinuxTrack
+Tulthix - Early contributor to the project
+
+## Primary Contributors
+f.josef - Main developer and maintainer (302 commits)
+Michal Navratil - Significant contributor (20 commits)
+
+## Active Contributors
+fwfa123 - Qt5 modernization and documentation (61 commits)
+aledin - Contributor (2 commits)
+
+## Additional Contributors
+raven - Contributor to original linuxtrack repository (4 commits)
+
+## Acknowledgments
+- Cursor AI - Assisted with Qt5 modernization and build system updates
+- The Linux gaming community for testing and feedback
+- All users who provided bug reports and feature requests
+
+---
+Note: This file lists all contributors who have made commits to either the original
+linuxtrack repository or the linuxtrackx-ir fork. Contributors are listed in order
+of their contribution level and significance to the project.
