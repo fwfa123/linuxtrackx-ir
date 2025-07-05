@@ -69,17 +69,17 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel
 
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -152,6 +152,7 @@ LinuxTrack works with games and simulators that support:
 - **GUI Framework**: Qt5 (qtbase5-dev, qttools5-dev-tools, libqt5x11extras5-dev)
 - **Computer Vision**: OpenCV (libopencv-dev)
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
+- **Video Support**: V4L2 development headers (libv4l-dev / v4l-utils-devel / v4l-utils)
 - **X11 Support**: libx11-dev, libxrandr-dev
 
 ### Windows Compatibility (MinGW Only)
@@ -265,6 +266,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | `makensis: command not found` | Install NSIS: `sudo apt install nsis` (Debian/Ubuntu) or `sudo dnf install nsis` (Fedora) or `sudo pacman -S nsis` (Arch) |
 | `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` (Debian/Ubuntu) or `sudo dnf install mingw64-gcc` (Fedora) or `sudo pacman -S mingw-w64-gcc` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | 32-bit development headers missing. Install: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu/MX) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora/RHEL) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
+| `libv4l2.h: No such file or directory` | V4L2 development headers missing. Install: `sudo apt install libv4l-dev` (Debian/Ubuntu/MX) or `sudo dnf install v4l-utils-devel` (Fedora/RHEL) or `sudo pacman -S v4l-utils` (Arch) |
 | Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev` (Debian/Ubuntu) or `sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel` (Fedora) or `sudo pacman -S qt5-base qt5-tools qt5-x11extras` (Arch) |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
