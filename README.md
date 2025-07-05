@@ -1,20 +1,46 @@
-# LinuxTrack - Head Tracking for Linux
+# LinuxTrack X-IR - Modern Head Tracking for Linux
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/uglyDwarf/linuxtrack)
-[![License](https://img.shields.io/badge/license-GPL-blue)](https://github.com/uglyDwarf/linuxtrack/blob/master/COPYING)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-lightgrey)](https://github.com/uglyDwarf/linuxtrack)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/fwfa123/linuxtrackx-ir)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
 
-LinuxTrack is a project that brings head tracking to Linux and macOS, enabling immersive gaming and simulation experiences. Track your head movement using webcams, IR cameras, or specialized hardware and translate that into game input.
+**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and MinGW cross-compilation. Track your head movement using TrackIR devices, webcams, or specialized hardware and translate that into game input.
+
+## 🔄 Fork Information
+
+### About This Fork
+This project is a **fork** of the original LinuxTrack project created by uglyDwarf. The original project was abandoned, and this fork continues development with modern build systems and enhanced compatibility.
+
+**Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)  
+**This Fork**: LinuxTrack X-IR (focusing on TrackIR compatibility and modern Linux support)
+
+### Key Differences from Original
+- ✅ **Qt5 Modernization**: Updated from Qt4 to Qt5 for current Linux distributions
+- ✅ **MinGW Cross-Compilation**: Native Windows binary support (no Wine required)
+- ✅ **Modern Build System**: Updated autotools and CMake support
+- ✅ **Enhanced Security**: PIE, stack protector, and fortify source enabled by default
+- ✅ **TrackIR Focus**: Primary focus on TrackIR 4 & 5 compatibility
+- ✅ **Active Development**: Regular updates and community support
 
 ## 🙏 Acknowledgments
 
-### Original Author
-This project would not exist without the incredible work of **uglyDwarf**, the original creator of LinuxTrack. His pioneering work in reverse engineering the TrackIR protocol and creating a Linux-compatible head tracking solution has enabled countless Linux users to enjoy immersive gaming experiences. We owe him a tremendous debt of gratitude for his contributions to the open-source gaming community.
+### Original Authors
+This project would not exist without the incredible work of the original LinuxTrack developers:
+
+- **uglyDwarf** - Original creator and main developer of LinuxTrack
+- **Tulthix** - Early contributor to the project
+- **f.josef** - Main developer and maintainer (302 commits)
+- **Michal Navratil** - Significant contributor (20 commits)
 
 **Original Project**: [LinuxTrack on GitHub](https://github.com/uglyDwarf/linuxtrack)
 
 ### Current Maintainer
-This fork is maintained by a developer with limited C/C++ experience (primarily Python and JavaScript background). The modernization work was made possible through the assistance of **Cursor AI**, which helped navigate the complex build system updates and Qt4 to Qt5 migration challenges.
+This fork is maintained by **fwfa123** (61 commits), a developer with limited C/C++ experience (primarily Python and JavaScript background). The modernization work was made possible through the assistance of **Cursor AI**, which helped navigate the complex build system updates and Qt4 to Qt5 migration challenges.
+
+### Additional Contributors
+- **raven** - Contributor to original linuxtrack repository (4 commits)
+- **aledin** - Contributor (2 commits)
+- **Cursor AI** - Assisted with Qt5 modernization and build system updates
 
 ## 🎯 Project Scope & Focus
 
@@ -145,6 +171,12 @@ LinuxTrack works with games and simulators that support:
 
 ## 📖 Documentation
 
+### Fork Information
+- **[Fork Notice](FORK_NOTICE.md)** - Detailed explanation of the fork relationship
+- **[Changelog](CHANGELOG.md)** - What's new and different from the original project
+- **[Contributors](AUTHORS)** - Complete list of original and fork contributors
+
+### Build Guides
 - **[MX Linux Build Guide](docs/MX_LINUX_BUILD_GUIDE.md)** - Detailed guide for MX Linux users
 - **[Wine Bridge Guide](docs/WINE_BRIDGE_BUILD_GUIDE.md)** - Windows compatibility details
 - **[Qt4 to Qt5 Migration](docs/QT4_TO_QT5_MIGRATION.md)** - Technical migration notes
@@ -279,23 +311,36 @@ make -j$(nproc)
 
 ## 📜 License
 
-LinuxTrack is released under the GNU General Public License v2.0. See the [COPYING](COPYING) file for details.
+LinuxTrack X-IR is released under the MIT License, maintaining compatibility with the original project's licensing. See the [LICENSE.md](LICENSE.md) file for details.
+
+**Note**: This fork maintains the same MIT license as the original LinuxTrack project to ensure compatibility and respect for the original authors' licensing choice.
 
 ## 🌐 Links
 
-- **Original Project**: [LinuxTrack on GitHub](https://github.com/uglyDwarf/linuxtrack)
-- **Downloads**: [Official Downloads](https://github.com/uglyDwarf/linuxtrack/wiki/Downloads)
-- **Documentation**: [Project Wiki](https://github.com/uglyDwarf/linuxtrack/wiki)
+- **Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)
+- **This Fork**: [LinuxTrack X-IR](https://github.com/fwfa123/linuxtrackx-ir)
 - **Community**: [OpenTrack Community](https://github.com/opentrack/opentrack) (compatible project)
+- **Documentation**: See the `docs/` directory for detailed guides
 
 ## 🙏 Acknowledgments
 
-- **Original Author**: uglyDwarf and the LinuxTrack team
+- **Original Authors**: uglyDwarf, Tulthix, f.josef, Michal Navratil, and the original LinuxTrack team
 - **Community Contributors**: All developers who have contributed code and testing
 - **Reverse Engineering**: TrackIR protocol reverse engineering efforts
 - **Hardware Support**: Community-driven hardware compatibility testing
 - **AI Assistance**: Cursor AI for helping with build system modernization
+- **Fork Contributors**: All contributors to this fork who continue the project's development
 
 ---
 
 **Ready to start tracking?** Follow the [Quick Start](#-quick-start) section for your distribution!
+
+---
+
+## 🔄 Fork Notice
+
+This project is a fork of the original LinuxTrack project. The original project was abandoned, and this fork continues development with modern build systems and enhanced compatibility. We maintain full attribution to the original authors and respect their contributions to the open-source community.
+
+**Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)  
+**License**: MIT License (same as original)  
+**Fork Purpose**: Modernization and continued development

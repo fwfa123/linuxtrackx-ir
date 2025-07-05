@@ -1,26 +1,43 @@
-# LinuxTrack Contributors
+# LinuxTrack X-IR Contributors
 
-## Original Authors
+## Original LinuxTrack Project Authors
+This project is a fork of the original LinuxTrack project. We maintain full attribution to the original authors:
+
+### Original Creator
 uglyDwarf - Original creator and main developer of LinuxTrack
-Tulthix - Early contributor to the project
 
-## Primary Contributors
-f.josef - Main developer and maintainer (302 commits)
-Michal Navratil - Significant contributor (20 commits)
+### Primary Original Contributors
+f.josef - Main developer and maintainer of original project (302 commits)
+Tulthix - Early contributor to the original project
+Michal Navratil - Significant contributor to original project (20 commits)
 
-## Active Contributors
-fwfa123 - Qt5 modernization and documentation (61 commits)
-aledin - Contributor (2 commits)
-
-## Additional Contributors
+### Additional Original Contributors
 raven - Contributor to original linuxtrack repository (4 commits)
+aledin - Contributor to original project (2 commits)
+
+## LinuxTrack X-IR Fork Contributors
+
+### Fork Maintainer
+fwfa123 - Qt5 modernization, build system updates, and fork maintenance (61 commits)
+
+### Development Assistance
+Cursor AI - Assisted with Qt5 modernization and build system updates
 
 ## Acknowledgments
-- Cursor AI - Assisted with Qt5 modernization and build system updates
+
+### Original Project
+- The original LinuxTrack project by uglyDwarf and contributors
+- TrackIR protocol reverse engineering efforts
+- Community-driven hardware compatibility testing
+
+### This Fork
 - The Linux gaming community for testing and feedback
 - All users who provided bug reports and feature requests
+- Contributors who help improve the fork
 
 ---
-Note: This file lists all contributors who have made commits to either the original
-linuxtrack repository or the linuxtrackx-ir fork. Contributors are listed in order
-of their contribution level and significance to the project.
+**Note**: This file lists contributors to both the original LinuxTrack repository and the linuxtrackx-ir fork. 
+Contributors are listed in order of their contribution level and significance to the project.
+
+**Original Project**: https://github.com/uglyDwarf/linuxtrack
+**This Fork**: https://github.com/fwfa123/linuxtrackx-ir
