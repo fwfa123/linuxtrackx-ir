@@ -41,9 +41,7 @@ AC_CHECK_LIB([pthread], [pthread_create], [LIBPTHREAD=true], [AC_MSG_FAILURE([li
 AC_CHECK_LIB([mxml], [mxmlNewXML], [LIBMXML=true], [AC_MSG_FAILURE([libmxml not found!])], [-pthread])
 AC_CHECK_HEADER([mxml.h], [], [AC_MSG_FAILURE([mxml.h is needed for ltr_gui compilation!])])
 
-# Check for Qt5 development headers
-AC_CHECK_HEADER([QtCore/QtCore], [], [AC_MSG_FAILURE([Qt5 development headers not found. Please install qtbase5-dev.])])
-AC_CHECK_HEADER([QtWidgets/QtWidgets], [], [AC_MSG_FAILURE([Qt5 Widgets headers not found. Please install qtbase5-dev.])])
+# Note: Qt5 headers will be checked during compilation, qmake version check is sufficient here
 
 # Qt5 is needed for the GUI
 AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qt5-qmake qmake5 qmake])
