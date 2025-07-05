@@ -203,6 +203,24 @@ AC_ARG_ENABLE([ltr_32lib_on_x64],
 		[with_ltr_32lib_on_x64=yes]
 )
 
+# Check for 32-bit development headers before enabling 32-bit library build
+AS_IF([test "x$with_ltr_32lib_on_x64" = xyes],
+      [AC_MSG_CHECKING([for 32-bit development headers])
+       # Check for 32-bit libc headers in common locations
+       if test -f "/usr/include/i386-linux-gnu/bits/libc-header-start.h" || \
+          test -f "/usr/include/bits/libc-header-start.h" || \
+          test -f "/usr/include/i386-linux-gnu/stdlib.h" || \
+          test -f "/usr/include/stdlib.h"; then
+         AC_MSG_RESULT([found])
+         has_32bit_headers=yes
+       else
+         AC_MSG_RESULT([not found])
+         has_32bit_headers=no
+         AC_MSG_WARN([32-bit development headers not found. 32-bit library will not be built.])
+         AC_MSG_WARN([Install gcc-multilib and libc6-dev-i386 (Debian/Ubuntu/MX) or glibc-devel.i686 (Fedora/RHEL) to enable 32-bit library build.])
+         with_ltr_32lib_on_x64=no
+       fi])
+
 # needed to have the right libraries to link against
 WINE_LIBS=
 WINE_LIBS_DEFAULT=""
