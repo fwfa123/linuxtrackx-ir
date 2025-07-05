@@ -43,6 +43,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Comprehensive troubleshooting guide (14KB)
 - **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - System upgrade conflicts (9KB)
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Hardware permission issues (9KB)
+- **[troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)** - TrackIR firmware extraction issues (8KB)
 
 ### 💻 Technical Documentation (`technical/`)
 **For developers and technical implementation**
@@ -70,8 +71,9 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 ### Most Common Issues
 1. **System upgrade broke LinuxTrack** → [troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)
 2. **TrackIR permission errors** → [troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)
-3. **Application won't launch** → [troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)
-4. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
+3. **Firmware extraction fails** → [troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
+4. **Application won't launch** → [troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)
+5. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
 
 ### Distribution-Specific Guides
 - **MX Linux** → [guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)

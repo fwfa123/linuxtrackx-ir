@@ -531,7 +531,7 @@ mickey/help/news.htm mickey/help/contents.txt mickey/help/welcome.htm mickey/uin
 mickey/keyb.cpp mickey/helpview.ui mickey/keyb_x11.cpp mickey/keyb_x11.h mickey/linuxtrack.icns \
 mickey/mouse.h mickey/mouse_linux.cpp mickey/mouse_mac.cpp mickey/mickey.qrc sn4_model.h \
 mickey/precomp_headers.h wii_server/precomp_headers.h qt_gui/precomp_headers.h ltr_extractor.1 \
-qt_gui/win7.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey/mickey.qhp
+qt_gui/win7.reg qt_gui/win10.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/mickey.qhcp mickey/mickey.qhp
 
 # Install desktop files to system applications directory
 desktopdir = /usr/share/applications

@@ -461,10 +461,10 @@ void TirFwExtractor::commenceExtraction(QString file)
   }
   wine->setEnv(QString::fromUtf8("WINEPREFIX"), winePrefix);
   installerFile = file;
-  //New TrackIR installer needs at least Vista ti run, while Wine defaults to windows XP
-  // This hack set Windows version to 7...
-  QString win7regFile = PrefProxy::getDataPath(QString::fromUtf8("win7.reg"));
-  wine->run(QString::fromUtf8("regedit\" \"%1").arg(win7regFile));
+  //New TrackIR installer needs Windows 10 to run properly, while Wine defaults to windows XP
+  // This hack set Windows version to 10...
+  QString win10regFile = PrefProxy::getDataPath(QString::fromUtf8("win10.reg"));
+  wine->run(QString::fromUtf8("regedit\" \"%1").arg(win10regFile));
 }
 
 

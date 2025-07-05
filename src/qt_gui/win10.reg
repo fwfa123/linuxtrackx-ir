@@ -1,0 +1,20 @@
+REGEDIT4
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion]
+"CSDVersion"=""
+"CurrentBuildNumber"="19041"
+"CurrentType"="Uniprocessor Free"
+"CurrentVersion"="10.0"
+"ProductName"="Microsoft Windows 10"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\ProductOptions]
+"ProductType"="WinNT"
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Windows]
+"CSDVersion"=dword:00000000
+
+[HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Session Manager\Environment]
+"OS"="Windows_NT"
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\Uninstall\{C3311E09-0E33-4649-B77B-DFAF41253FE6}]
+"DisplayVersion"="2.70.0000" 
