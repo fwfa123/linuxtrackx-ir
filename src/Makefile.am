@@ -33,7 +33,7 @@ man_MANS = ltr_gui.1 ltr_server1.1 mickey.1
 
 pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la
 bin_PROGRAMS = ltr_server1
-bin_SCRIPTS = ../verify_installation.sh
+bin_SCRIPTS = ../scripts/install/verify_installation.sh
 
 if WINE_PLUGIN
   bin_SCRIPTS += linuxtrack-wine-launcher.sh
@@ -373,6 +373,13 @@ install-data-hook:
 		echo "Warning: No icon directory found for icon cache update."; \
 	fi
 	@echo "Desktop integration update complete."
+	@echo "Running post-installation dialog..."
+	@if [ -f "$(top_srcdir)/scripts/install/post_install_dialog.sh" ]; then \
+		$(top_srcdir)/scripts/install/post_install_dialog.sh; \
+		echo "Post-installation dialog completed."; \
+	else \
+		echo "Warning: Post-installation dialog script not found."; \
+	fi
 
 LTR_QT_GUI_TARGET_INST: qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
@@ -457,7 +464,9 @@ LTR_WINE_TARGET_UNINST:
 	@echo "Wine bridge removal complete."
 
 
-EXTRA_DIST = qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
+EXTRA_DIST = scripts/install/post_install_dialog.sh scripts/install/verify_installation.sh \
+scripts/build/fix_library_path.sh scripts/test/test_gui.sh \
+qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
 qt_gui/scp_form.ui qt_gui/logview.ui qt_gui/clip.png qt_gui/webcam_prefs.cpp \
 qt_gui/scview.h qt_gui/webcam_ft_prefs.h qt_gui/scview.cpp qt_gui/dl.ui \
 qt_gui/ltr_model.h qt_gui/ltr_gui.cpp qt_gui/glwidget.h qt_gui/wiimote_prefs.h \

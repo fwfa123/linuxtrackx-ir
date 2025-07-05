@@ -671,7 +671,8 @@ pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la \
 	$(am__append_2) $(am__append_3) $(am__append_6) \
 	$(am__append_7) $(am__append_9) libfakeusb.la libp3e.la \
 	$(am__append_12) $(am__append_13) $(am__append_14)
-bin_SCRIPTS = ../verify_installation.sh $(am__append_1)
+bin_SCRIPTS = ../scripts/install/verify_installation.sh \
+	$(am__append_1)
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c \
 	linuxtrack_hello_world.c linuxtrack_hello_world_adv.c \
 	$(am__append_8) $(am__append_10)
@@ -804,7 +805,9 @@ hook_inst_targets = LTR_QT_GUI_TARGET_INST $(am__append_15) \
 	$(am__append_18) $(am__append_21)
 hook_uninst_targets = LTR_QT_GUI_TARGET_UNINST $(am__append_16) \
 	$(am__append_19) $(am__append_22)
-EXTRA_DIST = qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
+EXTRA_DIST = scripts/install/post_install_dialog.sh scripts/install/verify_installation.sh \
+scripts/build/fix_library_path.sh scripts/test/test_gui.sh \
+qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
 qt_gui/scp_form.ui qt_gui/logview.ui qt_gui/clip.png qt_gui/webcam_prefs.cpp \
 qt_gui/scview.h qt_gui/webcam_ft_prefs.h qt_gui/scview.cpp qt_gui/dl.ui \
 qt_gui/ltr_model.h qt_gui/ltr_gui.cpp qt_gui/glwidget.h qt_gui/wiimote_prefs.h \
@@ -2010,6 +2013,13 @@ install-data-hook:
 		echo "Warning: No icon directory found for icon cache update."; \
 	fi
 	@echo "Desktop integration update complete."
+	@echo "Running post-installation dialog..."
+	@if [ -f "$(top_srcdir)/scripts/install/post_install_dialog.sh" ]; then \
+		$(top_srcdir)/scripts/install/post_install_dialog.sh; \
+		echo "Post-installation dialog completed."; \
+	else \
+		echo "Warning: Post-installation dialog script not found."; \
+	fi
 
 LTR_QT_GUI_TARGET_INST: qt_gui/help.qhc qt_gui/help.qch
 	pushd qt_gui;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
