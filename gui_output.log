@@ -1,8 +1,0 @@
-QSqlDatabasePrivate::removeDatabase: connection 'QHelpCollectionHandler-1022846080-1' is still in use, all queries will cease to work.
-QTextBrowser: No document for qthelp://uglydwarf.com.linuxtrack.1.0/doc/help/dev_setup.htm
-QTextBrowser: No document for qthelp://uglydwarf.com.linuxtrack.1.0/doc/help/misc.htm
-kf.windowsystem: Could not find any platform plugin
-qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
-qt.qpa.wayland: Wayland does not support QWindow::requestActivate()
-Found device 8
-Type: 8

@@ -2,8 +2,8 @@
   #include "../../config.h"
 #endif
 
-#include <QtGui>
-#include <QtOpenGL>
+#include <QtWidgets/QWidget>
+#include <QtOpenGL/QGLWidget>
 #ifndef DARWIN
 #include <GL/glu.h>
 #else
