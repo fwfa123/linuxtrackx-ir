@@ -69,7 +69,7 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libqt5help5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
@@ -158,7 +158,7 @@ LinuxTrack works with games and simulators that support:
 
 ### Core Dependencies
 - **Build Tools**: gcc, g++, make, autoconf, automake, libtool, bison, flex
-- **GUI Framework**: Qt5 (qtbase5-dev, qttools5-dev-tools, libqt5x11extras5-dev, libqt5help5-dev)
+- **GUI Framework**: Qt5 (qtbase5-dev, qttools5-dev-tools, libqt5x11extras5-dev, qttools5-dev)
 - **Computer Vision**: OpenCV (libopencv-dev)
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
 - **Video Support**: V4L2 development headers (libv4l-dev / v4l-utils-devel / v4l-utils)
@@ -277,8 +277,8 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` (Debian/Ubuntu) or `sudo dnf install mingw64-gcc` (Fedora) or `sudo pacman -S mingw-w64-gcc` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | 32-bit development headers missing. Install: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu/MX) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora/RHEL) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | `libv4l2.h: No such file or directory` | V4L2 development headers missing. Install: `sudo apt install libv4l-dev` (Debian/Ubuntu/MX) or `sudo dnf install v4l-utils-devel` (Fedora/RHEL) or `sudo pacman -S v4l-utils` (Arch) |
-| `Unknown module(s) in QT: opengl help` | Qt5 help module missing. Install: `sudo apt install libqt5help5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qtbase-devel` (Fedora) or `sudo pacman -S qt5-help` (Arch) |
-| Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libqt5help5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel` (Fedora) or `sudo pacman -S qt5-base qt5-tools qt5-x11extras qt5-help` (Arch) |
+| `Unknown module(s) in QT: opengl help` | Qt5 help module missing. Install: `sudo apt install qttools5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qttools-devel` (Fedora) or `sudo pacman -S qt5-tools` (Arch) |
+| Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev qttools5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel` (Fedora) or `sudo pacman -S qt5-base qt5-tools qt5-x11extras` (Arch) |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
@@ -447,7 +447,7 @@ ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || echo "32-
 | Qt5 Core | qtbase5-dev | qt5-qtbase-devel | qt5-base | Core Qt functionality |
 | Qt5 Widgets | qtbase5-dev | qt5-qtbase-devel | qt5-base | GUI widgets |
 | Qt5 OpenGL | qtbase5-dev | qt5-qtbase-devel | qt5-base | OpenGL integration |
-| Qt5 Help | libqt5help5-dev | qt5-qtbase-devel | qt5-help | Help system |
+| Qt5 Help | qttools5-dev | qt5-qttools-devel | qt5-tools | Help system |
 | Qt5 Network | qtbase5-dev | qt5-qtbase-devel | qt5-base | Network support |
 | Qt5 X11Extras | libqt5x11extras5-dev | qt5-qtx11extras-devel | qt5-x11extras | X11 integration |
 | Qt5 Tools | qttools5-dev-tools | qt5-qttools-devel | qt5-tools | Qt development tools |
