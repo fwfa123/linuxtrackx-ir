@@ -69,17 +69,17 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev libqt5help5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libqt5help5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine
 
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -100,6 +100,15 @@ LinuxTrack now supports building Windows compatibility components using MinGW, e
 - ✅ **Better Compatibility**: Standard Windows PE binaries
 - ✅ **Faster Builds**: No Wine runtime overhead
 - ✅ **NSIS Installers Updated**: All installer scripts now use native .exe/.dll files
+
+### 🎉 TrackIR Firmware Extraction Improvements
+LinuxTrack now features improved TrackIR firmware extraction with enhanced Wine compatibility:
+
+- ✅ **Simplified Wine Commands**: Direct installer execution without complex registry modifications
+- ✅ **Enhanced Wine Architecture**: Uses win64 architecture for better TrackIR installer compatibility
+- ✅ **Improved Debug Output**: Reasonable Wine debug level for better troubleshooting
+- ✅ **Reliable Extraction**: Successfully extracts TrackIR firmware files (TIRViews.dll, NPClient.dll, etc.)
+- ✅ **Clean Installation**: Maintains temporary Wine prefix approach with automatic cleanup
 
 ### Why MinGW is the Best Approach
 **MinGW vs winegcc Comparison:**
@@ -154,6 +163,7 @@ LinuxTrack works with games and simulators that support:
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
 - **Video Support**: V4L2 development headers (libv4l-dev / v4l-utils-devel / v4l-utils)
 - **X11 Support**: libx11-dev, libxrandr-dev
+- **Wine Support**: wine (required for TrackIR firmware extraction)
 
 ### Windows Compatibility (MinGW Only)
 - **MinGW** (required): mingw-w64, gcc-mingw-w64, g++-mingw-w64
@@ -273,6 +283,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | No tracking detected | Check device connection and driver installation |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
 | XPlane plugin shows "no" | Install XPlane SDK from [Laminar Research](https://developer.x-plane.com/sdk/plugin-sdk-downloads/) or use `--with-xplane-sdk=/path/to/sdk` |
+| Firmware extraction fails | Ensure Wine is installed and try the "Browse Directory" option to point to existing TrackIR installation |
 
 ### Getting Help
 1. **Check the docs**: Start with the [Quick Start](#-quick-start) section for your distribution
