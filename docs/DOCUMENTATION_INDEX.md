@@ -45,6 +45,12 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Hardware permission issues (9KB)
 - **[troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)** - TrackIR firmware extraction issues (8KB)
 
+### 🍷 Wine Support (`wine-support/`)
+**For Wine compatibility and modern installation methods**
+- **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)** - Modern Wine support installation guide (4KB)
+- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Wine support troubleshooting section
+- **[scripts/wine_check.sh](../scripts/wine_check.sh)** - Wine compatibility checker script
+
 ### 💻 Technical Documentation (`technical/`)
 **For developers and technical implementation**
 - **[technical/README.md](technical/README.md)** - Technical documentation overview
@@ -72,8 +78,9 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 1. **System upgrade broke LinuxTrack** → [troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)
 2. **TrackIR permission errors** → [troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)
 3. **Firmware extraction fails** → [troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
-4. **Application won't launch** → [troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)
-5. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
+4. **Wine support installation fails** → [WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)
+5. **Application won't launch** → [troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)
+6. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
 
 ### Distribution-Specific Guides
 - **MX Linux** → [guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)
@@ -164,6 +171,11 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 #### "Wayland" or "Display"
 - **[troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**
 - **[run_qt5_gui_x11.sh](../run_qt5_gui_x11.sh)**
+
+#### "Wine" or "Windows"
+- **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)**
+- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** (Wine section)
+- **[scripts/wine_check.sh](../scripts/wine_check.sh)**
 
 ---
 

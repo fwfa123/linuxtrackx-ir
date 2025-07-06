@@ -25,6 +25,30 @@ Please be aware that linuxtrack-wine.exe must be installed into each and every w
 <p>
 If you installed Linuxtrack-Wine prior to version 0.99.11, to gain access to the new features you need to uninstall it first, reinstall TrackIR firware (to get TIRViews.dll and mfc42u.dll) and then install the new linuxtrack-wine.exe.
 
+<h2>Modern Installation Methods</h2>
+LinuxTrack now uses modern installation methods for better compatibility with current distributions:
+
+<h3>Method 1: Package Manager Installation (Recommended)</h3>
+The most reliable approach is to install mfc42u.dll through your distribution's package manager:
+
+<ul>
+<li><strong>Ubuntu/Debian/MX Linux:</strong> <code>sudo apt install libmfc42</code>
+<li><strong>Fedora/RHEL/CentOS:</strong> <code>sudo dnf install mfc42</code>
+<li><strong>Arch Linux/Manjaro:</strong> <code>sudo pacman -S mfc42</code>
+<li><strong>OpenSUSE:</strong> <code>sudo zypper install mfc42</code>
+</ul>
+
+<h3>Method 2: Winetricks Installation</h3>
+If package manager installation is not available, use winetricks:
+
+<code>WINEPREFIX=~/.wine winetricks mfc42</code>
+
+<h3>Method 3: Manual Installation</h3>
+As a last resort, manually copy mfc42u.dll from a Windows system to the LinuxTrack firmware directory.
+
+<p>
+The installation process will automatically try these methods in order, providing clear guidance if manual intervention is required.
+
 <h2>Linuxtrack-wine usage</h2>
 When you installed the Lnuxtrack-Wine to the bottle/prefix of your choice, there are several programs at your disposal.
 

@@ -7,6 +7,7 @@ This guide covers common installation and runtime issues with LinuxTrack Qt5.
 - [Installation Issues](#installation-issues)
 - [Permission Problems](#permission-problems)
 - [Device Detection Issues](#device-detection-issues)
+- [Wine Support Issues](#wine-support-issues)
 - [Desktop Integration Problems](#desktop-integration-problems)
 - [Runtime Errors](#runtime-errors)
 - [Performance Issues](#performance-issues)
@@ -225,6 +226,177 @@ wmgui  # Test Wiimote connection
 # 5. Check for interference
 # Move away from other Bluetooth devices
 # Avoid 2.4GHz WiFi interference
+```
+
+---
+
+## 🍷 Wine Support Issues
+
+### Problem: Wine support installation fails
+
+**Symptoms:**
+- "Install Linuxtrack-Wine support" button fails
+- Wine extraction errors
+- mfc42u.dll not found
+
+**Solutions:**
+```bash
+# 1. Check Wine installation
+wine --version
+which wine
+
+# 2. Install Wine if missing
+# Ubuntu/Debian/MX:
+sudo apt install wine-staging wine32:i386
+
+# Fedora/RHEL:
+sudo dnf install wine-staging
+
+# Arch Linux:
+sudo pacman -S wine-staging
+
+# 3. Try modern installation methods
+# Method 1: Package manager (recommended)
+sudo apt install libmfc42  # Ubuntu/Debian/MX
+sudo dnf install mfc42     # Fedora/RHEL
+sudo pacman -S mfc42       # Arch Linux
+
+# Method 2: Winetricks
+winetricks mfc42
+
+# Method 3: Manual installation
+# Copy mfc42u.dll from Windows system to:
+sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/
+sudo chmod 644 /usr/share/linuxtrack/tir_firmware/mfc42u.dll
+```
+
+### Problem: TrackIR firmware extraction fails
+
+**Symptoms:**
+- Wine crashes during extraction
+- "VC6RedistSetup_deu.exe" fails to run
+- Missing firmware files
+
+**Solutions:**
+```bash
+# 1. Use Wine Staging instead of Wine Stable
+sudo apt install wine-staging  # Ubuntu/Debian/MX
+sudo update-alternatives --config wine  # Select Wine Staging
+
+# 2. Install 32-bit Wine components
+sudo apt install wine32:i386  # Ubuntu/Debian/MX
+
+# 3. Try manual TrackIR installation
+# Download TrackIR software from NaturalPoint website
+# Install manually in Wine, then use "Browse Directory" in LinuxTrack GUI
+
+# 4. Check Wine prefix
+WINEPREFIX=~/.wine winecfg  # Configure Wine prefix
+WINEPREFIX=~/.wine wineboot --init  # Initialize new prefix
+
+# 5. Use alternative extraction method
+# In LinuxTrack GUI, use "Extract from installer" instead of "Download"
+```
+
+### Problem: Windows applications don't detect head tracking
+
+**Symptoms:**
+- Games don't respond to head movement
+- TrackIR not recognized in Windows applications
+- "No TrackIR found" messages
+
+**Solutions:**
+```bash
+# 1. Verify Wine Bridge installation
+ls -la ~/.wine/drive_c/Program\ Files/LinuxTrack/
+ls -la ~/.wine/drive_c/Program\ Files\ \(x86\)/LinuxTrack/
+
+# 2. Check DLL files are present
+ls -la ~/.wine/drive_c/windows/system32/NPClient.dll
+ls -la ~/.wine/drive_c/windows/system32/mfc42u.dll
+
+# 3. Test TrackIR compatibility
+cd ~/.wine/drive_c/Program\ Files/LinuxTrack/
+wine Tester.exe  # Should show tracking data
+
+# 4. Verify LinuxTrack is running
+ps aux | grep ltr_gui
+ps aux | grep ltr_server
+
+# 5. Check Wine prefix configuration
+WINEPREFIX=~/.wine wine regedit
+# Look for LinuxTrack registry entries
+
+# 6. Reinstall Wine Bridge
+# In LinuxTrack GUI, try "Install Linuxtrack-Wine support" again
+```
+
+### Problem: Wine Bridge components missing
+
+**Symptoms:**
+- LinuxTrack Wine Bridge not installed
+- Missing NPClient.dll or other components
+- Wine applications can't find TrackIR
+
+**Solutions:**
+```bash
+# 1. Verify LinuxTrack installation
+ls -la /usr/share/linuxtrack/wine/
+ls -la /usr/share/linuxtrack/wine/linuxtrack-wine.exe
+
+# 2. Install Wine Bridge manually
+cd /usr/share/linuxtrack/wine/
+WINEPREFIX=~/.wine wine linuxtrack-wine.exe
+
+# 3. Check for multiple Wine prefixes
+find ~ -name ".wine" -type d
+# Install in each prefix where you need head tracking
+
+# 4. Verify installation
+ls -la ~/.wine/drive_c/windows/system32/NPClient*.dll
+ls -la ~/.wine/drive_c/windows/system32/FreeTrackClient.dll
+
+# 5. Test installation
+cd ~/.wine/drive_c/Program\ Files/LinuxTrack/
+wine Tester.exe
+wine Tester64.exe  # For 64-bit applications
+```
+
+### Problem: Wine compatibility issues
+
+**Symptoms:**
+- Wine crashes when running LinuxTrack components
+- Performance issues in Wine
+- Graphics glitches
+
+**Solutions:**
+```bash
+# 1. Update Wine to latest version
+# Ubuntu/Debian/MX:
+sudo apt update && sudo apt install wine-staging
+
+# Fedora/RHEL:
+sudo dnf update wine-staging
+
+# Arch Linux:
+sudo pacman -Syu wine-staging
+
+# 2. Configure Wine for better performance
+WINEPREFIX=~/.wine winecfg
+# Graphics tab: Enable "Allow the window manager to decorate the windows"
+# Graphics tab: Enable "Allow the window manager to control the windows"
+
+# 3. Set Wine environment variables
+export WINEDEBUG=-all  # Disable debug output for better performance
+export WINEDLLOVERRIDES="winemenubuilder.exe=d"
+
+# 4. Try different Wine versions
+# Some applications work better with specific Wine versions
+# Test with Wine Stable vs Wine Staging
+
+# 5. Check for conflicting software
+# Disable other head tracking software
+# Close other Wine applications
 ```
 
 ---

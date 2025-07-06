@@ -115,6 +115,13 @@ class Mfc42uExtractor : public Extractor
   void enableButtons(bool enable);
   int stage;
   QProcess *cabextract;
+  
+  // Modern installation methods
+  bool tryWinetricksInstall();
+  bool tryPackageManagerInstall();
+  bool tryCabextractFallback();
+  void showModernInstallationInstructions();
+  
  private slots:
   void wineFinished(bool result);
   void cabextractFinished(int exitCode, QProcess::ExitStatus status);

@@ -349,14 +349,55 @@ void TirFwExtractor::wineFinished(bool result)
 void Mfc42uExtractor::wineFinished(bool result)
 {
   if(!result){
-    QMessageBox::warning(this, QString::fromUtf8("Error running Wine"),
-      QString::fromUtf8("There was an error extracting\n"
-      "the VC redistributable.\n"
-      "Please see the log for more details.\n\n")
-    );
+    // Modern approach: Try package managers and winetricks instead of old Wine extraction
+    progress(QString::fromUtf8("Wine extraction failed, trying modern alternatives..."));
+    
+    // Check if mfc42u.dll already exists in common locations
+    QStringList searchPaths;
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
+    
+    bool found = false;
+    for(const QString& searchPath : searchPaths) {
+      if(QFile::exists(searchPath)) {
+        progress(QString::fromUtf8("Found mfc42u.dll at: %1").arg(searchPath));
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+        if(QFile::copy(searchPath, destPath)) {
+          progress(QString::fromUtf8("Mfc42u.dll copied successfully"));
+          found = true;
+          break;
+        }
+      }
+    }
+    
+    if(!found) {
+      // Try modern installation methods
+      progress(QString::fromUtf8("Attempting modern installation methods..."));
+      
+      // Method 1: Try winetricks
+      if(tryWinetricksInstall()) {
+        found = true;
+      }
+      // Method 2: Try package manager
+      else if(tryPackageManagerInstall()) {
+        found = true;
+      }
+      // Method 3: Try cabextract as last resort
+      else if(tryCabextractFallback()) {
+        return; // Don't enable buttons yet, wait for cabextract to finish
+      }
+      else {
+        showModernInstallationInstructions();
+      }
+    }
+    
     enableButtons(true);
+    emit finished(found);
+    hide();
     return;
   }
+  
   switch(stage){
     case 0:{
         stage = 1;
@@ -388,6 +429,133 @@ void Mfc42uExtractor::wineFinished(bool result)
     default:
       break;
   }
+}
+
+bool Mfc42uExtractor::tryWinetricksInstall()
+{
+  progress(QString::fromUtf8("Trying winetricks installation..."));
+  
+  // Check if winetricks is available
+  QProcess winetricksCheck;
+  winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
+  if(!winetricksCheck.waitForFinished(5000) || winetricksCheck.exitCode() != 0) {
+    progress(QString::fromUtf8("Winetricks not found"));
+    return false;
+  }
+  
+  // Try to install mfc42 using winetricks
+  QProcess winetricks;
+  winetricks.setProcessEnvironment(wine->getProcessEnvironment());
+  winetricks.setWorkingDirectory(winePrefix);
+  
+  QStringList args;
+  args << QString::fromUtf8("mfc42");
+  
+  progress(QString::fromUtf8("Running: winetricks mfc42"));
+  winetricks.start(QString::fromUtf8("winetricks"), args);
+  
+  if(!winetricks.waitForFinished(60000)) { // 60 second timeout
+    progress(QString::fromUtf8("Winetricks installation timed out"));
+    return false;
+  }
+  
+  if(winetricks.exitCode() == 0) {
+    progress(QString::fromUtf8("Winetricks installation successful"));
+    
+    // Check if mfc42u.dll was installed
+    QStringList checkPaths;
+    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+    
+    for(const QString& path : checkPaths) {
+      if(QFile::exists(path)) {
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+        if(QFile::copy(path, destPath)) {
+          progress(QString::fromUtf8("Mfc42u.dll installed via winetricks"));
+          return true;
+        }
+      }
+    }
+  }
+  
+  progress(QString::fromUtf8("Winetricks installation failed"));
+  return false;
+}
+
+bool Mfc42uExtractor::tryPackageManagerInstall()
+{
+  progress(QString::fromUtf8("Trying package manager installation..."));
+  
+  // Detect distribution and try appropriate package
+  QStringList packageManagers;
+  packageManagers << QString::fromUtf8("apt") << QString::fromUtf8("dnf") << QString::fromUtf8("pacman") << QString::fromUtf8("zypper");
+  
+  for(const QString& pm : packageManagers) {
+    QProcess checkPM;
+    checkPM.start(QString::fromUtf8("which"), QStringList() << pm);
+    if(checkPM.waitForFinished(5000) && checkPM.exitCode() == 0) {
+      progress(QString::fromUtf8("Found package manager: %1").arg(pm));
+      
+      // Try to install the appropriate package
+      QString packageName;
+      if(pm == QString::fromUtf8("apt")) {
+        packageName = QString::fromUtf8("libmfc42");
+      } else if(pm == QString::fromUtf8("dnf")) {
+        packageName = QString::fromUtf8("mfc42");
+      } else if(pm == QString::fromUtf8("pacman")) {
+        packageName = QString::fromUtf8("mfc42");
+      } else if(pm == QString::fromUtf8("zypper")) {
+        packageName = QString::fromUtf8("mfc42");
+      }
+      
+      if(!packageName.isEmpty()) {
+        progress(QString::fromUtf8("Attempting to install: %1").arg(packageName));
+        
+        // Note: This would require sudo, so we'll just inform the user
+        QMessageBox::information(this, QString::fromUtf8("Package Installation Required"),
+          QString::fromUtf8("Please install the required package manually:\n\n"
+          "For %1: sudo %1 install %2\n\n"
+          "After installation, try the Wine support installation again.")
+          .arg(pm).arg(packageName)
+        );
+        return false; // Let user handle the installation
+      }
+    }
+  }
+  
+  return false;
+}
+
+bool Mfc42uExtractor::tryCabextractFallback()
+{
+  progress(QString::fromUtf8("Trying cabextract fallback..."));
+  QString c = PREF.getDataPath(QString::fromUtf8("/../../helper/cabextract"));
+  if(QFile::exists(c)) {
+    cabextract->setWorkingDirectory(winePrefix);
+    QStringList args;
+    args << winePrefix + QString::fromUtf8("/VC6RedistSetup_deu.exe");
+    cabextract->start(c, args);
+    return true; // Will be handled by cabextractFinished
+  }
+  return false;
+}
+
+void Mfc42uExtractor::showModernInstallationInstructions()
+{
+  QMessageBox::information(this, QString::fromUtf8("Modern Installation Required"),
+    QString::fromUtf8("The old Wine extraction method failed. Please use one of these modern approaches:\n\n"
+    "1. Install via package manager:\n"
+    "   Ubuntu/Debian/MX: sudo apt install libmfc42\n"
+    "   Fedora: sudo dnf install mfc42\n"
+    "   Arch: sudo pacman -S mfc42\n\n"
+    "2. Install via winetricks:\n"
+    "   winetricks mfc42\n\n"
+    "3. Manual installation:\n"
+    "   Copy mfc42u.dll from a Windows system to:\n"
+    "   %1\n\n"
+    "After installation, try the Wine support installation again.")
+    .arg(PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/"))
+  );
 }
 
 void Mfc42uExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus status)

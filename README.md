@@ -69,17 +69,17 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging wine32:i386
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging wine32:i386 winetricks libmfc42
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42
 
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -468,6 +468,11 @@ ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || echo "32-
 | **32-bit Development** |
 | 32-bit libc | libc6-dev-i386 | glibc-devel.i686 | lib32-glibc | 32-bit library support |
 | 32-bit gcc | gcc-multilib | libstdc++-devel.i686 | lib32-gcc-libs | 32-bit compilation |
+| **Wine Support** |
+| Wine Staging | wine-staging | wine-staging | wine-staging | TrackIR firmware extraction |
+| Wine 32-bit | wine32:i386 | wine-staging | wine-staging | 32-bit TrackIR installer support |
+| Winetricks | winetricks | winetricks | winetricks | Windows component installation |
+| MFC42 Library | libmfc42 | mfc42 | mfc42 | Windows MFC42 compatibility |
 | **Optional Features** |
 | liblo | liblo-dev | liblo-devel | liblo | OSC protocol support |
 | libcwiid | libcwiid-dev | libcwiid-devel | libcwiid | Wii remote support |
@@ -541,63 +546,116 @@ else
 fi
 echo
 
+# Wine Support
+echo "Checking Wine Support..."
+if command -v wine >/dev/null 2>&1; then
+    echo "✓ wine found: $(wine --version)"
+else
+    echo "✗ wine missing"
+fi
+
+if command -v winetricks >/dev/null 2>&1; then
+    echo "✓ winetricks found"
+else
+    echo "✗ winetricks missing"
+fi
+
+# Check for MFC42 library
+if [ -f "/usr/lib/x86_64-linux-gnu/libmfc42.so" ] || [ -f "/usr/lib/libmfc42.so" ]; then
+    echo "✓ libmfc42 found"
+else
+    echo "✗ libmfc42 missing"
+fi
+echo
+
 echo "=== Check Complete ==="
 ```
 
 Save this as `dependency_check.sh`, make it executable with `chmod +x dependency_check.sh`, and run it to verify your system has all required dependencies.
 
-### Wine Support: wine (required for TrackIR firmware extraction)
+### Wine Support: Modern Installation Methods
 
-**Important**: Wine is required for TrackIR firmware extraction. For best compatibility with TrackIR installers, **Wine Staging is recommended** over Wine Stable.
+**Important**: Wine is required for TrackIR firmware extraction. LinuxTrack now supports modern installation methods that are more reliable than the old Wine extraction approach.
 
-#### Quick Wine Check:
-Run this script to check your Wine installation and get TrackIR compatibility recommendations:
+#### Modern Installation Methods (Recommended)
+
+**Method 1: Package Manager Installation**
 ```bash
-./scripts/wine_check.sh
+# Ubuntu/Debian/MX Linux
+sudo apt install libmfc42
+
+# Fedora/RHEL/CentOS
+sudo dnf install mfc42
+
+# Arch Linux/Manjaro
+sudo pacman -S mfc42
 ```
 
-#### Wine Installation by Distribution:
+**Method 2: Winetricks Installation**
+```bash
+# Install winetricks if not already installed
+sudo apt install winetricks  # Ubuntu/Debian/MX
+sudo dnf install winetricks  # Fedora/RHEL
+sudo pacman -S winetricks    # Arch Linux
+
+# Install MFC42 via winetricks
+winetricks mfc42
+```
+
+**Method 3: Manual Installation**
+```bash
+# Copy mfc42u.dll from Windows system to LinuxTrack directory
+sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/
+sudo chmod 644 /usr/share/linuxtrack/tir_firmware/mfc42u.dll
+```
+
+#### Wine Installation by Distribution
 
 **MX Linux / Debian / Ubuntu:**
 ```bash
-# Option 1: Wine Staging (Recommended - better TrackIR compatibility)
-sudo apt install wine-staging
+# Wine Staging (Recommended - better TrackIR compatibility)
+sudo apt install wine-staging wine32:i386 winetricks
 
-# Option 2: Wine Stable (Fallback - may have TrackIR installer issues)
-sudo apt install wine
-
-# 32-bit components (required for some TrackIR installers)
-sudo apt install wine32:i386
+# Wine Stable (Fallback)
+sudo apt install wine wine32:i386 winetricks
 ```
 
 **Fedora / RHEL / CentOS:**
 ```bash
 # Enable RPM Fusion first, then install Wine Staging
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-sudo dnf install wine-staging
+sudo dnf install wine-staging winetricks
 ```
 
 **Arch Linux / Manjaro:**
 ```bash
 # Wine Staging (Recommended)
-sudo pacman -S wine-staging
+sudo pacman -S wine-staging winetricks
 
 # Or Wine Stable (Fallback)
-sudo pacman -S wine
+sudo pacman -S wine winetricks
 ```
 
-#### Wine Compatibility Notes:
+#### Quick Wine Check
+Run this script to check your Wine installation and get TrackIR compatibility recommendations:
+```bash
+./scripts/wine_check.sh
+```
+
+#### Wine Compatibility Notes
 - **Wine Staging 9.x**: Best compatibility with TrackIR installers
 - **Wine Stable 8.x**: May encounter USB driver installation issues
 - **32-bit Wine components**: Required for some TrackIR installers
+- **Modern MFC42 packages**: More reliable than old Wine extraction
 
-#### Automatic Wine Detection:
-LinuxTrack automatically detects and uses the best available Wine version:
-1. **Wine Staging** (if available) - Best TrackIR compatibility
-2. **Wine Stable** (fallback) - Works for most cases
-3. **Clear error messages** if Wine is not installed
+#### Automatic Detection
+LinuxTrack automatically detects and uses the best available installation method:
+1. **Package manager MFC42** (if available) - Most reliable
+2. **Winetricks installation** (fallback) - Good compatibility
+3. **Manual installation** (last resort) - User-provided files
+4. **Old Wine extraction** (legacy) - Only if other methods fail
 
-#### Troubleshooting Wine Issues:
+#### Troubleshooting Wine Issues
 If you encounter TrackIR firmware extraction issues:
 
 1. **Check your Wine installation**:
@@ -605,18 +663,27 @@ If you encounter TrackIR firmware extraction issues:
    ./scripts/wine_check.sh
    ```
 
-2. **Switch to Wine Staging** (if available):
+2. **Try modern installation methods first**:
+   ```bash
+   # Method 1: Package manager
+   sudo apt install libmfc42  # Ubuntu/Debian/MX
+   
+   # Method 2: Winetricks
+   winetricks mfc42
+   ```
+
+3. **Switch to Wine Staging** (if available):
    ```bash
    sudo update-alternatives --config wine
    # Select Wine Staging from the menu
    ```
 
-3. **Install 32-bit Wine components** (if missing):
+4. **Install 32-bit Wine components** (if missing):
    ```bash
    sudo apt install wine32:i386  # Debian/Ubuntu/MX
    ```
 
-4. **Verify TrackIR compatibility**:
+5. **Verify TrackIR compatibility**:
    ```bash
    ./scripts/wine_check.sh
    # Should show "EXCELLENT" for best compatibility
