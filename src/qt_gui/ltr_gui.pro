@@ -74,7 +74,7 @@ unix:!macx {
 
   data.path += /opt/share/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png sources.txt spec.txt \
-                 sphere.obj sphere.png sources_mfc.txt win7.reg
+                 sphere.obj sphere.png sources_mfc.txt win7.reg win10.reg
   help.path += /opt/share/linuxtrack/help/ltr_gui
   help.files += help.qhc help.qch 
   target.path = /opt/bin
@@ -91,7 +91,7 @@ macx {
   LIBS += -L../.libs "-L$${LIBDIR}" -L/opt/lib -lm -lltr -lmxml
   data.path += ltr_gui.app/Contents/Resources/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png ../linuxtrack1.conf \
-                sources_mac.txt spec.txt sphere.obj sphere.png sources_mfc.txt win7.reg
+                sources_mac.txt spec.txt sphere.obj sphere.png sources_mfc.txt win7.reg win10.reg
   help.path += ltr_gui.app/Contents/Resources/linuxtrack/help/ltr_gui
   help.files += help.qhc help.qch 
   INSTALLS += data help

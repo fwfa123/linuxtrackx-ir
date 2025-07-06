@@ -48,6 +48,8 @@ moc_predefs.h
 .qmake.stash
 *.pro.user
 *.pro.user.*
+*.qch
+*.qhc
 
 # Executables and binaries
 ltr_gui

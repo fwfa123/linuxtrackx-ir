@@ -1758,8 +1758,10 @@ install_data: first FORCE
 	$(QINSTALL) /media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/sphere.png $(INSTALL_ROOT)/opt/share/linuxtrack/sphere.png
 	$(QINSTALL) /media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/sources_mfc.txt $(INSTALL_ROOT)/opt/share/linuxtrack/sources_mfc.txt
 	$(QINSTALL) /media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/win7.reg $(INSTALL_ROOT)/opt/share/linuxtrack/win7.reg
+	$(QINSTALL) /media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/win10.reg $(INSTALL_ROOT)/opt/share/linuxtrack/win10.reg
 
 uninstall_data: FORCE
+	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/share/linuxtrack/win10.reg
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/share/linuxtrack/win7.reg
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/share/linuxtrack/sources_mfc.txt
 	-$(DEL_FILE) -r $(INSTALL_ROOT)/opt/share/linuxtrack/sphere.png

@@ -14,6 +14,7 @@ class WineLauncher:public QObject
   void run(const QString &tgt);
   void run(const QString &tgt, const QStringList &params);
   bool wineAvailable();
+  QProcessEnvironment getProcessEnvironment() const { return env; }
  private:
   bool check();
   void envSet(const QString var, const QString val);

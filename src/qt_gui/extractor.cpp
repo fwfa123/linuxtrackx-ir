@@ -380,7 +380,7 @@ void Mfc42uExtractor::wineFinished(bool result)
       QFile osRelease(QString::fromUtf8("/etc/os-release"));
       if(osRelease.exists()) {
         osRelease.open(QIODevice::ReadOnly);
-        QString content = osRelease.readAll();
+        QString content = QString::fromUtf8(osRelease.readAll());
         if(content.contains(QString::fromUtf8("ID=debian")) || 
            content.contains(QString::fromUtf8("ID=ubuntu")) ||
            content.contains(QString::fromUtf8("ID=mx"))) {
@@ -469,7 +469,7 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   QFile archFile(winePrefix + QString::fromUtf8("/system.reg"));
   if(archFile.exists()) {
     archFile.open(QIODevice::ReadOnly);
-    QString content = archFile.readAll();
+    QString content = QString::fromUtf8(archFile.readAll());
     if(content.contains(QString::fromUtf8("#arch=win64"))) {
       is64BitPrefix = true;
       progress(QString::fromUtf8("Detected 64-bit Wine prefix - this may cause issues with MFC42"));
