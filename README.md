@@ -69,7 +69,7 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging wine32:i386 winetricks libmfc42
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
@@ -472,7 +472,7 @@ ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || echo "32-
 | Wine Staging | wine-staging | wine-staging | wine-staging | TrackIR firmware extraction |
 | Wine 32-bit | wine32:i386 | wine-staging | wine-staging | 32-bit TrackIR installer support |
 | Winetricks | winetricks | winetricks | winetricks | Windows component installation |
-| MFC42 Library | libmfc42 | mfc42 | mfc42 | Windows MFC42 compatibility |
+| MFC42 Library | winetricks mfc42 | mfc42 | mfc42 | Windows MFC42 compatibility |
 | **Optional Features** |
 | liblo | liblo-dev | liblo-devel | liblo | OSC protocol support |
 | libcwiid | libcwiid-dev | libcwiid-devel | libcwiid | Wii remote support |
@@ -579,19 +579,7 @@ Save this as `dependency_check.sh`, make it executable with `chmod +x dependency
 
 #### Modern Installation Methods (Recommended)
 
-**Method 1: Package Manager Installation**
-```bash
-# Ubuntu/Debian/MX Linux
-sudo apt install libmfc42
-
-# Fedora/RHEL/CentOS
-sudo dnf install mfc42
-
-# Arch Linux/Manjaro
-sudo pacman -S mfc42
-```
-
-**Method 2: Winetricks Installation**
+**Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)**
 ```bash
 # Install winetricks if not already installed
 sudo apt install winetricks  # Ubuntu/Debian/MX
@@ -600,6 +588,15 @@ sudo pacman -S winetricks    # Arch Linux
 
 # Install MFC42 via winetricks
 winetricks mfc42
+```
+
+**Method 2: Package Manager Installation (Fedora/RHEL/Arch only)**
+```bash
+# Fedora/RHEL/CentOS
+sudo dnf install mfc42
+
+# Arch Linux/Manjaro
+sudo pacman -S mfc42
 ```
 
 **Method 3: Manual Installation**
@@ -650,8 +647,8 @@ Run this script to check your Wine installation and get TrackIR compatibility re
 
 #### Automatic Detection
 LinuxTrack automatically detects and uses the best available installation method:
-1. **Package manager MFC42** (if available) - Most reliable
-2. **Winetricks installation** (fallback) - Good compatibility
+1. **Winetricks installation** (Debian/Ubuntu/MX) - Most reliable for Debian-based systems
+2. **Package manager MFC42** (Fedora/RHEL/Arch) - Most reliable for RPM/Arch systems
 3. **Manual installation** (last resort) - User-provided files
 4. **Old Wine extraction** (legacy) - Only if other methods fail
 
@@ -665,11 +662,13 @@ If you encounter TrackIR firmware extraction issues:
 
 2. **Try modern installation methods first**:
    ```bash
-   # Method 1: Package manager
-   sudo apt install libmfc42  # Ubuntu/Debian/MX
-   
-   # Method 2: Winetricks
+   # Method 1: Winetricks (Debian/Ubuntu/MX)
+   sudo apt install winetricks
    winetricks mfc42
+   
+   # Method 2: Package manager (Fedora/RHEL/Arch only)
+   sudo dnf install mfc42  # Fedora/RHEL
+   sudo pacman -S mfc42    # Arch Linux
    ```
 
 3. **Switch to Wine Staging** (if available):

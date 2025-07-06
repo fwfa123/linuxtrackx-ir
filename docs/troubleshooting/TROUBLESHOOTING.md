@@ -256,13 +256,13 @@ sudo dnf install wine-staging
 sudo pacman -S wine-staging
 
 # 3. Try modern installation methods
-# Method 1: Package manager (recommended)
-sudo apt install libmfc42  # Ubuntu/Debian/MX
+# Method 1: Winetricks (Debian/Ubuntu/MX)
+sudo apt install winetricks
+winetricks mfc42
+
+# Method 2: Package manager (Fedora/RHEL/Arch only)
 sudo dnf install mfc42     # Fedora/RHEL
 sudo pacman -S mfc42       # Arch Linux
-
-# Method 2: Winetricks
-winetricks mfc42
 
 # Method 3: Manual installation
 # Copy mfc42u.dll from Windows system to:

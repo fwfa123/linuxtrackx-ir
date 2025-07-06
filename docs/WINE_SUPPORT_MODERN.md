@@ -6,43 +6,32 @@ LinuxTrack provides head tracking support for Windows applications running under
 
 ## Modern Installation Methods
 
-### Method 1: Package Manager Installation (Recommended)
+### Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)
 
-The most reliable approach is to install `mfc42u.dll` through your distribution's package manager:
-
-#### Ubuntu/Debian/MX Linux
-```bash
-sudo apt update
-sudo apt install libmfc42
-```
-
-#### Fedora/RHEL/CentOS
-```bash
-sudo dnf install mfc42
-```
-
-#### Arch Linux/Manjaro
-```bash
-sudo pacman -S mfc42
-```
-
-#### OpenSUSE
-```bash
-sudo zypper install mfc42
-```
-
-### Method 2: Winetricks Installation
-
-If package manager installation is not available, use winetricks:
+The most reliable approach for Debian-based systems is to use winetricks:
 
 ```bash
 # Install winetricks if not already installed
 sudo apt install winetricks  # Ubuntu/Debian/MX
-sudo dnf install winetricks  # Fedora
-sudo pacman -S winetricks    # Arch
+sudo dnf install winetricks  # Fedora/RHEL
+sudo pacman -S winetricks    # Arch Linux
 
-# Install mfc42 in your Wine prefix
-WINEPREFIX=~/.wine winetricks mfc42
+# Install MFC42 via winetricks
+winetricks mfc42
+```
+
+### Method 2: Package Manager Installation (Fedora/RHEL/Arch only)
+
+Some distributions provide MFC42 packages:
+
+```bash
+# Fedora/RHEL/CentOS
+sudo dnf install mfc42
+
+# Arch Linux/Manjaro
+sudo pacman -S mfc42
+
+# Note: Debian/Ubuntu/MX do not have MFC42 packages in their repositories
 ```
 
 ### Method 3: Manual Installation
