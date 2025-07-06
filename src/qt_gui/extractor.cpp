@@ -413,6 +413,7 @@ void Mfc42uExtractor::wineFinished(bool result)
       }
     }
     
+    // Always enable buttons and emit finished signal, regardless of success/failure
     enableButtons(true);
     emit finished(found);
     hide();
@@ -960,6 +961,16 @@ void Extractor::on_DownloadButton_pressed()
 {
   QString target(ui.FWCombo->currentText());
   qDebug()<<QString::fromUtf8("Going to download ")<<target;
+  
+  // Check if target is empty
+  if(target.isEmpty()) {
+    progress(QString::fromUtf8("Error: No download target selected"));
+    QMessageBox::warning(NULL, QString::fromUtf8("No Target Selected"),
+      QString::fromUtf8("Please select a download target from the dropdown menu.")
+    );
+    return;
+  }
+  
   winePrefix = QDir::tempPath();
   winePrefix += QString::fromUtf8("/wineXXXXXX");
   QByteArray charData = winePrefix.toUtf8();
@@ -983,13 +994,17 @@ void Extractor::downloadDone(bool ok, QString fileName)
     progress(QString::fromUtf8("Downloading finished!"));
     commenceExtraction(fileName);
   }else{
+    progress(QString::fromUtf8("Download failed - re-enabling buttons"));
     QMessageBox::warning(NULL, QString::fromUtf8("Download unsuccessfull"),
       QString::fromUtf8("Download of the file was unsuccessful.\n"
       "Please check your network connection and try again;\n"
       "you can also download the file yourself and\n"
       "use the \"Extract from installer\" button to extract it.")
     );
+    // Force re-enable all buttons
     enableButtons(true);
+    // Also ensure the quit button is enabled
+    ui.QuitButton->setEnabled(true);
   }
 }
 
