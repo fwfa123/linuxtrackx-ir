@@ -69,17 +69,17 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging wine32:i386
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging
 
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -283,7 +283,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | No tracking detected | Check device connection and driver installation |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
 | XPlane plugin shows "no" | Install XPlane SDK from [Laminar Research](https://developer.x-plane.com/sdk/plugin-sdk-downloads/) or use `--with-xplane-sdk=/path/to/sdk` |
-| Firmware extraction fails | **Recommended**: Install TrackIR manually with Wine, then use "Browse Directory" option in GUI to point to existing installation. Alternative: Ensure Wine32 components are installed (`sudo apt install wine32:i386`) |
+| Firmware extraction fails | **Step 1**: Run `./scripts/wine_check.sh` to diagnose Wine issues. **Step 2**: Install Wine Staging (`sudo apt install wine-staging`) and switch to it (`sudo update-alternatives --config wine`). **Step 3**: Install 32-bit components (`sudo apt install wine32:i386`). **Step 4**: If issues persist, manually install TrackIR with Wine, then use "Browse Directory" option in GUI. |
 
 ### Getting Help
 1. **Check the docs**: Start with the [Quick Start](#-quick-start) section for your distribution
@@ -545,3 +545,79 @@ echo "=== Check Complete ==="
 ```
 
 Save this as `dependency_check.sh`, make it executable with `chmod +x dependency_check.sh`, and run it to verify your system has all required dependencies.
+
+### Wine Support: wine (required for TrackIR firmware extraction)
+
+**Important**: Wine is required for TrackIR firmware extraction. For best compatibility with TrackIR installers, **Wine Staging is recommended** over Wine Stable.
+
+#### Quick Wine Check:
+Run this script to check your Wine installation and get TrackIR compatibility recommendations:
+```bash
+./scripts/wine_check.sh
+```
+
+#### Wine Installation by Distribution:
+
+**MX Linux / Debian / Ubuntu:**
+```bash
+# Option 1: Wine Staging (Recommended - better TrackIR compatibility)
+sudo apt install wine-staging
+
+# Option 2: Wine Stable (Fallback - may have TrackIR installer issues)
+sudo apt install wine
+
+# 32-bit components (required for some TrackIR installers)
+sudo apt install wine32:i386
+```
+
+**Fedora / RHEL / CentOS:**
+```bash
+# Enable RPM Fusion first, then install Wine Staging
+sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install wine-staging
+```
+
+**Arch Linux / Manjaro:**
+```bash
+# Wine Staging (Recommended)
+sudo pacman -S wine-staging
+
+# Or Wine Stable (Fallback)
+sudo pacman -S wine
+```
+
+#### Wine Compatibility Notes:
+- **Wine Staging 9.x**: Best compatibility with TrackIR installers
+- **Wine Stable 8.x**: May encounter USB driver installation issues
+- **32-bit Wine components**: Required for some TrackIR installers
+
+#### Automatic Wine Detection:
+LinuxTrack automatically detects and uses the best available Wine version:
+1. **Wine Staging** (if available) - Best TrackIR compatibility
+2. **Wine Stable** (fallback) - Works for most cases
+3. **Clear error messages** if Wine is not installed
+
+#### Troubleshooting Wine Issues:
+If you encounter TrackIR firmware extraction issues:
+
+1. **Check your Wine installation**:
+   ```bash
+   ./scripts/wine_check.sh
+   ```
+
+2. **Switch to Wine Staging** (if available):
+   ```bash
+   sudo update-alternatives --config wine
+   # Select Wine Staging from the menu
+   ```
+
+3. **Install 32-bit Wine components** (if missing):
+   ```bash
+   sudo apt install wine32:i386  # Debian/Ubuntu/MX
+   ```
+
+4. **Verify TrackIR compatibility**:
+   ```bash
+   ./scripts/wine_check.sh
+   # Should show "EXCELLENT" for best compatibility
+   ```

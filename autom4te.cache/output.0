@@ -17828,6 +17828,24 @@ See \`config.log' for more details" "$LINENO" 5; }
 fi
 
 
+# Note: Qt5 headers will be checked during compilation, qmake version check is sufficient here
+# Qt5 header check - try multiple possible paths for Qt5 headers
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for Qt5 development headers" >&5
+printf %s "checking for Qt5 development headers... " >&6; }
+QT5_HEADERS_FOUND=no
+for qt5_include_path in "/usr/include/x86_64-linux-gnu/qt5" "/usr/include/qt5" "/usr/include/qt" "/opt/qt5/include"; do
+  if test -d "$qt5_include_path/QtCore" && test -d "$qt5_include_path/QtWidgets"; then
+    QT5_HEADERS_FOUND=yes
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found in $qt5_include_path" >&5
+printf "%s\n" "found in $qt5_include_path" >&6; }
+    break
+  fi
+done
+if test "$QT5_HEADERS_FOUND" = "no"; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: not found - will check during compilation" >&5
+printf "%s\n" "not found - will check during compilation" >&6; }
+fi
+
 # Qt5 is needed for the GUI
 for ac_prog in qmake-qt5 qt5-qmake qmake5 qmake
 do
@@ -17880,7 +17898,26 @@ fi
 done
 
 
-# Detect Qt5 help generator
+# Verify that the found qmake is Qt5 by checking its version
+if test -n "$QMAKE_PATH"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if $QMAKE_PATH is Qt5" >&5
+printf %s "checking if $QMAKE_PATH is Qt5... " >&6; }
+       QT5_VERSION=`$QMAKE_PATH -query QT_VERSION 2>/dev/null`
+       if test -n "$QT5_VERSION" && test "$QT5_VERSION" != "unknown"
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes - Qt $QT5_VERSION" >&5
+printf "%s\n" "yes - Qt $QT5_VERSION" >&6; }
+else $as_nop
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no - Qt5 not found" >&5
+printf "%s\n" "no - Qt5 not found" >&6; }
+              as_fn_error $? "Qt5 qmake not found. Please install qt5-qmake or qtbase5-dev." "$LINENO" 5
+fi
+else $as_nop
+  as_fn_error $? "qmake not found. Please install Qt5 development packages." "$LINENO" 5
+fi
+
+# Detect Qt5 help generator (optional)
 for ac_prog in qhelpgenerator-qt5 qhelpgenerator
 do
   # Extract the first word of "$ac_prog", so it can be a program name with args.
@@ -18861,6 +18898,31 @@ else $as_nop
 
 fi
 
+
+# Check for 32-bit development headers before enabling 32-bit library build
+if test "x$with_ltr_32lib_on_x64" = xyes
+then :
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for 32-bit development headers" >&5
+printf %s "checking for 32-bit development headers... " >&6; }
+       # Check for 32-bit libc headers in common locations
+       if test -f "/usr/include/i386-linux-gnu/bits/libc-header-start.h" || \
+          test -f "/usr/include/bits/libc-header-start.h" || \
+          test -f "/usr/include/i386-linux-gnu/stdlib.h" || \
+          test -f "/usr/include/stdlib.h"; then
+         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: found" >&5
+printf "%s\n" "found" >&6; }
+         has_32bit_headers=yes
+       else
+         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+printf "%s\n" "not found" >&6; }
+         has_32bit_headers=no
+         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: 32-bit development headers not found. 32-bit library will not be built." >&5
+printf "%s\n" "$as_me: WARNING: 32-bit development headers not found. 32-bit library will not be built." >&2;}
+         { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Install gcc-multilib and libc6-dev-i386 (Debian/Ubuntu/MX) or glibc-devel.i686 (Fedora/RHEL) to enable 32-bit library build." >&5
+printf "%s\n" "$as_me: WARNING: Install gcc-multilib and libc6-dev-i386 (Debian/Ubuntu/MX) or glibc-devel.i686 (Fedora/RHEL) to enable 32-bit library build." >&2;}
+         with_ltr_32lib_on_x64=no
+       fi
+fi
 
 # needed to have the right libraries to link against
 WINE_LIBS=
