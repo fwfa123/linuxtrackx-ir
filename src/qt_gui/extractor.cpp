@@ -507,13 +507,21 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     wineInit.start(QString::fromUtf8("wine"), QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
     
     if(!wineInit.waitForFinished(30000)) { // 30 second timeout
-      progress(QString::fromUtf8("Failed to initialize 32-bit Wine prefix"));
-      return false;
+      progress(QString::fromUtf8("Failed to initialize 32-bit Wine prefix - trying in 64-bit prefix"));
+      // Fall back to trying in the 64-bit prefix
+      is64BitPrefix = false;
+      winetricks.setWorkingDirectory(winePrefix);
+    } else if(wineInit.exitCode() != 0) {
+      progress(QString::fromUtf8("32-bit Wine prefix initialization failed (exit code: %1) - trying in 64-bit prefix").arg(wineInit.exitCode()));
+      // Fall back to trying in the 64-bit prefix
+      is64BitPrefix = false;
+      winetricks.setWorkingDirectory(winePrefix);
+    } else {
+      progress(QString::fromUtf8("32-bit Wine prefix initialized successfully"));
+      // Now try winetricks in the 32-bit prefix
+      winetricks.setProcessEnvironment(env);
+      winetricks.setWorkingDirectory(tempPrefix);
     }
-    
-    // Now try winetricks in the 32-bit prefix
-    winetricks.setProcessEnvironment(env);
-    winetricks.setWorkingDirectory(tempPrefix);
   } else {
     winetricks.setWorkingDirectory(winePrefix);
   }
@@ -556,6 +564,46 @@ bool Mfc42uExtractor::tryWinetricksInstall()
           }
           
           return true;
+        }
+      }
+    }
+  } else {
+    // If winetricks failed and we were trying a 32-bit prefix, try again in the 64-bit prefix
+    if(is64BitPrefix) {
+      progress(QString::fromUtf8("Winetricks failed in 32-bit prefix, trying in 64-bit prefix..."));
+      
+      // Clean up the failed 32-bit prefix
+      QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
+      QDir tempDir(tempPrefix);
+      if(tempDir.exists()) {
+        tempDir.removeRecursively();
+        progress(QString::fromUtf8("Cleaned up failed 32-bit Wine prefix"));
+      }
+      
+      // Try again in the 64-bit prefix
+      QProcess winetricks64;
+      winetricks64.setProcessEnvironment(wine->getProcessEnvironment());
+      winetricks64.setWorkingDirectory(winePrefix);
+      winetricks64.start(QString::fromUtf8("winetricks"), args);
+      
+      if(winetricks64.waitForFinished(120000)) { // 2 minute timeout
+        if(winetricks64.exitCode() == 0) {
+          progress(QString::fromUtf8("Winetricks installation successful in 64-bit prefix"));
+          
+          // Check if mfc42u.dll was installed in 64-bit prefix
+          QStringList checkPaths64;
+          checkPaths64 << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+          checkPaths64 << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+          
+          for(const QString& path : checkPaths64) {
+            if(QFile::exists(path)) {
+              destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+              if(QFile::copy(path, destPath)) {
+                progress(QString::fromUtf8("Mfc42u.dll installed via winetricks in 64-bit prefix"));
+                return true;
+              }
+            }
+          }
         }
       }
     }
@@ -631,14 +679,19 @@ void Mfc42uExtractor::showModernInstallationInstructions()
     QString::fromUtf8("The old Wine extraction method failed. Please use one of these modern approaches:\n\n"
     "1. Install via winetricks (Recommended for Debian/Ubuntu/MX):\n"
     "   sudo apt install winetricks\n"
-    "   winetricks mfc42\n\n"
+    "   winetricks mfc42\n"
+    "   # Then copy the DLL to LinuxTrack:\n"
+    "   sudo cp ~/.wine/drive_c/windows/system32/mfc42u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
     "2. Install via package manager (Fedora/RHEL/Arch only):\n"
     "   Fedora: sudo dnf install mfc42\n"
-    "   Arch: sudo pacman -S mfc42\n\n"
+    "   Arch: sudo pacman -S mfc42\n"
+    "   # Then copy the DLL to LinuxTrack:\n"
+    "   sudo cp /usr/lib/mfc42u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
     "3. Manual installation:\n"
     "   Copy mfc42u.dll from Windows system to:\n"
     "   sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
-    "Note: Debian/Ubuntu/MX systems should use winetricks as the package is not available in repositories.")
+    "Note: Debian/Ubuntu/MX systems should use winetricks as the package is not available in repositories.\n"
+    "After copying the DLL, try the Wine support installation again.")
   );
 }
 

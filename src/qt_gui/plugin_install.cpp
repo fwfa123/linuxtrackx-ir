@@ -122,6 +122,30 @@ void PluginInstall::installLinuxtrackWine()
   if(dlmfc != NULL){
     dlmfc->hide();
   }
+  
+  // Double-check that mfc42u.dll exists before proceeding
+  if(!isMfc42uInstalled()) {
+    QMessageBox::warning(NULL, QString::fromUtf8("MFC42 Required"),
+      QString::fromUtf8("mfc42u.dll is required but not found in the tir_firmware directory.\\n\\n"
+      "Please install MFC42 support first using one of these methods:\\n\\n"
+      "1. Install via winetricks (Recommended for Debian/Ubuntu/MX):\\n"
+      "   sudo apt install winetricks\\n"
+      "   winetricks mfc42\\n"
+      "   # Then copy the DLL to LinuxTrack:\\n"
+      "   sudo cp ~/.wine/drive_c/windows/system32/mfc42u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
+      "2. Install via package manager (Fedora/RHEL/Arch only):\\n"
+      "   Fedora: sudo dnf install mfc42\\n"
+      "   Arch: sudo pacman -S mfc42\\n"
+      "   # Then copy the DLL to LinuxTrack:\\n"
+      "   sudo cp /usr/lib/mfc42u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
+      "3. Manual installation:\\n"
+      "   Copy mfc42u.dll from Windows system to:\\n"
+      "   sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
+      "After copying the DLL, try the Wine support installation again.")
+    );
+    return;
+  }
+  
 #ifndef DARWIN
   QString prefix = QFileDialog::getExistingDirectory(NULL, QString::fromUtf8("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
@@ -175,7 +199,6 @@ void PluginInstall::mfc42uInstall()
 
 void PluginInstall::finished(bool ok)
 {
-  (void) ok;
   if(dlfw != NULL){
     dlfw->hide();
   }
@@ -184,12 +207,26 @@ void PluginInstall::finished(bool ok)
   }
   switch(state){
     case TIR_FW:
-      state = MFC;
-      mfc42uInstall();
+      if(ok) {
+        state = MFC;
+        mfc42uInstall();
+      } else {
+        // TIR firmware extraction failed - don't proceed
+        state = DONE;
+        enableButtons(true);
+      }
       break;
     case MFC:
-      state = LTR_W;
-      installLinuxtrackWine();
+      if(ok) {
+        // Only proceed to Wine bridge installation if MFC42 was successfully installed
+        state = LTR_W;
+        installLinuxtrackWine();
+      } else {
+        // MFC42 extraction failed - don't proceed to Wine bridge
+        // User needs to manually install mfc42u.dll first
+        state = DONE;
+        enableButtons(true);
+      }
       break;
     case LTR_W:
     case TIR_FW_ONLY:
