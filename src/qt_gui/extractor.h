@@ -121,6 +121,7 @@ class Mfc42uExtractor : public Extractor
   bool tryPackageManagerInstall();
   bool tryCabextractFallback();
   void showModernInstallationInstructions();
+  bool checkWinetricksAvailability();
   
  private slots:
   void wineFinished(bool result);

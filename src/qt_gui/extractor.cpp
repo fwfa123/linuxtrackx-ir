@@ -375,20 +375,41 @@ void Mfc42uExtractor::wineFinished(bool result)
       // Try modern installation methods
       progress(QString::fromUtf8("Attempting modern installation methods..."));
       
-      // Method 1: Try winetricks
-      if(tryWinetricksInstall()) {
-        found = true;
+      // For Debian-based systems, prioritize winetricks
+      bool isDebianBased = false;
+      QFile osRelease(QString::fromUtf8("/etc/os-release"));
+      if(osRelease.exists()) {
+        osRelease.open(QIODevice::ReadOnly);
+        QString content = osRelease.readAll();
+        if(content.contains(QString::fromUtf8("ID=debian")) || 
+           content.contains(QString::fromUtf8("ID=ubuntu")) ||
+           content.contains(QString::fromUtf8("ID=mx"))) {
+          isDebianBased = true;
+        }
+        osRelease.close();
       }
-      // Method 2: Try package manager
-      else if(tryPackageManagerInstall()) {
-        found = true;
-      }
-      // Method 3: Try cabextract as last resort
-      else if(tryCabextractFallback()) {
-        return; // Don't enable buttons yet, wait for cabextract to finish
-      }
-      else {
-        showModernInstallationInstructions();
+      
+      if(isDebianBased) {
+        // Debian-based systems: try winetricks first
+        progress(QString::fromUtf8("Debian-based system detected - trying winetricks first..."));
+        if(tryWinetricksInstall()) {
+          found = true;
+        } else if(tryCabextractFallback()) {
+          return; // Don't enable buttons yet, wait for cabextract to finish
+        } else {
+          showModernInstallationInstructions();
+        }
+      } else {
+        // Other systems: try package manager first, then winetricks
+        if(tryPackageManagerInstall()) {
+          found = true;
+        } else if(tryWinetricksInstall()) {
+          found = true;
+        } else if(tryCabextractFallback()) {
+          return; // Don't enable buttons yet, wait for cabextract to finish
+        } else {
+          showModernInstallationInstructions();
+        }
       }
     }
     
@@ -443,18 +464,63 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     return false;
   }
   
+  // Check if we're using a 64-bit Wine prefix (which can cause issues with MFC42)
+  bool is64BitPrefix = false;
+  QFile archFile(winePrefix + QString::fromUtf8("/system.reg"));
+  if(archFile.exists()) {
+    archFile.open(QIODevice::ReadOnly);
+    QString content = archFile.readAll();
+    if(content.contains(QString::fromUtf8("#arch=win64"))) {
+      is64BitPrefix = true;
+      progress(QString::fromUtf8("Detected 64-bit Wine prefix - this may cause issues with MFC42"));
+    }
+    archFile.close();
+  }
+  
   // Try to install mfc42 using winetricks
   QProcess winetricks;
   winetricks.setProcessEnvironment(wine->getProcessEnvironment());
-  winetricks.setWorkingDirectory(winePrefix);
   
+  // Use unattended mode to avoid GUI issues
   QStringList args;
-  args << QString::fromUtf8("mfc42");
+  args << QString::fromUtf8("--unattended") << QString::fromUtf8("mfc42");
   
-  progress(QString::fromUtf8("Running: winetricks mfc42"));
+  progress(QString::fromUtf8("Running: winetricks --unattended mfc42"));
+  
+  // If we have a 64-bit prefix, try creating a 32-bit prefix for this installation
+  if(is64BitPrefix) {
+    progress(QString::fromUtf8("Attempting installation in 32-bit Wine prefix..."));
+    
+    // Create a temporary 32-bit Wine prefix
+    QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
+    QProcess wineInit;
+    wineInit.setProcessEnvironment(wine->getProcessEnvironment());
+    
+    // Set environment variables for 32-bit prefix
+    QProcessEnvironment env = wine->getProcessEnvironment();
+    env.insert(QString::fromUtf8("WINEPREFIX"), tempPrefix);
+    env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+    wineInit.setProcessEnvironment(env);
+    
+    // Initialize the 32-bit prefix
+    progress(QString::fromUtf8("Initializing 32-bit Wine prefix..."));
+    wineInit.start(QString::fromUtf8("wine"), QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
+    
+    if(!wineInit.waitForFinished(30000)) { // 30 second timeout
+      progress(QString::fromUtf8("Failed to initialize 32-bit Wine prefix"));
+      return false;
+    }
+    
+    // Now try winetricks in the 32-bit prefix
+    winetricks.setProcessEnvironment(env);
+    winetricks.setWorkingDirectory(tempPrefix);
+  } else {
+    winetricks.setWorkingDirectory(winePrefix);
+  }
+  
   winetricks.start(QString::fromUtf8("winetricks"), args);
   
-  if(!winetricks.waitForFinished(60000)) { // 60 second timeout
+  if(!winetricks.waitForFinished(120000)) { // 2 minute timeout for winetricks
     progress(QString::fromUtf8("Winetricks installation timed out"));
     return false;
   }
@@ -464,14 +530,31 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     
     // Check if mfc42u.dll was installed
     QStringList checkPaths;
-    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
-    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+    if(is64BitPrefix) {
+      QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
+      checkPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+      checkPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+    } else {
+      checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+      checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+    }
     
     for(const QString& path : checkPaths) {
       if(QFile::exists(path)) {
         destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
         if(QFile::copy(path, destPath)) {
           progress(QString::fromUtf8("Mfc42u.dll installed via winetricks"));
+          
+          // Clean up temporary 32-bit prefix if we created one
+          if(is64BitPrefix) {
+            QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
+            QDir tempDir(tempPrefix);
+            if(tempDir.exists()) {
+              tempDir.removeRecursively();
+              progress(QString::fromUtf8("Cleaned up temporary 32-bit Wine prefix"));
+            }
+          }
+          
           return true;
         }
       }
@@ -499,7 +582,9 @@ bool Mfc42uExtractor::tryPackageManagerInstall()
       // Try to install the appropriate package
       QString packageName;
       if(pm == QString::fromUtf8("apt")) {
-        packageName = QString::fromUtf8("libmfc42");
+        // Debian/Ubuntu/MX don't have libmfc42 package - use winetricks instead
+        progress(QString::fromUtf8("Debian-based systems should use winetricks instead of package manager"));
+        return false;
       } else if(pm == QString::fromUtf8("dnf")) {
         packageName = QString::fromUtf8("mfc42");
       } else if(pm == QString::fromUtf8("pacman")) {
@@ -544,18 +629,27 @@ void Mfc42uExtractor::showModernInstallationInstructions()
 {
   QMessageBox::information(this, QString::fromUtf8("Modern Installation Required"),
     QString::fromUtf8("The old Wine extraction method failed. Please use one of these modern approaches:\n\n"
-    "1. Install via package manager:\n"
-    "   Ubuntu/Debian/MX: sudo apt install libmfc42\n"
+    "1. Install via winetricks (Recommended for Debian/Ubuntu/MX):\n"
+    "   sudo apt install winetricks\n"
+    "   winetricks mfc42\n\n"
+    "2. Install via package manager (Fedora/RHEL/Arch only):\n"
     "   Fedora: sudo dnf install mfc42\n"
     "   Arch: sudo pacman -S mfc42\n\n"
-    "2. Install via winetricks:\n"
-    "   winetricks mfc42\n\n"
     "3. Manual installation:\n"
-    "   Copy mfc42u.dll from a Windows system to:\n"
-    "   %1\n\n"
-    "After installation, try the Wine support installation again.")
-    .arg(PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/"))
+    "   Copy mfc42u.dll from Windows system to:\n"
+    "   sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
+    "Note: Debian/Ubuntu/MX systems should use winetricks as the package is not available in repositories.")
   );
+}
+
+bool Mfc42uExtractor::checkWinetricksAvailability()
+{
+  QProcess winetricksCheck;
+  winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
+  if(!winetricksCheck.waitForFinished(5000) || winetricksCheck.exitCode() != 0) {
+    return false;
+  }
+  return true;
 }
 
 void Mfc42uExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus status)
