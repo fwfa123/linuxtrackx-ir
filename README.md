@@ -283,7 +283,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | No tracking detected | Check device connection and driver installation |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
 | XPlane plugin shows "no" | Install XPlane SDK from [Laminar Research](https://developer.x-plane.com/sdk/plugin-sdk-downloads/) or use `--with-xplane-sdk=/path/to/sdk` |
-| Firmware extraction fails | Ensure Wine is installed and try the "Browse Directory" option to point to existing TrackIR installation |
+| Firmware extraction fails | **Recommended**: Install TrackIR manually with Wine, then use "Browse Directory" option in GUI to point to existing installation. Alternative: Ensure Wine32 components are installed (`sudo apt install wine32:i386`) |
 
 ### Getting Help
 1. **Check the docs**: Start with the [Quick Start](#-quick-start) section for your distribution

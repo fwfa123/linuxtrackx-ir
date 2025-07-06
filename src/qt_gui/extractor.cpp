@@ -461,8 +461,9 @@ void TirFwExtractor::commenceExtraction(QString file)
   }
   wine->setEnv(QString::fromUtf8("WINEPREFIX"), winePrefix);
   installerFile = file;
-  // Run the installer directly - no need for win10.reg since manual installation works
+  // Try different silent installation parameters
   QStringList args;
+  args << QStringLiteral("/VERYSILENT") << QStringLiteral("/NORESTART") << QStringLiteral("/SUPPRESSMSGBOXES");
   wine->run(installerFile, args);
 }
 

@@ -168,7 +168,16 @@ bool WineLauncher::wineAvailable()
 
 bool WineLauncher::check()
 {
-  run(QString::fromUtf8("--version"));
+  envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+  wine.setProcessEnvironment(env);
+  QString cmd(QString::fromUtf8("%1wine").arg(winePath));
+  QStringList args(QString::fromUtf8("--version"));
+  std::ostringstream s;
+  s<<"Launching wine command: '" << cmd.toUtf8().constData() << " --version'\n";
+  ltr_int_log_message(s.str().c_str());
+  wine.setProcessChannelMode(QProcess::MergedChannels);
+  wine.start(cmd, args);
+  
   while(!wine.waitForFinished()){
     if(wine.error() != QProcess::Timedout){
       std::ostringstream s;
