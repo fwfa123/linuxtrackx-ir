@@ -21,7 +21,7 @@ WineLauncher::WineLauncher():winePath(QString::fromUtf8("")), available(false)
   std::ostringstream s;
   env = QProcessEnvironment::systemEnvironment();
   if(!check()){
-    envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+    envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
 #ifdef DARWIN
     winePath = QApplication::applicationDirPath()+QString::fromUtf8("/../wine/bin/");
     QString libPath = QApplication::applicationDirPath()+QString::fromUtf8("/../wine/lib/");
@@ -42,6 +42,8 @@ WineLauncher::WineLauncher():winePath(QString::fromUtf8("")), available(false)
   }else{
     available = true;
   }
+  // Add Wine debug output to see what's happening (more reasonable level)
+  envSet(QString::fromUtf8("WINEDEBUG"), QString::fromUtf8("+err+fixme"));
   QObject::connect(&wine, SIGNAL(finished(int, QProcess::ExitStatus)),
     this, SLOT(finished(int, QProcess::ExitStatus)));
   QObject::connect(&wine, SIGNAL(error(QProcess::ProcessError)),
@@ -69,7 +71,7 @@ void WineLauncher::setEnv(const QString &var, const QString &val)
 
 void WineLauncher::run(const QString &tgt)
 {
-  envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+  envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
   QString cmd(QString::fromUtf8("%1wine").arg(winePath));
   QStringList args(tgt);
@@ -82,16 +84,17 @@ void WineLauncher::run(const QString &tgt)
 
 void WineLauncher::run(const QString &tgt, const QStringList &params)
 {
-  envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+  envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
-  QString cmd(QStringLiteral("\"%1wine\""));
-  cmd = cmd.arg(winePath).arg(tgt);
+  QString cmd(QString::fromUtf8("%1wine").arg(winePath));
+  QStringList args;
+  args << tgt << params;
   std::ostringstream s;
   s<<"Launching wine command: '"<< cmd.toUtf8().constData()
-   << " " << params.join(QStringLiteral(" ")).toUtf8().constData() << "'\n";
+   << " " << tgt.toUtf8().constData() << " " << params.join(QStringLiteral(" ")).toUtf8().constData() << "'\n";
   ltr_int_log_message(s.str().c_str());
   wine.setProcessChannelMode(QProcess::MergedChannels);
-  wine.start(cmd, params);
+  wine.start(cmd, args);
 }
 
 void WineLauncher::finished(int exitCode, QProcess::ExitStatus exitStatus)

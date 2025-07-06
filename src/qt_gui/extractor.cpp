@@ -330,7 +330,7 @@ void TirFwExtractor::wineFinished(bool result)
       );
     }
     QStringList args;
-    args << QStringLiteral("/S") << QStringLiteral("/v/qn");
+    // Run installer normally without silent mode to allow proper installation
     wine->run(installerFile, args);
   }else{
     if(!result){
@@ -461,10 +461,9 @@ void TirFwExtractor::commenceExtraction(QString file)
   }
   wine->setEnv(QString::fromUtf8("WINEPREFIX"), winePrefix);
   installerFile = file;
-  //New TrackIR installer needs Windows 10 to run properly, while Wine defaults to windows XP
-  // This hack set Windows version to 10...
-  QString win10regFile = PrefProxy::getDataPath(QString::fromUtf8("win10.reg"));
-  wine->run(QString::fromUtf8("regedit\" \"%1").arg(win10regFile));
+  // Run the installer directly - no need for win10.reg since manual installation works
+  QStringList args;
+  wine->run(installerFile, args);
 }
 
 
