@@ -356,14 +356,15 @@ void TirFwExtractor::wineFinished(bool result)
     if(!result){
       QMessageBox::warning(this, QString::fromUtf8("Error running Wine"),
         QString::fromUtf8("There was an error initializing\n"
-        "the wine prefix; wil try to install the firmware\n"
+        "the wine prefix; will try to install the firmware\n"
         "just in case..."
         "Please see the log for more details.\n\n")
       );
     }
-    QStringList args;
-    // Run installer normally without silent mode to allow proper installation
-    wine->run(installerFile, args);
+    // Skip the second run since we're using silent installation
+    // The installer should have completed in the first run
+    destPath = makeDestPath(PrefProxy::getRsrcDirPath());
+    et->start(targets, winePrefix, destPath);
   }else{
     if(!result){
       QMessageBox::warning(this, QString::fromUtf8("Error running Wine"),

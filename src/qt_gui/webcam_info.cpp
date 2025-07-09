@@ -31,7 +31,7 @@ class WebcamLibProxy{
   void *libhandle;
   WebcamLibProxy();
   ~WebcamLibProxy();
-  WebcamLibProxy(const WebcamLibProxy&){};
+  WebcamLibProxy(const WebcamLibProxy&) : libhandle(NULL){};
   WebcamLibProxy & operator=(const WebcamLibProxy&);
   static WebcamLibProxy wcl;
 };

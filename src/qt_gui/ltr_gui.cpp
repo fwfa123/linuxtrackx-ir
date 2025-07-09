@@ -289,7 +289,6 @@ void LinuxtrackGui::trackerStateHandler(linuxtrack_state_type current_state)
       //ui.LegacyPose->setEnabled(true);
       //ui.LegacyRotation->setEnabled(true);
       break;
-      break;
   }
 }
 

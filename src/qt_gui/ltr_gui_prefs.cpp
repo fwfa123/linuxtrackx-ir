@@ -36,10 +36,18 @@ PrefProxy::PrefProxy()
 
   ltr_int_log_message("Couldn't load preferences (GUI), copying default!\n");
   if(!makeRsrcDir()){
-    throw;
+    ltr_int_log_message("Failed to create resource directory - using default preferences\n");
+    ltr_int_new_prefs();
+    ltr_int_read_prefs(NULL, true);
+    checkPrefix(true);
+    return;
   }
   if(!copyDefaultPrefs()){
-    throw;
+    ltr_int_log_message("Failed to copy default preferences - using new preferences\n");
+    ltr_int_new_prefs();
+    ltr_int_read_prefs(NULL, true);
+    checkPrefix(true);
+    return;
   }
   ltr_int_new_prefs();
   ltr_int_read_prefs(NULL, true);
