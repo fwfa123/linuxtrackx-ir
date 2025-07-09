@@ -18,6 +18,9 @@ class LtrTracking : public QObject
   void on_Profiles_currentIndexChanged(const QString &text);
   void on_CreateNewProfile_pressed();
   
+  // Generic axis enable handler
+  void on_AxisEnable_stateChanged(int state);
+  
   void on_PitchEnable_stateChanged(int state);
   void on_RollEnable_stateChanged(int state);
   void on_YawEnable_stateChanged(int state);

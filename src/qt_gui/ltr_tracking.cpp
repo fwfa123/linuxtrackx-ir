@@ -5,14 +5,41 @@
 #include <iostream>
 #include "tracker.h"
 
+// Axis configuration structure for reducing code duplication
+struct AxisConfig {
+  int axis_id;
+  QCheckBox* enable_widget;
+  QDoubleSpinBox* left_widget;
+  QDoubleSpinBox* right_widget;
+};
+
 static bool state2bool(int state);
 static Qt::CheckState bool2state(bool v);
 
+// Static axis configuration array to reduce code duplication
+static const AxisConfig AXIS_CONFIGS[] = {
+  {PITCH, nullptr, nullptr, nullptr},  // Will be initialized in constructor
+  {ROLL, nullptr, nullptr, nullptr},
+  {YAW, nullptr, nullptr, nullptr},
+  {TX, nullptr, nullptr, nullptr},
+  {TY, nullptr, nullptr, nullptr},
+  {TZ, nullptr, nullptr, nullptr}
+};
+
+static constexpr size_t AXIS_COUNT = sizeof(AXIS_CONFIGS) / sizeof(AXIS_CONFIGS[0]);
 
 LtrTracking::LtrTracking(const Ui::LinuxtrackMainForm &ui) : gui(ui), initializing(false)
 {
+  // Initialize axis configuration array with actual widget pointers
+  const_cast<AxisConfig*>(AXIS_CONFIGS)[0] = {PITCH, gui.PitchEnable, gui.PitchUpSpin, gui.PitchDownSpin};
+  const_cast<AxisConfig*>(AXIS_CONFIGS)[1] = {ROLL, gui.RollEnable, gui.TiltLeftSpin, gui.TiltRightSpin};
+  const_cast<AxisConfig*>(AXIS_CONFIGS)[2] = {YAW, gui.YawEnable, gui.YawLeftSpin, gui.YawRightSpin};
+  const_cast<AxisConfig*>(AXIS_CONFIGS)[3] = {TX, gui.XEnable, gui.MoveLeftSpin, gui.MoveRightSpin};
+  const_cast<AxisConfig*>(AXIS_CONFIGS)[4] = {TY, gui.YEnable, gui.MoveUpSpin, gui.MoveDownSpin};
+  const_cast<AxisConfig*>(AXIS_CONFIGS)[5] = {TZ, gui.ZEnable, gui.MoveBackSpin, gui.MoveForthSpin};
+  
   Connect();
-  initializing= true;
+  initializing = true;
   gui.Profiles->addItems(Profile::getProfiles().getProfileNames());
   initializing = false;
 }
@@ -35,18 +62,14 @@ void LtrTracking::Connect()
                     this, SLOT(on_Profiles_currentIndexChanged(const QString &)));
   QObject::connect(gui.CreateNewProfile, SIGNAL(pressed()), 
                     this, SLOT(on_CreateNewProfile_pressed()));
-  QObject::connect(gui.PitchEnable, SIGNAL(stateChanged(int)),
-                    this, SLOT(on_PitchEnable_stateChanged(int)));
-  QObject::connect(gui.RollEnable, SIGNAL(stateChanged(int)),
-                    this, SLOT(on_RollEnable_stateChanged(int)));
-  QObject::connect(gui.YawEnable, SIGNAL(stateChanged(int)),
-                    this, SLOT(on_YawEnable_stateChanged(int)));
-  QObject::connect(gui.XEnable, SIGNAL(stateChanged(int)),
-                    this, SLOT(on_XEnable_stateChanged(int)));
-  QObject::connect(gui.YEnable, SIGNAL(stateChanged(int)),
-                    this, SLOT(on_YEnable_stateChanged(int)));
-  QObject::connect(gui.ZEnable, SIGNAL(stateChanged(int)),
-                    this, SLOT(on_ZEnable_stateChanged(int)));
+  
+  // Connect all axis enable widgets
+  for (const auto& config : AXIS_CONFIGS) {
+    QObject::connect(config.enable_widget, SIGNAL(stateChanged(int)),
+                      this, SLOT(on_AxisEnable_stateChanged(int)));
+  }
+  
+  // Connect all axis value widgets
   QObject::connect(gui.PitchUpSpin, SIGNAL(valueChanged(double)),
                     this, SLOT(on_PitchUpSpin_valueChanged(double)));
   QObject::connect(gui.PitchDownSpin, SIGNAL(valueChanged(double)),
@@ -81,47 +104,33 @@ void LtrTracking::Connect()
 
 void LtrTracking::axisChanged(int axis, int elem)
 {
-  switch(axis){
-    case PITCH:
-      if((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) gui.PitchEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(PITCH)));
-      if((elem == AXIS_LMULT) || (elem == AXIS_FULL)) gui.PitchUpSpin->setValue(TRACKER.axisGet(PITCH, AXIS_LMULT));
-      if((elem == AXIS_RMULT) || (elem == AXIS_FULL)) gui.PitchDownSpin->setValue(TRACKER.axisGet(PITCH, AXIS_RMULT));
+  // Find the axis configuration
+  const AxisConfig* config = nullptr;
+  for (const auto& ax : AXIS_CONFIGS) {
+    if (ax.axis_id == axis) {
+      config = &ax;
       break;
-    case ROLL:
-      if((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) gui.RollEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(ROLL)));
-      if((elem == AXIS_LMULT) || (elem == AXIS_FULL)) gui.TiltLeftSpin->setValue(TRACKER.axisGet(ROLL, AXIS_LMULT));
-      if((elem == AXIS_RMULT) || (elem == AXIS_FULL)) gui.TiltRightSpin->setValue(TRACKER.axisGet(ROLL, AXIS_RMULT));
-      break;
-    case YAW:
-      if((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) gui.YawEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(YAW)));
-      if((elem == AXIS_LMULT) || (elem == AXIS_FULL)) gui.YawLeftSpin->setValue(TRACKER.axisGet(YAW, AXIS_LMULT));
-      if((elem == AXIS_RMULT) || (elem == AXIS_FULL)) gui.YawRightSpin->setValue(TRACKER.axisGet(YAW, AXIS_RMULT));
-      break;
-    case TX:
-      if((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) gui.XEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(TX)));
-      if((elem == AXIS_LMULT) || (elem == AXIS_FULL)) gui.MoveLeftSpin->setValue(TRACKER.axisGet(TX, AXIS_LMULT));
-      if((elem == AXIS_RMULT) || (elem == AXIS_FULL)) gui.MoveRightSpin->setValue(TRACKER.axisGet(TX, AXIS_RMULT));
-      break;
-    case TY:
-      if((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) gui.YEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(TY)));
-      if((elem == AXIS_LMULT) || (elem == AXIS_FULL)) gui.MoveUpSpin->setValue(TRACKER.axisGet(TY, AXIS_LMULT));
-      if((elem == AXIS_RMULT) || (elem == AXIS_FULL)) gui.MoveDownSpin->setValue(TRACKER.axisGet(TY, AXIS_RMULT));
-      break;
-    case TZ:
-      if((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) gui.ZEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(TZ)));
-      if((elem == AXIS_LMULT) || (elem == AXIS_FULL)) gui.MoveBackSpin->setValue(TRACKER.axisGet(TZ, AXIS_LMULT));
-      if((elem == AXIS_RMULT) || (elem == AXIS_FULL)) gui.MoveForthSpin->setValue(TRACKER.axisGet(TZ, AXIS_RMULT));
-      break;
-    default:
-      break;
+    }
+  }
+  
+  if (!config) return;
+  
+  // Update widgets based on what changed
+  if ((elem == AXIS_ENABLED) || (elem == AXIS_FULL)) {
+    config->enable_widget->setCheckState(bool2state(TRACKER.axisGetEnabled(axis)));
+  }
+  if ((elem == AXIS_LMULT) || (elem == AXIS_FULL)) {
+    config->left_widget->setValue(TRACKER.axisGet(axis, AXIS_LMULT));
+  }
+  if ((elem == AXIS_RMULT) || (elem == AXIS_FULL)) {
+    config->right_widget->setValue(TRACKER.axisGet(axis, AXIS_RMULT));
   }
 }
 
 void LtrTracking::on_Profiles_currentIndexChanged(const QString &text)
 {
-  bool prev = initializing;
+  const bool prev = initializing;
   initializing = true;
-  //std::cout<<"Index changed to "<<text.toStdString()<<"\n";
   PROFILE.setCurrent(text);
   emit customSectionChanged();
   initializing = prev;
@@ -130,19 +139,18 @@ void LtrTracking::on_Profiles_currentIndexChanged(const QString &text)
 void LtrTracking::on_CreateNewProfile_pressed()
 {
   bool done;
-  QString newSec;
-  newSec = QInputDialog::getText(NULL, "New Secion Name:", 
-                        "Enter name of the new section:", 
-                        QLineEdit::Normal, "", &done);
-  if(done && !newSec.isEmpty()){
-    int i = PROFILE.isProfile(newSec);
-    if(i == -1){
+  const QString newSec = QInputDialog::getText(nullptr, QStringLiteral("New Section Name:"), 
+                        QStringLiteral("Enter name of the new section:"), 
+                        QLineEdit::Normal, QString(), &done);
+  if (done && !newSec.isEmpty()) {
+    const int i = PROFILE.isProfile(newSec);
+    if (i == -1) {
       PROFILE.addProfile(newSec);
       gui.Profiles->clear();
       const QStringList &sl = Profile::getProfiles().getProfileNames();
       gui.Profiles->addItems(sl);
       gui.Profiles->setCurrentIndex(sl.size() - 1);
-    }else{
+    } else {
       gui.Profiles->setCurrentIndex(i);
     }
   }
@@ -150,121 +158,131 @@ void LtrTracking::on_CreateNewProfile_pressed()
 
 static bool state2bool(int state)
 {
-  if(state == Qt::Checked){
-    return true;
-  }else{
-    return false;
+  return state == Qt::Checked;
+}
+
+// Generic axis enable handler - will be connected to all enable widgets
+void LtrTracking::on_AxisEnable_stateChanged(int state)
+{
+  if (initializing) return;
+  
+  // Find which axis this corresponds to
+  QCheckBox* sender = qobject_cast<QCheckBox*>(this->sender());
+  if (!sender) return;
+  
+  for (const auto& config : AXIS_CONFIGS) {
+    if (config.enable_widget == sender) {
+      TRACKER.axisChangeEnabled(config.axis_id, state2bool(state));
+      break;
+    }
   }
 }
 
 void LtrTracking::on_PitchEnable_stateChanged(int state)
 {
-  if(!initializing) TRACKER.axisChangeEnabled(PITCH, state2bool(state));
+  if (!initializing) TRACKER.axisChangeEnabled(PITCH, state2bool(state));
 }
 
 void LtrTracking::on_RollEnable_stateChanged(int state)
 {
-  if(!initializing) TRACKER.axisChangeEnabled(ROLL, state2bool(state));
+  if (!initializing) TRACKER.axisChangeEnabled(ROLL, state2bool(state));
 }
 
 void LtrTracking::on_YawEnable_stateChanged(int state)
 {
-  if(!initializing) TRACKER.axisChangeEnabled(YAW, state2bool(state));
+  if (!initializing) TRACKER.axisChangeEnabled(YAW, state2bool(state));
 }
 
 void LtrTracking::on_XEnable_stateChanged(int state)
 {
-  if(!initializing) TRACKER.axisChangeEnabled(TX, state2bool(state));
+  if (!initializing) TRACKER.axisChangeEnabled(TX, state2bool(state));
 }
 
 void LtrTracking::on_YEnable_stateChanged(int state)
 {
-  if(!initializing) TRACKER.axisChangeEnabled(TY, state2bool(state));
+  if (!initializing) TRACKER.axisChangeEnabled(TY, state2bool(state));
 }
 
 void LtrTracking::on_ZEnable_stateChanged(int state)
 {
-  if(!initializing) TRACKER.axisChangeEnabled(TZ, state2bool(state));
+  if (!initializing) TRACKER.axisChangeEnabled(TZ, state2bool(state));
 }
 
 void LtrTracking::on_PitchUpSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(PITCH, AXIS_LMULT, d);
+  if (!initializing) TRACKER.axisChange(PITCH, AXIS_LMULT, d);
 }
 
 void LtrTracking::on_PitchDownSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(PITCH, AXIS_RMULT, d);
+  if (!initializing) TRACKER.axisChange(PITCH, AXIS_RMULT, d);
 }
 
 void LtrTracking::on_YawLeftSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(YAW, AXIS_LMULT, d);
+  if (!initializing) TRACKER.axisChange(YAW, AXIS_LMULT, d);
 }
 
 void LtrTracking::on_YawRightSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(YAW, AXIS_RMULT, d);
+  if (!initializing) TRACKER.axisChange(YAW, AXIS_RMULT, d);
 }
 
 void LtrTracking::on_TiltLeftSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(ROLL, AXIS_LMULT, d);
+  if (!initializing) TRACKER.axisChange(ROLL, AXIS_LMULT, d);
 }
 
 void LtrTracking::on_TiltRightSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(ROLL, AXIS_RMULT, d);
+  if (!initializing) TRACKER.axisChange(ROLL, AXIS_RMULT, d);
 }
 
 void LtrTracking::on_MoveLeftSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(TX, AXIS_LMULT, d);
+  if (!initializing) TRACKER.axisChange(TX, AXIS_LMULT, d);
 }
 
 void LtrTracking::on_MoveRightSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(TX, AXIS_RMULT, d);
+  if (!initializing) TRACKER.axisChange(TX, AXIS_RMULT, d);
 }
 
 void LtrTracking::on_MoveUpSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(TY, AXIS_LMULT, d);
+  if (!initializing) TRACKER.axisChange(TY, AXIS_LMULT, d);
 }
 
 void LtrTracking::on_MoveDownSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(TY, AXIS_RMULT, d);
+  if (!initializing) TRACKER.axisChange(TY, AXIS_RMULT, d);
 }
 
 void LtrTracking::on_MoveBackSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(TZ, AXIS_LMULT, d);
+  if (!initializing) TRACKER.axisChange(TZ, AXIS_LMULT, d);
 }
 
 void LtrTracking::on_MoveForthSpin_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(TZ, AXIS_RMULT, d);
+  if (!initializing) TRACKER.axisChange(TZ, AXIS_RMULT, d);
 }
 
 static Qt::CheckState bool2state(bool v)
 {
-  if(v){
-    return Qt::Checked;
-  }else{
-    return Qt::Unchecked;
-  }
+  return v ? Qt::Checked : Qt::Unchecked;
 }
 
 void LtrTracking::setCommonFFVal(float val)
 {
-  gui.CommonFFVal->setText(QString("%1%").arg(val * 100.0, 5, 'f', 1));
+  // Use QStringLiteral for better performance and static string optimization
+  gui.CommonFFVal->setText(QStringLiteral("%1%").arg(val * 100.0, 5, 'f', 1));
 }
 
 void LtrTracking::on_CommonFF_valueChanged(int value)
 {
-  float val = ((float)value)/gui.CommonFF->maximum();
-  if(!initializing){
+  const float val = static_cast<float>(value) / gui.CommonFF->maximum();
+  if (!initializing) {
     TRACKER.setCommonFilterFactor(val);
   }
   setCommonFFVal(val);
@@ -272,31 +290,21 @@ void LtrTracking::on_CommonFF_valueChanged(int value)
 
 void LtrTracking::setCommonFF(float val)
 {
-  gui.CommonFF->setValue(val * gui.CommonFF->maximum());
+  gui.CommonFF->setValue(static_cast<int>(val * gui.CommonFF->maximum()));
   setCommonFFVal(val);
 }
 
 void LtrTracking::initAxes()
 {
   initializing = true;
-  gui.PitchEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(PITCH)));
-  gui.PitchUpSpin->setValue(TRACKER.axisGet(PITCH, AXIS_LMULT));
-  gui.PitchDownSpin->setValue(TRACKER.axisGet(PITCH, AXIS_RMULT));
-  gui.RollEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(ROLL)));
-  gui.TiltLeftSpin->setValue(TRACKER.axisGet(ROLL, AXIS_LMULT));
-  gui.TiltRightSpin->setValue(TRACKER.axisGet(ROLL, AXIS_RMULT));
-  gui.YawEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(YAW)));
-  gui.YawLeftSpin->setValue(TRACKER.axisGet(YAW, AXIS_LMULT));
-  gui.YawRightSpin->setValue(TRACKER.axisGet(YAW, AXIS_RMULT));
-  gui.XEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(TX)));
-  gui.MoveLeftSpin->setValue(TRACKER.axisGet(TX, AXIS_LMULT));
-  gui.MoveRightSpin->setValue(TRACKER.axisGet(TX, AXIS_RMULT));
-  gui.YEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(TY)));
-  gui.MoveUpSpin->setValue(TRACKER.axisGet(TY, AXIS_LMULT));
-  gui.MoveDownSpin->setValue(TRACKER.axisGet(TY, AXIS_RMULT));
-  gui.ZEnable->setCheckState(bool2state(TRACKER.axisGetEnabled(TZ)));
-  gui.MoveBackSpin->setValue(TRACKER.axisGet(TZ, AXIS_LMULT));
-  gui.MoveForthSpin->setValue(TRACKER.axisGet(TZ, AXIS_RMULT));
+  
+  // Use the axis configuration array to reduce code duplication
+  for (const auto& config : AXIS_CONFIGS) {
+    config.enable_widget->setCheckState(bool2state(TRACKER.axisGetEnabled(config.axis_id)));
+    config.left_widget->setValue(TRACKER.axisGet(config.axis_id, AXIS_LMULT));
+    config.right_widget->setValue(TRACKER.axisGet(config.axis_id, AXIS_RMULT));
+  }
+  
   setCommonFF(TRACKER.getCommonFilterFactor());
   initializing = false;
 }
