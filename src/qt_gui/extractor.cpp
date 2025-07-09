@@ -523,7 +523,33 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     }
     archFile.close();
   } else {
-    progress(QString::fromUtf8("No system.reg found in temp prefix - will create 32-bit prefix"));
+    progress(QString::fromUtf8("No system.reg found in temp prefix - initializing Wine prefix first..."));
+    
+    // Initialize the Wine prefix properly
+    QProcess wineInit;
+    wineInit.setProcessEnvironment(wine->getProcessEnvironment());
+    wineInit.setWorkingDirectory(winePrefix);
+    
+    // Set environment for 32-bit prefix initialization
+    QProcessEnvironment env = wine->getProcessEnvironment();
+    env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+    wineInit.setProcessEnvironment(env);
+    
+    progress(QString::fromUtf8("Initializing 32-bit Wine prefix..."));
+    wineInit.start(QString::fromUtf8("wine"), QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
+    
+    if(!wineInit.waitForFinished(30000)) { // 30 second timeout
+      progress(QString::fromUtf8("Failed to initialize Wine prefix (timeout)"));
+      return false;
+    }
+    
+    if(wineInit.exitCode() != 0) {
+      progress(QString::fromUtf8("Failed to initialize Wine prefix (exit code: %1)").arg(wineInit.exitCode()));
+      return false;
+    }
+    
+    progress(QString::fromUtf8("Wine prefix initialized successfully"));
+    is64BitPrefix = false; // We created it as 32-bit
   }
   
   // Test winetricks first to make sure it's working
