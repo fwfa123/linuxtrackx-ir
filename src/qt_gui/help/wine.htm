@@ -28,20 +28,21 @@ If you installed Linuxtrack-Wine prior to version 0.99.11, to gain access to the
 <h2>Modern Installation Methods</h2>
 LinuxTrack now uses modern installation methods for better compatibility with current distributions:
 
-<h3>Method 1: Package Manager Installation (Recommended)</h3>
-The most reliable approach is to install mfc42u.dll through your distribution's package manager:
+<h3>Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)</h3>
+The most reliable approach for Debian-based systems is to use winetricks:
+
+<code>WINEPREFIX=~/.wine winetricks mfc42</code>
+
+<h3>Method 2: Package Manager Installation (Other Distributions)</h3>
+Some distributions have mfc42 packages available:
 
 <ul>
-<li><strong>Ubuntu/Debian/MX Linux:</strong> <code>sudo apt install libmfc42</code>
 <li><strong>Fedora/RHEL/CentOS:</strong> <code>sudo dnf install mfc42</code>
 <li><strong>Arch Linux/Manjaro:</strong> <code>sudo pacman -S mfc42</code>
 <li><strong>OpenSUSE:</strong> <code>sudo zypper install mfc42</code>
 </ul>
 
-<h3>Method 2: Winetricks Installation</h3>
-If package manager installation is not available, use winetricks:
-
-<code>WINEPREFIX=~/.wine winetricks mfc42</code>
+<p><strong>Note:</strong> Ubuntu/Debian/MX Linux do not have MFC42 packages in their repositories and should use winetricks instead.
 
 <h3>Method 3: Manual Installation</h3>
 As a last resort, manually copy mfc42u.dll from a Windows system to the LinuxTrack firmware directory.
