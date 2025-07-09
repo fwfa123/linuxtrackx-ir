@@ -287,7 +287,7 @@ with_wine64 = @with_wine64@
 noinst_SCRIPTS = $(am__append_1) $(am__append_2)
 SUFFIXES = .o .cpp .c .rc 64.o
 RCFLAGS = -I @srcdir@
-EXTRA_DIST = main.cpp npifc.c npifc.h resource.h rest.c rest.h
+EXTRA_DIST = main.cpp npifc.c npifc.h resource.h rest.c rest.h npview.rc
 all: all-am
 
 .SUFFIXES:

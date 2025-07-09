@@ -61,12 +61,12 @@ NPClient_main64.o : NPClient_main.c NPClient_dll.h
 linuxtrack.o : linuxtrack.c config.h
 
 linuxtrack64.o : linuxtrack.c config.h
-	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ ./../../linuxtrack.c
+	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $(top_srcdir)/src/linuxtrack.c
 
 rest.o : rest.c rest.h config.h
 
 rest64.o : rest.c rest.h config.h
-	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ rest.c
+	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/rest.c
 
 clean-local: clean-local-check
 .PHONY: clean-local-check
