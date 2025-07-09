@@ -488,10 +488,32 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     QString content = QString::fromUtf8(archFile.readAll());
     if(content.contains(QString::fromUtf8("#arch=win64"))) {
       is64BitPrefix = true;
-      progress(QString::fromUtf8("Detected 64-bit Wine prefix - this may cause issues with MFC42"));
+      progress(QString::fromUtf8("Detected 64-bit Wine prefix - MFC42 requires 32-bit Wine prefix"));
     }
     archFile.close();
   }
+  
+  // Test winetricks first to make sure it's working
+  QProcess testWinetricks;
+  testWinetricks.setProcessEnvironment(wine->getProcessEnvironment());
+  testWinetricks.start(winetricksPath, QStringList() << QString::fromUtf8("--version"));
+  
+  if(!testWinetricks.waitForFinished(10000)) { // 10 second timeout
+    progress(QString::fromUtf8("Winetricks version check timed out"));
+    return false;
+  }
+  
+  if(testWinetricks.exitCode() != 0) {
+    progress(QString::fromUtf8("Winetricks version check failed (exit code: %1)").arg(testWinetricks.exitCode()));
+    QString errorOutput = QString::fromUtf8(testWinetricks.readAllStandardError());
+    if(!errorOutput.isEmpty()) {
+      progress(QString::fromUtf8("Winetricks error: %1").arg(errorOutput));
+    }
+    return false;
+  }
+  
+  QString versionOutput = QString::fromUtf8(testWinetricks.readAllStandardOutput());
+  progress(QString::fromUtf8("Winetricks version: %1").arg(versionOutput.trimmed()));
   
   // Try to install mfc42 using winetricks
   QProcess winetricks;
@@ -505,10 +527,18 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   
   // If we have a 64-bit prefix, try creating a 32-bit prefix for this installation
   if(is64BitPrefix) {
-    progress(QString::fromUtf8("Attempting installation in 32-bit Wine prefix..."));
+    progress(QString::fromUtf8("Creating 32-bit Wine prefix for MFC42 installation..."));
     
     // Create a temporary 32-bit Wine prefix
     QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
+    
+    // Clean up any existing temporary prefix
+    QDir tempDir(tempPrefix);
+    if(tempDir.exists()) {
+      tempDir.removeRecursively();
+      progress(QString::fromUtf8("Cleaned up existing temporary 32-bit prefix"));
+    }
+    
     QProcess wineInit;
     wineInit.setProcessEnvironment(wine->getProcessEnvironment());
     
@@ -523,12 +553,22 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     wineInit.start(QString::fromUtf8("wine"), QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
     
     if(!wineInit.waitForFinished(30000)) { // 30 second timeout
-      progress(QString::fromUtf8("Failed to initialize 32-bit Wine prefix - trying in 64-bit prefix"));
+      progress(QString::fromUtf8("Failed to initialize 32-bit Wine prefix (timeout) - trying in 64-bit prefix"));
+      // Clean up failed prefix
+      QDir tempDir(tempPrefix);
+      if(tempDir.exists()) {
+        tempDir.removeRecursively();
+      }
       // Fall back to trying in the 64-bit prefix
       is64BitPrefix = false;
       winetricks.setWorkingDirectory(winePrefix);
     } else if(wineInit.exitCode() != 0) {
       progress(QString::fromUtf8("32-bit Wine prefix initialization failed (exit code: %1) - trying in 64-bit prefix").arg(wineInit.exitCode()));
+      // Clean up failed prefix
+      QDir tempDir(tempPrefix);
+      if(tempDir.exists()) {
+        tempDir.removeRecursively();
+      }
       // Fall back to trying in the 64-bit prefix
       is64BitPrefix = false;
       winetricks.setWorkingDirectory(winePrefix);
@@ -547,6 +587,17 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   if(!winetricks.waitForFinished(120000)) { // 2 minute timeout for winetricks
     progress(QString::fromUtf8("Winetricks installation timed out"));
     return false;
+  }
+  
+  // Capture error output for debugging
+  QString errorOutput = QString::fromUtf8(winetricks.readAllStandardError());
+  QString standardOutput = QString::fromUtf8(winetricks.readAllStandardOutput());
+  
+  if(!errorOutput.isEmpty()) {
+    progress(QString::fromUtf8("Winetricks stderr: %1").arg(errorOutput));
+  }
+  if(!standardOutput.isEmpty()) {
+    progress(QString::fromUtf8("Winetricks stdout: %1").arg(standardOutput));
   }
   
   if(winetricks.exitCode() == 0) {
@@ -603,6 +654,17 @@ bool Mfc42uExtractor::tryWinetricksInstall()
       winetricks64.start(winetricksPath, args);
       
       if(winetricks64.waitForFinished(120000)) { // 2 minute timeout
+        // Capture error output for debugging
+        QString errorOutput64 = QString::fromUtf8(winetricks64.readAllStandardError());
+        QString standardOutput64 = QString::fromUtf8(winetricks64.readAllStandardOutput());
+        
+        if(!errorOutput64.isEmpty()) {
+          progress(QString::fromUtf8("Winetricks 64-bit stderr: %1").arg(errorOutput64));
+        }
+        if(!standardOutput64.isEmpty()) {
+          progress(QString::fromUtf8("Winetricks 64-bit stdout: %1").arg(standardOutput64));
+        }
+        
         if(winetricks64.exitCode() == 0) {
           progress(QString::fromUtf8("Winetricks installation successful in 64-bit prefix"));
           
