@@ -113,7 +113,7 @@ This document tracks the review and optimization of the code in `src/qt_gui` for
 - [x] **1. Inventory and prioritize all source files in `src/qt_gui` by size, complexity, and importance.**
 - [x] **2. Run static analysis tools (cppcheck, clang-tidy) on `src/qt_gui` to identify code issues and inefficiencies.**
 - [x] **3. Manually review and optimize `extractor.cpp` for file I/O, directory traversal, and threading improvements.**
-- [ ] **4. Manually review and optimize `ltr_gui_prefs.cpp` for settings and UI logic improvements.**
+- [x] **4. Manually review and optimize `ltr_gui_prefs.cpp` for settings and UI logic improvements.**
 - [ ] **5. Manually review and optimize `ltr_tracking.cpp` for core tracking logic improvements.**
 - [ ] **6. Manually review and optimize `ltr_gui.cpp` for main GUI logic improvements.**
 - [ ] **7. Refactor and optimize other files in `src/qt_gui` as needed based on findings or user feedback.**
@@ -421,3 +421,24 @@ This document tracks the review and optimization of the code in `src/qt_gui` for
 - ✅ No API changes or breaking modifications
 - ✅ Same behavior and output format maintained
 - ✅ Compatible with existing configuration files 
+
+---
+
+## 4. ltr_gui_prefs.cpp Modernization & Cleanup ✅ COMPLETED
+
+### **Improvements Made:**
+- Replaced all `QString::fromUtf8()` with `QStringLiteral` for static strings (performance & clarity)
+- Removed all `goto`-based error handling, replaced with early returns and scoped error handling
+- Eliminated variable shadowing (e.g., `bool res`)
+- Reduced variable scope where possible
+- Improved code clarity and maintainability with comments and formatting
+- No changes to user-facing behavior or API
+- No changes to singleton pattern or C/Qt interop
+
+### **Testing Results:**
+- ✅ Code compiles cleanly with no new warnings
+- ✅ Application launches and runs as expected
+- ✅ No regressions or new warnings
+- ✅ All preference management features work as before
+
+**Ready for further optimization steps or review.** 

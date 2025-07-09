@@ -17,7 +17,7 @@
 PrefProxy *PrefProxy::prf = NULL;
 
 static int warnMessage(const QString &message){
- return QMessageBox::warning(NULL, QString::fromUtf8("Linuxtrack"),
+ return QMessageBox::warning(NULL, QStringLiteral("Linuxtrack"),
                                 message, QMessageBox::Ok, QMessageBox::Ok);
 }
 
@@ -57,35 +57,32 @@ PrefProxy::PrefProxy()
 bool PrefProxy::checkPrefix(bool save)
 {
   QString appPath = QApplication::applicationDirPath();
-  appPath.prepend(QString::fromUtf8("\""));
-  appPath += QString::fromUtf8("\"");
-  bool res;
+  appPath.prepend(QStringLiteral("\"")).append(QStringLiteral("\""));
   char *tmp_prefix = ltr_int_get_key("Global", "Prefix");
+  bool found = false;
   if(tmp_prefix != NULL){
-    res = true;
+    found = true;
     prefix = QString::fromStdString(tmp_prefix);
   }else{
-    res = false;
-    prefix = QString::fromUtf8("");
+    prefix = QStringLiteral("");
   }
-  if(res && (prefix == appPath)){
-    //Intentionaly left empty
+  if(found && (prefix == appPath)){
+    // Intentionally left empty
   }else{
     prefix = appPath;
-    bool res = ltr_int_change_key("Global", "Prefix",appPath.toUtf8().constData());
+    bool changed = ltr_int_change_key("Global", "Prefix", appPath.toUtf8().constData());
     if(save){
-      res &= savePrefs();
+      changed &= savePrefs();
     }
-    return res;
+    return changed;
   }
   return true;
 }
 
 bool PrefProxy::makeRsrcDir()
 {
-  QString msg;
   QString targetDir = PrefProxy::getRsrcDirPath();
-  if(targetDir.endsWith(QString::fromUtf8("/"))){
+  if(targetDir.endsWith(QStringLiteral("/"))){
     targetDir.chop(1);
   }
   QFileInfo rsrcDir(targetDir);
@@ -93,71 +90,68 @@ bool PrefProxy::makeRsrcDir()
     return true;
   }
   if(rsrcDir.exists() || rsrcDir.isSymLink()){
-    QString bck = targetDir + QString::fromUtf8(".pre");
+    QString bck = targetDir + QStringLiteral(".pre");
     QFileInfo bckInfo(bck);
     if(bckInfo.exists() || bckInfo.isSymLink()){
       if(!QFile::remove(bck)){
-        msg = QString(QString::fromUtf8("Can't remove '") + bck + QString::fromUtf8("'!"));
-        goto problem;
+        QString msg = QStringLiteral("Can't remove '") + bck + QStringLiteral("'!");
+        ltr_int_log_message(QString(msg + QStringLiteral("\n")).toUtf8().data());
+        warnMessage(msg);
+        return false;
       }
     }
     if(!QFile::rename(targetDir, bck)){
-      msg = QString(QString::fromUtf8("Can't rename '") + targetDir +
-                    QString::fromUtf8("' to '") + bck + QString::fromUtf8("'!"));
-      goto problem;
+      QString msg = QStringLiteral("Can't rename '") + targetDir + QStringLiteral("' to '") + bck + QStringLiteral("'!");
+      ltr_int_log_message(QString(msg + QStringLiteral("\n")).toUtf8().data());
+      warnMessage(msg);
+      return false;
     }
   }
   if(!QDir::home().mkpath(targetDir)){
-    msg = QString(QString::fromUtf8("Can't create '") + targetDir + QString::fromUtf8("'!"));
-    goto problem;
+    QString msg = QStringLiteral("Can't create '") + targetDir + QStringLiteral("'!");
+    ltr_int_log_message(QString(msg + QStringLiteral("\n")).toUtf8().data());
+    warnMessage(msg);
+    return false;
   }
   return true;
- problem:
-  ltr_int_log_message(QString(msg+QString::fromUtf8("\n")).toUtf8().data());
-  warnMessage(msg);
-  return false;
 }
-
 
 bool PrefProxy::copyDefaultPrefs()
 {
-  QString msg;
-  //we can assume the rsrc dir exists now...
+  // we can assume the rsrc dir exists now...
   QString targetDir = PrefProxy::getRsrcDirPath();
-  if(targetDir.endsWith(QString::fromUtf8("/"))){
+  if(targetDir.endsWith(QStringLiteral("/"))){
     targetDir.chop(1);
   }
-  QString target = targetDir + QString::fromUtf8("/linuxtrack1.conf");
-  QString source = PrefProxy::getDataPath(QString::fromUtf8("linuxtrack1.conf"));
+  QString target = targetDir + QStringLiteral("/linuxtrack1.conf");
+  QString source = PrefProxy::getDataPath(QStringLiteral("linuxtrack1.conf"));
   QFileInfo target_info(target);
   if(target_info.exists() || target_info.isSymLink()){
-    QString bck = target + QString::fromUtf8(".backup");
+    QString bck = target + QStringLiteral(".backup");
     QFileInfo bckInfo(bck);
     if(bckInfo.exists() || bckInfo.isSymLink()){
       if(!QFile::remove(bck)){
-        msg = QString(QString::fromUtf8("Can't remove '") + bck + QString::fromUtf8("'!"));
-        goto problem;
+        QString msg = QStringLiteral("Can't remove '") + bck + QStringLiteral("'!");
+        ltr_int_log_message(QString(msg + QStringLiteral("\n")).toUtf8().constData());
+        warnMessage(msg);
+        return false;
       }
     }
     if(!QFile::rename(target, bck)){
-      msg = QString(QString::fromUtf8("Can't rename '") + target + QString::fromUtf8("' to '") +
-                    bck + QString::fromUtf8("'!"));
-      goto problem;
+      QString msg = QStringLiteral("Can't rename '") + target + QStringLiteral("' to '") + bck + QStringLiteral("'!");
+      ltr_int_log_message(QString(msg + QStringLiteral("\n")).toUtf8().constData());
+      warnMessage(msg);
+      return false;
     }
   }
   if(!QFile::copy(source, target)){
-    msg = QString(QString::fromUtf8("Can't copy '") + source + QString::fromUtf8("' to '") +
-                  target + QString::fromUtf8("'!"));
-    goto problem;
+    QString msg = QStringLiteral("Can't copy '") + source + QStringLiteral("' to '") + target + QStringLiteral("'!");
+    ltr_int_log_message(QString(msg + QStringLiteral("\n")).toUtf8().constData());
+    warnMessage(msg);
+    return false;
   }
-
   return true;
- problem:
-  ltr_int_log_message(QString(msg+QString::fromUtf8("\n")).toUtf8().constData());
-  warnMessage(msg);
-  return false;
 }
-
 
 PrefProxy::~PrefProxy()
 {
@@ -184,9 +178,8 @@ void PrefProxy::SavePrefsOnExit()
 {
   if(ltr_int_need_saving()){
     QMessageBox::StandardButton res;
-    res = QMessageBox::warning(NULL, QString::fromUtf8("Linuxtrack"),
-       QString::fromUtf8("Preferences were modified,") +
-       QString::fromUtf8("Do you want to save them?"),
+    res = QMessageBox::warning(NULL, QStringLiteral("Linuxtrack"),
+       QStringLiteral("Preferences were modified,Do you want to save them?"),
        QMessageBox::Save | QMessageBox::Close, QMessageBox::Save);
     if(res == QMessageBox::Save){
       savePrefs();
@@ -441,7 +434,7 @@ QString PrefProxy::getLibPath(QString file)
 
 QString PrefProxy::getRsrcDirPath()
 {
-  return QDir::homePath() + QString::fromUtf8("/.config/linuxtrack/");
+  return QDir::homePath() + QStringLiteral("/.config/linuxtrack/");
 }
 
 bool PrefProxy::rereadPrefs()
