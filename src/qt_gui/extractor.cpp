@@ -6,8 +6,38 @@
 #include <QTextStream>
 #include <QRegExp>
 #include <QDir>
+#include <QDirIterator>
 #include <unistd.h>
 #include <cstdlib>
+
+// Helper function to copy a directory recursively
+static bool copyDirectory(const QString& src, const QString& dst)
+{
+  QDir srcDir(src);
+  if(!srcDir.exists()) {
+    return false;
+  }
+  
+  QDir dstDir(dst);
+  if(!dstDir.exists()) {
+    dstDir.mkpath(dst);
+  }
+  
+  QDirIterator it(src, QDirIterator::Subdirectories);
+  while(it.hasNext()) {
+    QString srcPath = it.next();
+    QString dstPath = srcPath;
+    dstPath.replace(src, dst);
+    
+    if(it.fileInfo().isDir()) {
+      QDir().mkpath(dstPath);
+    } else {
+      QFile::copy(srcPath, dstPath);
+    }
+  }
+  
+  return true;
+}
 
 #include "extractor.h"
 #include "hashing.h"
@@ -480,7 +510,8 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     }
   }
   
-  // Check if we're using a 64-bit Wine prefix (which can cause issues with MFC42)
+  // Use the existing temp Wine prefix (which was created for TrackIR extraction)
+  // Check if it's a 64-bit Wine prefix (which can cause issues with MFC42)
   bool is64BitPrefix = false;
   QFile archFile(winePrefix + QString::fromUtf8("/system.reg"));
   if(archFile.exists()) {
@@ -488,9 +519,11 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     QString content = QString::fromUtf8(archFile.readAll());
     if(content.contains(QString::fromUtf8("#arch=win64"))) {
       is64BitPrefix = true;
-      progress(QString::fromUtf8("Detected 64-bit Wine prefix - MFC42 requires 32-bit Wine prefix"));
+      progress(QString::fromUtf8("Detected 64-bit temp Wine prefix - converting to 32-bit for MFC42 installation"));
     }
     archFile.close();
+  } else {
+    progress(QString::fromUtf8("No system.reg found in temp prefix - will create 32-bit prefix"));
   }
   
   // Test winetricks first to make sure it's working
@@ -525,62 +558,47 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   
   progress(QString::fromUtf8("Running: %1 --unattended mfc42").arg(winetricksPath));
   
-  // If we have a 64-bit prefix, try creating a 32-bit prefix for this installation
+  // If we have a 64-bit prefix, convert it to 32-bit for MFC42 installation
   if(is64BitPrefix) {
-    progress(QString::fromUtf8("Creating 32-bit Wine prefix for MFC42 installation..."));
+    progress(QString::fromUtf8("Converting 64-bit temp Wine prefix to 32-bit for MFC42 installation..."));
     
-    // Create a temporary 32-bit Wine prefix
-    QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
-    
-    // Clean up any existing temporary prefix
-    QDir tempDir(tempPrefix);
-    if(tempDir.exists()) {
-      tempDir.removeRecursively();
-      progress(QString::fromUtf8("Cleaned up existing temporary 32-bit prefix"));
+    // Create a backup of the current prefix
+    QString backupPrefix = winePrefix + QString::fromUtf8("_backup");
+    QDir backupDir(backupPrefix);
+    if(backupDir.exists()) {
+      backupDir.removeRecursively();
     }
     
-    QProcess wineInit;
-    wineInit.setProcessEnvironment(wine->getProcessEnvironment());
+    // Copy current prefix to backup
+    QDir currentDir(winePrefix);
+    if(currentDir.exists()) {
+      progress(QString::fromUtf8("Creating backup of current Wine prefix..."));
+      if(!copyDirectory(winePrefix, backupPrefix)) {
+        progress(QString::fromUtf8("Failed to create backup - proceeding with conversion"));
+      }
+    }
     
-    // Set environment variables for 32-bit prefix
+    // Convert the prefix to 32-bit by updating the registry
+    progress(QString::fromUtf8("Converting Wine prefix architecture to 32-bit..."));
+    QFile systemReg(winePrefix + QString::fromUtf8("/system.reg"));
+    if(systemReg.exists()) {
+      systemReg.open(QIODevice::ReadWrite);
+      QString content = QString::fromUtf8(systemReg.readAll());
+      content.replace(QString::fromUtf8("#arch=win64"), QString::fromUtf8("#arch=win32"));
+      systemReg.seek(0);
+      systemReg.write(content.toUtf8());
+      systemReg.close();
+      progress(QString::fromUtf8("Wine prefix converted to 32-bit"));
+    }
+    
+    // Set environment for 32-bit operation
     QProcessEnvironment env = wine->getProcessEnvironment();
-    env.insert(QString::fromUtf8("WINEPREFIX"), tempPrefix);
     env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
-    wineInit.setProcessEnvironment(env);
-    
-    // Initialize the 32-bit prefix
-    progress(QString::fromUtf8("Initializing 32-bit Wine prefix..."));
-    wineInit.start(QString::fromUtf8("wine"), QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
-    
-    if(!wineInit.waitForFinished(30000)) { // 30 second timeout
-      progress(QString::fromUtf8("Failed to initialize 32-bit Wine prefix (timeout) - trying in 64-bit prefix"));
-      // Clean up failed prefix
-      QDir tempDir(tempPrefix);
-      if(tempDir.exists()) {
-        tempDir.removeRecursively();
-      }
-      // Fall back to trying in the 64-bit prefix
-      is64BitPrefix = false;
-      winetricks.setWorkingDirectory(winePrefix);
-    } else if(wineInit.exitCode() != 0) {
-      progress(QString::fromUtf8("32-bit Wine prefix initialization failed (exit code: %1) - trying in 64-bit prefix").arg(wineInit.exitCode()));
-      // Clean up failed prefix
-      QDir tempDir(tempPrefix);
-      if(tempDir.exists()) {
-        tempDir.removeRecursively();
-      }
-      // Fall back to trying in the 64-bit prefix
-      is64BitPrefix = false;
-      winetricks.setWorkingDirectory(winePrefix);
-    } else {
-      progress(QString::fromUtf8("32-bit Wine prefix initialized successfully"));
-      // Now try winetricks in the 32-bit prefix
-      winetricks.setProcessEnvironment(env);
-      winetricks.setWorkingDirectory(tempPrefix);
-    }
-  } else {
-    winetricks.setWorkingDirectory(winePrefix);
+        winetricks.setProcessEnvironment(env);
   }
+  
+  // Always use the winePrefix (which is now converted to 32-bit if needed)
+  winetricks.setWorkingDirectory(winePrefix);
   
   winetricks.start(winetricksPath, args);
   
@@ -605,14 +623,8 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     
     // Check if mfc42u.dll was installed
     QStringList checkPaths;
-    if(is64BitPrefix) {
-      QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
-      checkPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
-      checkPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
-    } else {
-      checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
-      checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
-    }
+    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
     
     for(const QString& path : checkPaths) {
       if(QFile::exists(path)) {
@@ -620,69 +632,25 @@ bool Mfc42uExtractor::tryWinetricksInstall()
         if(QFile::copy(path, destPath)) {
           progress(QString::fromUtf8("Mfc42u.dll installed via winetricks"));
           
-          // Clean up temporary 32-bit prefix if we created one
-          if(is64BitPrefix) {
-            QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
-            QDir tempDir(tempPrefix);
-            if(tempDir.exists()) {
-              tempDir.removeRecursively();
-              progress(QString::fromUtf8("Cleaned up temporary 32-bit Wine prefix"));
-            }
-          }
-          
           return true;
         }
       }
     }
   } else {
-    // If winetricks failed and we were trying a 32-bit prefix, try again in the 64-bit prefix
+    // If winetricks failed, restore the backup if we converted the prefix
     if(is64BitPrefix) {
-      progress(QString::fromUtf8("Winetricks failed in 32-bit prefix, trying in 64-bit prefix..."));
+      progress(QString::fromUtf8("Winetricks failed - restoring original 64-bit prefix..."));
       
-      // Clean up the failed 32-bit prefix
-      QString tempPrefix = winePrefix + QString::fromUtf8("_32bit");
-      QDir tempDir(tempPrefix);
-      if(tempDir.exists()) {
-        tempDir.removeRecursively();
-        progress(QString::fromUtf8("Cleaned up failed 32-bit Wine prefix"));
-      }
-      
-      // Try again in the 64-bit prefix
-      QProcess winetricks64;
-      winetricks64.setProcessEnvironment(wine->getProcessEnvironment());
-      winetricks64.setWorkingDirectory(winePrefix);
-      winetricks64.start(winetricksPath, args);
-      
-      if(winetricks64.waitForFinished(120000)) { // 2 minute timeout
-        // Capture error output for debugging
-        QString errorOutput64 = QString::fromUtf8(winetricks64.readAllStandardError());
-        QString standardOutput64 = QString::fromUtf8(winetricks64.readAllStandardOutput());
-        
-        if(!errorOutput64.isEmpty()) {
-          progress(QString::fromUtf8("Winetricks 64-bit stderr: %1").arg(errorOutput64));
+      QString backupPrefix = winePrefix + QString::fromUtf8("_backup");
+      QDir backupDir(backupPrefix);
+      if(backupDir.exists()) {
+        // Remove current prefix and restore backup
+        QDir currentDir(winePrefix);
+        if(currentDir.exists()) {
+          currentDir.removeRecursively();
         }
-        if(!standardOutput64.isEmpty()) {
-          progress(QString::fromUtf8("Winetricks 64-bit stdout: %1").arg(standardOutput64));
-        }
-        
-        if(winetricks64.exitCode() == 0) {
-          progress(QString::fromUtf8("Winetricks installation successful in 64-bit prefix"));
-          
-          // Check if mfc42u.dll was installed in 64-bit prefix
-          QStringList checkPaths64;
-          checkPaths64 << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
-          checkPaths64 << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
-          
-          for(const QString& path : checkPaths64) {
-            if(QFile::exists(path)) {
-              destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-              if(QFile::copy(path, destPath)) {
-                progress(QString::fromUtf8("Mfc42u.dll installed via winetricks in 64-bit prefix"));
-                return true;
-              }
-            }
-          }
-        }
+        copyDirectory(backupPrefix, winePrefix);
+        progress(QString::fromUtf8("Original 64-bit prefix restored"));
       }
     }
   }
