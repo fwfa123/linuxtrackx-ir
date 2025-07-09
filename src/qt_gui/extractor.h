@@ -121,7 +121,9 @@ class Mfc42uExtractor : public Extractor
   bool tryPackageManagerInstall();
   bool tryCabextractFallback();
   void showModernInstallationInstructions();
-  bool checkWinetricksAvailability();
+  QString checkWinetricksAvailability();
+  bool isWinetricksVersionRecent(const QString& winetricksPath);
+  bool installLatestWinetricks();
   
  private slots:
   void wineFinished(bool result);

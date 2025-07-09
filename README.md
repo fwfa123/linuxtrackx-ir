@@ -4,12 +4,12 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
 
-**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and MinGW cross-compilation. Track your head movement using TrackIR devices, webcams, or specialized hardware and translate that into game input.
+**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and MinGW cross-compilation. Track your head movement using TrackIR devices, webcams??, or specialized hardware and translate that into game input.
 
 ## 🔄 Fork Information
 
 ### About This Fork
-This project is a **fork** of the original LinuxTrack project created by uglyDwarf. The original project was abandoned, and this fork continues development with modern build systems and enhanced compatibility.
+This project is a **fork** of the original LinuxTrack project created by uglyDwarf. The original project has slowed, and this fork continues development with modern build systems.
 
 **Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)  
 **This Fork**: LinuxTrack X-IR (focusing on TrackIR compatibility and modern Linux support)
@@ -579,12 +579,25 @@ Save this as `dependency_check.sh`, make it executable with `chmod +x dependency
 
 #### Modern Installation Methods (Recommended)
 
-**Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)**
+**Method 1: Automatic Winetricks Installation (Recommended for Debian/Ubuntu/MX)**
+
+LinuxTrack now automatically handles winetricks installation and updates to address the issue of outdated packaged versions mentioned on the [winetricks GitHub page](https://github.com/Winetricks/winetricks?tab=readme-ov-file).
+
 ```bash
-# Install winetricks if not already installed
+# Option 1: Let LinuxTrack handle it automatically (Recommended)
+# Simply run the LinuxTrack GUI and use "Install Linuxtrack-Wine support"
+# The system will automatically:
+# - Check if winetricks is installed
+# - Download and install the latest version if needed
+# - Install MFC42 via winetricks
+
+# Option 2: Manual winetricks installation (if needed)
 sudo apt install winetricks  # Ubuntu/Debian/MX
 sudo dnf install winetricks  # Fedora/RHEL
 sudo pacman -S winetricks    # Arch Linux
+
+# Option 3: Install latest winetricks manually (recommended by winetricks maintainers)
+./scripts/install_winetricks.sh
 
 # Install MFC42 via winetricks
 winetricks mfc42

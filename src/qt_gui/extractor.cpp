@@ -4,6 +4,8 @@
 #include <QMessageBox>
 #include <QDateTime>
 #include <QTextStream>
+#include <QRegExp>
+#include <QDir>
 #include <unistd.h>
 #include <cstdlib>
 
@@ -457,12 +459,25 @@ bool Mfc42uExtractor::tryWinetricksInstall()
 {
   progress(QString::fromUtf8("Trying winetricks installation..."));
   
-  // Check if winetricks is available
-  QProcess winetricksCheck;
-  winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
-  if(!winetricksCheck.waitForFinished(5000) || winetricksCheck.exitCode() != 0) {
-    progress(QString::fromUtf8("Winetricks not found"));
-    return false;
+  // First, check if winetricks is available and get its version
+  QString winetricksPath = checkWinetricksAvailability();
+  if(winetricksPath.isEmpty()) {
+    progress(QString::fromUtf8("Winetricks not found - attempting to install latest version..."));
+    if(!installLatestWinetricks()) {
+      progress(QString::fromUtf8("Failed to install winetricks"));
+      return false;
+    }
+    winetricksPath = QString::fromUtf8("/usr/local/bin/winetricks");
+  } else {
+    // Check if we have a recent version (avoid outdated packaged versions)
+    if(!isWinetricksVersionRecent(winetricksPath)) {
+      progress(QString::fromUtf8("Outdated winetricks detected - updating to latest version..."));
+      if(!installLatestWinetricks()) {
+        progress(QString::fromUtf8("Failed to update winetricks, trying with existing version..."));
+      } else {
+        winetricksPath = QString::fromUtf8("/usr/local/bin/winetricks");
+      }
+    }
   }
   
   // Check if we're using a 64-bit Wine prefix (which can cause issues with MFC42)
@@ -486,7 +501,7 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   QStringList args;
   args << QString::fromUtf8("--unattended") << QString::fromUtf8("mfc42");
   
-  progress(QString::fromUtf8("Running: winetricks --unattended mfc42"));
+  progress(QString::fromUtf8("Running: %1 --unattended mfc42").arg(winetricksPath));
   
   // If we have a 64-bit prefix, try creating a 32-bit prefix for this installation
   if(is64BitPrefix) {
@@ -527,7 +542,7 @@ bool Mfc42uExtractor::tryWinetricksInstall()
     winetricks.setWorkingDirectory(winePrefix);
   }
   
-  winetricks.start(QString::fromUtf8("winetricks"), args);
+  winetricks.start(winetricksPath, args);
   
   if(!winetricks.waitForFinished(120000)) { // 2 minute timeout for winetricks
     progress(QString::fromUtf8("Winetricks installation timed out"));
@@ -585,7 +600,7 @@ bool Mfc42uExtractor::tryWinetricksInstall()
       QProcess winetricks64;
       winetricks64.setProcessEnvironment(wine->getProcessEnvironment());
       winetricks64.setWorkingDirectory(winePrefix);
-      winetricks64.start(QString::fromUtf8("winetricks"), args);
+      winetricks64.start(winetricksPath, args);
       
       if(winetricks64.waitForFinished(120000)) { // 2 minute timeout
         if(winetricks64.exitCode() == 0) {
@@ -696,13 +711,124 @@ void Mfc42uExtractor::showModernInstallationInstructions()
   );
 }
 
-bool Mfc42uExtractor::checkWinetricksAvailability()
+QString Mfc42uExtractor::checkWinetricksAvailability()
 {
   QProcess winetricksCheck;
   winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
   if(!winetricksCheck.waitForFinished(5000) || winetricksCheck.exitCode() != 0) {
+    return QString();
+  }
+  
+  // Get the path to winetricks
+  winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
+  if(winetricksCheck.waitForFinished(5000) && winetricksCheck.exitCode() == 0) {
+    QString output = QString::fromUtf8(winetricksCheck.readAllStandardOutput()).trimmed();
+    if(!output.isEmpty()) {
+      return output;
+    }
+  }
+  
+  return QString();
+}
+
+bool Mfc42uExtractor::isWinetricksVersionRecent(const QString& winetricksPath)
+{
+  if(winetricksPath.isEmpty()) {
     return false;
   }
+  
+  // Check winetricks version
+  QProcess versionCheck;
+  versionCheck.start(winetricksPath, QStringList() << QString::fromUtf8("--version"));
+  if(!versionCheck.waitForFinished(5000) || versionCheck.exitCode() != 0) {
+    return false;
+  }
+  
+  QString versionOutput = QString::fromUtf8(versionCheck.readAllStandardOutput()).trimmed();
+  
+  // Extract version number (format: "winetricks 20231210" or similar)
+  QRegExp versionRegex(QString::fromUtf8("winetricks\\s+(\\d{8})"));
+  if(versionRegex.indexIn(versionOutput) != -1) {
+    QString versionStr = versionRegex.cap(1);
+    bool ok;
+    int version = versionStr.toInt(&ok);
+    if(ok) {
+      // Consider versions from 2023 onwards as recent
+      // This is a reasonable cutoff for avoiding very old packaged versions
+      return version >= 20230101;
+    }
+  }
+  
+  // If we can't parse the version, assume it's recent enough
+  return true;
+}
+
+bool Mfc42uExtractor::installLatestWinetricks()
+{
+  progress(QString::fromUtf8("Downloading latest winetricks..."));
+  
+  // Create temporary directory
+  QString tempDir = QDir::tempPath() + QString::fromUtf8("/winetricks_install_XXXXXX");
+  QByteArray tempDirBytes = tempDir.toUtf8();
+  char* tempDirPath = mkdtemp(tempDirBytes.data());
+  if(!tempDirPath) {
+    progress(QString::fromUtf8("Failed to create temporary directory"));
+    return false;
+  }
+  tempDir = QString::fromUtf8(tempDirPath);
+  
+  // Download latest winetricks
+  QProcess downloadProcess;
+  downloadProcess.setWorkingDirectory(tempDir);
+  downloadProcess.start(QString::fromUtf8("wget"), QStringList() 
+    << QString::fromUtf8("--no-verbose")
+    << QString::fromUtf8("https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks"));
+  
+  if(!downloadProcess.waitForFinished(30000)) { // 30 second timeout
+    progress(QString::fromUtf8("Download timed out"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  if(downloadProcess.exitCode() != 0) {
+    progress(QString::fromUtf8("Download failed"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  // Make winetricks executable
+  QString winetricksPath = tempDir + QString::fromUtf8("/winetricks");
+  QFile winetricksFile(winetricksPath);
+  if(!winetricksFile.setPermissions(QFile::ExeOwner | QFile::ExeUser | QFile::ExeGroup | QFile::ExeOther)) {
+    progress(QString::fromUtf8("Failed to set executable permissions"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  // Install to /usr/local/bin (requires sudo)
+  progress(QString::fromUtf8("Installing winetricks to /usr/local/bin..."));
+  QProcess installProcess;
+  installProcess.start(QString::fromUtf8("sudo"), QStringList() 
+    << QString::fromUtf8("mv") 
+    << winetricksPath 
+    << QString::fromUtf8("/usr/local/bin/winetricks"));
+  
+  if(!installProcess.waitForFinished(30000)) { // 30 second timeout
+    progress(QString::fromUtf8("Installation timed out"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  if(installProcess.exitCode() != 0) {
+    progress(QString::fromUtf8("Installation failed - user may need to run with sudo privileges"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  // Clean up temporary directory
+  QDir(tempDir).removeRecursively();
+  
+  progress(QString::fromUtf8("Latest winetricks installed successfully"));
   return true;
 }
 

@@ -6,15 +6,29 @@ LinuxTrack provides head tracking support for Windows applications running under
 
 ## Modern Installation Methods
 
-### Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)
+### Method 1: Automatic Winetricks Installation (Recommended for Debian/Ubuntu/MX)
+
+**Important**: LinuxTrack now automatically handles winetricks installation and updates to address the issue of outdated packaged versions mentioned on the [winetricks GitHub page](https://github.com/Winetricks/winetricks?tab=readme-ov-file).
 
 The most reliable approach for Debian-based systems is to use winetricks:
 
 ```bash
+# Option 1: Let LinuxTrack handle it automatically (Recommended)
+# Simply run the LinuxTrack GUI and use "Install Linuxtrack-Wine support"
+# The system will automatically:
+# - Check if winetricks is installed
+# - Download and install the latest version if needed
+# - Install MFC42 via winetricks
+
+# Option 2: Manual winetricks installation (if needed)
 # Install winetricks if not already installed
 sudo apt install winetricks  # Ubuntu/Debian/MX
 sudo dnf install winetricks  # Fedora/RHEL
 sudo pacman -S winetricks    # Arch Linux
+
+# Option 3: Install latest winetricks manually (recommended by winetricks maintainers)
+# Use the provided script to install the latest version
+./scripts/install_winetricks.sh
 
 # Install MFC42 via winetricks
 winetricks mfc42
@@ -57,9 +71,11 @@ As a last resort, you can manually copy `mfc42u.dll` from a Windows system:
 1. In the **Misc** tab, click **Install Linuxtrack-Wine support**
 2. The system will automatically try modern installation methods:
    - First: Check for existing `mfc42u.dll`
-   - Second: Try winetricks installation
-   - Third: Suggest package manager installation
-   - Fourth: Fall back to cabextract (old method)
+   - Second: Check winetricks availability and version
+   - Third: Download and install latest winetricks if needed (addresses outdated packaged versions)
+   - Fourth: Try winetricks installation
+   - Fifth: Try package manager installation
+   - Sixth: Fall back to cabextract (old method)
 
 ### Step 3: Select Wine Prefix
 1. Choose your Wine prefix (bottle) for installation
@@ -77,18 +93,25 @@ If your distribution doesn't have the required package, use winetricks instead:
 winetricks mfc42
 ```
 
-### Winetricks Not Available
-Install winetricks first:
-```bash
-# Ubuntu/Debian/MX
-sudo apt install winetricks
+### Winetricks Not Available or Outdated
+LinuxTrack now automatically handles this issue:
 
-# Fedora
-sudo dnf install winetricks
+1. **Automatic Installation**: The GUI will automatically download and install the latest winetricks version
+2. **Manual Installation**: Use the provided script:
+   ```bash
+   ./scripts/install_winetricks.sh
+   ```
+3. **Traditional Installation**: Install via package manager (may be outdated):
+   ```bash
+   # Ubuntu/Debian/MX
+   sudo apt install winetricks
 
-# Arch
-sudo pacman -S winetricks
-```
+   # Fedora
+   sudo dnf install winetricks
+
+   # Arch
+   sudo pacman -S winetricks
+   ```
 
 ### Manual Installation Required
 If all automatic methods fail, manually install `mfc42u.dll`:
@@ -113,6 +136,7 @@ The old method of extracting `mfc42u.dll` from Microsoft Visual C++ 6.0 Redistri
 - **Easier Maintenance**: Automatic updates through package managers
 - **Better Compatibility**: Works with modern Wine versions
 - **Clearer Error Messages**: Better user guidance when issues occur
+- **Addresses Outdated Versions**: Automatically installs latest winetricks to avoid packaged version issues
 
 ## Testing Installation
 
@@ -122,13 +146,41 @@ After installation, test your setup:
 2. Check if head tracking works
 3. Verify `mfc42u.dll` is available in your Wine prefix
 
+## Security Considerations
+
+### Winetricks Installation Security
+
+The automatic winetricks installation downloads the latest version directly from the official winetricks GitHub repository:
+
+- **Source**: `https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks`
+- **Encryption**: HTTPS download with certificate validation
+- **Verification**: Optional SHA256 integrity checking (if available)
+- **Trust**: Same source recommended by winetricks maintainers
+
+### Security Features
+
+1. **Trusted Source**: Downloads from official winetricks GitHub repository
+2. **HTTPS Encryption**: All downloads use encrypted connections
+3. **Temporary Files**: Downloads to secure temporary directories with automatic cleanup
+4. **User Control**: Requires explicit user action to initiate installation
+5. **Graceful Fallback**: Falls back to manual installation if automatic fails
+
+### Manual Verification (Optional)
+
+If you want to verify the download manually:
+
+```bash
+# Get the current winetricks hash
+curl -s https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks | sha256sum
+
+# Compare with downloaded file
+sha256sum /usr/local/bin/winetricks
+```
+
 ## Support
 
 If you encounter issues:
 
 1. Check the LinuxTrack log for detailed error messages
 2. Verify Wine is properly installed and configured
-3. Ensure TrackIR firmware is installed
-4. Try the alternative installation methods described above
-
-For additional help, see the main LinuxTrack documentation or visit the project's support channels. 
+3. Run the winetricks installation script: `./scripts/install_winetricks.sh` 
