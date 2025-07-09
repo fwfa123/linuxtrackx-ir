@@ -553,7 +553,6 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   
   progress(QString::fromUtf8("32-bit Wine prefix initialized successfully"));
   winePrefix = mfc42Prefix;
-  bool is64BitPrefix = false; // We created it as 32-bit
   
   // Test winetricks first to make sure it's working
   QProcess testWinetricks;
@@ -579,7 +578,6 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   
   // Try to install mfc42 using winetricks
   QProcess winetricks;
-  winetricks.setProcessEnvironment(wine->getProcessEnvironment());
   
   // Use unattended mode to avoid GUI issues
   QStringList args;
@@ -587,8 +585,7 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   
   progress(QString::fromUtf8("Running: %1 --unattended mfc42").arg(winetricksPath));
   
-    // Set environment for 32-bit operation
-  QProcessEnvironment env = wine->getProcessEnvironment();
+  // Set environment for 32-bit operation
   env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
   winetricks.setProcessEnvironment(env);
   
@@ -603,8 +600,8 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   }
   
   // Capture error output for debugging
-  QString errorOutput = QString::fromUtf8(winetricks.readAllStandardError());
-  QString standardOutput = QString::fromUtf8(winetricks.readAllStandardOutput());
+  errorOutput = QString::fromUtf8(winetricks.readAllStandardError());
+  standardOutput = QString::fromUtf8(winetricks.readAllStandardOutput());
   
   if(!errorOutput.isEmpty()) {
     progress(QString::fromUtf8("Winetricks stderr: %1").arg(errorOutput));
