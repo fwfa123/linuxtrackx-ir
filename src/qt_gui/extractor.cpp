@@ -650,6 +650,29 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   return false;
 }
 
+void Mfc42uExtractor::startAutomaticInstallation()
+{
+  progress(QString::fromUtf8("Starting automatic MFC42 installation..."));
+  
+  // Try winetricks installation first
+  if(tryWinetricksInstall()) {
+    progress(QString::fromUtf8("MFC42 installation completed successfully"));
+    emit finished(true);
+    return;
+  }
+  
+  // If winetricks fails, try package manager
+  if(tryPackageManagerInstall()) {
+    progress(QString::fromUtf8("MFC42 installation completed successfully"));
+    emit finished(true);
+    return;
+  }
+  
+  // If all automatic methods fail, show the manual installation dialog
+  progress(QString::fromUtf8("Automatic installation failed, showing manual options"));
+  show();
+}
+
 bool Mfc42uExtractor::tryPackageManagerInstall()
 {
   progress(QString::fromUtf8("Trying package manager installation..."));

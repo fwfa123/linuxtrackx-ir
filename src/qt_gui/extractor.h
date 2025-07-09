@@ -110,6 +110,10 @@ class Mfc42uExtractor : public Extractor
  public:
   Mfc42uExtractor(QWidget *parent = 0);
   ~Mfc42uExtractor();
+  
+  // Public method to start automatic winetricks installation
+  void startAutomaticInstallation();
+  
  private:
   void commenceExtraction(QString file);
   void enableButtons(bool enable);

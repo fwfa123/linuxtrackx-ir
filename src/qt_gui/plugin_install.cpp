@@ -194,7 +194,14 @@ void PluginInstall::mfc42uInstall()
     QObject::connect(dlmfc, SIGNAL(finished(bool)),
       this, SLOT(finished(bool)));
   }
-  dlmfc->show();
+  
+  // In the automatic flow (step 2), start automatic installation instead of showing dialog
+  if(state == MFC) {
+    dlmfc->startAutomaticInstallation();
+  } else {
+    // For manual installation (when user clicks the MFC42 button directly), show the dialog
+    dlmfc->show();
+  }
 }
 
 void PluginInstall::finished(bool ok)
