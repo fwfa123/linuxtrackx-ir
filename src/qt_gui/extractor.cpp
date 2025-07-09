@@ -511,7 +511,8 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   }
   
   // Create a fresh 32-bit temp Wine prefix specifically for MFC42 installation
-  QString mfc42Prefix = QDir::tempPath() + QString::fromUtf8("/linuxtrack_mfc42_") + QString::number(QDateTime::currentMSecsSinceEpoch());
+  // Use user's home directory instead of /tmp to avoid ownership issues
+  QString mfc42Prefix = QDir::homePath() + QString::fromUtf8("/.linuxtrack_mfc42_") + QString::number(QDateTime::currentMSecsSinceEpoch());
   progress(QString::fromUtf8("Creating fresh 32-bit Wine prefix for MFC42 installation: %1").arg(mfc42Prefix));
   
   // Clean up any existing prefix
