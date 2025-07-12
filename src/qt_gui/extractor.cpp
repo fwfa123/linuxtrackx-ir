@@ -138,7 +138,7 @@ void TirFwExtractThread::run()
   }
 }
 
-// Optimized file analysis with buffered reading and improved hash algorithm
+// Optimized file analysis with byte-by-byte reading (required for block detection)
 void TirFwExtractThread::analyzeFile(const QString fname)
 {
   QFile file(fname);
@@ -149,44 +149,38 @@ void TirFwExtractThread::analyzeFile(const QString fname)
   
   FastHash hash;
   QStringList msgs;
-  
-  // Use buffered reading instead of byte-by-byte
-  const qint64 bufferSize = 64 * 1024; // 64KB buffer
-  QByteArray buffer;
-  qint64 totalBytes = 0;
+  char val;
+  uint16_t res;
+  targets_iterator_t it;
+  std::pair<targets_iterator_t, targets_iterator_t> range;
+  int cntr = 0;
   
   // Pre-calculate hash ranges for better performance
   std::vector<std::pair<targets_iterator_t, targets_iterator_t>> hashRanges;
   hashRanges.reserve(256); // Reserve space for common hash values
   
-  while(!file.atEnd()) {
-    buffer = file.read(bufferSize);
-    totalBytes += buffer.size();
+  while(file.read(&val, 1) > 0) {
+    ++cntr;
+    res = hash.hash(val);
     
-    // Process buffer in chunks for hash calculation
-    for(int i = 0; i < buffer.size(); ++i) {
-      char val = buffer[i];
-      uint16_t res = hash.hash(val);
-      
-      // Use cached range if available, otherwise calculate
-      std::pair<targets_iterator_t, targets_iterator_t> range;
-      if(res < hashRanges.size() && hashRanges[res].first != targets->end()) {
-        range = hashRanges[res];
-      } else {
-        range = targets->equal_range(res);
-        if(res < hashRanges.size()) {
-          hashRanges[res] = range;
-        }
+    // Use cached range if available, otherwise calculate
+    if(res < hashRanges.size() && hashRanges[res].first != targets->end()) {
+      range = hashRanges[res];
+    } else {
+      range = targets->equal_range(res);
+      if(res < hashRanges.size()) {
+        hashRanges[res] = range;
       }
-      
-      // Process all targets with this hash value
-      for(targets_iterator_t it = range.first; it != range.second; ++it) {
-        msgs.clear();
-        it->second.isBlock(file, destPath, msgs);
-        if(!msgs.isEmpty()){
-          for(const QString& msg : msgs) {
-            emit progress(msg);
-          }
+    }
+    
+    // Process all targets with this hash value
+    for(it = range.first; it != range.second; ++it) {
+      //qDebug()<<cntr<<qPrintable("Checking against ")<<file.pos() <<res <<(it->second.getFname());
+      msgs.clear();
+      it->second.isBlock(file, destPath, msgs);
+      if(!msgs.isEmpty()){
+        for(const QString& msg : msgs) {
+          emit progress(msg);
         }
       }
     }
