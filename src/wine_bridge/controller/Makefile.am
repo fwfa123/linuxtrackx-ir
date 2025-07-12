@@ -1,6 +1,6 @@
 noinst_SCRIPTS = 
 if WINE_PLUGIN
-  noinst_SCRIPTS += Controller.exe
+  noinst_SCRIPTS += Controller.exe.so
 endif #WINE_PLUGIN
 
 if DARWIN
@@ -9,11 +9,10 @@ else
   LDFLAGS += -Wl,--no-warn-search-mismatch
 endif
 
-# Use MinGW compilers when available, otherwise fall back to winegcc
-WINE_CC = $(MINGW32_CC)
-WINE_CXX = $(MINGW32_CXX)
-WINE_RC = $(MINGW32_WINDRES)
-MINGW_LIBS = -lkernel32 -luser32 -lgdi32 -lcomdlg32 -ladvapi32 -lshell32 -lole32 -loleaut32 -luuid -lodbc32 -lodbccp32
+# Use winegcc compilers
+WINE_CC = winegcc
+WINE_CXX = wineg++
+WINE_RC = wrc
 
 .cpp.o :
 	$(WINE_CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -m32 -o $@ $<
@@ -24,11 +23,10 @@ MINGW_LIBS = -lkernel32 -luser32 -lgdi32 -lcomdlg32 -ladvapi32 -lshell32 -lole32
 .rc.o :
 	$(WINE_RC) -o $@ $<
 
-# Use MinGW-style flags when MinGW compilers are available
-CXXFLAGS_PRE = -DWIN32 -D_WINDOWS -DHAVE_CONFIG_H \
+CXXFLAGS_PRE = -DHAVE_CONFIG_H \
      -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
 
-CFLAGS_PRE = -DWIN32 -D_WINDOWS -I../.. -I../../.. -DHAVE_CONFIG_H \
+CFLAGS_PRE = -I../.. -I../../.. -DHAVE_CONFIG_H \
 -I@srcdir@/../.. -I@top_builddir@
 
 #VPATH = ../..:@srcdir@/../..:@top_builddir@:@srcdir@
@@ -37,9 +35,9 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-Controller.exe : main.o resources.o dinput.o linuxtrack.o
-	$(WINE_CXX) -o Controller.exe $(LDFLAGS) -m32 -static-libgcc -static-libstdc++ \
-           $^ $(MINGW_LIBS) -ldxguid -ldinput -ldinput8
+Controller.exe.so : main.o resources.o dinput.o linuxtrack.o
+	winegcc -o Controller.exe.so $(LDFLAGS) -m32 \
+           $^ -ldxguid -ldinput -ldinput8
 
 main.o : main.cpp @top_builddir@/config.h
 

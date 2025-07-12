@@ -1,8 +1,8 @@
 noinst_SCRIPTS = 
 if WINE_PLUGIN
-  noinst_SCRIPTS += Tester.exe
+  noinst_SCRIPTS += Tester.exe.so
 if WINE64
-  noinst_SCRIPTS += Tester64.exe
+  noinst_SCRIPTS += Tester64.exe.so
 endif #WINE64
 endif #WINE_PLUGIN
 
@@ -12,9 +12,9 @@ else
   LDFLAGS += -Wl,--no-warn-search-mismatch
 endif
 
-# Use MinGW compilers when available, otherwise fall back to winegcc
-CC = $(MINGW32_CC)
-CXX = $(MINGW32_CXX)
+# Use winegcc compilers
+CC = winegcc
+CXX = wineg++
 
 SUFFIXES = .o .cpp .c .rc 64.o
 
@@ -25,13 +25,13 @@ SUFFIXES = .o .cpp .c .rc 64.o
 	$(CC) -c $(CFLAGS) -m32 -o $@ $<
 
 .cpp64.o :
-	$(MINGW64_CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 .c64.o :
-	$(MINGW64_CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 .rc.o :
-	$(MINGW32_WINDRES) -o $@ $(RCFLAGS) $<
+	wrc -o $@ $(RCFLAGS) $<
 
 CXXFLAGS += -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
 CFLAGS += -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@
@@ -43,32 +43,28 @@ vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
 
-Tester64.exe : main64.o rest64.o npifc64.o npview64.o
-	$(MINGW64_CXX) -g -o Tester64.exe -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
+Tester64.exe.so : main64.o rest64.o npifc64.o npview64.o
+	winegcc -g -o Tester64.exe.so -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
 
-Tester.exe : main.o npview.o rest.o npifc.o
-	$(CXX) -g -o Tester.exe -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+Tester.exe.so : main.o npview.o rest.o npifc.o
+	winegcc -g -o Tester.exe.so -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 main.o : main.cpp Makefile
 
 main64.o : main.cpp Makefile
-	$(MINGW64_CXX) -c $(CXXFLAGS) -o $@ $<
 
 npview.o : npview.rc
 
 npview64.o : npview.rc
-	$(MINGW64_WINDRES) -o $@ $(RCFLAGS) $<
 
 rest.o : rest.c rest.h Makefile
 
 rest64.o : rest.c rest.h Makefile
-	$(MINGW64_CC) -c $(CFLAGS) -o $@ $<
 
 npifc.o : npifc.c npifc.h Makefile
 
 npifc64.o : CFLAGS+="-DFOR_WIN64=1"
 npifc64.o : npifc.c npifc.h Makefile
-	$(MINGW64_CC) -c $(CFLAGS) "-DFOR_WIN64=1" -o $@ $<
 
 clean-local: clean-local-check
 .PHONY: clean-local-check

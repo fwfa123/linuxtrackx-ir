@@ -7,57 +7,211 @@
 
 int main()
 {
+  printf("DEBUG: check_data.exe starting...\n");
+  fflush(stdout);
+  
   //signatures
   char verse1[200], verse2[200];
   game_desc_t gd;
-  if(game_data_get_desc(1001, &gd) && getSomeSeriousPoetry(verse1, verse2)){
+  
+  printf("DEBUG: About to initialize game_desc_t structure...\n");
+  fflush(stdout);
+  
+  // Initialize the structure to prevent undefined behavior
+  memset(&gd, 0, sizeof(game_desc_t));
+  
+  printf("DEBUG: game_desc_t structure initialized\n");
+  fflush(stdout);
+  
+  // Fix for Wine environment: getenv("HOME") can return NULL
+  printf("DEBUG: Getting HOME environment variable...\n");
+  fflush(stdout);
+  char *home = getenv("HOME");
+  if (home == NULL) {
+    printf("DEBUG: HOME is NULL, trying USERPROFILE...\n");
+    fflush(stdout);
+    // Fallback for Wine environments where HOME is not set
+    home = getenv("USERPROFILE");
+    if (home == NULL) {
+      printf("DEBUG: USERPROFILE is NULL, using current directory\n");
+      fflush(stdout);
+      // Final fallback to current directory
+      home = ".";
+    }
+  }
+  
+  printf("DEBUG: Using home directory: %s\n", home);
+  fflush(stdout);
+  
+  // Check if firmware directory exists before trying to access gamedata.txt
+  printf("DEBUG: Allocating memory for firmware_path...\n");
+  fflush(stdout);
+  char *firmware_path = malloc(200 + strlen(home));
+  if (firmware_path == NULL) {
+    printf("DEBUG: Memory allocation failed for firmware_path!\n");
+    fflush(stdout);
+    MessageBox(NULL,
+    "Memory allocation failed!\nInstallation may be incomplete.",
+    "Linuxtrack-wine check",
+    MB_OK);
+    return 1;
+  }
+  
+  printf("DEBUG: Building firmware path...\n");
+  fflush(stdout);
+  sprintf(firmware_path, "%s/.config/linuxtrack/tir_firmware", home);
+  printf("DEBUG: Firmware path: %s\n", firmware_path);
+  fflush(stdout);
+  
+  // Check if the firmware directory exists
+  printf("DEBUG: Checking if firmware directory exists...\n");
+  fflush(stdout);
+  if (access(firmware_path, F_OK) != 0) {
+    printf("DEBUG: Firmware directory does not exist!\n");
+    fflush(stdout);
+    MessageBox(NULL,
+    "LinuxTrack firmware files not found!\n\n"
+    "Please run the main LinuxTrack application first to extract the firmware files,\n"
+    "then run this wine installer again.",
+    "Linuxtrack-wine check",
+    MB_OK);
+    free(firmware_path);
+    return 0; // Exit gracefully, don't crash
+  }
+  
+  printf("DEBUG: Firmware directory exists\n");
+  fflush(stdout);
+  
+  // Check if gamedata.txt exists
+  printf("DEBUG: Allocating memory for gamedata_path...\n");
+  fflush(stdout);
+  char *gamedata_path = malloc(200 + strlen(home));
+  if (gamedata_path == NULL) {
+    printf("DEBUG: Memory allocation failed for gamedata_path!\n");
+    fflush(stdout);
+    MessageBox(NULL,
+    "Memory allocation failed!\nInstallation may be incomplete.",
+    "Linuxtrack-wine check",
+    MB_OK);
+    free(firmware_path);
+    return 1;
+  }
+  
+  printf("DEBUG: Building gamedata path...\n");
+  fflush(stdout);
+  sprintf(gamedata_path, "%s/.config/linuxtrack/tir_firmware/gamedata.txt", home);
+  printf("DEBUG: Gamedata path: %s\n", gamedata_path);
+  fflush(stdout);
+  
+  if (access(gamedata_path, F_OK) != 0) {
+    printf("DEBUG: Gamedata file does not exist!\n");
+    fflush(stdout);
+    MessageBox(NULL,
+    "LinuxTrack game data file not found!\n\n"
+    "Please run the main LinuxTrack application first to extract the firmware files,\n"
+    "then run this wine installer again.",
+    "Linuxtrack-wine check",
+    MB_OK);
+    free(firmware_path);
+    free(gamedata_path);
+    return 0; // Exit gracefully, don't crash
+  }
+  
+  printf("DEBUG: Gamedata file exists\n");
+  fflush(stdout);
+  
+  free(gamedata_path);
+  
+  // Now try to get game data - this should work since we've verified the file exists
+  printf("DEBUG: About to call game_data_get_desc...\n");
+  fflush(stdout);
+  
+  bool game_data_result = game_data_get_desc(1001, &gd);
+  printf("DEBUG: game_data_get_desc returned: %s\n", game_data_result ? "true" : "false");
+  fflush(stdout);
+  
+  printf("DEBUG: About to call getSomeSeriousPoetry...\n");
+  fflush(stdout);
+  bool poetry_result = getSomeSeriousPoetry(verse1, verse2);
+  printf("DEBUG: getSomeSeriousPoetry returned: %s\n", poetry_result ? "true" : "false");
+  fflush(stdout);
+  
+  if(game_data_result && poetry_result){
+    printf("DEBUG: Both functions succeeded, all is OK\n");
+    fflush(stdout);
     //data available, all is OK
   }else{
+    printf("DEBUG: One or both functions failed\n");
+    fflush(stdout);
     MessageBox(NULL,
     "To fully utilize linuxtrack-wine,\ninstall the support data in ltr_gui!",
     "Linuxtrack-wine check",
     MB_OK);
   }
-  char *home = getenv("HOME");
+  
+  printf("DEBUG: Allocating memory for path1...\n");
+  fflush(stdout);
   char *path1 = malloc(200 + strlen(home));
+  if (path1 == NULL) {
+    printf("DEBUG: Memory allocation failed for path1!\n");
+    fflush(stdout);
+    MessageBox(NULL,
+    "Memory allocation failed!\nInstallation may be incomplete.",
+    "Linuxtrack-wine check",
+    MB_OK);
+    free(firmware_path);
+    return 1;
+  }
+  
+  printf("DEBUG: Building TIRViews.dll path...\n");
+  fflush(stdout);
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/TIRViews.dll", home);
-#ifndef __MINGW32__
+  printf("DEBUG: TIRViews.dll path: %s\n", path1);
+  fflush(stdout);
+  
+  printf("DEBUG: Creating symlink for TIRViews.dll...\n");
+  fflush(stdout);
   if(symlink(path1, "TIRViews.dll") != 0){
+    printf("DEBUG: Failed to create symlink for TIRViews.dll\n");
+    fflush(stdout);
     MessageBox(NULL,
     "Failed to create symlink to TIRViews.dll!\nSome games will not have headtracking available.",
     "Linuxtrack-wine check",
     MB_OK);
+  } else {
+    printf("DEBUG: Successfully created symlink for TIRViews.dll\n");
+    fflush(stdout);
   }
-#else
-  // On MinGW/Windows, copy the file instead of creating a symlink
-  if(!CopyFile(path1, "TIRViews.dll", FALSE)){
-    MessageBox(NULL,
-    "Failed to copy TIRViews.dll!\nSome games will not have headtracking available.",
-    "Linuxtrack-wine check",
-    MB_OK);
-  }
-#endif
+
+  printf("DEBUG: Building mfc42u.dll path...\n");
+  fflush(stdout);
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42u.dll", home);
-#ifndef __MINGW32__
+  printf("DEBUG: mfc42u.dll path: %s\n", path1);
+  fflush(stdout);
+  
+  printf("DEBUG: Creating symlink for mfc42u.dll...\n");
+  fflush(stdout);
   if(symlink(path1, "mfc42u.dll") != 0){
+    printf("DEBUG: Failed to create symlink for mfc42u.dll\n");
+    fflush(stdout);
     MessageBox(NULL,
     "Failed to create symlink to mfc42u.dll!\n"
     "Try to install TIRViews support in ltr_gui,\n"
     "or install mfc42 into this bottle using winetricks.",
     "Linuxtrack-wine check",
     MB_OK);
+  } else {
+    printf("DEBUG: Successfully created symlink for mfc42u.dll\n");
+    fflush(stdout);
   }
-#else
-  // On MinGW/Windows, copy the file instead of creating a symlink
-  if(!CopyFile(path1, "mfc42u.dll", FALSE)){
-    MessageBox(NULL,
-    "Failed to copy mfc42u.dll!\n"
-    "Try to install TIRViews support in ltr_gui,\n"
-    "or install mfc42 into this bottle using winetricks.",
-    "Linuxtrack-wine check",
-    MB_OK);
-  }
-#endif
+
+  printf("DEBUG: Cleaning up memory...\n");
+  fflush(stdout);
+  free(path1);
+  free(firmware_path);
+  
+  printf("DEBUG: check_data.exe completed successfully\n");
+  fflush(stdout);
   return 0;
 }
 

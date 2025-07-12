@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
 
-**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and MinGW cross-compilation. Track your head movement using TrackIR devices, webcams??, or specialized hardware and translate that into game input.
+**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and Wine compatibility. Track your head movement using TrackIR devices, webcams??, or specialized hardware and translate that into game input.
 
 ## 🔄 Fork Information
 
@@ -16,7 +16,7 @@ This project is a **fork** of the original LinuxTrack project created by uglyDwa
 
 ### Key Differences from Original
 - ✅ **Qt5 Modernization**: Updated from Qt4 to Qt5 for current Linux distributions
-- ✅ **MinGW Cross-Compilation**: Native Windows binary support (no Wine required)
+- ✅ **Wine Compatibility**: Wine-based Windows binary support using winegcc
 - ✅ **Modern Build System**: Updated autotools and CMake support
 - ✅ **Enhanced Security**: PIE, stack protector, and fortify source enabled by default
 - ✅ **TrackIR Focus**: Primary focus on TrackIR 4 & 5 compatibility
@@ -48,7 +48,7 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 - **TrackIR Support**: Full compatibility with TrackIR 4 & 5 devices
 - **Modern Linux Compatibility**: Updated build system for current distributions
 - **Qt5 Migration**: Modernized GUI framework support
-- **MinGW Integration**: Improved Windows compatibility layer
+- **Wine Integration**: Wine-based Windows compatibility layer
 
 ### Limited/Untested Features
 ⚠️ **Important**: The following features were **not tested** and are **not current development priorities**:
@@ -69,17 +69,17 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev mingw-w64 bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel mingw64-gcc mingw64-gcc-c++ bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42
 
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr mingw-w64-gcc bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -92,14 +92,14 @@ sudo make install
 
 ## 🎉 What's New
 
-### 🎉 MinGW Cross-Compilation Support (Phase 1 Complete)
-LinuxTrack now supports building Windows compatibility components using MinGW, eliminating the need for wine-devel packages:
+### 🎉 Wine Compatibility Support
+LinuxTrack now supports building Windows compatibility components using winegcc for proper Wine integration:
 
-- ✅ **Simplified Dependencies**: No wine-devel required
-- ✅ **Smaller Footprint**: Fewer packages to install
-- ✅ **Better Compatibility**: Standard Windows PE binaries
-- ✅ **Faster Builds**: No Wine runtime overhead
-- ✅ **NSIS Installers Updated**: All installer scripts now use native .exe/.dll files
+- ✅ **Wine Integration**: Uses winegcc for Wine-compatible binaries
+- ✅ **Symlink Support**: Proper symlink creation for Wine environments
+- ✅ **Wine Compatibility**: .exe.so and .dll.so files that work with Wine
+- ✅ **NSIS Installers**: All installer scripts updated for Wine compatibility
+- ✅ **Simplified Dependencies**: Uses standard Wine development tools
 
 ### 🎉 TrackIR Firmware Extraction Improvements
 LinuxTrack now features improved TrackIR firmware extraction with enhanced Wine compatibility:
@@ -110,31 +110,31 @@ LinuxTrack now features improved TrackIR firmware extraction with enhanced Wine 
 - ✅ **Reliable Extraction**: Successfully extracts TrackIR firmware files (TIRViews.dll, NPClient.dll, etc.)
 - ✅ **Clean Installation**: Maintains temporary Wine prefix approach with automatic cleanup
 
-### Why MinGW is the Best Approach
-**MinGW vs winegcc Comparison:**
+### Why Winegcc is the Best Approach
+**Winegcc vs MinGW Comparison:**
 
-| Aspect | MinGW (Recommended) | winegcc (Legacy) |
-|--------|-------------------|------------------|
-| **Binary Format** | Native Windows PE (.exe/.dll) | Linux ELF with Wine wrapper (.exe.so/.dll.so) |
-| **Portability** | Works on Windows and Wine | Only works with Wine |
-| **Performance** | Native Windows performance | Wine runtime overhead |
-| **Dependencies** | Minimal (mingw-w64 only) | Heavy (wine-devel packages, not supported) |
-| **Future-Proof** | ✅ Industry standard | ❌ Wine-specific |
-| **CI/CD** | Easy automated builds | Complex Wine environment |
+| Aspect | winegcc (Recommended) | MinGW (Legacy) |
+|--------|---------------------|----------------|
+| **Binary Format** | Linux ELF with Wine wrapper (.exe.so/.dll.so) | Native Windows PE (.exe/.dll) |
+| **Wine Integration** | Perfect Wine compatibility | May have compatibility issues |
+| **Symlink Support** | Native Unix symlinks work | Requires file copying |
+| **Dependencies** | Standard (wine-devel packages) | Cross-compilation toolchain |
+| **Future-Proof** | ✅ Wine-native approach | ❌ Cross-compilation complexity |
+| **CI/CD** | Standard Wine environment | Complex MinGW setup |
 
-**Bottom Line**: MinGW produces genuine Windows binaries that work everywhere. winegcc and wine-devel are no longer supported in this project.
+**Bottom Line**: winegcc produces Wine-compatible binaries that integrate perfectly with Wine environments. MinGW cross-compilation is no longer supported in this project.
 
 ### 🚧 Build System Modernization Progress
-- ✅ **Phase 1 Complete**: NSIS installer scripts updated for MinGW
-- ✅ **Phase 2 Complete**: Makefile.am files updated for native Windows binaries
-- ✅ **Phase 3 Complete**: Documentation and build scripts updated for MinGW
+- ✅ **Phase 1 Complete**: NSIS installer scripts updated for winegcc
+- ✅ **Phase 2 Complete**: Makefile.am files updated for Wine compatibility
+- ✅ **Phase 3 Complete**: Documentation and build scripts updated for winegcc
 - 🔄 **Phase 4**: Final testing and validation
 
 ### Built Windows Components
-- **NPClient.dll** / **NPClient64.dll** - TrackIR API compatibility (32/64-bit)
-- **FreeTrackClient.dll** - FreeTrack API compatibility
-- **Testing Tools** - Tester.exe, Tester64.exe for validation
-- **Utilities** - Controller.exe for hotkeys, check_data.exe for validation
+- **NPClient.dll.so** / **NPClient64.dll.so** - TrackIR API compatibility (32/64-bit)
+- **FreeTrackClient.dll.so** - FreeTrack API compatibility
+- **Testing Tools** - Tester.exe.so, Tester64.exe.so for validation
+- **Utilities** - Controller.exe.so for hotkeys, check_data.exe.so for validation
 
 ## 🎮 Gaming Compatibility
 
@@ -163,10 +163,10 @@ LinuxTrack works with games and simulators that support:
 - **Hardware Access**: libusb-1.0-dev, libmxml-dev
 - **Video Support**: V4L2 development headers (libv4l-dev / v4l-utils-devel / v4l-utils)
 - **X11 Support**: libx11-dev, libxrandr-dev
-- **Wine Support**: wine (required for TrackIR firmware extraction)
+- **Wine Support**: wine, wine-devel (required for TrackIR firmware extraction and Windows components)
 
-### Windows Compatibility (MinGW Only)
-- **MinGW** (required): mingw-w64, gcc-mingw-w64, g++-mingw-w64
+### Windows Compatibility (Wine Only)
+- **Wine Development** (required): wine-devel, winegcc, wineg++
 
 ### Security Features (Enabled by Default)
 - **PIE (Position Independent Executable)**: Enabled by default for native Linux builds
@@ -274,7 +274,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | `aclocal-1.17: command not found` | Install autoconf: `sudo apt install autoconf` (Debian/Ubuntu) or `sudo dnf install autoconf` (Fedora) or `sudo pacman -S autoconf` (Arch) |
 | `flex: command not found` | Install flex: `sudo apt install flex` (Debian/Ubuntu) or `sudo dnf install flex` (Fedora) or `sudo pacman -S flex` (Arch) |
 | `makensis: command not found` | Install NSIS: `sudo apt install nsis` (Debian/Ubuntu) or `sudo dnf install nsis` (Fedora) or `sudo pacman -S nsis` (Arch) |
-| `winegcc: command not found` | MinGW is required. Install with: `sudo apt install mingw-w64` (Debian/Ubuntu) or `sudo dnf install mingw64-gcc` (Fedora) or `sudo pacman -S mingw-w64-gcc` (Arch) |
+| `winegcc: command not found` | Wine development tools required. Install with: `sudo apt install wine-devel` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | 32-bit development headers missing. Install: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu/MX) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora/RHEL) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | `libv4l2.h: No such file or directory` | V4L2 development headers missing. Install: `sudo apt install libv4l-dev` (Debian/Ubuntu/MX) or `sudo dnf install v4l-utils-devel` (Fedora/RHEL) or `sudo pacman -S v4l-utils` (Arch) |
 | `Unknown module(s) in QT: opengl help` | Qt5 help module missing. Install: `sudo apt install qttools5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qttools-devel` (Fedora) or `sudo pacman -S qt5-tools` (Arch) |
@@ -398,305 +398,85 @@ ls /usr/include/qt5/QtCore/QtCore
 ls /usr/include/qt5/QtWidgets/QtWidgets
 ls /usr/include/qt5/QtOpenGL/QtOpenGL
 ls /usr/include/qt5/QtHelp/QtHelp
-ls /usr/include/qt5/QtNetwork/QtNetwork
-ls /usr/include/qt5/QtX11Extras/QtX11Extras
-ls /usr/include/opencv4/opencv2/opencv.hpp
-ls /usr/include/libusb-1.0/libusb.h
-ls /usr/include/mxml.h
-ls /usr/include/libv4l2.h
-ls /usr/include/linux/videodev2.h
-ls /usr/include/linux/uinput.h
 ```
 
-#### X11 Dependencies
+#### Wine Dependencies (Windows Components)
 ```bash
-# Verify X11 development
-pkg-config --exists x11 xrandr
-ls /usr/include/X11/Xlib.h
-ls /usr/include/X11/extensions/Xrandr.h
+# Verify Wine development tools
+which winegcc wineg++
+winegcc --version
 ```
 
-#### MinGW Dependencies (Windows Components)
-```bash
-# Verify MinGW installation
-which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc
-which i686-w64-mingw32-g++ x86_64-w64-mingw32-g++
-which makensis
-```
-
-#### 32-bit Development (Optional)
+#### 32-bit Development Support
 ```bash
 # Verify 32-bit development headers
-ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || echo "32-bit headers not found"
+ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || ls /usr/include/bits/libc-header-start.h 2>/dev/null || echo "32-bit headers not found"
 ```
 
-### Complete Dependency Matrix
+### Distribution-Specific Dependencies
 
-| Component | Debian/Ubuntu/MX | Fedora/RHEL | Arch Linux | Purpose |
-|-----------|------------------|-------------|------------|---------|
-| **Build Tools** |
-| gcc, g++ | build-essential | gcc gcc-c++ | base-devel | C/C++ compilation |
-| make | build-essential | make | base-devel | Build system |
-| autoconf | autoconf | autoconf | autoconf | Configure script generation |
-| automake | automake | automake | automake | Makefile generation |
-| libtool | libtool | libtool | libtool | Library building |
-| bison | bison | bison | bison | Parser generator |
-| flex | flex | flex | flex | Lexical analyzer |
-| pkg-config | pkg-config | pkgconfig | pkgconf | Package configuration |
-| **Qt5 Framework** |
-| Qt5 Core | qtbase5-dev | qt5-qtbase-devel | qt5-base | Core Qt functionality |
-| Qt5 Widgets | qtbase5-dev | qt5-qtbase-devel | qt5-base | GUI widgets |
-| Qt5 OpenGL | qtbase5-dev | qt5-qtbase-devel | qt5-base | OpenGL integration |
-| Qt5 Help | qttools5-dev | qt5-qttools-devel | qt5-tools | Help system |
-| Qt5 Network | qtbase5-dev | qt5-qtbase-devel | qt5-base | Network support |
-| Qt5 X11Extras | libqt5x11extras5-dev | qt5-qtx11extras-devel | qt5-x11extras | X11 integration |
-| Qt5 Tools | qttools5-dev-tools | qt5-qttools-devel | qt5-tools | Qt development tools |
-| **Computer Vision** |
-| OpenCV | libopencv-dev | opencv-devel | opencv | Face tracking, image processing |
-| **Hardware Access** |
-| libusb | libusb-1.0-0-dev | libusb1-devel | libusb | USB device access |
-| mxml | libmxml-dev | libmxml-devel | libmxml | XML parsing |
-| **Video Support** |
-| V4L2 | libv4l-dev | v4l-utils-devel | v4l-utils | Video4Linux2 support |
-| **X11 Support** |
-| X11 | libx11-dev | libX11-devel | libx11 | X11 window system |
-| Xrandr | libxrandr-dev | libXrandr-devel | libxrandr | X11 resolution management |
-| **Windows Compatibility** |
-| MinGW 32-bit | mingw-w64 | mingw64-gcc | mingw-w64-gcc | Windows 32-bit compilation |
-| MinGW 64-bit | mingw-w64 | mingw64-gcc-c++ | mingw-w64-gcc | Windows 64-bit compilation |
-| NSIS | nsis | nsis | nsis | Windows installer creation |
-| **32-bit Development** |
-| 32-bit libc | libc6-dev-i386 | glibc-devel.i686 | lib32-glibc | 32-bit library support |
-| 32-bit gcc | gcc-multilib | libstdc++-devel.i686 | lib32-gcc-libs | 32-bit compilation |
-| **Wine Support** |
-| Wine Staging | wine-staging | wine-staging | wine-staging | TrackIR firmware extraction |
-| Wine 32-bit | wine32:i386 | wine-staging | wine-staging | 32-bit TrackIR installer support |
-| Winetricks | winetricks | winetricks | winetricks | Windows component installation |
-| MFC42 Library | winetricks mfc42 | mfc42 | mfc42 | Windows MFC42 compatibility |
-| **Optional Features** |
-| liblo | liblo-dev | liblo-devel | liblo | OSC protocol support |
-| libcwiid | libcwiid-dev | libcwiid-devel | libcwiid | Wii remote support |
-| libcrypto | libssl-dev | openssl-devel | openssl | Cryptographic functions |
-
-### Dependency Verification Script
-
-Create a script to verify all dependencies:
-
+#### Debian/Ubuntu/MX Linux
 ```bash
-#!/bin/bash
-# dependency_check.sh - Verify all LinuxTrack dependencies
+# Core dependencies
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
 
-echo "=== LinuxTrack Dependency Check ==="
-echo
-
-# Build tools
-echo "Checking build tools..."
-for tool in gcc g++ make autoconf automake libtool bison flex pkg-config; do
-    if command -v $tool >/dev/null 2>&1; then
-        echo "✓ $tool found"
-    else
-        echo "✗ $tool missing"
-    fi
-done
-echo
-
-# Qt5 verification
-echo "Checking Qt5..."
-if command -v qmake-qt5 >/dev/null 2>&1; then
-    echo "✓ qmake-qt5 found: $(qmake-qt5 -query QT_VERSION)"
-else
-    echo "✗ qmake-qt5 missing"
-fi
-
-# Qt5 modules
-for module in Qt5Core Qt5Widgets Qt5OpenGL Qt5Help Qt5Network Qt5X11Extras; do
-    if pkg-config --exists $module 2>/dev/null; then
-        echo "✓ $module found"
-    else
-        echo "✗ $module missing"
-    fi
-done
-echo
-
-# Libraries
-echo "Checking libraries..."
-for lib in opencv4 libusb-1.0 mxml; do
-    if pkg-config --exists $lib 2>/dev/null; then
-        echo "✓ $lib found"
-    else
-        echo "✗ $lib missing"
-    fi
-done
-echo
-
-# MinGW
-echo "Checking MinGW..."
-for mingw in i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc; do
-    if command -v $mingw >/dev/null 2>&1; then
-        echo "✓ $mingw found"
-    else
-        echo "✗ $mingw missing"
-    fi
-done
-
-if command -v makensis >/dev/null 2>&1; then
-    echo "✓ makensis found"
-else
-    echo "✗ makensis missing"
-fi
-echo
-
-# Wine Support
-echo "Checking Wine Support..."
-if command -v wine >/dev/null 2>&1; then
-    echo "✓ wine found: $(wine --version)"
-else
-    echo "✗ wine missing"
-fi
-
-if command -v winetricks >/dev/null 2>&1; then
-    echo "✓ winetricks found"
-else
-    echo "✗ winetricks missing"
-fi
-
-# Check for MFC42 library
-if [ -f "/usr/lib/x86_64-linux-gnu/libmfc42.so" ] || [ -f "/usr/lib/libmfc42.so" ]; then
-    echo "✓ libmfc42 found"
-else
-    echo "✗ libmfc42 missing"
-fi
-echo
-
-echo "=== Check Complete ==="
+# Wine development tools
+sudo apt install -y wine-devel wine32:i386
 ```
 
-Save this as `dependency_check.sh`, make it executable with `chmod +x dependency_check.sh`, and run it to verify your system has all required dependencies.
-
-### Wine Support: Modern Installation Methods
-
-**Important**: Wine is required for TrackIR firmware extraction. LinuxTrack now supports modern installation methods that are more reliable than the old Wine extraction approach.
-
-#### Modern Installation Methods (Recommended)
-
-**Method 1: Automatic Winetricks Installation (Recommended for Debian/Ubuntu/MX)**
-
-LinuxTrack now automatically handles winetricks installation and updates to address the issue of outdated packaged versions mentioned on the [winetricks GitHub page](https://github.com/Winetricks/winetricks?tab=readme-ov-file).
-
+#### Fedora/RHEL/CentOS
 ```bash
-# Option 1: Let LinuxTrack handle it automatically (Recommended)
-# Simply run the LinuxTrack GUI and use "Install Linuxtrack-Wine support"
-# The system will automatically:
-# - Check if winetricks is installed
-# - Download and install the latest version if needed
-# - Install MFC42 via winetricks
+# Core dependencies
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42
 
-# Option 2: Manual winetricks installation (if needed)
-sudo apt install winetricks  # Ubuntu/Debian/MX
-sudo dnf install winetricks  # Fedora/RHEL
-sudo pacman -S winetricks    # Arch Linux
-
-# Option 3: Install latest winetricks manually (recommended by winetricks maintainers)
-./scripts/install_winetricks.sh
-
-# Install MFC42 via winetricks
-winetricks mfc42
+# Wine development tools
+sudo dnf install -y wine-devel wine-tools
 ```
 
-**Method 2: Package Manager Installation (Fedora/RHEL/Arch only)**
+#### Arch Linux/Manjaro
 ```bash
-# Fedora/RHEL/CentOS
-sudo dnf install mfc42
+# Core dependencies
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
 
-# Arch Linux/Manjaro
-sudo pacman -S mfc42
+# Wine development tools (included in wine-staging)
 ```
 
-**Method 3: Manual Installation**
+### Troubleshooting Dependency Issues
+
+#### Qt5 Issues
 ```bash
-# Copy mfc42u.dll from Windows system to LinuxTrack directory
-sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/
-sudo chmod 644 /usr/share/linuxtrack/tir_firmware/mfc42u.dll
+# Check Qt5 installation
+qmake-qt5 -query QT_VERSION
+pkg-config --modversion Qt5Core
+
+# Reinstall Qt5 if needed
+sudo apt install --reinstall qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev qttools5-dev
 ```
 
-#### Wine Installation by Distribution
-
-**MX Linux / Debian / Ubuntu:**
+#### Wine Issues
 ```bash
-# Wine Staging (Recommended - better TrackIR compatibility)
-sudo apt install wine-staging wine32:i386 winetricks
+# Check Wine installation
+wine --version
+winegcc --version
 
-# Wine Stable (Fallback)
-sudo apt install wine wine32:i386 winetricks
+# Install Wine development tools
+sudo apt install wine-devel wine32:i386  # Debian/Ubuntu
+sudo dnf install wine-devel wine-tools   # Fedora
+sudo pacman -S wine-staging              # Arch
 ```
 
-**Fedora / RHEL / CentOS:**
+#### 32-bit Support Issues
 ```bash
-# Enable RPM Fusion first, then install Wine Staging
-sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
-sudo dnf install wine-staging winetricks
+# Enable 32-bit architecture (Debian/Ubuntu)
+sudo dpkg --add-architecture i386
+sudo apt update
+sudo apt install gcc-multilib libc6-dev-i386
+
+# Install 32-bit libraries (Fedora)
+sudo dnf install glibc-devel.i686 libstdc++-devel.i686
+
+# Install 32-bit libraries (Arch)
+sudo pacman -S lib32-glibc lib32-gcc-libs
 ```
 
-**Arch Linux / Manjaro:**
-```bash
-# Wine Staging (Recommended)
-sudo pacman -S wine-staging winetricks
-
-# Or Wine Stable (Fallback)
-sudo pacman -S wine winetricks
-```
-
-#### Quick Wine Check
-Run this script to check your Wine installation and get TrackIR compatibility recommendations:
-```bash
-./scripts/wine_check.sh
-```
-
-#### Wine Compatibility Notes
-- **Wine Staging 9.x**: Best compatibility with TrackIR installers
-- **Wine Stable 8.x**: May encounter USB driver installation issues
-- **32-bit Wine components**: Required for some TrackIR installers
-- **Modern MFC42 packages**: More reliable than old Wine extraction
-
-#### Automatic Detection
-LinuxTrack automatically detects and uses the best available installation method:
-1. **Winetricks installation** (Debian/Ubuntu/MX) - Most reliable for Debian-based systems
-2. **Package manager MFC42** (Fedora/RHEL/Arch) - Most reliable for RPM/Arch systems
-3. **Manual installation** (last resort) - User-provided files
-4. **Old Wine extraction** (legacy) - Only if other methods fail
-
-#### Troubleshooting Wine Issues
-If you encounter TrackIR firmware extraction issues:
-
-1. **Check your Wine installation**:
-   ```bash
-   ./scripts/wine_check.sh
-   ```
-
-2. **Try modern installation methods first**:
-   ```bash
-   # Method 1: Winetricks (Debian/Ubuntu/MX)
-   sudo apt install winetricks
-   winetricks mfc42
-   
-   # Method 2: Package manager (Fedora/RHEL/Arch only)
-   sudo dnf install mfc42  # Fedora/RHEL
-   sudo pacman -S mfc42    # Arch Linux
-   ```
-
-3. **Switch to Wine Staging** (if available):
-   ```bash
-   sudo update-alternatives --config wine
-   # Select Wine Staging from the menu
-   ```
-
-4. **Install 32-bit Wine components** (if missing):
-   ```bash
-   sudo apt install wine32:i386  # Debian/Ubuntu/MX
-   ```
-
-5. **Verify TrackIR compatibility**:
-   ```bash
-   ./scripts/wine_check.sh
-   # Should show "EXCELLENT" for best compatibility
-   ```
+This comprehensive dependency analysis ensures that all required components are available for building LinuxTrack X-IR with full functionality.
