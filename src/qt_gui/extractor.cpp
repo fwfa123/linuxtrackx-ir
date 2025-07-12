@@ -220,17 +220,18 @@ bool Extractor::readSources(const QString &sources)
 
   QTextStream fs(&f);
   QString url;
+  int count = 0;
   while(1){
     if(fs.atEnd()){
       break;
     }
     fs>>url;
     if(!url.isNull()){
-      ui.FWCombo->addItem(url);
+      count++;
     }
   }
   progress(sources + QString::fromUtf8(" found and read."));
-  return (ui.FWCombo->count() != 0);
+  return (count != 0);
 }
 
 

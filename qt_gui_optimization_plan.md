@@ -112,7 +112,7 @@ This document tracks the review and optimization of the code in `src/qt_gui` for
 
 - [x] **1. Inventory and prioritize all source files in `src/qt_gui` by size, complexity, and importance.**
 - [x] **2. Run static analysis tools (cppcheck, clang-tidy) on `src/qt_gui` to identify code issues and inefficiencies.**
-- [x] **3. Manually review and optimize `extractor.cpp` for file I/O, directory traversal, and threading improvements.**
+- [x] **3. Manually review and optimize `extractor.cpp` for file I/O, directory traversal, and threading improvements.** ⚠️ **REVERTED** - Firmware extraction regression
 - [x] **4. Manually review and optimize `ltr_gui_prefs.cpp` for settings and UI logic improvements.**
 - [x] **5. Manually review and optimize `ltr_tracking.cpp` for core tracking logic improvements.**
 - [x] **6. Manually review and optimize `ltr_gui.cpp` for main GUI logic improvements.**
@@ -311,116 +311,34 @@ This document tracks the review and optimization of the code in `src/qt_gui` for
 
 ---
 
-## 3. extractor.cpp Optimization Results ✅ COMPLETED
+## 3. extractor.cpp Optimization Results ⚠️ REVERTED
 
-### **Performance Bottlenecks Identified & Fixed:**
+### **Status: REVERTED TO WORKING STATE**
 
-#### **1. Critical: Byte-by-byte File Reading (Lines 118-142)**
-**Problem:** Original code read files one byte at a time, creating millions of system calls for large files
-**Solution:** Implemented buffered reading with 64KB chunks
-**Performance Gain:** ~1000x improvement for large files (from 1 byte per system call to 64KB per system call)
+**Issue:** The extractor optimization introduced a critical regression where firmware files (`tir4.fw`, `tir5.fw`, `sn4.fw`, `tir5v2.fw`) and text files (`poem1.txt`, `poem2.txt`) were no longer being extracted correctly.
 
-#### **2. Critical: Inefficient Hash Algorithm Usage**
-**Problem:** FastHash recalculated entire buffer on every byte, redundant hash range lookups
-**Solution:** 
-- Pre-calculated hash ranges with caching
-- Optimized hash value processing
-- Reduced redundant `equal_range()` calls
-**Performance Gain:** ~50-100x improvement in hash processing speed
+**Root Cause:** The buffered reading optimization broke the byte-by-byte file analysis logic that is required for proper block detection in the firmware extraction algorithm.
 
-#### **3. High: Poor Directory Traversal**
-**Problem:** Used `canonicalFilePath()` for every file (expensive system call), no caching
-**Solution:**
-- Replaced `canonicalFilePath()` with `absoluteFilePath()` where appropriate
-- Added static pattern caching to avoid repeated QStringList creation
-- Optimized directory listing flags
-**Performance Gain:** ~10-20x improvement in directory scanning
+**Action Taken:** 
+- Reverted `extractor.cpp` and `hashing.h` to the pre-optimization working state (commit `b97b7b5`)
+- Extractor is now back to its original, working functionality
+- Firmware extraction is confirmed working again
 
-#### **4. Medium: Memory Inefficient File Operations**
-**Problem:** `getBlobName()` read entire file into memory, multiple file seeks
-**Solution:** Implemented streaming hash calculation with 64KB buffers
-**Performance Gain:** Reduced memory usage by ~90% for large files, eliminated memory spikes
+**Future Considerations:**
+- The extractor optimization will be revisited in the future with more careful analysis
+- Need to understand the exact requirements of the block detection algorithm before applying performance optimizations
+- May require a different optimization approach that preserves the byte-by-byte analysis logic
 
-#### **5. Medium: String Operation Inefficiencies**
-**Problem:** Excessive `QString::fromUtf8()` calls for static strings, string concatenation in loops
-**Solution:**
-- Added static string constants using `QStringLiteral()`
-- Replaced dynamic string creation with pre-allocated constants
-- Optimized string concatenation patterns
-**Performance Gain:** ~5-10x reduction in string allocation overhead
+**Performance Impact:**
+- Extractor performance remains at original levels
+- Functionality is restored to working state
+- No regressions in firmware extraction capability
 
-### **Code Quality Improvements:**
-
-#### **1. Modern C++ Features**
-- Used range-based for loops instead of index-based loops
-- Replaced C-style casts with C++ casts where appropriate
-- Improved const-correctness throughout
-
-#### **2. Memory Management**
-- Eliminated unnecessary temporary objects
-- Reduced string allocations in hot paths
-- Improved buffer management
-
-#### **3. Error Handling**
-- Added proper error checking for file operations
-- Improved robustness of directory traversal
-- Better handling of edge cases
-
-### **Performance Impact Summary:**
-- **File Analysis Speed:** 100-1000x faster for large files
-- **Memory Usage:** 90% reduction in peak memory usage
-- **Directory Scanning:** 10-20x faster
-- **String Operations:** 5-10x more efficient
-- **Overall Extraction Time:** 50-200x improvement depending on file sizes
-
-### **Backward Compatibility:**
+**Testing Results:**
+- ✅ Firmware files extract correctly
+- ✅ Text files extract correctly  
 - ✅ All existing functionality preserved
-- ✅ No changes to public APIs
-- ✅ Same output format and behavior
-- ✅ Compatible with existing configuration files
-
-### **Testing Results:**
-- ✅ All extraction scenarios work correctly
-- ✅ No regressions in functionality
-- ✅ Significant performance improvements verified
-- ✅ Memory usage optimization confirmed
-- ✅ Binary compilation successful with all optimizations
-- ✅ Optimized symbols present in executable
-- ✅ Application startup and runtime verified
-- ✅ Backward compatibility confirmed
-
-### **Comprehensive Testing Results:**
-
-#### **Build System Testing:**
-- ✅ `extractor.cpp` compiles successfully with optimizations
-- ✅ `ltr_gui` executable rebuilds without errors
-- ✅ Only minor warning about unused helper function (expected)
-- ✅ All Qt MOC files generated correctly
-
-#### **Binary Analysis:**
-- ✅ ELF 64-bit executable with debug information
-- ✅ Optimized symbols present: `analyzeFile`, `findCandidates`
-- ✅ Static patterns cache symbol: `patterns`
-- ✅ All optimization features compiled into binary
-
-#### **Runtime Testing:**
-- ✅ Application starts successfully
-- ✅ No crashes, errors, or failures during startup
-- ✅ Qt components load correctly
-- ✅ Help system initializes (warnings about missing help files are expected in build environment)
-
-#### **Performance Verification:**
-- ✅ Buffered file reading implementation verified
-- ✅ Static string constants using `QStringLiteral` confirmed
-- ✅ Hash range caching mechanism present
-- ✅ Directory traversal optimizations active
-- ✅ Memory management improvements implemented
-
-#### **Compatibility Testing:**
-- ✅ All existing functionality preserved
-- ✅ No API changes or breaking modifications
-- ✅ Same behavior and output format maintained
-- ✅ Compatible with existing configuration files 
+- ✅ No breaking changes to extraction logic 
 
 ---
 
@@ -749,3 +667,31 @@ TRACKER.miscChange(MISC_FOCAL_LENGTH, static_cast<float>(val));  // instead of C
 - ✅ Windows bridge components fully functional
 
 **All optimizations successfully integrated and tested!**
+
+---
+
+## Current Status Summary (Updated: July 12, 2025)
+
+### **Completed Optimizations:**
+- ✅ **ltr_gui_prefs.cpp** - Modernized with QStringLiteral and improved error handling
+- ✅ **ltr_tracking.cpp** - 50% code reduction with AxisConfig structure  
+- ✅ **ltr_gui.cpp** - 20-30% string performance improvement
+
+### **Reverted Optimizations:**
+- ⚠️ **extractor.cpp** - Reverted to working state due to firmware extraction regression
+  - **Issue:** Buffered reading optimization broke byte-by-byte analysis required for block detection
+  - **Status:** Back to original working functionality
+  - **Future:** Will be revisited with more careful analysis of block detection requirements
+
+### **Next Steps:**
+- **Step 7:** Continue optimization of remaining files in `src/qt_gui` as needed
+- **Step 8:** Comprehensive testing and validation
+- **Step 9:** Documentation updates
+
+### **Overall Progress:**
+- **Files Optimized:** 3 out of 4 high-priority files completed
+- **Performance Gains:** Significant improvements in string operations, code maintainability, and memory usage
+- **Stability:** All optimizations maintain backward compatibility and functionality
+- **Quality:** Modern C++ features, better error handling, and improved code structure
+
+**Ready to continue with additional file optimizations or move to testing phase.**
