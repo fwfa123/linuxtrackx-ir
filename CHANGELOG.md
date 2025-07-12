@@ -2,6 +2,35 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
+## [1.0.0-xir.1] - Initial Fork Release (2024)
+
+### Major Changes
+- **Version Bump**: Moved from 0.99.20 to 1.0.0-xir.1 to reflect fork status
+- **Project Renaming**: Updated project name to "LinuxTrack X-IR" throughout
+- **Fork Identification**: Added "-xir.1" suffix to clearly identify this as the linuxtrackx-ir fork
+- **Documentation Updates**: Comprehensive documentation reflecting current fork status
+
+### Added
+- **Fork Versioning**: Established semantic versioning with fork prefix (-xir.x)
+- **Project Identity**: Clear differentiation from original LinuxTrack project
+- **Updated Metadata**: Package names, changelog entries, and help system references
+
+### Changed
+- **Version Number**: 0.99.20 → 1.0.0-xir.1
+- **Project Name**: LinuxTrack → LinuxTrack X-IR
+- **Package Names**: linuxtrack → linuxtrack-xir (in debian packaging)
+- **Help System**: Updated Qt help files with new version references
+
+### Versioning Strategy
+This release establishes the versioning strategy for the linuxtrackx-ir fork:
+- **Format**: `MAJOR.MINOR.PATCH-fork.RELEASE`
+- **Example**: `1.0.0-xir.1`, `1.0.1-xir.1`, `1.1.0-xir.1`
+- **Rationale**: 
+  - Major version bump (0.99.20 → 1.0.0) reflects significant modernization
+  - Fork suffix (-xir.x) clearly identifies this as the linuxtrackx-ir fork
+  - Maintains semantic versioning principles
+  - Acknowledges relationship to original project
+
 ## [Unreleased] - Current Development
 
 ### Added
@@ -102,6 +131,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 | **Distribution Support** | Legacy Linux | Modern Linux distributions |
 | **Development Status** | Abandoned | Active |
 | **Documentation** | Basic | Comprehensive guides |
+| **Version Number** | 0.99.20 | 1.0.0-xir.1 |
 
 ## Migration Notes
 

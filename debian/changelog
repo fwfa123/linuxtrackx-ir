@@ -1,4 +1,4 @@
-linuxtrack (0.99.20-1) unstable; urgency=medium
+linuxtrack-xir (1.0.0-xir.1-1) unstable; urgency=medium
 
   * Qt5 modernization release
   * Complete installation system implementation
