@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
 
-**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and Wine compatibility. Track your head movement using TrackIR devices, webcams??, or specialized hardware and translate that into game input.
+**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and Wine compatibility. Track your head movement using TrackIR devices, webcams, or specialized hardware and translate that into game input.
 
 ## 🔄 Fork Information
 
@@ -69,12 +69,30 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks wine-devel
+
+# Build LinuxTrack
+git clone <repository-url>
+cd linuxtrackx-ir
+autoreconf -fiv
+./configure --prefix=/opt
+make -j$(nproc)
+sudo make install
+```
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42 wine-devel
+
+# Build LinuxTrack
+git clone <repository-url>
+cd linuxtrackx-ir
+autoreconf -fiv
+./configure --prefix=/opt
+make -j$(nproc)
+sudo make install
+```
 
 ### For Arch Linux / Manjaro Users
 ```bash
@@ -92,7 +110,7 @@ sudo make install
 
 ## 🎉 What's New
 
-### 🎉 Wine Compatibility Support
+### 🎉 Wine Compatibility Support (Updated)
 LinuxTrack now supports building Windows compatibility components using winegcc for proper Wine integration:
 
 - ✅ **Wine Integration**: Uses winegcc for Wine-compatible binaries
@@ -100,6 +118,7 @@ LinuxTrack now supports building Windows compatibility components using winegcc 
 - ✅ **Wine Compatibility**: .exe.so and .dll.so files that work with Wine
 - ✅ **NSIS Installers**: All installer scripts updated for Wine compatibility
 - ✅ **Simplified Dependencies**: Uses standard Wine development tools
+- ✅ **Build System Fixed**: Resolved C++ linking issues and NSIS script problems
 
 ### 🎉 TrackIR Firmware Extraction Improvements
 LinuxTrack now features improved TrackIR firmware extraction with enhanced Wine compatibility:
@@ -128,7 +147,7 @@ LinuxTrack now features improved TrackIR firmware extraction with enhanced Wine 
 - ✅ **Phase 1 Complete**: NSIS installer scripts updated for winegcc
 - ✅ **Phase 2 Complete**: Makefile.am files updated for Wine compatibility
 - ✅ **Phase 3 Complete**: Documentation and build scripts updated for winegcc
-- 🔄 **Phase 4**: Final testing and validation
+- ✅ **Phase 4 Complete**: C++ linking issues resolved, build system fully functional
 
 ### Built Windows Components
 - **NPClient.dll.so** / **NPClient64.dll.so** - TrackIR API compatibility (32/64-bit)
@@ -295,14 +314,14 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 ## 📁 Project Structure
 
 ```
-linuxtrack-clean-june14/
+linuxtrackx-ir/
 ├── src/                    # Main source code
 │   ├── qt_gui/            # Qt5 GUI application
 │   ├── wine_bridge/       # Windows compatibility layer
 │   ├── mickey/            # TrackIR device support
 │   └── ...                # Core tracking libraries
 ├── docs/                  # Documentation
-├── dev-scripts/           # Build automation scripts
+├── scripts/               # Build automation scripts
 └── README.md              # This file
 ```
 
@@ -319,7 +338,7 @@ LinuxTrack is an open-source project that welcomes contributions:
 ```bash
 # Clone repository
 git clone <repository-url>
-cd linuxtrack-clean-june14
+cd linuxtrackx-ir
 
 # Create development build
 ./configure --prefix=/opt --enable-debug

@@ -13,30 +13,55 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 - Updated README with clear fork differentiation
 - Enhanced AUTHORS file with proper attribution structure
 
-## [2024] - Qt5 Modernization and MinGW Support
+## [2024] - Winegcc Build System Fixes
+
+### Major Changes
+- **Winegcc Integration**: Restored and fixed winegcc-based Windows compatibility
+- **NSIS Script Fixes**: Corrected installer script template to use proper .exe.so/.dll.so extensions
+- **C++ Linking Resolution**: Fixed missing C++ standard library linking in winegcc commands
+- **Build System Stability**: Resolved all build errors and NSIS installer issues
+
+### Added
+- **Winegcc Support**: Restored winegcc for Wine-compatible binary generation
+- **NSIS Template Fixes**: Updated ltr_wine.nsi.in to reference correct file extensions
+- **C++ Library Linking**: Added -lstdc++ to winegcc commands for proper C++ support
+- **Build Verification**: Comprehensive testing of clean build process
+
+### Changed
+- **Build System**: Fixed winegcc integration and NSIS installer generation
+- **Windows Compatibility**: Restored winegcc approach for better Wine integration
+- **Documentation**: Updated build guides to reflect winegcc requirements
+- **Dependencies**: Clarified wine-devel package requirements
+
+### Fixed
+- **NSIS Installer Errors**: Resolved "no files found" errors in installer generation
+- **C++ Linking Issues**: Fixed missing C++ standard library symbols in winegcc builds
+- **Build Process**: Eliminated all build errors and warnings
+- **File Extension Mismatches**: Corrected .exe.so/.dll.so vs .exe/.dll references
+
+## [2024] - Qt5 Modernization and Wine Support
 
 ### Major Changes
 - **Qt4 to Qt5 Migration**: Complete modernization of GUI framework
-- **MinGW Cross-Compilation**: Native Windows binary support (no Wine required)
+- **Wine-based Windows Support**: Wine-compatible binary generation using winegcc
 - **Modern Build System**: Updated autotools and CMake support
 - **Enhanced Security**: PIE, stack protector, and fortify source enabled by default
 
 ### Added
-- **MinGW Support**: Native Windows .exe/.dll generation
+- **Wine Support**: Wine-based Windows .exe.so/.dll.so generation
 - **Security Features**: Position Independent Executables (PIE) by default
 - **Modern Dependencies**: Qt5, updated autotools, CMake support
-- **Cross-Platform Builds**: Linux to Windows compilation
+- **Cross-Platform Builds**: Linux to Windows compilation via Wine
 - **Enhanced Documentation**: Detailed build guides for multiple distributions
 
 ### Changed
 - **Build System**: Updated from legacy autotools to modern versions
 - **GUI Framework**: Migrated from Qt4 to Qt5
-- **Windows Compatibility**: Replaced Wine-based approach with MinGW
+- **Windows Compatibility**: Wine-based approach for better integration
 - **Security**: Enabled modern security features by default
 - **Documentation**: Comprehensive guides for modern Linux distributions
 
 ### Removed
-- **Wine Dependencies**: No longer requires wine-devel packages
 - **Qt4 Dependencies**: Removed legacy Qt4 requirements
 - **Legacy Build Tools**: Updated to modern autotools versions
 
@@ -71,7 +96,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 | Feature | Original LinuxTrack | LinuxTrack X-IR |
 |---------|-------------------|-----------------|
 | **Qt Version** | Qt4 | Qt5 |
-| **Windows Support** | Wine-based | MinGW native |
+| **Windows Support** | Wine-based | Wine-based (winegcc) |
 | **Build System** | Legacy autotools | Modern autotools + CMake |
 | **Security Features** | Basic | PIE, stack protector, fortify |
 | **Distribution Support** | Legacy Linux | Modern Linux distributions |
@@ -87,7 +112,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 ### For Developers
 - **Build System**: Updated to modern autotools and CMake
-- **Dependencies**: Qt5 instead of Qt4, MinGW instead of Wine
+- **Dependencies**: Qt5 instead of Qt4, winegcc for Wine compatibility
 - **Security**: Modern security features enabled by default
 - **Documentation**: Comprehensive guides and troubleshooting
 

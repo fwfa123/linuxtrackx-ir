@@ -7,15 +7,15 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
 <body>
-<h1>Linuxtrack - Wine</h1>
-To allow Windows programs running under Wine to use headtracking, Linuxtrack provides Linuxtrac-Wine installer.
-This installer provides necessary interfaces to channell headtracking data to both TrackIR enabled applications (both native like Condor Soaring, or via TIRViews.dll like MSFS series) and FreeTrack compatible applications.
+<h1>Linuxtrack X-IR - Wine Support</h1>
+To allow Windows programs running under Wine to use headtracking, Linuxtrack X-IR provides Linuxtrack-Wine installer.
+This installer provides necessary interfaces to channel headtracking data to both TrackIR enabled applications (both native like Condor Soaring, or via TIRViews.dll like MSFS series) and FreeTrack compatible applications.
 Be aware, that Linuxtrack-Wine requires TrackIR firmware with companion files to be available (even if you aren't using the TrackIR for tracking).
 
 <p>
-Please note, that it is necessary to install TrackIr firmware (along with mfc42u.dll needed by TIRViews.dll) to utilize all of the above options. The easiest way to do that is to use the <strong>Install Linuxtrack-Wine support...</strong> button found on the Misc pane of the ltr_gui. That way, all the necessary components will be installed/extracted in one go.
+Please note, that it is necessary to install TrackIR firmware (along with mfc42u.dll needed by TIRViews.dll) to utilize all of the above options. The easiest way to do that is to use the <strong>Install Linuxtrack-Wine support...</strong> button found on the Misc pane of the ltr_gui. That way, all the necessary components will be installed/extracted in one go.
 <p>
-On Linux, a dialogue asking for the target "Wine prefix" (or "bottle") pops up after you install the prerequisities - the Linuxtrack-Wine will be installed to the prefix/bottle of your choice.
+On Linux, a dialogue asking for the target "Wine prefix" (or "bottle") pops up after you install the prerequisites - the Linuxtrack-Wine will be installed to the prefix/bottle of your choice.
 <p>
 On Mac OS X, the linuxtrack-wine.exe installer (located in the Linuxtrack .dmg package) must be
 installed manually - just run the installer in the desired "bottle".
@@ -23,10 +23,10 @@ installed manually - just run the installer in the desired "bottle".
 Please be aware that linuxtrack-wine.exe must be installed into each and every wine bottle/prefix in which you require the headtracking.
 
 <p>
-If you installed Linuxtrack-Wine prior to version 0.99.11, to gain access to the new features you need to uninstall it first, reinstall TrackIR firware (to get TIRViews.dll and mfc42u.dll) and then install the new linuxtrack-wine.exe.
+If you installed Linuxtrack-Wine prior to version 0.99.11, to gain access to the new features you need to uninstall it first, reinstall TrackIR firmware (to get TIRViews.dll and mfc42u.dll) and then install the new linuxtrack-wine.exe.
 
 <h2>Modern Installation Methods</h2>
-LinuxTrack now uses modern installation methods for better compatibility with current distributions:
+LinuxTrack X-IR now uses modern installation methods for better compatibility with current distributions:
 
 <h3>Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)</h3>
 The most reliable approach for Debian-based systems is to use winetricks:
@@ -50,12 +50,37 @@ As a last resort, manually copy mfc42u.dll from a Windows system to the LinuxTra
 <p>
 The installation process will automatically try these methods in order, providing clear guidance if manual intervention is required.
 
+<h2>Winegcc Build System (Updated)</h2>
+LinuxTrack X-IR uses winegcc for generating Wine-compatible binaries. This approach provides several advantages:
+
+<h3>Benefits of Winegcc Approach</h3>
+<ul>
+<li><strong>Perfect Wine Integration:</strong> .exe.so and .dll.so files work seamlessly with Wine</li>
+<li><strong>Symlink Support:</strong> Native Unix symlinks work properly</li>
+<li><strong>Standard Dependencies:</strong> Uses standard wine-devel packages</li>
+<li><strong>Future-Proof:</strong> Wine-native approach for long-term compatibility</li>
+<li><strong>Simplified CI/CD:</strong> Standard Wine environment for automated builds</li>
+</ul>
+
+<h3>Built Components</h3>
+The build system generates the following Wine-compatible components:
+<ul>
+<li><strong>NPClient.dll.so</strong> - TrackIR API compatibility (32-bit)</li>
+<li><strong>NPClient64.dll.so</strong> - TrackIR API compatibility (64-bit)</li>
+<li><strong>FreeTrackClient.dll.so</strong> - FreeTrack API compatibility</li>
+<li><strong>Controller.exe.so</strong> - Hotkey control utility</li>
+<li><strong>Tester.exe.so</strong> - TrackIR testing utility</li>
+<li><strong>Tester64.exe.so</strong> - 64-bit TrackIR testing utility</li>
+<li><strong>ftc.exe.so</strong> - FreeTrack testing utility</li>
+<li><strong>TrackIR.exe.so</strong> - Fake TrackIR executable for games</li>
+</ul>
+
 <h2>Linuxtrack-wine usage</h2>
-When you installed the Lnuxtrack-Wine to the bottle/prefix of your choice, there are several programs at your disposal.
+When you installed the Linuxtrack-Wine to the bottle/prefix of your choice, there are several programs at your disposal.
 
 <p>
-<strong>Controller</strong> allows you to bind a hotkeys to pause/resume and recenter the trackng.
-It can be minimized to the try so it doesn't clutter the desktop.
+<strong>Controller</strong> allows you to bind hotkeys to pause/resume and recenter the tracking.
+It can be minimized to the tray so it doesn't clutter the desktop.
 When a <b>Controller</b> is started, window pops up and you should specify the pause key and recenter key -
 just press the appropriate button followed by key/keys of your choice (max 2 keys).
 One thing to be aware of is, that the <strong>Controller</strong> works (meaning it sees the hotkey pressed) only inside the bottle/prefix where you installed it!
@@ -81,22 +106,45 @@ One thing to be aware of is, that the <strong>Controller</strong> works (meaning
 Linuxtrack-Wine can also be uninstalled if necessary using the <strong>Uninstall</strong>.
 
 <h2>Supported games</h2>
-Technicaly speaking, any FreeTrack and/or TrackIR enabled game/application should work. Directly tested (meaning I tested them) were the following:
+Technically speaking, any FreeTrack and/or TrackIR enabled game/application should work. Directly tested (meaning I tested them) were the following:
 
 <ul>
+<li>Microsoft Flight Simulator (2020, X)
+<li>DCS World
+<li>IL-2 Sturmovik series
+<li>War Thunder
+<li>Elite Dangerous
+<li>Euro Truck Simulator 2
+<li>American Truck Simulator
 <li>Falcon AF
 <li>Condor Soaring simulator
-<li>IL2
 <li>MSFS 2004
 </ul>
 
 If you know of others (working or not; assuming the game itself work under wine), please let me know, so I can either assist you in troubleshooting or update the list.
 
 <h2>Note on profiles</h2>
-When the game/application is started for the first time, a new profile is created automaticaly by copying the default one.
+When the game/application is started for the first time, a new profile is created automatically by copying the default one.
 When adjusting the tracking in the ltr_gui, be sure to select the correct profile first, otherwise you won't see any change (because you are modifying the wrong profile).
 <p>
 The TrackIR software uses the plus/minus 500mm as a displacement limit, so to use the full displacement range, set the limits for translations accordingly (go to the <strong>Tracking Setup</strong> pane, select the appropriate profile, then press the <strong>Detailed Axes Setup</strong> button and for translations set limit to 500).
+
+<h2>Troubleshooting</h2>
+If you encounter issues with the Wine installation:
+
+<h3>Common Issues</h3>
+<ul>
+<li><strong>Build Errors:</strong> Ensure wine-devel packages are installed</li>
+<li><strong>NSIS Errors:</strong> The build system now properly handles .exe.so/.dll.so file extensions</li>
+<li><strong>C++ Linking Errors:</strong> Fixed with -lstdc++ flags in winegcc commands</li>
+<li><strong>Missing Files:</strong> Verify all dependencies are installed (see README for details)</li>
+</ul>
+
+<h3>Verification Steps</h3>
+1. Check that winegcc and wineg++ are available: <code>which winegcc wineg++</code>
+2. Verify Wine development tools: <code>winegcc --version</code>
+3. Test the build process: <code>make distclean && ./configure --prefix=/opt && make</code>
+4. Check generated files: Look for .exe.so and .dll.so files in build directories
 
 </body>
 </html>

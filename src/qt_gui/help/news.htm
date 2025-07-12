@@ -8,20 +8,46 @@
 </head>
 <body>
 <h1>What's new?</h1>
-This page summarizes the most notable changes in the Linuxtrack software.
+This page summarizes the most notable changes in the Linuxtrack X-IR software.
 
-<h2>Linuxtrack 0.99.10</h2>
+<h2>Linuxtrack X-IR - Winegcc Build System Fixes (2024)</h2>
+<h3>Winegcc Integration Restored</h3>
+Restored and fixed winegcc-based Windows compatibility for better Wine integration. The build system now properly generates .exe.so and .dll.so files that work seamlessly with Wine environments.
+
+<h3>NSIS Installer Script Fixes</h3>
+Corrected the NSIS installer script template (ltr_wine.nsi.in) to reference the proper .exe.so and .dll.so file extensions. This resolves the "no files found" errors during installer generation.
+
+<h3>C++ Linking Resolution</h3>
+Fixed missing C++ standard library linking in winegcc commands by adding -lstdc++ flags. This resolves compilation errors and ensures proper C++ support in Windows components.
+
+<h3>Build System Stability</h3>
+Resolved all build errors and NSIS installer issues. The build process now completes successfully from clean state with working Windows installer generation.
+
+<h2>Linuxtrack X-IR - Qt5 Modernization (2024)</h2>
+<h3>Qt4 to Qt5 Migration</h3>
+Complete modernization of the GUI framework from Qt4 to Qt5, ensuring compatibility with current Linux distributions and modern development practices.
+
+<h3>Wine-based Windows Support</h3>
+Enhanced Wine integration using winegcc for generating Wine-compatible binaries. This approach provides better compatibility than cross-compilation methods.
+
+<h3>Modern Build System</h3>
+Updated autotools and added CMake support for more flexible build configurations and better integration with modern development workflows.
+
+<h3>Enhanced Security Features</h3>
+Enabled modern security features by default including Position Independent Executables (PIE), stack protector, and fortify source for improved security.
+
+<h2>Linuxtrack 0.99.10 (Original)</h2>
 <h3>SDK overhaul</h3>
 The SDK was overhauled to make it more programmer friendly; Linuxtrack GUI now contains SDK documentation and also two example programs are provided to make Linuxtrack's deployment easier. Another change is addition of "advanced" interface, allowing you to use Linuxtrack as a data source for your own "computer vision" applications.
 <h3>Model visualization</h3>
 Each model type has its own distinct signature picture now, that should prevent problems caused by a wrong model selection.
-<h2>Linuxtrack 0.99.8</h2>
+<h2>Linuxtrack 0.99.8 (Original)</h2>
 <h3>SmartNav3 support</h3>
 SmartNav3 support was added; it is still in an early phase, but it should be stable.
-<h2>Linuxtrack 0.99.6</h2>
+<h2>Linuxtrack 0.99.6 (Original)</h2>
 <h3>FreeTrack Client for Wine</h3>
 FreeTrack client was added to Wine bridge, allowing games using this interface to utilize Linuxtrack.
-<h2>Linuxtrack 0.99.3</h2>
+<h2>Linuxtrack 0.99.3 (Original)</h2>
 <h3>Versioning change</h3>
 I decided to change the versioning scheme - instead of 1.0 beta3 to 0.99.3. Hopefully it will make
 packaging a little bit easier.
@@ -40,7 +66,7 @@ X-Plane plug-in now cooperates with Sandy Barbour's Pilot View plug-in. Please r
 plug-in to get this new functionality and don't forget to enable external data usage in Pilot View.
 Please note, that you need Pilot View 1.70 to have this feature available.
 
-<h2>Linuxtrack 1.0 Beta 2</h2>
+<h2>Linuxtrack 1.0 Beta 2 (Original)</h2>
 <h3>Overhauled the pose computing</h3>
 When using three point models, you can tweak them to minimize the unwanted viewpoint movement when
 panning.
@@ -48,7 +74,7 @@ panning.
 Fixed problems in the Wine bridge that prevented Condor soaring simulator and Falcon AF 
 to respond to the tracking. If you experience such a problem, please reinstall the Linuxtrack-Wine plug-in.
 
-<h2>Linuxtrack 1.0 Beta 1</h2>
+<h2>Linuxtrack 1.0 Beta 1 (Original)</h2>
 This Linuxtrack release is the beginning of the Linuxtrack 1.0 Beta run. 
 
 <h3>Linuxtrack requires Wine now</h3>
