@@ -278,9 +278,6 @@ TirFwExtractor::TirFwExtractor(QWidget *parent) : Extractor(parent), et(NULL)
   QObject::connect(et, SIGNAL(progress(const QString &)), this, SLOT(progress(const QString &)));
   QObject::connect(et, SIGNAL(finished()), this, SLOT(threadFinished()));
   QObject::connect(wine, SIGNAL(finished(bool)), this, SLOT(wineFinished(bool)));
-  QObject::connect(dl, SIGNAL(done(bool, QString)), this, SLOT(downloadDone(bool, QString)));
-  QObject::connect(dl, SIGNAL(msg(const QString &)), this, SLOT(progress(const QString &)));
-  QObject::connect(dl, SIGNAL(msg(qint64, qint64)), progressDlg, SLOT(message(qint64, qint64)));
   haveSpec = readSpec();
 #ifndef DARWIN
   QString sources = QString::fromUtf8("sources.txt");
@@ -300,9 +297,6 @@ Mfc42uExtractor::Mfc42uExtractor(QWidget *parent) : Extractor(parent), cabextrac
   QObject::connect(cabextract, SIGNAL(finished(int, QProcess::ExitStatus)),
                    this, SLOT(cabextractFinished(int, QProcess::ExitStatus)));
   QObject::connect(wine, SIGNAL(finished(bool)), this, SLOT(wineFinished(bool)));
-  QObject::connect(dl, SIGNAL(done(bool, QString)), this, SLOT(downloadDone(bool, QString)));
-  QObject::connect(dl, SIGNAL(msg(const QString &)), this, SLOT(progress(const QString &)));
-  QObject::connect(dl, SIGNAL(msg(qint64, qint64)), progressDlg, SLOT(message(qint64, qint64)));
   QString sources = QString::fromUtf8("sources_mfc.txt");
   readSources(sources);
   ui.AnalyzeSourceButton->setVisible(false);
@@ -1092,7 +1086,6 @@ void Extractor::enableButtons(bool enable)
 {
   ui.BrowseInstaller->setEnabled(enable);
   ui.BrowseDir->setEnabled(enable);
-  ui.DownloadButton->setEnabled(enable);
   ui.QuitButton->setEnabled(enable);
 }
 
@@ -1100,14 +1093,12 @@ void TirFwExtractor::enableButtons(bool enable)
 {
   ui.BrowseInstaller->setEnabled(haveSpec && enable);
   ui.BrowseDir->setEnabled(haveSpec && enable);
-  ui.DownloadButton->setEnabled(haveSpec && enable);
   ui.QuitButton->setEnabled(enable);
 }
 
 void Mfc42uExtractor::enableButtons(bool enable)
 {
   ui.BrowseInstaller->setEnabled(enable);
-  ui.DownloadButton->setEnabled(enable);
   ui.QuitButton->setEnabled(enable);
 }
 
@@ -1128,56 +1119,7 @@ void TirFwExtractor::on_QuitButton_pressed()
   //emit finished(et->haveEverything());
 }
 
-void Extractor::on_DownloadButton_pressed()
-{
-  QString target(ui.FWCombo->currentText());
-  qDebug()<<QString::fromUtf8("Going to download ")<<target;
-  
-  // Check if target is empty
-  if(target.isEmpty()) {
-    progress(QString::fromUtf8("Error: No download target selected"));
-    QMessageBox::warning(NULL, QString::fromUtf8("No Target Selected"),
-      QString::fromUtf8("Please select a download target from the dropdown menu.")
-    );
-    return;
-  }
-  
-  winePrefix = QDir::tempPath();
-  winePrefix += QString::fromUtf8("/wineXXXXXX");
-  QByteArray charData = winePrefix.toUtf8();
-  char *prefix = mkdtemp(charData.data());
-  if(prefix == NULL){
-    return;
-  }
-  enableButtons(false);
-  winePrefix = QString::fromUtf8(prefix);
-  progressDlg->show();
-  progressDlg->raise();
-  progressDlg->activateWindow();
-  dl->download(target, winePrefix);
-}
 
-
-void Extractor::downloadDone(bool ok, QString fileName)
-{
-  progressDlg->hide();
-  if(ok){
-    progress(QString::fromUtf8("Downloading finished!"));
-    commenceExtraction(fileName);
-  }else{
-    progress(QString::fromUtf8("Download failed - re-enabling buttons"));
-    QMessageBox::warning(NULL, QString::fromUtf8("Download unsuccessfull"),
-      QString::fromUtf8("Download of the file was unsuccessful.\n"
-      "Please check your network connection and try again;\n"
-      "you can also download the file yourself and\n"
-      "use the \"Extract from installer\" button to extract it.")
-    );
-    // Force re-enable all buttons
-    enableButtons(true);
-    // Also ensure the quit button is enabled
-    ui.QuitButton->setEnabled(true);
-  }
-}
 
 void Extractor::on_HelpButton_pressed()
 {

@@ -32,33 +32,22 @@
          </font>
         </property>
         <property name="text">
-         <string>Select Package to Download (any of them should do)</string>
+         <string>Download TrackIR Software</string>
         </property>
        </widget>
       </item>
       <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_2">
-        <item>
-         <widget class="QComboBox" name="FWCombo">
-          <property name="editable">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="DownloadButton">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Download</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
+       <widget class="QLabel" name="downloadInstructions">
+        <property name="text">
+         <string>To continue with firmware extraction, you need to download the latest TrackIR software from NaturalPoint's website. Please visit https://www.naturalpoint.com/trackir/ and download the latest version. Once downloaded, use the "Extract from installer" button below to select and process the downloaded file.</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+        <property name="textFormat">
+         <enum>Qt::RichText</enum>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QLabel" name="label">
@@ -143,8 +132,6 @@ unpacked</string>
   </layout>
  </widget>
  <tabstops>
-  <tabstop>FWCombo</tabstop>
-  <tabstop>DownloadButton</tabstop>
   <tabstop>LogView</tabstop>
   <tabstop>HelpButton</tabstop>
   <tabstop>AnalyzeSourceButton</tabstop>

@@ -72,13 +72,11 @@ class Extractor: public QDialog
   void on_BrowseInstaller_pressed();
   void on_BrowseDir_pressed(){browseDirPressed();};
   void on_AnalyzeSourceButton_pressed(){};
-  void on_DownloadButton_pressed();
   void on_QuitButton_pressed();
   void on_HelpButton_pressed();
   void progress(const QString &msg);
   void threadFinished(){};
   void wineFinished(bool result){(void) result;};
-  void downloadDone(bool ok, QString fileName);
 };
 
 class TirFwExtractor : public Extractor
