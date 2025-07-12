@@ -34,7 +34,7 @@ vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
 ftc.exe.so : main.o fttester.o
-	winegcc -g -o $@ -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+	wineg++ -g -o $@ -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 fttester.o : fttester.rc resource.h config.h
 

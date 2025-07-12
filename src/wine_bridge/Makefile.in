@@ -16,14 +16,8 @@
 
 # Wine Bridge Build Configuration
 # 
-# This build system uses MinGW cross-compilation instead of winegcc because:
-# - MinGW produces native Windows PE binaries (.exe/.dll) that work on both Windows and Wine
-# - winegcc produces Linux ELF binaries with Wine wrappers (.exe.so/.dll.so) that only work with Wine
-# - MinGW is the industry standard for cross-compilation and is more future-proof
-# - MinGW has fewer dependencies and simpler build process
-#
-# The resulting binaries are genuine Windows executables that can be distributed
-# to Windows users and work perfectly with Wine on Linux.
+# This build system uses winegcc for Wine compatibility
+# winegcc produces Linux ELF binaries with Wine wrappers (.exe.so/.dll.so)
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -218,12 +212,6 @@ LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
-MINGW32_CC = @MINGW32_CC@
-MINGW32_CXX = @MINGW32_CXX@
-MINGW32_WINDRES = @MINGW32_WINDRES@
-MINGW64_CC = @MINGW64_CC@
-MINGW64_CXX = @MINGW64_CXX@
-MINGW64_WINDRES = @MINGW64_WINDRES@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -314,23 +302,20 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
-with_mingw32 = @with_mingw32@
-with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 @WINE_PLUGIN_TRUE@nodist_pkgdata_DATA = linuxtrack-wine.exe
 
-# Use MinGW compilers directly when available, otherwise use winegcc
-# These variables are set by configure.ac based on availability
-@WINE_PLUGIN_TRUE@WINE_CC = $(MINGW32_CC)
-@WINE_PLUGIN_TRUE@WINE_CXX = $(MINGW32_CXX)
-@WINE_PLUGIN_TRUE@WINE_RC = $(MINGW32_WINDRES)
-@WINE_PLUGIN_TRUE@WINE_EXT = .exe
-@WINE_PLUGIN_TRUE@WINE_DLL_EXT = .dll
-@WINE_PLUGIN_TRUE@WINE64_CC = $(MINGW64_CC)
-@WINE_PLUGIN_TRUE@WINE64_CXX = $(MINGW64_CXX)
-@WINE_PLUGIN_TRUE@WINE64_RC = $(MINGW64_WINDRES)
-@WINE_PLUGIN_TRUE@WINE64_EXT = .exe
-@WINE_PLUGIN_TRUE@WINE64_DLL_EXT = .dll
+# Use winegcc compilers
+@WINE_PLUGIN_TRUE@WINE_CC = winegcc
+@WINE_PLUGIN_TRUE@WINE_CXX = wineg++
+@WINE_PLUGIN_TRUE@WINE_RC = wrc
+@WINE_PLUGIN_TRUE@WINE_EXT = .exe.so
+@WINE_PLUGIN_TRUE@WINE_DLL_EXT = .dll.so
+@WINE_PLUGIN_TRUE@WINE64_CC = winegcc
+@WINE_PLUGIN_TRUE@WINE64_CXX = wineg++
+@WINE_PLUGIN_TRUE@WINE64_RC = wrc
+@WINE_PLUGIN_TRUE@WINE64_EXT = .exe.so
+@WINE_PLUGIN_TRUE@WINE64_DLL_EXT = .dll.so
 @DARWIN_FALSE@@WINE_PLUGIN_TRUE@MYLDFLAGS = -Wl,--no-warn-search-mismatch
 @DARWIN_TRUE@@WINE_PLUGIN_TRUE@MYLDFLAGS = -Wl,-no_arch_warnings
 dist_pkgdata_DATA = README.wine

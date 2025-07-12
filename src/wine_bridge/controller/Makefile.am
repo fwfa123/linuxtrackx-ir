@@ -37,7 +37,7 @@ vpath %.c @srcdir@/../..
 
 Controller.exe.so : main.o resources.o dinput.o linuxtrack.o
 	winegcc -o Controller.exe.so $(LDFLAGS) -m32 \
-           $^ -ldxguid -ldinput -ldinput8
+           $^ -ldxguid -ldinput -ldinput8 -lstdc++ -lshell32
 
 main.o : main.cpp @top_builddir@/config.h
 

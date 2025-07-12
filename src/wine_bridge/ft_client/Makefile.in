@@ -88,7 +88,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@WINE_PLUGIN_TRUE@am__append_1 = FreeTrackClient.dll
+@WINE_PLUGIN_TRUE@am__append_1 = FreeTrackClient.dll.so
 @DARWIN_TRUE@am__append_2 = -Wl,-no_arch_warnings
 @DARWIN_FALSE@am__append_3 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/ft_client
@@ -139,13 +139,13 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BISON = @BISON@
 
-# Use MinGW compilers when available, otherwise fall back to winegcc
-CC = $(MINGW32_CC)
+# Use winegcc compilers
+CC = winegcc
 CFLAGS = @CFLAGS@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
-CXX = $(MINGW32_CXX)
+CXX = wineg++
 CXXCPP = @CXXCPP@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -182,12 +182,6 @@ LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
-MINGW32_CC = @MINGW32_CC@
-MINGW32_CXX = @MINGW32_CXX@
-MINGW32_WINDRES = @MINGW32_WINDRES@
-MINGW64_CC = @MINGW64_CC@
-MINGW64_CXX = @MINGW64_CXX@
-MINGW64_WINDRES = @MINGW64_WINDRES@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -278,8 +272,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
-with_mingw32 = @with_mingw32@
-with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 noinst_SCRIPTS = $(am__append_1)
 SUFFIXES = .o .cpp .c .rc
@@ -287,7 +279,7 @@ CXXFLAGS_PRE = -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddi
 CFLAGS_PRE = -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@
 RCFLAGS = -I @srcdir@
 EXTRA_DIST = FreeTrackClient_main.c FreeTrackClient_dll.h \
-FreeTrackClient.spec FreeTrackClient.def
+FreeTrackClient.spec
 
 all: all-am
 
@@ -496,8 +488,8 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-FreeTrackClient.dll : FreeTrackClient.def FreeTrackClient_main.o linuxtrack.o
-	$(CC) $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared FreeTrackClient_main.o linuxtrack.o FreeTrackClient.def
+FreeTrackClient.dll.so : FreeTrackClient.spec FreeTrackClient_main.o linuxtrack.o
+	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared $^ -ldl
 
 FreeTrackClient_main.o : FreeTrackClient_main.c FreeTrackClient_dll.h
 

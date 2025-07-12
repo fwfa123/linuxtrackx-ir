@@ -88,8 +88,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@WINE_PLUGIN_TRUE@am__append_1 = Tester.exe
-@WINE64_TRUE@@WINE_PLUGIN_TRUE@am__append_2 = Tester64.exe
+@WINE_PLUGIN_TRUE@am__append_1 = Tester.exe.so
+@WINE64_TRUE@@WINE_PLUGIN_TRUE@am__append_2 = Tester64.exe.so
 @DARWIN_TRUE@am__append_3 = -Wl,-no_arch_warnings
 @DARWIN_FALSE@am__append_4 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/tester
@@ -140,14 +140,14 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BISON = @BISON@
 
-# Use MinGW compilers when available, otherwise fall back to winegcc
-CC = $(MINGW32_CC)
+# Use winegcc compilers
+CC = winegcc
 CFLAGS = @CFLAGS@ -g -I../.. -I../../.. -DHAVE_CONFIG_H \
 	-I@srcdir@/../.. -I@top_builddir@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
-CXX = $(MINGW32_CXX)
+CXX = wineg++
 CXXCPP = @CXXCPP@
 CXXFLAGS = @CXXFLAGS@ -g -DHAVE_CONFIG_H -I../../.. -I. \
 	-I@srcdir@/../.. -I@top_builddir@
@@ -185,12 +185,6 @@ LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
-MINGW32_CC = @MINGW32_CC@
-MINGW32_CXX = @MINGW32_CXX@
-MINGW32_WINDRES = @MINGW32_WINDRES@
-MINGW64_CC = @MINGW64_CC@
-MINGW64_CXX = @MINGW64_CXX@
-MINGW64_WINDRES = @MINGW64_WINDRES@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -281,8 +275,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
-with_mingw32 = @with_mingw32@
-with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 noinst_SCRIPTS = $(am__append_1) $(am__append_2)
 SUFFIXES = .o .cpp .c .rc 64.o
@@ -493,45 +485,41 @@ uninstall-am:
 	$(CC) -c $(CFLAGS) -m32 -o $@ $<
 
 .cpp64.o :
-	$(MINGW64_CXX) -c $(CXXFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS) -o $@ $<
 
 .c64.o :
-	$(MINGW64_CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 .rc.o :
-	$(MINGW32_WINDRES) -o $@ $(RCFLAGS) $<
+	wrc -o $@ $(RCFLAGS) $<
 #VPATH = ../..:@srcdir@/../..:@top_builddir@:@srcdir@
 vpath %.h @srcdir@/../..
 vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-Tester64.exe : main64.o rest64.o npifc64.o npview64.o
-	$(MINGW64_CXX) -g -o Tester64.exe -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
+Tester64.exe.so : main64.o rest64.o npifc64.o npview64.o
+	winegcc -g -o Tester64.exe.so -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
 
-Tester.exe : main.o npview.o rest.o npifc.o
-	$(CXX) -g -o Tester.exe -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
+Tester.exe.so : main.o npview.o rest.o npifc.o
+	winegcc -g -o Tester.exe.so -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 main.o : main.cpp Makefile
 
 main64.o : main.cpp Makefile
-	$(MINGW64_CXX) -c $(CXXFLAGS) -o $@ $<
 
 npview.o : npview.rc
 
 npview64.o : npview.rc
-	$(MINGW64_WINDRES) -o $@ $(RCFLAGS) $<
 
 rest.o : rest.c rest.h Makefile
 
 rest64.o : rest.c rest.h Makefile
-	$(MINGW64_CC) -c $(CFLAGS) -o $@ $<
 
 npifc.o : npifc.c npifc.h Makefile
 
 npifc64.o : CFLAGS+="-DFOR_WIN64=1"
 npifc64.o : npifc.c npifc.h Makefile
-	$(MINGW64_CC) -c $(CFLAGS) "-DFOR_WIN64=1" -o $@ $<
 
 clean-local: clean-local-check
 .PHONY: clean-local-check

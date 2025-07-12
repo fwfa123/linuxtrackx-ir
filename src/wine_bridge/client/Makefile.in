@@ -88,8 +88,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@WINE_PLUGIN_TRUE@am__append_1 = NPClient.dll check_data.exe
-@WINE64_TRUE@@WINE_PLUGIN_TRUE@am__append_2 = NPClient64.dll
+@WINE_PLUGIN_TRUE@am__append_1 = NPClient.dll.so check_data.exe.so
+@WINE64_TRUE@@WINE_PLUGIN_TRUE@am__append_2 = NPClient64.dll.so
 @DARWIN_TRUE@am__append_3 = -Wl,-no_arch_warnings
 @DARWIN_FALSE@am__append_4 = -Wl,--no-warn-search-mismatch
 subdir = src/wine_bridge/client
@@ -140,13 +140,13 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BISON = @BISON@
 
-# Use MinGW compilers when available, otherwise fall back to winegcc
-CC = $(MINGW32_CC)
+# Use winegcc compilers
+CC = winegcc
 CFLAGS = @CFLAGS@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
-CXX = $(MINGW32_CXX)
+CXX = wineg++
 CXXCPP = @CXXCPP@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -183,12 +183,6 @@ LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
-MINGW32_CC = @MINGW32_CC@
-MINGW32_CXX = @MINGW32_CXX@
-MINGW32_WINDRES = @MINGW32_WINDRES@
-MINGW64_CC = @MINGW64_CC@
-MINGW64_CXX = @MINGW64_CXX@
-MINGW64_WINDRES = @MINGW64_WINDRES@
 MKDIR_P = @MKDIR_P@
 NM = @NM@
 NMEDIT = @NMEDIT@
@@ -279,8 +273,6 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 with_makensis = @with_makensis@
-with_mingw32 = @with_mingw32@
-with_mingw64 = @with_mingw64@
 with_wine64 = @with_wine64@
 noinst_SCRIPTS = $(am__append_1) $(am__append_2)
 SUFFIXES = .o .cpp .c .rc 64.o
@@ -288,7 +280,7 @@ CXXFLAGS_PRE = -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddi
 CFLAGS_PRE = -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@
 RCFLAGS = -I @srcdir@
 EXTRA_DIST = NPClient_dll.h NPClient_main.c rest.c \
-NPClient.h NPClient.spec NPClient.def NPClient64.def rest.h check_data.c
+NPClient.h NPClient.spec rest.h check_data.c
 
 all: all-am
 
@@ -493,44 +485,41 @@ uninstall-am:
 	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .cpp64.o :
-	$(MINGW64_CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
 
 .c64.o :
-	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 .rc.o :
-	$(MINGW32_WINDRES) -o $@ $(RCFLAGS) $<
+	wrc -o $@ $(RCFLAGS) $<
 #VPATH = .:../..:@srcdir@/../..:@top_builddir@:@srcdir@
 vpath %.h @srcdir@/../..
 vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-check_data.exe : check_data.o rest.o
-	$(CC) $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ $^
+check_data.exe.so : check_data.o rest.o
+	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ $^
 
-NPClient.dll : NPClient.def NPClient_main.o linuxtrack.o rest.o
-	$(CC) $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared NPClient_main.o linuxtrack.o rest.o NPClient.def
+NPClient.dll.so : NPClient.spec NPClient_main.o linuxtrack.o rest.o
+	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared $^ -ldl
 
-NPClient64.dll : NPClient64.def NPClient_main64.o linuxtrack64.o rest64.o
-	$(MINGW64_CC) $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra -g -o $@ -shared NPClient_main64.o linuxtrack64.o rest64.o NPClient64.def
+NPClient64.dll.so : NPClient.spec NPClient_main64.o linuxtrack64.o rest64.o
+	winegcc $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra -g -o $@ -shared $^ -ldl
 
 check_data.o : check_data.c rest.h
 
 NPClient_main.o : NPClient_main.c NPClient_dll.h
 
 NPClient_main64.o : NPClient_main.c NPClient_dll.h
-	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $<
 
 linuxtrack.o : linuxtrack.c config.h
 
 linuxtrack64.o : linuxtrack.c config.h
-	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $(top_srcdir)/src/linuxtrack.c
 
 rest.o : rest.c rest.h config.h
 
 rest64.o : rest.c rest.h config.h
-	$(MINGW64_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $(srcdir)/rest.c
 
 clean-local: clean-local-check
 .PHONY: clean-local-check
