@@ -7,6 +7,10 @@
 
 #include <QCloseEvent>
 #include <QProcess>
+#include <QMainWindow>
+#include <QDockWidget>
+#include <QAction>
+#include <QMenu>
 #include <linuxtrack.h>
 
 #include "ui_ltr.h"
@@ -25,7 +29,7 @@ class ProfileSelector;
 class Guardian;
 class XPluginInstall;
 
-class LinuxtrackGui : public QWidget
+class LinuxtrackGui : public QMainWindow
 {
   Q_OBJECT
  public:
@@ -52,6 +56,14 @@ class LinuxtrackGui : public QWidget
   void on_XplanePluginButton_pressed();
   void on_PackageLogsButton_pressed();
   void logsPackaged(int exitCode, QProcess::ExitStatus exitStatus);
+  
+  // Docking slots
+  void dockTrackingWindow();
+  void undockTrackingWindow();
+  void dockToLeft();
+  void dockToRight();
+  void createDockingMenu();
+  
  private:
   Ui::LinuxtrackMainForm ui;
   LtrGuiForm *showWindow;
@@ -73,6 +85,21 @@ class LinuxtrackGui : public QWidget
   QProcess zipper;
   bool guiInit;
   bool showWineWarning;
+  
+  // Docking members
+  QDockWidget *trackingDockWidget;
+  QAction *dockAction;
+  QAction *undockAction;
+  QAction *dockLeftAction;
+  QAction *dockRightAction;
+  QMenu *dockingMenu;
+  bool isTrackingWindowDocked;
+  Qt::DockWidgetArea dockArea;
+  
+  void setupDocking();
+  void saveDockingState();
+  void loadDockingState();
+  void updateDockingActions();
 };
 
 #endif

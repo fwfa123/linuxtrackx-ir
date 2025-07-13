@@ -39,7 +39,8 @@ static int fps_ptr = 0;
 
 
 LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &settings)
-              : glw(NULL), cv(NULL), allowClose(false), main_gui(tmp_gui)
+              : glw(NULL), cv(NULL), allowClose(false), main_gui(tmp_gui),
+                contextMenu(nullptr), dockAction(nullptr), undockAction(nullptr)
 {
   ui.setupUi(this);
   cv = new CameraView(label);
@@ -70,6 +71,9 @@ LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &setting
           this, SLOT(disableCamView_stateChanged(int)));
   connect(main_gui.Disable3DView, SIGNAL(stateChanged(int)), 
           this, SLOT(disable3DView_stateChanged(int)));
+  
+  // Create context menu
+  createContextMenu();
 }
 
 //Assuming that frame dimensions can't change while running!!!
@@ -276,6 +280,69 @@ void CameraView::redraw()
   if(buf->readBuffer(&b)){
     item->setPixmap(QPixmap::fromImage(*(b->getImage())));
     buf->bufferRead();
+  }
+}
+
+// Context menu implementation
+void LtrGuiForm::createContextMenu()
+{
+  contextMenu = new QMenu(this);
+  
+  dockAction = new QAction(QStringLiteral("Dock to Main Window"), this);
+  dockAction->setStatusTip(QStringLiteral("Dock this window to the main Linuxtrack window"));
+  connect(dockAction, &QAction::triggered, this, &LtrGuiForm::dockToMainWindow);
+  
+  undockAction = new QAction(QStringLiteral("Undock from Main Window"), this);
+  undockAction->setStatusTip(QStringLiteral("Undock this window from the main Linuxtrack window"));
+  connect(undockAction, &QAction::triggered, this, &LtrGuiForm::undockFromMainWindow);
+  
+  contextMenu->addAction(dockAction);
+  contextMenu->addAction(undockAction);
+  
+  updateContextMenu();
+}
+
+void LtrGuiForm::contextMenuEvent(QContextMenuEvent *event)
+{
+  updateContextMenu();
+  contextMenu->exec(event->globalPos());
+}
+
+void LtrGuiForm::updateContextMenu()
+{
+  // Check if we're currently docked by looking for a parent QDockWidget
+  QWidget *parent = this->parentWidget();
+  bool isDocked = false;
+  
+  while (parent) {
+    if (qobject_cast<QDockWidget*>(parent)) {
+      isDocked = true;
+      break;
+    }
+    parent = parent->parentWidget();
+  }
+  
+  dockAction->setEnabled(!isDocked);
+  undockAction->setEnabled(isDocked);
+}
+
+void LtrGuiForm::dockToMainWindow()
+{
+  // Find the main window and trigger docking
+  QWidget *mainWindow = this->window();
+  if (mainWindow) {
+    // Use QMetaObject to call the docking method on the main window
+    QMetaObject::invokeMethod(mainWindow, "dockTrackingWindow", Qt::QueuedConnection);
+  }
+}
+
+void LtrGuiForm::undockFromMainWindow()
+{
+  // Find the main window and trigger undocking
+  QWidget *mainWindow = this->window();
+  if (mainWindow) {
+    // Use QMetaObject to call the undocking method on the main window
+    QMetaObject::invokeMethod(mainWindow, "undockTrackingWindow", Qt::QueuedConnection);
   }
 }
 

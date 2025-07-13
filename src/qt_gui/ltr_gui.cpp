@@ -58,12 +58,19 @@ static QMessageBox::StandardButton infoMessage(const QString &message)
  return QMessageBox::information(nullptr, APP_TITLE, message, QMessageBox::Ok);
 }
 
-LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QWidget(parent), ds(nullptr),
-  xpInstall(nullptr), initialized(false), news_serial(-1), guiInit(true), showWineWarning(true)
+LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), ds(nullptr),
+  xpInstall(nullptr), initialized(false), news_serial(-1), guiInit(true), showWineWarning(true),
+  trackingDockWidget(nullptr), dockAction(nullptr), undockAction(nullptr), 
+  dockLeftAction(nullptr), dockRightAction(nullptr), dockingMenu(nullptr),
+  isTrackingWindowDocked(false), dockArea(Qt::LeftDockWidgetArea)
 {
   ui.setupUi(this);
   PREF;
   setWindowTitle(QStringLiteral("Linuxtrack GUI v") + QStringLiteral(PACKAGE_VERSION));
+  
+  // Set central widget to the main UI
+  setCentralWidget(&ui);
+  
   grd = new Guardian(this);
   me = new ModelEdit(grd, this);
   lv = new LogView();
@@ -79,6 +86,9 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QWidget(parent), ds(nullptr),
   gui_settings = new QSettings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
   showWindow = new LtrGuiForm(ui, *gui_settings);
   helper = new LtrDevHelp();
+  
+  // Setup docking functionality
+  setupDocking();
   
   // Load main window settings
   gui_settings->beginGroup(MAIN_WINDOW_GROUP);
@@ -122,14 +132,20 @@ void LinuxtrackGui::show()
 {
   ds = new DeviceSetup(grd, ui.DeviceSetupSite, this);
   ui.DeviceSetupSite->insertWidget(0, ds);
-  showWindow->show();
+  
+  // Show tracking window based on docking state
+  if (isTrackingWindowDocked) {
+    trackingDockWidget->show();
+  } else {
+    showWindow->show();
+  }
   
   const QString dbg = QProcessEnvironment::systemEnvironment().value(QStringLiteral("LINUXTRACK_DBG"));
   if (dbg.contains(QChar::fromLatin1('d'))) {
     helper->show();
   }
   
-  QWidget::show();
+  QMainWindow::show();
   
   if (welcome) {
     HelpViewer::ChangePage(QStringLiteral("welcome.htm"));
@@ -201,6 +217,9 @@ void LinuxtrackGui::closeEvent(QCloseEvent *event)
   gui_settings->setValue(SIZE_KEY, helper->size());
   gui_settings->setValue(POS_KEY, helper->pos());
   gui_settings->endGroup();
+  
+  // Save docking state
+  saveDockingState();
   
   HelpViewer::StorePrefs(*gui_settings);
   showWindow->StorePrefs(*gui_settings);
@@ -368,6 +387,137 @@ void LinuxtrackGui::logsPackaged(int exitCode, QProcess::ExitStatus exitStatus)
     "Please check that you have write access to the destination directory!"));
   }
   ui.PackageLogsButton->setEnabled(true);
+}
+
+// Docking implementation
+void LinuxtrackGui::setupDocking()
+{
+  // Create dock widget for tracking window
+  trackingDockWidget = new QDockWidget(QStringLiteral("Tracking Window"), this);
+  trackingDockWidget->setWidget(showWindow);
+  trackingDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+  trackingDockWidget->setFeatures(QDockWidget::DockWidgetMovable | 
+                                  QDockWidget::DockWidgetFloatable |
+                                  QDockWidget::DockWidgetClosable);
+  
+  // Create docking actions
+  dockAction = new QAction(QStringLiteral("Dock Tracking Window"), this);
+  dockAction->setStatusTip(QStringLiteral("Dock the tracking window to the main window"));
+  connect(dockAction, &QAction::triggered, this, &LinuxtrackGui::dockTrackingWindow);
+  
+  undockAction = new QAction(QStringLiteral("Undock Tracking Window"), this);
+  undockAction->setStatusTip(QStringLiteral("Undock the tracking window from the main window"));
+  connect(undockAction, &QAction::triggered, this, &LinuxtrackGui::undockTrackingWindow);
+  
+  dockLeftAction = new QAction(QStringLiteral("Dock to Left"), this);
+  dockLeftAction->setStatusTip(QStringLiteral("Dock the tracking window to the left side"));
+  connect(dockLeftAction, &QAction::triggered, this, &LinuxtrackGui::dockToLeft);
+  
+  dockRightAction = new QAction(QStringLiteral("Dock to Right"), this);
+  dockRightAction->setStatusTip(QStringLiteral("Dock the tracking window to the right side"));
+  connect(dockRightAction, &QAction::triggered, this, &LinuxtrackGui::dockToRight);
+  
+  // Create docking menu
+  createDockingMenu();
+  
+  // Load docking state
+  loadDockingState();
+  
+  // Apply initial docking state
+  if (isTrackingWindowDocked) {
+    addDockWidget(dockArea, trackingDockWidget);
+    trackingDockWidget->show();
+  } else {
+    showWindow->show();
+  }
+  
+  updateDockingActions();
+}
+
+void LinuxtrackGui::createDockingMenu()
+{
+  dockingMenu = new QMenu(QStringLiteral("Tracking Window"), this);
+  dockingMenu->addAction(dockAction);
+  dockingMenu->addAction(undockAction);
+  dockingMenu->addSeparator();
+  dockingMenu->addAction(dockLeftAction);
+  dockingMenu->addAction(dockRightAction);
+  
+  // Add menu to window menu bar or create one if it doesn't exist
+  if (!menuBar()) {
+    setMenuBar(new QMenuBar(this));
+  }
+  menuBar()->addMenu(dockingMenu);
+}
+
+void LinuxtrackGui::dockTrackingWindow()
+{
+  if (!isTrackingWindowDocked) {
+    showWindow->hide();
+    addDockWidget(dockArea, trackingDockWidget);
+    trackingDockWidget->show();
+    isTrackingWindowDocked = true;
+    updateDockingActions();
+    saveDockingState();
+  }
+}
+
+void LinuxtrackGui::undockTrackingWindow()
+{
+  if (isTrackingWindowDocked) {
+    removeDockWidget(trackingDockWidget);
+    trackingDockWidget->hide();
+    showWindow->show();
+    isTrackingWindowDocked = false;
+    updateDockingActions();
+    saveDockingState();
+  }
+}
+
+void LinuxtrackGui::dockToLeft()
+{
+  dockArea = Qt::LeftDockWidgetArea;
+  if (isTrackingWindowDocked) {
+    removeDockWidget(trackingDockWidget);
+    addDockWidget(dockArea, trackingDockWidget);
+  }
+  saveDockingState();
+}
+
+void LinuxtrackGui::dockToRight()
+{
+  dockArea = Qt::RightDockWidgetArea;
+  if (isTrackingWindowDocked) {
+    removeDockWidget(trackingDockWidget);
+    addDockWidget(dockArea, trackingDockWidget);
+  }
+  saveDockingState();
+}
+
+void LinuxtrackGui::saveDockingState()
+{
+  gui_settings->beginGroup(QStringLiteral("Docking"));
+  gui_settings->setValue(QStringLiteral("tracking_window_docked"), isTrackingWindowDocked);
+  gui_settings->setValue(QStringLiteral("dock_area"), static_cast<int>(dockArea));
+  gui_settings->endGroup();
+}
+
+void LinuxtrackGui::loadDockingState()
+{
+  gui_settings->beginGroup(QStringLiteral("Docking"));
+  isTrackingWindowDocked = gui_settings->value(QStringLiteral("tracking_window_docked"), true).toBool(); // Default to docked
+  dockArea = static_cast<Qt::DockWidgetArea>(
+    gui_settings->value(QStringLiteral("dock_area"), static_cast<int>(Qt::LeftDockWidgetArea)).toInt()
+  );
+  gui_settings->endGroup();
+}
+
+void LinuxtrackGui::updateDockingActions()
+{
+  dockAction->setEnabled(!isTrackingWindowDocked);
+  undockAction->setEnabled(isTrackingWindowDocked);
+  dockLeftAction->setEnabled(isTrackingWindowDocked);
+  dockRightAction->setEnabled(isTrackingWindowDocked);
 }
 
 #include "moc_ltr_gui.cpp"

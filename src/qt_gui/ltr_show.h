@@ -12,6 +12,10 @@
 #include <QGraphicsPixmapItem>
 #include <QVBoxLayout>
 #include <QElapsedTimer>
+#include <QContextMenuEvent>
+#include <QMenu>
+#include <QAction>
+#include <QDockWidget>
 
 #include "window.h"
 #include "buffering.h"
@@ -56,8 +60,14 @@ class LtrGuiForm : public QWidget
    void stateChanged(int current_state);
    void newFrameDelivered(struct frame_type *frame);
    void on_tabWidget_currentChanged(int index);
+   
+   // Context menu slots
+   void dockToMainWindow();
+   void undockFromMainWindow();
+   
   protected:
    void closeEvent(QCloseEvent *event);
+   void contextMenuEvent(QContextMenuEvent *event);
   private:
    Ui::Ltr_gui ui;
    Window *glw;
@@ -71,6 +81,13 @@ class LtrGuiForm : public QWidget
    void trackerStopped();
    void trackerRunning();
    void trackerPaused();
+   
+   // Context menu
+   QMenu *contextMenu;
+   QAction *dockAction;
+   QAction *undockAction;
+   void createContextMenu();
+   void updateContextMenu();
 };
 
 #endif
