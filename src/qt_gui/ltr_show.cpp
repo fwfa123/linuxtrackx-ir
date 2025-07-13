@@ -26,6 +26,8 @@
 #include <tracker.h>
 
 #include "buffering.h"
+#include <QApplication>
+#include "ltr_gui.h"
 
 QWidget *label;
 static bool running = false;
@@ -74,6 +76,11 @@ LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &setting
   
   // Create context menu
   createContextMenu();
+  
+  // Set a reasonable default size for the tracking window (appropriate for camera view)
+  QSize camViewSize(640, 480);
+  setMinimumSize(camViewSize);
+  resize(camViewSize);
 }
 
 //Assuming that frame dimensions can't change while running!!!
@@ -328,21 +335,38 @@ void LtrGuiForm::updateContextMenu()
 
 void LtrGuiForm::dockToMainWindow()
 {
-  // Find the main window and trigger docking
-  QWidget *mainWindow = this->window();
+  // Try to find the main window (LinuxtrackGui) robustly
+  QWidget *mainWindow = nullptr;
+  QWidget *w = this;
+  // Walk up the parent chain
+  while (w->parentWidget()) w = w->parentWidget();
+  // If the parent chain doesn't yield a LinuxtrackGui, search top-level widgets
+  mainWindow = qobject_cast<LinuxtrackGui*>(w);
+  if (!mainWindow) {
+    foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+      mainWindow = qobject_cast<LinuxtrackGui*>(widget);
+      if (mainWindow) break;
+    }
+  }
   if (mainWindow) {
-    // Use QMetaObject to call the docking method on the main window
-    QMetaObject::invokeMethod(mainWindow, "dockTrackingWindow", Qt::QueuedConnection);
+    QMetaObject::invokeMethod(mainWindow, "dockTrackingWindow", Qt::DirectConnection);
   }
 }
 
 void LtrGuiForm::undockFromMainWindow()
 {
-  // Find the main window and trigger undocking
-  QWidget *mainWindow = this->window();
+  QWidget *mainWindow = nullptr;
+  QWidget *w = this;
+  while (w->parentWidget()) w = w->parentWidget();
+  mainWindow = qobject_cast<LinuxtrackGui*>(w);
+  if (!mainWindow) {
+    foreach (QWidget *widget, QApplication::topLevelWidgets()) {
+      mainWindow = qobject_cast<LinuxtrackGui*>(widget);
+      if (mainWindow) break;
+    }
+  }
   if (mainWindow) {
-    // Use QMetaObject to call the undocking method on the main window
-    QMetaObject::invokeMethod(mainWindow, "undockTrackingWindow", Qt::QueuedConnection);
+    QMetaObject::invokeMethod(mainWindow, "undockTrackingWindow", Qt::DirectConnection);
   }
 }
 
