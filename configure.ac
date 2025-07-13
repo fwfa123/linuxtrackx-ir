@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([LinuxTrack X-IR],[1.0.0-xir.1],[https://github.com/fwfa123/linuxtrackx-ir/issues])
+AC_INIT([LinuxTrack],[1.0.0-xir.1],[https://github.com/fwfa123/linuxtrackx-ir/issues])
 AM_INIT_AUTOMAKE([subdir-objects no-dependencies -Wall -Werror])
 
 # Set default installation prefix to /opt for LinuxTrack
