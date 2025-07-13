@@ -58,8 +58,10 @@ static QMessageBox::StandardButton infoMessage(const QString &message)
  return QMessageBox::information(nullptr, APP_TITLE, message, QMessageBox::Ok);
 }
 
-LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), ds(nullptr),
-  xpInstall(nullptr), initialized(false), news_serial(-1), guiInit(true), showWineWarning(true),
+LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(nullptr), 
+  showWindow(nullptr), helper(nullptr), ds(nullptr), me(nullptr), grd(nullptr), lv(nullptr), 
+  pi(nullptr), ps(nullptr), xpInstall(nullptr), initialized(false), gui_settings(nullptr), 
+  welcome(false), news_serial(-1), guiInit(true), showWineWarning(true),
   trackingDockWidget(nullptr), dockAction(nullptr), undockAction(nullptr), 
   dockLeftAction(nullptr), dockRightAction(nullptr), dockingMenu(nullptr),
   isTrackingWindowDocked(false), dockArea(Qt::LeftDockWidgetArea)

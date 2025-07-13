@@ -65,6 +65,7 @@ class LinuxtrackGui : public QMainWindow
   void createDockingMenu();
   
  private:
+  QWidget *mainWidget;
   Ui::LinuxtrackMainForm ui;
   LtrGuiForm *showWindow;
   LtrDevHelp *helper;
