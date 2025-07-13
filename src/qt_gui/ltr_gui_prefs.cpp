@@ -403,8 +403,19 @@ QString PrefProxy::getDataPath(QString file)
 {
   char *path = ltr_int_get_data_path_prefix(file.toUtf8().constData(),
                                             QApplication::applicationDirPath().toUtf8().constData());
-  QString res = QString::fromUtf8(path);
-  free(path);
+  QString res;
+  if (path != nullptr) {
+    res = QString::fromUtf8(path);
+    free(path);
+  } else {
+    // Fallback to hardcoded path if ltr_int_get_data_path_prefix fails
+    QString appPath = QApplication::applicationDirPath();
+#ifndef DARWIN
+    res = appPath + QStringLiteral("/../share/linuxtrack/") + file;
+#else
+    res = appPath + QStringLiteral("/../Resources/linuxtrack/") + file;
+#endif
+  }
   return res;
 /*
   QString appPath = QApplication::applicationDirPath();
@@ -419,8 +430,19 @@ QString PrefProxy::getDataPath(QString file)
 QString PrefProxy::getLibPath(QString file)
 {
   char *path = ltr_int_get_lib_path(file.toUtf8().constData());
-  QString res = QString::fromUtf8(path);
-  free(path);
+  QString res;
+  if (path != nullptr) {
+    res = QString::fromUtf8(path);
+    free(path);
+  } else {
+    // Fallback to hardcoded path if ltr_int_get_lib_path fails
+    QString appPath = QApplication::applicationDirPath();
+#ifndef DARWIN
+    res = appPath + QStringLiteral("/../lib/") + file + QStringLiteral(".so.0");
+#else
+    res = appPath + QStringLiteral("/../Frameworks/") + file + QStringLiteral(".0.dylib");
+#endif
+  }
   return res;
 /*
   QString appPath = QApplication::applicationDirPath();

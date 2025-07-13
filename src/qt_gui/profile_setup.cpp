@@ -28,6 +28,37 @@ void ProfileSetup::connect()
   QObject::connect(&TRACKER, SIGNAL(initAxes(void)), this, SLOT(initAxes(void)));
   QObject::connect(&TRACKER, SIGNAL(axisChanged(int, int)), this, SLOT(axisChanged(int, int)));
   QObject::connect(&TRACKER, SIGNAL(setCommonFF(float)), this, SLOT(setCommonFF(float)));
+  
+  // Connect Detail Axes Setup controls explicitly (auto-connect broken due to dynamic widget creation)
+  // Enable checkboxes
+  QObject::connect(ui.PitchEnable, SIGNAL(stateChanged(int)), this, SLOT(on_PitchEnable_stateChanged(int)));
+  QObject::connect(ui.YawEnable, SIGNAL(stateChanged(int)), this, SLOT(on_YawEnable_stateChanged(int)));
+  QObject::connect(ui.RollEnable, SIGNAL(stateChanged(int)), this, SLOT(on_RollEnable_stateChanged(int)));
+  QObject::connect(ui.TxEnable, SIGNAL(stateChanged(int)), this, SLOT(on_TxEnable_stateChanged(int)));
+  QObject::connect(ui.TyEnable, SIGNAL(stateChanged(int)), this, SLOT(on_TyEnable_stateChanged(int)));
+  QObject::connect(ui.TzEnable, SIGNAL(stateChanged(int)), this, SLOT(on_TzEnable_stateChanged(int)));
+  
+  // Invert checkboxes
+  QObject::connect(ui.PitchInvert, SIGNAL(stateChanged(int)), this, SLOT(on_PitchInvert_stateChanged(int)));
+  QObject::connect(ui.YawInvert, SIGNAL(stateChanged(int)), this, SLOT(on_YawInvert_stateChanged(int)));
+  QObject::connect(ui.RollInvert, SIGNAL(stateChanged(int)), this, SLOT(on_RollInvert_stateChanged(int)));
+  QObject::connect(ui.TxInvert, SIGNAL(stateChanged(int)), this, SLOT(on_TxInvert_stateChanged(int)));
+  QObject::connect(ui.TyInvert, SIGNAL(stateChanged(int)), this, SLOT(on_TyInvert_stateChanged(int)));
+  QObject::connect(ui.TzInvert, SIGNAL(stateChanged(int)), this, SLOT(on_TzInvert_stateChanged(int)));
+  
+  // Sensitivity sliders
+  QObject::connect(ui.PitchSens, SIGNAL(valueChanged(int)), this, SLOT(on_PitchSens_valueChanged(int)));
+  QObject::connect(ui.YawSens, SIGNAL(valueChanged(int)), this, SLOT(on_YawSens_valueChanged(int)));
+  QObject::connect(ui.RollSens, SIGNAL(valueChanged(int)), this, SLOT(on_RollSens_valueChanged(int)));
+  QObject::connect(ui.TxSens, SIGNAL(valueChanged(int)), this, SLOT(on_TxSens_valueChanged(int)));
+  QObject::connect(ui.TySens, SIGNAL(valueChanged(int)), this, SLOT(on_TySens_valueChanged(int)));
+  QObject::connect(ui.TzSens, SIGNAL(valueChanged(int)), this, SLOT(on_TzSens_valueChanged(int)));
+  
+  // Smoothing slider
+  QObject::connect(ui.Smoothing, SIGNAL(valueChanged(int)), this, SLOT(on_Smoothing_valueChanged(int)));
+  
+  // Detailed Axis Setup button
+  QObject::connect(ui.DetailedAxisSetup, SIGNAL(pressed()), this, SLOT(on_DetailedAxisSetup_pressed()));
 }
 
 bool ProfileSetup::close()

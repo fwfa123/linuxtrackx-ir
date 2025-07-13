@@ -81,6 +81,17 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
                    this, SLOT(trackerStateHandler(linuxtrack_state_type)));
   QObject::connect(&zipper, SIGNAL(finished(int, QProcess::ExitStatus)),
                    this, SLOT(logsPackaged(int, QProcess::ExitStatus)));
+  
+  // Connect main GUI buttons explicitly (auto-connect broken due to custom central widget)
+  QObject::connect(ui.HelpButton, SIGNAL(pressed()), this, SLOT(on_HelpButton_pressed()));
+  QObject::connect(ui.DefaultsButton, SIGNAL(pressed()), this, SLOT(on_DefaultsButton_pressed()));
+  QObject::connect(ui.DiscardChangesButton, SIGNAL(pressed()), this, SLOT(on_DiscardChangesButton_pressed()));
+  QObject::connect(ui.SaveButton, SIGNAL(pressed()), this, SLOT(on_SaveButton_pressed()));
+  QObject::connect(ui.QuitButton, SIGNAL(pressed()), this, SLOT(on_QuitButton_pressed()));
+  QObject::connect(ui.XplanePluginButton, SIGNAL(pressed()), this, SLOT(on_XplanePluginButton_pressed()));
+  QObject::connect(ui.ViewLogButton, SIGNAL(pressed()), this, SLOT(on_ViewLogButton_pressed()));
+  QObject::connect(ui.PackageLogsButton, SIGNAL(pressed()), this, SLOT(on_PackageLogsButton_pressed()));
+  
   ui.ModelEditSite->addWidget(me);
   ui.ProfileSetupSite->addWidget(ps);
 
@@ -259,7 +270,7 @@ void LinuxtrackGui::on_ViewLogButton_pressed()
 void LinuxtrackGui::rereadPrefs()
 {
   PREF.rereadPrefs();
-  if (initialized) {
+  if (initialized && ds != nullptr) {
     ds->refresh();
     //track->refresh();
   }
@@ -271,7 +282,9 @@ void LinuxtrackGui::on_DefaultsButton_pressed()
                           QStringLiteral("Do you really want to do that?")) == QMessageBox::Ok) {
     PREF.copyDefaultPrefs();
     rereadPrefs();
-    ds->refresh();
+    if (ds != nullptr) {
+      ds->refresh();
+    }
   }
 }
 
