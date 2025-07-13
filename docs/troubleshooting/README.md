@@ -24,8 +24,10 @@ lsusb | grep 131d
 ### Most Common Issues
 1. **System upgrade broke LinuxTrack** → [QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)
 2. **TrackIR permission errors** → [TRACKIR_PERMISSION_TROUBLESHOOTING.md](TRACKIR_PERMISSION_TROUBLESHOOTING.md)
-3. **Application won't launch** → [QUICK_TROUBLESHOOTING_QT5.md](QUICK_TROUBLESHOOTING_QT5.md)
-4. **Display issues on Wayland** → [WAYLAND_COMPATIBILITY_ISSUE.md](WAYLAND_COMPATIBILITY_ISSUE.md)
+3. **Firmware extraction fails** → [FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
+4. **ApplicationID shows ((null)) in gamedata.txt** → [APPLICATIONID_PARSING_ISSUE.md](APPLICATIONID_PARSING_ISSUE.md)
+5. **Application won't launch** → [QUICK_TROUBLESHOOTING_QT5.md](QUICK_TROUBLESHOOTING_QT5.md)
+6. **Display issues on Wayland** → [WAYLAND_COMPATIBILITY_ISSUE.md](WAYLAND_COMPATIBILITY_ISSUE.md)
 
 ## Troubleshooting Files
 
@@ -33,6 +35,8 @@ lsusb | grep 131d
 - **`TROUBLESHOOTING.md`** - Comprehensive troubleshooting guide (14KB)
 - **`QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md`** - System upgrade conflicts (9KB)
 - **`TRACKIR_PERMISSION_TROUBLESHOOTING.md`** - Hardware permission issues (9KB)
+- **`FIRMWARE_EXTRACTION_TROUBLESHOOTING.md`** - TrackIR firmware extraction issues (8KB)
+- **`APPLICATIONID_PARSING_ISSUE.md`** - ApplicationID parsing bug causing ((null)) in gamedata.txt (12KB)
 - **`QUICK_TROUBLESHOOTING_QT5.md`** - Quick fixes for common issues (3KB)
 - **`WAYLAND_COMPATIBILITY_ISSUE.md`** - Display server compatibility (2KB)
 
@@ -82,6 +86,21 @@ lsusb | grep 131d
 - Set environment variables
 - Check display server compatibility
 - Verify OpenGL support
+
+### Firmware and Game Data Issues
+**Primary Files**: `FIRMWARE_EXTRACTION_TROUBLESHOOTING.md`, `APPLICATIONID_PARSING_ISSUE.md`
+
+**Common Problems:**
+- Firmware extraction fails
+- ApplicationID shows ((null)) in gamedata.txt
+- Games don't get enhanced TrackIR support
+- Missing or corrupted firmware files
+
+**Solutions:**
+- Use manual firmware extraction process
+- Fix ApplicationID parsing bug in game_data.c
+- Verify all required firmware files are present
+- Check gamedata.txt for correct ApplicationID entries
 
 ### Build Issues
 **Primary File**: `QUICK_TROUBLESHOOTING_QT5.md`

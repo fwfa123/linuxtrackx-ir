@@ -69,11 +69,18 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks wine-devel
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev
 
 # Build LinuxTrack
 git clone <repository-url>
 cd linuxtrackx-ir
+
+# Install Wine development tools (recommended method)
+cd scripts/dev
+./wine_dev_setup.sh
+cd ../..
+
+# Build and install
 autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
@@ -83,11 +90,18 @@ sudo make install
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42 wine-devel
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel
 
 # Build LinuxTrack
 git clone <repository-url>
 cd linuxtrackx-ir
+
+# Install Wine development tools (recommended method)
+cd scripts/dev
+./wine_dev_setup.sh
+cd ../..
+
+# Build and install
 autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
@@ -97,11 +111,18 @@ sudo make install
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils
 
 # Build LinuxTrack
 git clone <repository-url>
 cd linuxtrackx-ir
+
+# Install Wine development tools (recommended method)
+cd scripts/dev
+./wine_dev_setup.sh
+cd ../..
+
+# Build and install
 autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
@@ -119,6 +140,7 @@ LinuxTrack now supports building Windows compatibility components using winegcc 
 - ✅ **NSIS Installers**: All installer scripts updated for Wine compatibility
 - ✅ **Simplified Dependencies**: Uses standard Wine development tools
 - ✅ **Build System Fixed**: Resolved C++ linking issues and NSIS script problems
+- ✅ **Automated Setup**: New `scripts/dev/wine_dev_setup.sh` script for easy Wine development environment setup
 
 ### 🎉 TrackIR Firmware Extraction Improvements
 LinuxTrack now features improved TrackIR firmware extraction with enhanced Wine compatibility:
@@ -185,7 +207,8 @@ LinuxTrack works with games and simulators that support:
 - **Wine Support**: wine, wine-devel (required for TrackIR firmware extraction and Windows components)
 
 ### Windows Compatibility (Wine Only)
-- **Wine Development** (required): wine-devel, winegcc, wineg++
+- **Wine Development** (required): Use `scripts/dev/wine_dev_setup.sh` for automatic setup
+- **Manual Installation**: wine-devel, winegcc, wineg++ (if not using the setup script)
 
 ### Security Features (Enabled by Default)
 - **PIE (Position Independent Executable)**: Enabled by default for native Linux builds

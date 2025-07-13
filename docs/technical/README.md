@@ -8,6 +8,7 @@ This directory contains technical documentation for LinuxTrack Qt5 modernization
 
 ### Current Technical Documentation
 - **`TECHNICAL_IMPLEMENTATION_GUIDE.md`** - Comprehensive implementation details (13KB)
+- **`GAME_DATA_SYSTEM.md`** - Game data system architecture (15KB)
 - **`QT4_TO_QT5_MIGRATION.md`** - Qt4 to Qt5 migration guide (7KB)
 - **`QT5_MODERNIZATION_STATUS.md`** - Qt5 modernization status (3KB)
 - **`MODERNIZATION_PLAN.md`** - Original modernization plan (7KB)
@@ -63,6 +64,21 @@ This directory contains technical documentation for LinuxTrack Qt5 modernization
 - PlayStation Eye cameras
 - Generic USB cameras
 - DIY IR tracking setups
+
+### Game Data System
+**Primary File**: `GAME_DATA_SYSTEM.md`
+
+**Enhanced TrackIR Communication:**
+- Game data extraction from sgl.dat
+- ApplicationID parsing and encryption keys
+- Wine bridge integration for enhanced features
+- Enhanced vs basic interface support
+
+**Key Components:**
+- gamedata.txt generation and parsing
+- Wine bridge client communication
+- Encryption key management
+- Game registration and lookup
 
 ### Display Server Compatibility
 **Primary File**: `DESKTOP_INTEGRATION_FIX_PLAN.md`
