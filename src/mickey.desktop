@@ -2,7 +2,7 @@
 Version=1.0
 Name=Mickey (LinuxTrack)
 Comment=Standalone head tracking input mapper
-Exec=/opt/bin/mickey
+Exec=mickey
 Icon=linuxtrack
 Terminal=false
 Type=Application

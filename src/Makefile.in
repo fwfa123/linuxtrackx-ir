@@ -2026,15 +2026,7 @@ LTR_MICKEY_TARGET_INST: mickey/help.qhc mickey/help.qch
 	pushd mickey;  ${QMAKE_PATH} ${QMAKE_FLAGS} "LIBDIR=$(pkglibdir)"; $(MAKE) INSTALL_ROOT=${DESTDIR} install; popd
 
 LTR_WINE_TARGET_INST:
-	@echo "Installing wine bridge components..."
-	$(MKDIR_P) $(DESTDIR)$(pkgdatadir)/wine
-	$(INSTALL_DATA) $(srcdir)/wine_bridge/linuxtrack-wine.exe $(DESTDIR)$(pkgdatadir)/wine/
-	$(INSTALL_DATA) $(srcdir)/wine_bridge/README.wine $(DESTDIR)$(pkgdatadir)/wine/
-	$(INSTALL_DATA) $(srcdir)/wine_bridge/WINE_SETUP.md $(DESTDIR)$(pkgdatadir)/wine/
-# Wine bridge launcher script installation disabled
-# if WINE_PLUGIN
-# 	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
-# endif
+	@echo "Wine bridge components installation disabled."
 	@echo "Wine bridge installation complete."
 
 # Install hook to update icon cache and desktop database after installation
