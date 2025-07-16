@@ -111,7 +111,11 @@ sudo make install
 ### For Arch Linux / Manjaro Users
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
+
+# Install NSIS (required for Windows compatibility components)
+# If you encounter issues with the AUR package, use our helper script:
+./scripts/install/install_nsis_arch.sh
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -128,6 +132,11 @@ autoreconf -fiv
 make -j$(nproc)
 sudo make install
 ```
+
+**Note**: 
+- **`qt5-help`** is not needed - Qt5 help functionality is included in `qt5-tools`
+- **`libmxml`** is available as **`mxml`** in Arch Linux (extras repository)
+- **`nsis`** may have AUR issues - use our dedicated NSIS installation script: `./scripts/install/install_nsis_arch.sh` which provides multiple fallback installation methods.
 
 ## 🎉 What's New
 
@@ -315,7 +324,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 |---------|----------|
 | `aclocal-1.17: command not found` | Install autoconf: `sudo apt install autoconf` (Debian/Ubuntu) or `sudo dnf install autoconf` (Fedora) or `sudo pacman -S autoconf` (Arch) |
 | `flex: command not found` | Install flex: `sudo apt install flex` (Debian/Ubuntu) or `sudo dnf install flex` (Fedora) or `sudo pacman -S flex` (Arch) |
-| `makensis: command not found` | Install NSIS: `sudo apt install nsis` (Debian/Ubuntu) or `sudo dnf install nsis` (Fedora) or `sudo pacman -S nsis` (Arch) |
+| `makensis: command not found` | Install NSIS: `sudo apt install nsis` (Debian/Ubuntu) or `sudo dnf install nsis` (Fedora) or `sudo pacman -S nsis` (Arch) or use `./scripts/install/install_nsis_arch.sh` (Arch Linux AUR issues) |
 | `winegcc: command not found` | Wine development tools required. Install with: `sudo apt install wine-devel` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | 32-bit development headers missing. Install: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu/MX) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora/RHEL) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | `libv4l2.h: No such file or directory` | V4L2 development headers missing. Install: `sudo apt install libv4l-dev` (Debian/Ubuntu/MX) or `sudo dnf install v4l-utils-devel` (Fedora/RHEL) or `sudo pacman -S v4l-utils` (Arch) |
@@ -478,7 +487,10 @@ sudo dnf install -y wine-devel wine-tools
 #### Arch Linux/Manjaro
 ```bash
 # Core dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras qt5-help opencv libusb libmxml libx11 libxrandr bison flex nsis lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
+
+# NSIS installation (use our helper script if AUR package fails)
+./scripts/install/install_nsis_arch.sh
 
 # Wine development tools (included in wine-staging)
 ```
