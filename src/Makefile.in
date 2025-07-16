@@ -94,29 +94,27 @@ build_triplet = @build@
 host_triplet = @host@
 bin_PROGRAMS = ltr_server1$(EXEEXT) $(am__EXEEXT_1) \
 	ltr_recenter$(EXEEXT) ltr_extractor$(EXEEXT) ltr_pipe$(EXEEXT)
-@WINE_PLUGIN_TRUE@am__append_1 = linuxtrack-wine-launcher.sh
-@DARWIN_FALSE@am__append_2 = libjoy.la
-@CWIID_TRUE@am__append_3 = libwii.la
-@CWIID_TRUE@am__append_4 = wii_server.1
-@OSC_SUPPORT_TRUE@am__append_5 = osc_server
-@WEBCAM_SUPPORT_TRUE@am__append_6 = libwc.la
-@TRACKIR_SUPPORT_TRUE@am__append_7 = libtir.la libltusb1.la
-@TRACKIR_SUPPORT_TRUE@am__append_8 = 99-TIR.rules 99-Mickey.rules
-@FACE_TRACKER_TRUE@am__append_9 = libft.la libp3eft.la
-@FACE_TRACKER_TRUE@am__append_10 = haarcascade_frontalface_alt2.xml
-@FACE_TRACKER_TRUE@am__append_11 = libfacetrack_int.la
-@DARWIN_TRUE@am__append_12 = libmacwc.la
-@XPLANE_PLUGIN_TRUE@am__append_13 = xlinuxtrack9.la
-@LTR32ON64_TRUE@@XPLANE_PLUGIN_TRUE@am__append_14 = xlinuxtrack9_32.la
-@WINE_PLUGIN_TRUE@am__append_15 = LTR_WINE_TARGET_INST
-@WINE_PLUGIN_TRUE@am__append_16 = LTR_WINE_TARGET_UNINST
-@MICKEY_TRUE@am__append_17 = mickey/mickey
-@MICKEY_TRUE@am__append_18 = LTR_MICKEY_TARGET_INST
-@MICKEY_TRUE@am__append_19 = LTR_MICKEY_TARGET_UNINST
-@CWIID_TRUE@am__append_20 = wii_server/wii_server
-@CWIID_TRUE@am__append_21 = LTR_WII_TARGET_INST
-@CWIID_TRUE@am__append_22 = LTR_WII_TARGET_UNINST
-@WINE_PLUGIN_TRUE@am__append_23 = linuxtrack-wine.desktop
+@DARWIN_FALSE@am__append_1 = libjoy.la
+@CWIID_TRUE@am__append_2 = libwii.la
+@CWIID_TRUE@am__append_3 = wii_server.1
+@OSC_SUPPORT_TRUE@am__append_4 = osc_server
+@WEBCAM_SUPPORT_TRUE@am__append_5 = libwc.la
+@TRACKIR_SUPPORT_TRUE@am__append_6 = libtir.la libltusb1.la
+@TRACKIR_SUPPORT_TRUE@am__append_7 = 99-TIR.rules 99-Mickey.rules
+@FACE_TRACKER_TRUE@am__append_8 = libft.la libp3eft.la
+@FACE_TRACKER_TRUE@am__append_9 = haarcascade_frontalface_alt2.xml
+@FACE_TRACKER_TRUE@am__append_10 = libfacetrack_int.la
+@DARWIN_TRUE@am__append_11 = libmacwc.la
+@XPLANE_PLUGIN_TRUE@am__append_12 = xlinuxtrack9.la
+@LTR32ON64_TRUE@@XPLANE_PLUGIN_TRUE@am__append_13 = xlinuxtrack9_32.la
+@WINE_PLUGIN_TRUE@am__append_14 = LTR_WINE_TARGET_INST
+@WINE_PLUGIN_TRUE@am__append_15 = LTR_WINE_TARGET_UNINST
+@MICKEY_TRUE@am__append_16 = mickey/mickey
+@MICKEY_TRUE@am__append_17 = LTR_MICKEY_TARGET_INST
+@MICKEY_TRUE@am__append_18 = LTR_MICKEY_TARGET_UNINST
+@CWIID_TRUE@am__append_19 = wii_server/wii_server
+@CWIID_TRUE@am__append_20 = LTR_WII_TARGET_INST
+@CWIID_TRUE@am__append_21 = LTR_WII_TARGET_UNINST
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
@@ -657,17 +655,19 @@ with_wine64 = @with_wine64@
 @DARWIN_FALSE@FT_LDFLAGS = '-Wl,-rpath,$$ORIGIN/../lib/linuxtrack'
 @DARWIN_TRUE@FT_LDFLAGS = 
 @DARWIN_FALSE@LINUXLDLFAGS = '-Wl,-rpath,$$ORIGIN/../lib/linuxtrack'
-man_MANS = ltr_gui.1 ltr_server1.1 mickey.1 $(am__append_4) \
+man_MANS = ltr_gui.1 ltr_server1.1 mickey.1 $(am__append_3) \
 	ltr_extractor.1 ltr_pipe.1
 pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la \
-	$(am__append_2) $(am__append_3) $(am__append_6) \
-	$(am__append_7) $(am__append_9) libfakeusb.la libp3e.la \
-	$(am__append_12) $(am__append_13) $(am__append_14)
-bin_SCRIPTS = ../scripts/install/verify_installation.sh \
-	$(am__append_1)
+	$(am__append_1) $(am__append_2) $(am__append_5) \
+	$(am__append_6) $(am__append_8) libfakeusb.la libp3e.la \
+	$(am__append_11) $(am__append_12) $(am__append_13)
+bin_SCRIPTS = ../scripts/install/verify_installation.sh
+
+# Wine bridge launcher script installation disabled
+# bin_SCRIPTS += linuxtrack-wine-launcher.sh
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c \
 	linuxtrack_hello_world.c linuxtrack_hello_world_adv.c \
-	$(am__append_8) $(am__append_10)
+	$(am__append_7) $(am__append_9)
 l32libdir = $(prefix)/$(LIB32DIR)/linuxtrack
 @DARWIN_FALSE@@LTR32ON64_TRUE@@X64_TRUE@l32lib_LTLIBRARIES = liblinuxtrack32.la
 liblinuxtrack32_la_SOURCES = ltlib.c linuxtrack.h utils.c utils.h \
@@ -675,7 +675,7 @@ liblinuxtrack32_la_SOURCES = ltlib.c linuxtrack.h utils.c utils.h \
 
 liblinuxtrack32_la_CFLAGS = $(LINUXFLAGS) -m32
 liblinuxtrack32_la_LDFLAGS = -export-symbols "${srcdir}/liblt.sym" -m32 $(LINUXLDFLAGS)
-noinst_LTLIBRARIES = liblinuxtrack_int.la $(am__append_11)
+noinst_LTLIBRARIES = liblinuxtrack_int.la $(am__append_10)
 liblinuxtrack_int_la_SOURCES = linuxtrack.c linuxtrack.h
 libfacetrack_int_la_SOURCES = facetrack.cpp facetrack.h
 libfacetrack_int_la_CFLAGS = $(OPENCV_CFLAGS)
@@ -792,11 +792,11 @@ osc_server_LDFLAGS = $(LINUXLDFLAGS) -pthread -llo -ldl
 AM_YFLAGS = -d --name-prefix ltr_int_parser_
 AM_LFLAGS = -i
 BUILT_SOURCES = pref_flex.cpp pref_bison.cpp pref_bison.hpp
-noinst_SCRIPTS = qt_gui/ltr_gui $(am__append_17) $(am__append_20)
-hook_inst_targets = LTR_QT_GUI_TARGET_INST $(am__append_15) \
+noinst_SCRIPTS = qt_gui/ltr_gui $(am__append_16) $(am__append_19)
+hook_inst_targets = LTR_QT_GUI_TARGET_INST $(am__append_14) \
+	$(am__append_17) $(am__append_20)
+hook_uninst_targets = LTR_QT_GUI_TARGET_UNINST $(am__append_15) \
 	$(am__append_18) $(am__append_21)
-hook_uninst_targets = LTR_QT_GUI_TARGET_UNINST $(am__append_16) \
-	$(am__append_19) $(am__append_22)
 EXTRA_DIST = scripts/install/post_install_dialog.sh scripts/install/verify_installation.sh \
 scripts/build/fix_library_path.sh scripts/test/test_gui.sh \
 qt_gui/ltr_show.h qt_gui/help_view.cpp qt_gui/ltr_tracking.h \
@@ -869,7 +869,10 @@ qt_gui/win7.reg qt_gui/win10.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/m
 
 # Install desktop files to system applications directory
 desktopdir = /usr/share/applications
-desktop_DATA = linuxtrack.desktop mickey.desktop $(am__append_23)
+desktop_DATA = linuxtrack.desktop mickey.desktop
+
+# Wine bridge desktop file installation disabled
+# desktop_DATA += linuxtrack-wine.desktop
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
@@ -2028,8 +2031,35 @@ LTR_WINE_TARGET_INST:
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/linuxtrack-wine.exe $(DESTDIR)$(pkgdatadir)/wine/
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/README.wine $(DESTDIR)$(pkgdatadir)/wine/
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/WINE_SETUP.md $(DESTDIR)$(pkgdatadir)/wine/
-	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+# Wine bridge launcher script installation disabled
+# if WINE_PLUGIN
+# 	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+# endif
 	@echo "Wine bridge installation complete."
+
+# Install hook to update icon cache and desktop database after installation
+install-data-hook:
+	@echo "Updating desktop database after install..."
+	@if [ -d "$(DESTDIR)/usr/share/applications" ]; then \
+		-update-desktop-database $(DESTDIR)/usr/share/applications 2>/dev/null || true; \
+		echo "Desktop database updated for system applications directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/applications" ]; then \
+		-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true; \
+		echo "Desktop database updated for local applications directory."; \
+	else \
+		echo "Warning: No applications directory found for desktop database update."; \
+	fi
+	@echo "Updating icon cache after install..."
+	@if [ -d "$(DESTDIR)/usr/share/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)/usr/share/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for system icon directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for local icon directory."; \
+	else \
+		echo "Warning: No icon directory found for icon cache update."; \
+	fi
+	@echo "System integration complete."
 
 uninstall-hook: $(hook_uninst_targets)
 	@echo "Cleaning up system integration..."
@@ -2087,7 +2117,10 @@ LTR_WINE_TARGET_UNINST:
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/linuxtrack-wine.exe
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/README.wine
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/WINE_SETUP.md
-	-rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+# Wine bridge launcher script removal disabled
+# if WINE_PLUGIN
+# 	-rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+# endif
 	-rmdir $(DESTDIR)$(pkgdatadir)/wine 2>/dev/null || true
 	@echo "Wine bridge removal complete."
 

@@ -35,10 +35,10 @@ pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la
 bin_PROGRAMS = ltr_server1
 bin_SCRIPTS = ../scripts/install/verify_installation.sh
 
+if WINE_PLUGIN
 # Wine bridge launcher script installation disabled
-# if WINE_PLUGIN
-#   bin_SCRIPTS += linuxtrack-wine-launcher.sh
-# endif
+# bin_SCRIPTS += linuxtrack-wine-launcher.sh
+endif
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c linuxtrack_hello_world.c linuxtrack_hello_world_adv.c
 
 l32libdir = $(prefix)/$(LIB32DIR)/linuxtrack
@@ -397,12 +397,14 @@ LTR_WINE_TARGET_INST:
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/linuxtrack-wine.exe $(DESTDIR)$(pkgdatadir)/wine/
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/README.wine $(DESTDIR)$(pkgdatadir)/wine/
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/WINE_SETUP.md $(DESTDIR)$(pkgdatadir)/wine/
-	# Wine bridge launcher script installation disabled
-	# $(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+# Wine bridge launcher script installation disabled
+# if WINE_PLUGIN
+# 	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+# endif
 	@echo "Wine bridge installation complete."
 
 # Install hook to update icon cache and desktop database after installation
-install-hook:
+install-data-hook:
 	@echo "Updating desktop database after install..."
 	@if [ -d "$(DESTDIR)/usr/share/applications" ]; then \
 		-update-desktop-database $(DESTDIR)/usr/share/applications 2>/dev/null || true; \
@@ -485,8 +487,10 @@ LTR_WINE_TARGET_UNINST:
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/linuxtrack-wine.exe
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/README.wine
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/WINE_SETUP.md
-	# Wine bridge launcher script removal disabled
-	# -rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+# Wine bridge launcher script removal disabled
+# if WINE_PLUGIN
+# 	-rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+# endif
 	-rmdir $(DESTDIR)$(pkgdatadir)/wine 2>/dev/null || true
 	@echo "Wine bridge removal complete."
 
@@ -564,10 +568,10 @@ qt_gui/win7.reg qt_gui/win10.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/m
 desktopdir = /usr/share/applications
 desktop_DATA = linuxtrack.desktop mickey.desktop
 
+if WINE_PLUGIN
 # Wine bridge desktop file installation disabled
-# if WINE_PLUGIN
-#   desktop_DATA += linuxtrack-wine.desktop
-# endif
+# desktop_DATA += linuxtrack-wine.desktop
+endif
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
