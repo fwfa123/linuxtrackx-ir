@@ -443,8 +443,17 @@ void Mfc42uExtractor::wineFinished(bool result)
     
     // Always enable buttons and emit finished signal, regardless of success/failure
     enableButtons(true);
+    if(found) {
+      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+        QString::fromUtf8("MFC42 was successfully found and copied."));
+    } else {
+      QMessageBox::warning(this, QString::fromUtf8("Installation Failed"),
+        QString::fromUtf8("Automatic MFC42 installation failed. You can try manual installation methods using the buttons below."));
+    }
     emit finished(found);
-    hide();
+    if(found) {
+      hide();
+    }
     return;
   }
   
@@ -648,25 +657,41 @@ bool Mfc42uExtractor::tryWinetricksInstall()
 
 void Mfc42uExtractor::startAutomaticInstallation()
 {
+  // Dialog should already be visible from mfc42uInstall()
+  // Disable manual buttons during automatic installation
+  enableButtons(false);
+  
   progress(QString::fromUtf8("Starting automatic MFC42 installation..."));
   
   // Try winetricks installation first
   if(tryWinetricksInstall()) {
     progress(QString::fromUtf8("MFC42 installation completed successfully"));
+    // Show success message
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("MFC42 was successfully installed via winetricks."));
+    enableButtons(true);
     emit finished(true);
+    hide();
     return;
   }
   
   // If winetricks fails, try package manager
   if(tryPackageManagerInstall()) {
     progress(QString::fromUtf8("MFC42 installation completed successfully"));
+    // Show success message
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("MFC42 was successfully installed via package manager."));
+    enableButtons(true);
     emit finished(true);
+    hide();
     return;
   }
   
   // If all automatic methods fail, show the manual installation dialog
   progress(QString::fromUtf8("Automatic installation failed, showing manual options"));
-  show();
+  enableButtons(true);
+  // Keep dialog open for manual installation
+  // Don't call show() again since it's already visible
 }
 
 bool Mfc42uExtractor::tryPackageManagerInstall()
@@ -731,8 +756,8 @@ bool Mfc42uExtractor::tryCabextractFallback()
 
 void Mfc42uExtractor::showModernInstallationInstructions()
 {
-  QMessageBox::information(this, QString::fromUtf8("Modern Installation Required"),
-    QString::fromUtf8("The old Wine extraction method failed. Please use one of these modern approaches:\n\n"
+  QMessageBox::information(this, QString::fromUtf8("Manual Installation Required"),
+    QString::fromUtf8("Automatic MFC42 installation failed. Please use one of these manual approaches:\n\n"
     "1. Install via winetricks (Recommended for Debian/Ubuntu/MX):\n"
     "   sudo apt install winetricks\n"
     "   winetricks mfc42\n"
@@ -747,7 +772,8 @@ void Mfc42uExtractor::showModernInstallationInstructions()
     "   Copy mfc42u.dll from Windows system to:\n"
     "   sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
     "Note: Debian/Ubuntu/MX systems should use winetricks as the package is not available in repositories.\n"
-    "After copying the DLL, try the Wine support installation again.")
+    "After copying the DLL, try the Wine support installation again.\n\n"
+    "You can also try the manual installation methods using the buttons in this dialog.")
   );
 }
 

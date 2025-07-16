@@ -35,9 +35,10 @@ pkglib_LTLIBRARIES = libltr.la libmacwii.la liblinuxtrack.la
 bin_PROGRAMS = ltr_server1
 bin_SCRIPTS = ../scripts/install/verify_installation.sh
 
-if WINE_PLUGIN
-  bin_SCRIPTS += linuxtrack-wine-launcher.sh
-endif
+# Wine bridge launcher script installation disabled
+# if WINE_PLUGIN
+#   bin_SCRIPTS += linuxtrack-wine-launcher.sh
+# endif
 dist_pkgdata_DATA = linuxtrack1.conf linuxtrack.c linuxtrack_hello_world.c linuxtrack_hello_world_adv.c
 
 l32libdir = $(prefix)/$(LIB32DIR)/linuxtrack
@@ -396,8 +397,33 @@ LTR_WINE_TARGET_INST:
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/linuxtrack-wine.exe $(DESTDIR)$(pkgdatadir)/wine/
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/README.wine $(DESTDIR)$(pkgdatadir)/wine/
 	$(INSTALL_DATA) $(srcdir)/wine_bridge/WINE_SETUP.md $(DESTDIR)$(pkgdatadir)/wine/
-	$(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
+	# Wine bridge launcher script installation disabled
+	# $(INSTALL_SCRIPT) $(srcdir)/linuxtrack-wine-launcher.sh $(DESTDIR)$(bindir)/
 	@echo "Wine bridge installation complete."
+
+# Install hook to update icon cache and desktop database after installation
+install-hook:
+	@echo "Updating desktop database after install..."
+	@if [ -d "$(DESTDIR)/usr/share/applications" ]; then \
+		-update-desktop-database $(DESTDIR)/usr/share/applications 2>/dev/null || true; \
+		echo "Desktop database updated for system applications directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/applications" ]; then \
+		-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true; \
+		echo "Desktop database updated for local applications directory."; \
+	else \
+		echo "Warning: No applications directory found for desktop database update."; \
+	fi
+	@echo "Updating icon cache after install..."
+	@if [ -d "$(DESTDIR)/usr/share/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)/usr/share/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for system icon directory."; \
+	elif [ -d "$(DESTDIR)$(datadir)/icons/hicolor" ]; then \
+		-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true; \
+		echo "Icon cache updated for local icon directory."; \
+	else \
+		echo "Warning: No icon directory found for icon cache update."; \
+	fi
+	@echo "System integration complete."
 
 uninstall-hook: $(hook_uninst_targets)
 	@echo "Cleaning up system integration..."
@@ -459,7 +485,8 @@ LTR_WINE_TARGET_UNINST:
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/linuxtrack-wine.exe
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/README.wine
 	-rm -f $(DESTDIR)$(pkgdatadir)/wine/WINE_SETUP.md
-	-rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
+	# Wine bridge launcher script removal disabled
+	# -rm -f $(DESTDIR)$(bindir)/linuxtrack-wine-launcher.sh
 	-rmdir $(DESTDIR)$(pkgdatadir)/wine 2>/dev/null || true
 	@echo "Wine bridge removal complete."
 
@@ -537,9 +564,10 @@ qt_gui/win7.reg qt_gui/win10.reg qt_gui/ltr_gui.qhcp qt_gui/ltr_gui.qhp mickey/m
 desktopdir = /usr/share/applications
 desktop_DATA = linuxtrack.desktop mickey.desktop
 
-if WINE_PLUGIN
-  desktop_DATA += linuxtrack-wine.desktop
-endif
+# Wine bridge desktop file installation disabled
+# if WINE_PLUGIN
+#   desktop_DATA += linuxtrack-wine.desktop
+# endif
 
 # Install icons in freedesktop icon theme directories
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps

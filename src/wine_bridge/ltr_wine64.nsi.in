@@ -10,9 +10,62 @@ Page instfiles
 UninstPage uninstConfirm
 UninstPage instfiles
 
+Function .onInit
+
+  ReadRegStr $R0 HKLM \
+  "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" \
+  "UninstallString"
+  StrCmp $R0 "" done
+
+  # Check if this is a reinstallation
+  IfFileExists "$INSTDIR\NPClient.dll" 0 done
+  
+  MessageBox MB_YESNO|MB_ICONQUESTION \
+  "Linuxtrack-Wine is already installed. $\n$\nClick `Yes` to upgrade the installation (existing DLL files will be preserved) or `No` to cancel." \
+  IDYES done
+  Abort
+
+done:
+
+FunctionEnd
+
+Function BackupExistingFiles
+  # Backup existing DLL files if they exist
+  IfFileExists "$INSTDIR\NPClient.dll" 0 +3
+    CopyFiles "$INSTDIR\NPClient.dll" "$INSTDIR\NPClient.dll.backup"
+    DetailPrint "Backed up existing NPClient.dll"
+  
+  IfFileExists "$INSTDIR\NPClient64.dll" 0 +3
+    CopyFiles "$INSTDIR\NPClient64.dll" "$INSTDIR\NPClient64.dll.backup"
+    DetailPrint "Backed up existing NPClient64.dll"
+  
+  IfFileExists "$INSTDIR\FreeTrackClient.dll" 0 +3
+    CopyFiles "$INSTDIR\FreeTrackClient.dll" "$INSTDIR\FreeTrackClient.dll.backup"
+    DetailPrint "Backed up existing FreeTrackClient.dll"
+FunctionEnd
+
+Function RestoreBackupFiles
+  # Restore backup files if installation failed
+  IfFileExists "$INSTDIR\NPClient.dll.backup" 0 +3
+    CopyFiles "$INSTDIR\NPClient.dll.backup" "$INSTDIR\NPClient.dll"
+    DetailPrint "Restored NPClient.dll from backup"
+  
+  IfFileExists "$INSTDIR\NPClient64.dll.backup" 0 +3
+    CopyFiles "$INSTDIR\NPClient64.dll.backup" "$INSTDIR\NPClient64.dll"
+    DetailPrint "Restored NPClient64.dll from backup"
+  
+  IfFileExists "$INSTDIR\FreeTrackClient.dll.backup" 0 +3
+    CopyFiles "$INSTDIR\FreeTrackClient.dll.backup" "$INSTDIR\FreeTrackClient.dll"
+    DetailPrint "Restored FreeTrackClient.dll from backup"
+FunctionEnd
+
 Section "Linuxtrack / TrackIR Interface"
   SectionIn RO
   SetOutPath $INSTDIR
+  
+  # Backup existing files before installation
+  Call BackupExistingFiles
+  
   File /oname=Controller.exe controller\Controller.exe
   File /oname=Tester.exe tester\Tester.exe
   File /oname=Tester64.exe tester\Tester64.exe
@@ -21,6 +74,12 @@ Section "Linuxtrack / TrackIR Interface"
   File /oname=check_data.exe client\check_data.exe
   File /oname=linuxtrack.ico @srcdir@\controller\linuxtrack.ico
   File /oname=TrackIR.exe views\TrackIR.exe
+  
+  # Remove backup files after successful installation
+  Delete "$INSTDIR\NPClient.dll.backup"
+  Delete "$INSTDIR\NPClient64.dll.backup"
+  Delete "$INSTDIR\FreeTrackClient.dll.backup"
+  
   WriteRegStr HKLM SOFTWARE\Linuxtrack "Install_dir" "$INSTDIR"
   WriteRegStr HKCU "Software\NaturalPoint\NATURALPOINT\NPClient Location" "Path" "$INSTDIR\"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" "DisplayName" "Linuxtrack wine bridge"
@@ -63,32 +122,11 @@ Section "Uninstall"
   Delete $INSTDIR\check_data.exe
   Delete $INSTDIR\TrackIR.exe
   Delete $INSTDIR\linuxtrack.ico
-  Delete $INSTDIR\TIRViews.dll
-  Delete $INSTDIR\mfc42u.dll
+  # Note: TIRViews.dll and mfc42u.dll are symlinks to files managed by LinuxTrack
+  # Do not delete them as it would remove the actual source files
+  # Delete $INSTDIR\TIRViews.dll
+  # Delete $INSTDIR\mfc42u.dll
   Delete "$SMPROGRAMS\Linuxtrack\*.*"
   RMDir "$SMPROGRAMS\Linuxtrack"
   RMDir "$INSTDIR"
 SectionEnd
-
-Function .onInit
-
-  ReadRegStr $R0 HKLM \
-  "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" \
-  "UninstallString"
-  StrCmp $R0 "" done
-
-  ReadRegStr $R1 HKCU "Software\NaturalPoint\NATURALPOINT\NPClient Location" "Path"
-
-  MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION \
-  "Linuxtrack-Wine is already installed. $\n$\nClick `OK` to remove the \
-  previous version or `Cancel` to cancel this upgrade." \
-  IDOK uninst
-  Abort
-
-;Run the uninstaller
-uninst:
-  ClearErrors
-  Exec '$R0 /S'
-done:
-
-FunctionEnd

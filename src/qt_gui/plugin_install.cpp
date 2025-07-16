@@ -21,14 +21,11 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   tirViews(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/TIRViews.dll"))
 {
 #ifndef DARWIN
-  // Check for wine installer in the new wine directory location
+  // Check for wine installer in the wine directory location
   QString wineInstallerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
   if(!QFile::exists(wineInstallerPath)){
-    // Fallback to old location for compatibility
-  if(!QFile::exists(PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe")))){
     enableButtons(false);
     return;
-    }
   }
 #endif
   inst = new WineLauncher();
@@ -89,6 +86,15 @@ void PluginInstall::on_TIRViewsButton_pressed()
 
 void PluginInstall::installWinePlugin()
 {
+  // First check if all required firmware files already exist
+  if(isTirFirmwareInstalled() && isMfc42uInstalled()){
+    // All firmware files exist, skip directly to Wine prefix selection
+    installLinuxtrackWine();
+    state = LTR_W;
+    return;
+  }
+  
+  // Otherwise, proceed with the normal extraction flow
   if(!isTirFirmwareInstalled()){
     state = TIR_FW;
     tirFirmwareInstall();
@@ -150,11 +156,8 @@ void PluginInstall::installLinuxtrackWine()
   QString prefix = QFileDialog::getExistingDirectory(NULL, QString::fromUtf8("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
   
-  // Try new wine directory location first, then fallback to old location
+  // Use the wine directory location
   QString installerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
-  if(!QFile::exists(installerPath)){
-    installerPath = PREF.getDataPath(QString::fromUtf8("linuxtrack-wine.exe"));
-  }
 
   inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
   inst->run(installerPath);
@@ -195,13 +198,14 @@ void PluginInstall::mfc42uInstall()
       this, SLOT(finished(bool)));
   }
   
-  // In the automatic flow (step 2), start automatic installation instead of showing dialog
+  // Always show the dialog first
+  dlmfc->show();
+  
+  // Then start automatic installation if in automatic flow
   if(state == MFC) {
     dlmfc->startAutomaticInstallation();
-  } else {
-    // For manual installation (when user clicks the MFC42 button directly), show the dialog
-    dlmfc->show();
   }
+  // For manual installation, dialog is already shown and user can interact
 }
 
 void PluginInstall::finished(bool ok)
