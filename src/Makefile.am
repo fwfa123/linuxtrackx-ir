@@ -555,7 +555,7 @@ endif
 hicolor_scalable_appsdir = $(datadir)/icons/hicolor/scalable/apps
 hicolor_scalable_apps_DATA = linuxtrack.svg linuxtrack-wii.svg
 
-hicolor_48x48_appsdir = $(datadir)/icons/hicolor/48x48/apps  
+hicolor_48x48_appsdir = $(datadir)/icons/hicolor/48x48/apps
 hicolor_48x48_apps_DATA = linuxtrack.png linuxtrack-wii.png
 
 # Legacy pixmaps directory for compatibility
