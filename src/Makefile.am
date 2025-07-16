@@ -403,29 +403,7 @@ LTR_WINE_TARGET_INST:
 # endif
 	@echo "Wine bridge installation complete."
 
-# Install hook to update icon cache and desktop database after installation
-install-data-hook:
-	@echo "Updating desktop database after install..."
-	@if [ -d "$(DESTDIR)/usr/share/applications" ]; then \
-		-update-desktop-database $(DESTDIR)/usr/share/applications 2>/dev/null || true; \
-		echo "Desktop database updated for system applications directory."; \
-	elif [ -d "$(DESTDIR)$(datadir)/applications" ]; then \
-		-update-desktop-database $(DESTDIR)$(datadir)/applications 2>/dev/null || true; \
-		echo "Desktop database updated for local applications directory."; \
-	else \
-		echo "Warning: No applications directory found for desktop database update."; \
-	fi
-	@echo "Updating icon cache after install..."
-	@if [ -d "$(DESTDIR)/usr/share/icons/hicolor" ]; then \
-		-gtk-update-icon-cache -f -t $(DESTDIR)/usr/share/icons/hicolor 2>/dev/null || true; \
-		echo "Icon cache updated for system icon directory."; \
-	elif [ -d "$(DESTDIR)$(datadir)/icons/hicolor" ]; then \
-		-gtk-update-icon-cache -f -t $(DESTDIR)$(datadir)/icons/hicolor 2>/dev/null || true; \
-		echo "Icon cache updated for local icon directory."; \
-	else \
-		echo "Warning: No icon directory found for icon cache update."; \
-	fi
-	@echo "System integration complete."
+
 
 uninstall-hook: $(hook_uninst_targets)
 	@echo "Cleaning up system integration..."
