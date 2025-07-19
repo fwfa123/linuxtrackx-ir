@@ -49,6 +49,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 ### 🍷 Wine Support (`wine-support/`)
 **For Wine compatibility and modern installation methods**
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)** - Modern Wine support installation guide (4KB)
+- **[guides/WINE_BRIDGE_INSTALLATION_GUIDE.md](guides/WINE_BRIDGE_INSTALLATION_GUIDE.md)** - Complete Wine bridge installation guide (15KB)
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Wine support troubleshooting section
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)** - Wine compatibility checker script
 
@@ -59,6 +60,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/GAME_DATA_SYSTEM.md](technical/GAME_DATA_SYSTEM.md)** - Game data system architecture (15KB)
 - **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Qt4 to Qt5 migration guide (7KB)
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Original modernization plan (7KB)
+- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB)
 
 ### 📈 Development Progress (`progress/`)
 **For development history and project tracking**
@@ -177,6 +179,8 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 #### "Wine" or "Windows"
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)**
+- **[guides/WINE_BRIDGE_INSTALLATION_GUIDE.md](guides/WINE_BRIDGE_INSTALLATION_GUIDE.md)**
+- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** (Wine section)
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)**
 

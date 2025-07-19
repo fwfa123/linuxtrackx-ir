@@ -109,22 +109,25 @@ sudo make install
 ```
 
 ### For Arch Linux / Manjaro Users
+
+#### **Recommended: Prebuilt Installation (No Wine Development Tools)**
+```bash
+# One-command installation (no Wine development tools required)
+./scripts/install/install_arch_prebuilt.sh
+```
+
+#### **Alternative: Standard Installation (Requires Wine Development Tools)**
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
-
-# Install NSIS (required for Windows compatibility components)
-# If you encounter issues with the AUR package, use our helper script:
-./scripts/install/install_nsis_arch.sh
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine wine-mono wine-gecko wine-staging winetricks
 
 # Build LinuxTrack
 git clone <repository-url>
 cd linuxtrackx-ir
 
-# Install Wine development tools (recommended method)
-cd scripts/dev
-./wine_dev_setup.sh
-cd ../..
+# Install NSIS (required for Windows compatibility components)
+# If you encounter issues with the AUR package, use our helper script:
+./scripts/install/install_nsis_arch.sh
 
 # Build and install
 autoreconf -fiv
@@ -134,6 +137,7 @@ sudo make install
 ```
 
 **Note**: 
+- **Prebuilt installation is recommended** for Arch Linux to avoid Wine development tool issues
 - **`qt5-help`** is not needed - Qt5 help functionality is included in `qt5-tools`
 - **`libmxml`** is available as **`mxml`** in Arch Linux (extras repository)
 - **`nsis`** may have AUR issues - use our dedicated NSIS installation script: `./scripts/install/install_nsis_arch.sh` which provides multiple fallback installation methods.
