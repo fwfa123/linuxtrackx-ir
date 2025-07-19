@@ -492,6 +492,7 @@ qt_gui/help_view.h qt_gui/wiimote_prefs.cpp qt_gui/cap.png qt_gui/ltr_dev_help.h
 qt_gui/glwidget.cpp qt_gui/scurve.ui qt_gui/tir_prefs.h \
 qt_gui/scurve.cpp qt_gui/ltr_gui.ui qt_gui/dev_help.ui qt_gui/ltr_profiles.h \
 qt_gui/ltr.ui qt_gui/ltr_state.cpp qt_gui/tir_prefs.cpp qt_gui/ltr_show.cpp \
+qt_gui/trackir_permission_dialog.h qt_gui/trackir_permission_dialog.cpp \
 qt_gui/xm8_detail.png qt_gui/main.cpp qt_gui/prefs_link.h qt_gui/macwebcam_prefs.h \
 qt_gui/webcam_info.h qt_gui/help/misc.htm qt_gui/help/dev_setup.htm qt_gui/help/axes_setup.htm \
 qt_gui/help/contents.txt qt_gui/help/news.htm qt_gui/help/welcome.htm qt_gui/help/interface.htm \

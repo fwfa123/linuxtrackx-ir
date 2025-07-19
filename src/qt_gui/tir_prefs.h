@@ -13,7 +13,7 @@ class TirPrefs : public QWidget{
  public:
   TirPrefs(const QString &dev_id, QWidget *parent = 0);
   ~TirPrefs();
-  static bool AddAvailableDevices(QComboBox &combo);
+  static bool AddAvailableDevices(QComboBox &combo, QWidget *parent = nullptr);
  private:
   const QString id;
   bool Activate(const QString &ID, bool init = false);

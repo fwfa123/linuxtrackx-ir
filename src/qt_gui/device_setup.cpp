@@ -168,7 +168,7 @@ void DeviceSetup::refresh()
   ui.DeviceSelector->clear();
   bool res = false;
   res |= WiimotePrefs::AddAvailableDevices(*(ui.DeviceSelector));
-  res |= TirPrefs::AddAvailableDevices(*(ui.DeviceSelector));
+  res |= TirPrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
 #ifdef DARWIN
   res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= MacP3eFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));

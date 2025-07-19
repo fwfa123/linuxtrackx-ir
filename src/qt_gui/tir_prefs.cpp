@@ -6,6 +6,7 @@
 #include "tir_prefs.h"
 #include "pathconfig.h"
 #include "dyn_load.h"
+#include "trackir_permission_dialog.h"
 #include <QFile>
 #include <QMessageBox>
 
@@ -156,7 +157,7 @@ bool TirPrefs::Activate(const QString &ID, bool init)
 
 
 
-bool TirPrefs::AddAvailableDevices(QComboBox &combo)
+bool TirPrefs::AddAvailableDevices(QComboBox &combo, QWidget *parent)
 {
   bool res = false;
   QString id;
@@ -165,13 +166,12 @@ bool TirPrefs::AddAvailableDevices(QComboBox &combo)
 
   tirType = probeTir(firmwareOK, permsOK);
   if(!permsOK){
-    QMessageBox::warning(NULL, QString::fromUtf8("TrackIR permissions problem"),
-        QString::fromUtf8("TrackIR device was found, but you don't have permissions to access it.\n \
-Please install the file 99-TIR.rules to the udev rules directory\n\
-(consult help and your distro documentation for details).\n\
-You are going to need administrator privileges to do that.")
-                        );
-    return false;
+    // Check if we should show the dialog
+    if(TrackIRPermissionDialog::shouldShowDialog()){
+      TrackIRPermissionDialog dialog(parent);
+      dialog.exec();
+    }
+    // Continue anyway - user might have chosen to skip
   }
   if(tirType == 0){
     return res;
