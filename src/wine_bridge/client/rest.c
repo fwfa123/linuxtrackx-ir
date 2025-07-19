@@ -62,10 +62,29 @@ bool game_data_get_desc(int id, game_desc_t *gd)
 {
   FILE *f = NULL;
   char *home = getenv("HOME");
+  
+  // Fix for Wine environment: getenv("HOME") can return NULL
+  if (home == NULL) {
+    printf("DEBUG: HOME is NULL, trying USERPROFILE...\n");
+    // Fallback for Wine environments where HOME is not set
+    home = getenv("USERPROFILE");
+    if (home == NULL) {
+      printf("DEBUG: USERPROFILE is NULL, using current directory\n");
+      // Final fallback to current directory
+      home = ".";
+    }
+  }
+  
   char *path1 = (char *)malloc(200 + strlen(home));
+  if (path1 == NULL) {
+    printf("DEBUG: Memory allocation failed for path1!\n");
+    return false;
+  }
+  
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/gamedata.txt", home);
     if((f = fopen(path1, "r"))== NULL){
       printf("Can't open data file '%s'!\n", path1);
+      free(path1);
       return false;
     }
     int tmp_id;
@@ -112,8 +131,29 @@ bool getSomeSeriousPoetry(char *verse1, char *verse2)
 {
   bool res = true;
   char *home = getenv("HOME");
+  
+  // Fix for Wine environment: getenv("HOME") can return NULL
+  if (home == NULL) {
+    printf("DEBUG: HOME is NULL, trying USERPROFILE...\n");
+    // Fallback for Wine environments where HOME is not set
+    home = getenv("USERPROFILE");
+    if (home == NULL) {
+      printf("DEBUG: USERPROFILE is NULL, using current directory\n");
+      // Final fallback to current directory
+      home = ".";
+    }
+  }
+  
   char *path1 = (char *)malloc(200 + strlen(home));
   char *path2 = (char *)malloc(200 + strlen(home));
+  
+  if (path1 == NULL || path2 == NULL) {
+    printf("DEBUG: Memory allocation failed for path1 or path2!\n");
+    if (path1) free(path1);
+    if (path2) free(path2);
+    return false;
+  }
+  
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/poem1.txt", home);
   sprintf(path2, "%s/.config/linuxtrack/tir_firmware/poem2.txt", home);
   FILE *f1 = fopen(path1, "rb");

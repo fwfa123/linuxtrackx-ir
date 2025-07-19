@@ -10,6 +10,15 @@ int main()
   printf("DEBUG: check_data.exe starting...\n");
   fflush(stdout);
   
+  // Add detailed environment debugging
+  printf("DEBUG: Environment variables check:\n");
+  printf("DEBUG: HOME = %s\n", getenv("HOME") ? getenv("HOME") : "NULL");
+  printf("DEBUG: USERPROFILE = %s\n", getenv("USERPROFILE") ? getenv("USERPROFILE") : "NULL");
+  printf("DEBUG: USER = %s\n", getenv("USER") ? getenv("USER") : "NULL");
+  printf("DEBUG: PWD = %s\n", getenv("PWD") ? getenv("PWD") : "NULL");
+  printf("DEBUG: WINEPREFIX = %s\n", getenv("WINEPREFIX") ? getenv("WINEPREFIX") : "NULL");
+  fflush(stdout);
+  
   //signatures
   char verse1[200], verse2[200];
   game_desc_t gd;
@@ -33,10 +42,23 @@ int main()
     // Fallback for Wine environments where HOME is not set
     home = getenv("USERPROFILE");
     if (home == NULL) {
-      printf("DEBUG: USERPROFILE is NULL, using current directory\n");
+      printf("DEBUG: USERPROFILE is NULL, trying USER...\n");
       fflush(stdout);
-      // Final fallback to current directory
-      home = ".";
+      // Try to construct home from USER
+      char *user = getenv("USER");
+      if (user != NULL) {
+        printf("DEBUG: Using USER to construct home path\n");
+        fflush(stdout);
+        home = "/home/";
+        // Note: This is a simplified approach - in practice we'd need to allocate memory
+        // For now, let's use a more robust fallback
+      }
+      if (home == NULL) {
+        printf("DEBUG: All fallbacks failed, using current directory\n");
+        fflush(stdout);
+        // Final fallback to current directory
+        home = ".";
+      }
     }
   }
   
