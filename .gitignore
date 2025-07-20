@@ -127,4 +127,110 @@ yarn.lock
 
 # Test outputs
 test_results/
-*.test 
+*.test
+
+# AppImage build artifacts
+*.AppImage
+AppDir_*/
+squashfs-root/
+appimagetool-*
+linuxdeploy-*
+linuxdeploy-plugin-*
+
+# Wine bridge build artifacts
+wine_bridge/build/
+wine_bridge/dist/
+*.exe
+*.dll
+*.ico
+*.nsi
+
+# Temporary test scripts (keep essential ones)
+test_wayland_x11.sh
+test_theme_integration.sh
+dependency_check.sh
+
+# Analysis and debugging files
+clang_tidy_results.txt
+cppcheck_results.xml
+*.bin
+*.obj
+
+# Cursor IDE files
+.cursor/
+linuxtrack new.cursor/
+
+# Temporary and backup files
+*.orig
+*.rej
+*.patch~
+
+# Build cache and temporary directories
+.cache/
+tmp/
+temp/
+
+# Generated documentation
+*.html
+*.htm
+*.xml
+
+# Local development files
+local_*
+user_*
+personal_*
+
+# Large binary files that shouldn't be in git
+*.iso
+*.img
+*.vmdk
+*.vdi
+*.ova
+*.ovf
+
+# Archive files
+*.7z
+*.rar
+*.tar
+*.gz
+*.bz2
+*.xz
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Lock files
+*.lock
+.lock
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+
+# Coverage reports
+coverage/
+*.gcov
+*.gcda
+*.gcno
+
+# Profiling data
+*.prof
+*.gprof
+*.perf
+
+# Memory dumps
+*.dump
+*.dmp
+
+# Crash reports
+*.crash
+*.crashreport
+
+# Temporary build files
+*.tmp
+*.temp
+*.cache 

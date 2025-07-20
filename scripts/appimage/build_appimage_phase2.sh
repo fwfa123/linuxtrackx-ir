@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# LinuxTrack AppImage Builder - Phase 4 Wine Bridge Integration
-# Purpose: Create fully functional AppImage with complete Wine bridge integration
+# LinuxTrack AppImage Builder - Phase 2 Optimized
+# Purpose: Create fully optimized AppImage with complete dependency bundling
 # Date: January 2025
-# Status: Phase 4 - Wine Bridge Integration
+# Status: Phase 2 - Advanced Dependency Optimization
 
 set -e
 
@@ -17,9 +17,9 @@ NC='\033[0m' # No Color
 # Script configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-APPIMAGE_DIR="$PROJECT_ROOT/AppDir_phase4"
-BUILD_DIR="$PROJECT_ROOT/build_appimage_phase4"
-VERSION="1.0.0-xir.4"
+APPIMAGE_DIR="$PROJECT_ROOT/AppDir_phase2"
+BUILD_DIR="$PROJECT_ROOT/build_appimage_phase2"
+VERSION="1.0.0-xir.3"
 APP_NAME="LinuxTrack"
 APP_ID="com.linuxtrack.linuxtrack"
 
@@ -118,7 +118,7 @@ clean_build() {
 
 # Function to create AppDir structure
 create_appdir_structure() {
-    print_status "Creating Phase 4 AppDir structure..."
+    print_status "Creating Phase 2 AppDir structure..."
     
     # Create main AppDir
     mkdir -p "$APPIMAGE_DIR"
@@ -136,21 +136,19 @@ create_appdir_structure() {
     mkdir -p "$APPIMAGE_DIR/usr/share/linuxtrack"
     mkdir -p "$APPIMAGE_DIR/usr/include"
     mkdir -p "$APPIMAGE_DIR/udev/rules.d"
+    mkdir -p "$APPIMAGE_DIR/wine_bridge/32bit"
+    mkdir -p "$APPIMAGE_DIR/wine_bridge/64bit"
     
-    # Wine bridge structure (simplified - just installer and scripts)
-    mkdir -p "$APPIMAGE_DIR/wine_bridge"
-    mkdir -p "$APPIMAGE_DIR/wine_bridge/scripts"
-    
-    print_success "Phase 4 AppDir structure created"
+    print_success "Phase 2 AppDir structure created"
 }
 
-# Function to create enhanced AppRun script with Wine management
+# Function to create optimized AppRun script
 create_apprun_script() {
-    print_status "Creating Phase 4 AppRun script with Wine management..."
+    print_status "Creating Phase 2 AppRun script..."
     
     cat > "$APPIMAGE_DIR/AppRun" << 'EOF'
 #!/bin/bash
-# AppRun - LinuxTrack AppImage launcher (Phase 4 Wine Bridge Integration)
+# AppRun - LinuxTrack AppImage launcher (Phase 2 Optimized)
 
 # Get the directory where the AppImage is mounted
 APPDIR="$(dirname "$(readlink -f "$0")")"
@@ -159,110 +157,35 @@ APPDIR="$(dirname "$(readlink -f "$0")")"
 export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack:$LD_LIBRARY_PATH"
 export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
 export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
-export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
+export QT_STYLE_OVERRIDE="Fusion"
 
-# Force X11 usage to avoid Wayland compatibility issues
-export QT_QPA_PLATFORM="xcb"
-export QT_AUTO_SCREEN_SCALE_FACTOR=0
-export QT_SCALE_FACTOR=1
-
-# Dynamic theme detection and integration
-detect_and_set_theme() {
-    local desktop_env=""
-    
-    # Detect desktop environment
-    if [ -n "$XDG_CURRENT_DESKTOP" ]; then
-        desktop_env="$XDG_CURRENT_DESKTOP"
-    elif [ -n "$DESKTOP_SESSION" ]; then
-        desktop_env="$DESKTOP_SESSION"
-    elif [ -n "$GNOME_DESKTOP_SESSION_ID" ]; then
-        desktop_env="GNOME"
-    elif [ -n "$KDE_FULL_SESSION" ]; then
-        desktop_env="KDE"
-    fi
-    
-    echo "Detected desktop environment: $desktop_env"
-    
-    # Set theme based on desktop environment
-    case "$desktop_env" in
-        *"KDE"*|*"plasma"*|*"Plasma"*)
-            echo "Using KDE/Breeze theme integration"
-            export QT_QPA_PLATFORMTHEME="breeze"
-            export QT_STYLE_OVERRIDE="Breeze"
-            ;;
-        *"GNOME"*|*"ubuntu:GNOME"*|*"Unity"*)
-            echo "Using GNOME/GTK3 theme integration"
-            export QT_QPA_PLATFORMTHEME="gtk3"
-            # Don't override style - let it use system GTK theme
-            ;;
-        *"XFCE"*|*"xfce"*)
-            echo "Using XFCE/GTK2 theme integration"
-            export QT_QPA_PLATFORMTHEME="gtk2"
-            # Don't override style - let it use system GTK theme
-            ;;
-        *"MATE"*|*"mate"*)
-            echo "Using MATE/GTK3 theme integration"
-            export QT_QPA_PLATFORMTHEME="gtk3"
-            # Don't override style - let it use system GTK theme
-            ;;
-        *"Cinnamon"*|*"cinnamon"*)
-            echo "Using Cinnamon/GTK3 theme integration"
-            export QT_QPA_PLATFORMTHEME="gtk3"
-            # Don't override style - let it use system GTK theme
-            ;;
-        *"Budgie"*|*"budgie"*)
-            echo "Using Budgie/GTK3 theme integration"
-            export QT_QPA_PLATFORMTHEME="gtk3"
-            # Don't override style - let it use system GTK theme
-            ;;
-        *)
-            echo "Unknown desktop environment, using GTK3 theme integration"
-            export QT_QPA_PLATFORMTHEME="gtk3"
-            # Don't override style - let it use system theme
-            ;;
-    esac
-}
-
-# Call theme detection function
-detect_and_set_theme
-
-# Additional X11 forcing for problematic Wayland environments
-if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
-    echo "Wayland detected - forcing X11 compatibility mode"
-    export QT_QPA_PLATFORM="xcb"
-    export GDK_BACKEND="x11"
-    export CLUTTER_BACKEND="x11"
-    export SDL_VIDEODRIVER="x11"
-    
-    # Additional Wayland-specific X11 forcing
-    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
-    export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
-    
-    # Try to start X11 if not available
-    if [ -z "$DISPLAY" ] || [ "$DISPLAY" = ":0" ]; then
-        echo "Attempting to start X11 server..."
-        # This is a fallback - in most cases X11 should already be available
-        export DISPLAY=":0"
-    fi
+# Install udev rules if not present
+if [ ! -f /etc/udev/rules.d/99-TIR.rules ]; then
+    echo "Installing TrackIR udev rules..."
+    sudo cp "$APPDIR/udev/rules.d/99-TIR.rules" /etc/udev/rules.d/
+    sudo cp "$APPDIR/udev/rules.d/99-Mickey.rules" /etc/udev/rules.d/
+    sudo udevadm control --reload-rules
+    echo "udev rules installed successfully"
 fi
 
-# Ensure X11 is available and working
-if ! xset q >/dev/null 2>&1; then
-    echo "Warning: X11 server not responding, but continuing..."
-    echo "If the application fails to start, try running: xhost +local:"
+# Check if user is in plugdev group
+if ! groups $USER | grep -q plugdev; then
+    echo "Adding user to plugdev group..."
+    sudo usermod -a -G plugdev $USER
+    echo "Please log out and back in for changes to take effect"
 fi
 
-# Wine bridge components are available for GUI-initiated installation
-# The GUI will handle Wine bridge installation when user clicks the button in Misc tab
+# Check for Wine and install Wine bridge components if available
 if command -v wine >/dev/null 2>&1; then
-    echo "Wine detected - Wine bridge components available"
-    echo "Use the Misc tab in the GUI to install Wine bridge to your Wine prefix"
+    echo "Wine detected - installing Wine bridge components..."
+    export WINEPREFIX="$HOME/.wine"
+    
+    # Install Wine bridge components if they exist
+    if [ -f "$APPDIR/wine_bridge/install_wine_bridge.sh" ]; then
+        "$APPDIR/wine_bridge/install_wine_bridge.sh"
+    fi
 else
     echo "Wine not detected - Wine bridge disabled"
-    echo "To enable Wine bridge support, install Wine:"
-    echo "  Ubuntu/Debian: sudo apt install wine wine32 wine64"
-    echo "  Fedora: sudo dnf install wine wine-core wine-desktop"
-    echo "  Arch: sudo pacman -S wine wine-mono wine-gecko"
 fi
 
 # Launch the application
@@ -270,7 +193,7 @@ exec "$APPDIR/usr/bin/ltr_gui" "$@"
 EOF
 
     chmod +x "$APPIMAGE_DIR/AppRun"
-    print_success "Phase 4 AppRun script created"
+    print_success "Phase 2 AppRun script created"
 }
 
 # Function to create desktop file
@@ -280,13 +203,13 @@ create_desktop_file() {
     cat > "$APPIMAGE_DIR/linuxtrack.desktop" << EOF
 [Desktop Entry]
 Name=LinuxTrack
-Comment=Head tracking software for Linux with Wine bridge support
+Comment=Head tracking software for Linux
 Exec=usr/bin/ltr_gui
 Icon=linuxtrack
 Terminal=false
 Type=Application
 Categories=Game;
-Keywords=head;tracking;trackir;gaming;wine;
+Keywords=head;tracking;trackir;gaming;
 EOF
 
     # Copy to applications directory
@@ -342,180 +265,43 @@ copy_udev_rules() {
     print_success "udev rules copied"
 }
 
-# Function to prepare Wine bridge components (pre-built approach)
-prepare_wine_bridge_components() {
-    print_status "Preparing Wine bridge components (pre-built approach)..."
-    
-    cd "$PROJECT_ROOT"
-    
-    # Check if pre-built Wine bridge components exist
-    if [ -d "prebuilt/wine_bridge" ]; then
-        print_status "Found pre-built Wine bridge components"
-        
-        # Verify we have the main installer
-        if [ -f "prebuilt/wine_bridge/linuxtrack-wine.exe" ]; then
-            print_success "Found linuxtrack-wine.exe installer"
-        else
-            print_warning "Missing linuxtrack-wine.exe installer"
-        fi
-        
-        # Check for essential DLLs
-        local essential_dlls=("NPClient.dll" "FreeTrackClient.dll")
-        for dll in "${essential_dlls[@]}"; do
-            if [ -f "prebuilt/wine_bridge/$dll" ]; then
-                print_success "Found: $dll"
-            else
-                print_warning "Missing: $dll"
-            fi
-        done
-        
-        return 0
-    fi
-    
-    print_error "No pre-built Wine bridge components found"
-    print_status "Please run: ./scripts/appimage/extract_wine_bridge_from_build.sh"
-    print_status "This will build and extract all Wine bridge components"
-    
-    return 1
-}
-
 # Function to copy Wine bridge components
-copy_wine_bridge_components() {
-    print_status "Copying Wine bridge installer from newly built components..."
+copy_wine_bridge() {
+    print_status "Copying Wine bridge components..."
     
-    # Use the newly built Wine bridge installer that was installed during make install
-    local wine_src="$APPIMAGE_DIR/usr/share/linuxtrack/wine"
-    local wine_dest="$APPIMAGE_DIR/wine_bridge"
-    
-    # Copy the main Wine bridge installer to the correct locations for GUI
-    if [ -f "$wine_src/linuxtrack-wine.exe" ]; then
-        # Copy to wine_bridge/ for the installation script
-        cp "$wine_src/linuxtrack-wine.exe" "$wine_dest/"
+    # Check if prebuilt Wine bridge package exists
+    if dir_exists "$PROJECT_ROOT/prebuilt_wine_bridge"; then
+        print_status "Found prebuilt Wine bridge components"
         
-        # Copy to share/linuxtrack/ for wine_launcher.cpp (if not already there)
-        if [ ! -f "$APPIMAGE_DIR/usr/share/linuxtrack/linuxtrack-wine.exe" ]; then
-            cp "$wine_src/linuxtrack-wine.exe" "$APPIMAGE_DIR/usr/share/linuxtrack/"
+        # Copy 32-bit components
+        if dir_exists "$PROJECT_ROOT/prebuilt_wine_bridge/32bit"; then
+            cp -r "$PROJECT_ROOT/prebuilt_wine_bridge/32bit"/* "$APPIMAGE_DIR/wine_bridge/32bit/" 2>/dev/null || true
+            print_status "Copied 32-bit Wine bridge components"
         fi
         
-        print_success "Copied linuxtrack-wine.exe installer to GUI data paths (from newly built components)"
+        # Copy 64-bit components
+        if dir_exists "$PROJECT_ROOT/prebuilt_wine_bridge/64bit"; then
+            cp -r "$PROJECT_ROOT/prebuilt_wine_bridge/64bit"/* "$APPIMAGE_DIR/wine_bridge/64bit/" 2>/dev/null || true
+            print_status "Copied 64-bit Wine bridge components"
+        fi
+        
+        # Copy installation script
+        if file_exists "$PROJECT_ROOT/prebuilt_wine_bridge/install_wine_bridge.sh"; then
+            cp "$PROJECT_ROOT/prebuilt_wine_bridge/install_wine_bridge.sh" "$APPIMAGE_DIR/wine_bridge/"
+            chmod +x "$APPIMAGE_DIR/wine_bridge/install_wine_bridge.sh"
+            print_status "Copied Wine bridge installation script"
+        fi
+        
+        print_success "Wine bridge components copied"
     else
-        print_error "linuxtrack-wine.exe installer not found in build directory: $wine_src"
-        print_error "This means the Wine bridge was not built during the make install step"
-        return 1
-    fi
-    
-    # Create Wine bridge installation script
-    create_wine_bridge_installer
-    
-    print_success "Wine bridge installer copied"
-}
-
-# Function to create Wine bridge installation script
-create_wine_bridge_installer() {
-    print_status "Creating Wine bridge installation script..."
-    
-    cat > "$APPIMAGE_DIR/wine_bridge/scripts/install_wine_bridge.sh" << 'EOF'
-#!/bin/bash
-# Wine Bridge Installation Script for LinuxTrack AppImage
-
-set -e
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-print_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
-
-# Get the directory where the AppImage is mounted
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-APPDIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
-WINE_BRIDGE_DIR="$APPDIR/wine_bridge"
-
-# Function to install Wine bridge using the installer
-install_wine_bridge() {
-    local wine_prefix="$1"
-    
-    print_status "Installing Wine bridge to $wine_prefix..."
-    
-    # Check if installer exists
-    if [ ! -f "$WINE_BRIDGE_DIR/linuxtrack-wine.exe" ]; then
-        print_error "Wine bridge installer not found"
-        return 1
-    fi
-    
-    # Set Wine prefix
-    export WINEPREFIX="$wine_prefix"
-    
-    # Run the installer
-    if command -v wine >/dev/null 2>&1; then
-        print_status "Running Wine bridge installer..."
-        wine "$WINE_BRIDGE_DIR/linuxtrack-wine.exe" /S 2>/dev/null || {
-            print_warning "Silent installation failed, trying interactive"
-            wine "$WINE_BRIDGE_DIR/linuxtrack-wine.exe" 2>/dev/null || true
-        }
-        print_success "Wine bridge installation completed"
-    else
-        print_error "Wine not available for installation"
-        return 1
+        print_warning "No prebuilt Wine bridge components found"
+        print_warning "Wine bridge functionality will be disabled"
     fi
 }
-
-# Main installation
-main() {
-    print_status "LinuxTrack Wine Bridge Installation"
-    print_status "==================================="
-    
-    # Check if Wine is available
-    if ! command -v wine >/dev/null 2>&1; then
-        print_error "Wine is not installed. Please install Wine first."
-        print_status "Ubuntu/Debian: sudo apt install wine wine32 wine64"
-        print_status "Fedora: sudo dnf install wine wine-core wine-desktop"
-        print_status "Arch: sudo pacman -S wine wine-mono wine-gecko"
-        exit 1
-    fi
-    
-    # Install to default Wine prefix
-    if [ -n "$WINEPREFIX" ]; then
-        install_wine_bridge "$WINEPREFIX"
-    else
-        # Install to default ~/.wine
-        install_wine_bridge "$HOME/.wine"
-    fi
-    
-    print_success "Wine bridge installation completed"
-    print_status "You can now run Windows games with TrackIR support"
-}
-
-# Run main function
-main "$@"
-EOF
-
-    chmod +x "$APPIMAGE_DIR/wine_bridge/scripts/install_wine_bridge.sh"
-    print_success "Wine bridge installation script created"
-}
-
-
 
 # Function to build LinuxTrack
 build_linuxtrack() {
-    print_status "Building LinuxTrack (Wine bridge enabled by default)..."
+    print_status "Building LinuxTrack..."
     
     cd "$PROJECT_ROOT"
     
@@ -528,7 +314,7 @@ build_linuxtrack() {
         return 1
     }
     
-    # Configure (Wine bridge is enabled by default)
+    # Configure with AppImage support
     ./configure --prefix=/usr || {
         print_error "Failed to configure build"
         return 1
@@ -540,7 +326,7 @@ build_linuxtrack() {
         return 1
     }
     
-    print_success "LinuxTrack built successfully (Wine bridge enabled by default)"
+    print_success "LinuxTrack built successfully"
     return 0
 }
 
@@ -549,17 +335,6 @@ install_to_appdir() {
     print_status "Installing to AppDir..."
     
     cd "$PROJECT_ROOT"
-    
-    # Make sure Wine bridge is built before install
-    if [ -d "src/wine_bridge" ]; then
-        print_status "Building Wine bridge components..."
-        cd src/wine_bridge
-        make || {
-            print_error "Failed to build Wine bridge components"
-            return 1
-        }
-        cd ../..
-    fi
     
     # Install to AppDir
     make install DESTDIR="$APPIMAGE_DIR" || {
@@ -571,9 +346,9 @@ install_to_appdir() {
     return 0
 }
 
-# Function to bundle dependencies with Wine bridge optimization
+# Function to bundle dependencies with advanced optimization
 bundle_dependencies() {
-    print_status "Bundling dependencies with Wine bridge optimization..."
+    print_status "Bundling dependencies with advanced optimization..."
     
     cd "$APPIMAGE_DIR"
     
@@ -618,50 +393,10 @@ bundle_dependencies() {
         fi
     done
     
-    # Ensure Qt plugins are bundled
-    ensure_qt_plugins_bundled
-    
     # Advanced optimization
     optimize_library_structure
     
-    print_success "Dependencies bundled with Wine bridge optimization"
-}
-
-# Function to ensure Qt plugins are bundled
-ensure_qt_plugins_bundled() {
-    print_status "Ensuring Qt plugins are bundled..."
-    
-    # Create Qt plugins directory structure
-    mkdir -p "usr/lib/qt5/plugins/platforms"
-    mkdir -p "usr/lib/qt5/plugins/imageformats"
-    mkdir -p "usr/lib/qt5/plugins/iconengines"
-    mkdir -p "usr/lib/qt5/plugins/styles"
-    
-    # Copy Qt platform plugins
-    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms" ]; then
-        cp /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/*.so usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
-        print_status "Copied Qt platform plugins"
-    fi
-    
-    # Copy Qt image format plugins
-    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/imageformats" ]; then
-        cp /usr/lib/x86_64-linux-gnu/qt5/plugins/imageformats/*.so usr/lib/qt5/plugins/imageformats/ 2>/dev/null || true
-        print_status "Copied Qt image format plugins"
-    fi
-    
-    # Copy Qt icon engine plugins
-    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/iconengines" ]; then
-        cp /usr/lib/x86_64-linux-gnu/qt5/plugins/iconengines/*.so usr/lib/qt5/plugins/iconengines/ 2>/dev/null || true
-        print_status "Copied Qt icon engine plugins"
-    fi
-    
-    # Copy Qt style plugins for theme integration
-    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/styles" ]; then
-        cp /usr/lib/x86_64-linux-gnu/qt5/plugins/styles/*.so usr/lib/qt5/plugins/styles/ 2>/dev/null || true
-        print_status "Copied Qt style plugins for theme integration"
-    fi
-    
-    print_success "Qt plugins bundling ensured"
+    print_success "Dependencies bundled with advanced optimization"
 }
 
 # Function to optimize library structure
@@ -697,7 +432,7 @@ optimize_library_structure() {
 
 # Function to create AppImage
 create_appimage() {
-    print_status "Creating Phase 4 AppImage..."
+    print_status "Creating Phase 2 AppImage..."
     
     cd "$PROJECT_ROOT"
     
@@ -707,13 +442,13 @@ create_appimage() {
         return 1
     }
     
-    print_success "Phase 4 AppImage created: ${APP_NAME}-x86_64.AppImage"
+    print_success "Phase 2 AppImage created: ${APP_NAME}-x86_64.AppImage"
     return 0
 }
 
 # Function to verify AppImage
 verify_appimage() {
-    print_status "Verifying Phase 4 AppImage..."
+    print_status "Verifying Phase 2 AppImage..."
     
     if [ ! -f "$PROJECT_ROOT/${APP_NAME}-x86_64.AppImage" ]; then
         print_error "AppImage not found"
@@ -745,14 +480,6 @@ verify_appimage() {
         print_warning "OpenCV libraries may not be properly bundled"
     fi
     
-    # Check Wine bridge components
-    if [ -d "wine_bridge" ]; then
-        print_success "Wine bridge components are bundled"
-        find wine_bridge -name "*.dll" -o -name "*.exe" | head -10
-    else
-        print_warning "Wine bridge components may not be properly bundled"
-    fi
-    
     # Check total library count
     LIB_COUNT=$(find . -name "*.so*" | wc -l)
     print_status "Total bundled libraries: $LIB_COUNT"
@@ -766,13 +493,13 @@ verify_appimage() {
         print_warning "AppImage test failed, but this may be normal for GUI applications"
     }
     
-    print_success "Phase 4 AppImage verification completed"
+    print_success "Phase 2 AppImage verification completed"
     return 0
 }
 
 # Function to show help
 show_help() {
-    echo "LinuxTrack AppImage Builder - Phase 4 Wine Bridge Integration"
+    echo "LinuxTrack AppImage Builder - Phase 2 Optimized"
     echo ""
     echo "Usage: $0 [OPTIONS]"
     echo ""
@@ -780,14 +507,12 @@ show_help() {
     echo "  --clean          Clean previous builds before building"
     echo "  --skip-build     Skip building LinuxTrack (use existing build)"
     echo "  --skip-deps      Skip dependency bundling"
-    echo "  --skip-wine      Skip Wine bridge component preparation"
     echo "  --help           Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0               # Full Phase 4 Wine bridge build"
-    echo "  $0 --clean       # Clean Phase 4 build"
+    echo "  $0               # Full Phase 2 optimized build"
+    echo "  $0 --clean       # Clean Phase 2 build"
     echo "  $0 --skip-build  # Use existing build"
-    echo "  $0 --skip-wine   # Skip Wine bridge component preparation"
 }
 
 # Main function
@@ -795,7 +520,6 @@ main() {
     local clean_build_flag=false
     local skip_build_flag=false
     local skip_deps_flag=false
-    local skip_wine_flag=false
     
     # Parse command line arguments
     while [[ $# -gt 0 ]]; do
@@ -812,10 +536,6 @@ main() {
                 skip_deps_flag=true
                 shift
                 ;;
-            --skip-wine)
-                skip_wine_flag=true
-                shift
-                ;;
             --help)
                 show_help
                 exit 0
@@ -828,7 +548,7 @@ main() {
         esac
     done
     
-    print_status "Starting LinuxTrack AppImage Phase 4 Wine Bridge Integration..."
+    print_status "Starting LinuxTrack AppImage Phase 2 optimized build..."
     print_status "Project root: $PROJECT_ROOT"
     print_status "Distribution: $(detect_distro)"
     
@@ -858,6 +578,9 @@ main() {
     # Copy udev rules
     copy_udev_rules
     
+    # Copy Wine bridge components
+    copy_wine_bridge
+    
     # Build LinuxTrack if not skipped
     if [ "$skip_build_flag" = false ]; then
         if ! build_linuxtrack; then
@@ -872,13 +595,6 @@ main() {
     if ! install_to_appdir; then
         print_error "Installation to AppDir failed"
         exit 1
-    fi
-    
-    # Copy Wine bridge components from installed location if not skipped
-    if [ "$skip_wine_flag" = false ]; then
-        copy_wine_bridge_components
-    else
-        print_status "Skipping Wine bridge component preparation"
     fi
     
     # Bundle dependencies if not skipped
@@ -897,10 +613,9 @@ main() {
     # Verify AppImage
     verify_appimage
     
-    print_success "LinuxTrack Phase 4 Wine Bridge Integration completed successfully!"
+    print_success "LinuxTrack Phase 2 optimized AppImage build completed successfully!"
     print_status "AppImage location: $PROJECT_ROOT/${APP_NAME}-x86_64.AppImage"
     print_status "You can now test the AppImage by running: ./${APP_NAME}-x86_64.AppImage"
-    print_status "Wine bridge components are included and will be installed automatically when Wine is detected"
 }
 
 # Run main function
