@@ -61,6 +61,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Qt4 to Qt5 migration guide (7KB)
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Original modernization plan (7KB)
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB)
+- **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
 
 ### 📈 Development Progress (`progress/`)
 **For development history and project tracking**
@@ -183,6 +184,11 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** (Wine section)
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)**
+
+#### "AppImage" or "Packaging" or "Distribution"
+- **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)**
+- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
+- **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** (Packaging section)
 
 #### "ApplicationID" or "gamedata.txt" or "((null))"
 - **[troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)**
