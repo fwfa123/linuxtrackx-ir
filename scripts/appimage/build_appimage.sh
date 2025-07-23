@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 APPIMAGE_DIR="$PROJECT_ROOT/AppDir"
 BUILD_DIR="$PROJECT_ROOT/build_appimage"
-VERSION="1.0.0-xir.1"
+VERSION="0.99.21"
 APP_NAME="LinuxTrack"
 APP_ID="com.linuxtrack.linuxtrack"
 

@@ -2,10 +2,10 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-## [1.0.0-xir.1] - Initial Fork Release (2024)
+## [0.99.21] - LinuxTrack X-IR Initial Release (2025)
 
 ### Major Changes
-- **Version Bump**: Moved from 0.99.20 to 1.0.0-xir.1 to reflect fork status
+- **Version Bump**: Moved from 0.99.20 to 0.99.21 to reflect fork status and modernization progress
 - **Project Renaming**: Updated project name to "LinuxTrack X-IR" throughout
 - **Fork Identification**: Added "-xir.1" suffix to clearly identify this as the linuxtrackx-ir fork
 - **Documentation Updates**: Comprehensive documentation reflecting current fork status
@@ -16,7 +16,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 - **Updated Metadata**: Package names, changelog entries, and help system references
 
 ### Changed
-- **Version Number**: 0.99.20 → 1.0.0-xir.1
+- **Version Number**: 0.99.20 → 0.99.21
 - **Project Name**: LinuxTrack → LinuxTrack X-IR
 - **Package Names**: linuxtrack → linuxtrack-xir (in debian packaging)
 - **Help System**: Updated Qt help files with new version references
@@ -24,9 +24,9 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 ### Versioning Strategy
 This release establishes the versioning strategy for the linuxtrackx-ir fork:
 - **Format**: `MAJOR.MINOR.PATCH-fork.RELEASE`
-- **Example**: `1.0.0-xir.1`, `1.0.1-xir.1`, `1.1.0-xir.1`
+- **Example**: `0.99.21`, `0.99.22`, `0.99.23`
 - **Rationale**: 
-  - Major version bump (0.99.20 → 1.0.0) reflects significant modernization
+  - Version increment (0.99.20 → 0.99.21) reflects fork status and modernization progress
   - Fork suffix (-xir.x) clearly identifies this as the linuxtrackx-ir fork
   - Maintains semantic versioning principles
   - Acknowledges relationship to original project
@@ -131,7 +131,7 @@ This release establishes the versioning strategy for the linuxtrackx-ir fork:
 | **Distribution Support** | Legacy Linux | Modern Linux distributions |
 | **Development Status** | Abandoned | Active |
 | **Documentation** | Basic | Comprehensive guides |
-| **Version Number** | 0.99.20 | 1.0.0-xir.1 |
+| **Version Number** | 0.99.20 | 0.99.21 |
 
 ## Migration Notes
 

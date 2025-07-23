@@ -128,8 +128,8 @@ cd linuxtrackx-ir
 ./scripts/install/modify_build_for_prebuilt.sh
 
 # Download and extract Wine bridge package
-wget https://github.com/fwfa123/linuxtrackx-ir/releases/download/v1.0.0/linuxtrack-wine-bridge-1.0.0.tar.gz
-tar -xzf linuxtrack-wine-bridge-1.0.0.tar.gz
+wget https://github.com/fwfa123/linuxtrackx-ir/releases/download/v0.99.21/linuxtrack-wine-bridge-0.99.21.tar.gz
+tar -xzf linuxtrack-wine-bridge-0.99.21.tar.gz
 
 # Build and install LinuxTrack
 autoreconf -fiv
@@ -269,8 +269,8 @@ cd wine_bridge_package
 ```bash
 # Error: Prebuilt directory not found
 # Solution: Download and extract Wine bridge package
-wget https://github.com/fwfa123/linuxtrackx-ir/releases/download/v1.0.0/linuxtrack-wine-bridge-1.0.0.tar.gz
-tar -xzf linuxtrack-wine-bridge-1.0.0.tar.gz
+wget https://github.com/fwfa123/linuxtrackx-ir/releases/download/v0.99.21/linuxtrack-wine-bridge-0.99.21.tar.gz
+tar -xzf linuxtrack-wine-bridge-0.99.21.tar.gz
 ```
 
 **Wine Bridge Not Working:**
