@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PACKAGE_NAME="linuxtrack-wine-bridge-1.0.0.tar.gz"
-PACKAGE_URL="https://github.com/fwfa123/linuxtrackx-ir/releases/download/v1.0.0/$PACKAGE_NAME"
+PACKAGE_URL="https://github.com/fwfa123/linuxtrackx-ir/releases/download/v0.99.21/$PACKAGE_NAME"
 
 # Print functions
 print_status() {
