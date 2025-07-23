@@ -1,13 +1,30 @@
-Installing TrackIR udev rules...
-[sudo] password for mario:
-cp: cannot stat '/tmp/.mount_LinuxTG4xvt6/udev/rules.d/99-TIR.rules': Permission denied
-cp: cannot stat '/tmp/.mount_LinuxTG4xvt6/udev/rules.d/99-Mickey.rules': Permission denied
-udev rules installed successfully
-Adding user to plugdev group...
-usermod: group 'plugdev' does not exist
-Please log out and back in for changes to take effect
+Detected desktop environment: KDE
+Using KDE/Breeze theme integration
+Qt environment isolated - using bundled Qt libraries only
+Verifying Qt isolation...
+WARNING: System library paths detected in LD_LIBRARY_PATH
+Forcing complete isolation...
+Qt isolation verified - using bundled libraries only
+Wayland detected - forcing X11 compatibility mode
 Wine detected - Wine bridge components available
 Use the Misc tab in the GUI to install Wine bridge to your Wine prefix
-qt.qpa.plugin: Could not find the Qt platform plugin "wayland" in "/tmp/.mount_LinuxTG4xvt6/usr/lib/qt5/plugins/platforms"
-qt.qpa.plugin: Could not find the Qt platform plugin "xcb" in "/tmp/.mount_LinuxTG4xvt6/usr/lib/qt5/plugins/platforms"
-This application failed to start because no Qt platform plugin could be initialized. Reinstalling the application may fix this problem.
+Attempting to launch with xcb platform (complete isolation)...
+=== LinuxTrack Help System Initialization ===
+1. Checking Qt environment...
+   Qt version: 5.15.8
+   Application path: /tmp/.mount_LinuxTABpdtN/usr/bin
+2. Checking Qt plugin paths...
+   Plugin path: /tmp/.mount_LinuxTABpdtN/usr/lib/qt5/plugins/platforms
+   Plugin path: /tmp/.mount_LinuxTABpdtN/usr/lib/qt5/plugins
+   Plugin path: /tmp/.mount_LinuxTABpdtN/usr/bin
+3. Checking environment variables...
+   QT_PLUGIN_PATH: /tmp/.mount_LinuxTABpdtN/usr/lib/qt5/plugins
+   QT_SQL_DRIVER_PATH: /tmp/.mount_LinuxTABpdtN/usr/lib/qt5/plugins/sqldrivers
+   QT_HELP_PATH: /tmp/.mount_LinuxTABpdtN/usr/share/linuxtrack/help
+4. Checking SQLite driver availability...
+   Available SQL drivers:
+   ❌ QSQLITE driver not found in available drivers!
+   Attempting to manually load SQLite plugin...
+   ❌ Could not load SQLite plugin from any location!
+Help system initialization failed - creating fallback help viewer
+Found device 8

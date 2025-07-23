@@ -66,10 +66,16 @@ This fork is maintained by **fwfa123** (61 commits), a developer with limited C/
 
 ## 🚀 Quick Start
 
+### **Recommended: AppImage Installation**
+For most users, we recommend using the **AppImage** for the easiest installation experience. See the [AppImage Installation](#-appimage-installation-recommended) section below.
+
+### **Alternative: Build from Source**
+If you prefer to build from source or need custom configurations, follow the distribution-specific instructions below.
+
 ### For Debian / Ubuntu / MX Linux Users
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev liblo7 liblo-dev libcwiid1 libcwiid-dev wine-staging winetricks
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -85,12 +91,19 @@ autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
 sudo make install
+
+# Add user to required group
+sudo usermod -a -G plugdev $USER
+
+# Optional: Install X-Plane SDK for plugin support
+# Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
+# Extract and install to /usr/include/xplane_sdk/
 ```
 
 ### For Fedora / RHEL / CentOS Users
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -106,7 +119,16 @@ autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
 sudo make install
-```
+
+# Add user to required group
+sudo usermod -a -G plugdev $USER
+
+# Optional: Install X-Plane SDK for plugin support
+# Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
+# Extract and install to /usr/include/xplane_sdk/
+
+# Install Wine development tools (if not using the setup script)
+sudo dnf install -y wine-devel wine-tools
 
 ### For Arch Linux / Manjaro Users
 
@@ -119,7 +141,7 @@ sudo make install
 #### **Alternative: Standard Installation (Requires Wine Development Tools)**
 ```bash
 # Install dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine wine-mono wine-gecko wine-staging winetricks
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine wine-mono wine-gecko wine-staging winetricks liblo libcwiid
 
 # Build LinuxTrack
 git clone <repository-url>
@@ -134,13 +156,101 @@ autoreconf -fiv
 ./configure --prefix=/opt
 make -j$(nproc)
 sudo make install
-```
+
+# Add user to required group
+sudo usermod -a -G plugdev $USER
+
+# Optional: Install X-Plane SDK for plugin support
+# Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
+# Extract and install to /usr/include/xplane_sdk/
+
+# Install Wine development tools (if not using the setup script)
+sudo pacman -S wine-staging
 
 **Note**: 
 - **Prebuilt installation is recommended** for Arch Linux to avoid Wine development tool issues
 - **`qt5-help`** is not needed - Qt5 help functionality is included in `qt5-tools`
 - **`libmxml`** is available as **`mxml`** in Arch Linux (extras repository)
 - **`nsis`** may have AUR issues - use our dedicated NSIS installation script: `./scripts/install/install_nsis_arch.sh` which provides multiple fallback installation methods.
+
+## 📦 AppImage Installation (Recommended)
+
+### **Easiest Installation Method**
+For most users, the **AppImage** is the recommended installation method. It includes all dependencies and works across different Linux distributions:
+
+```bash
+# Download and run the latest AppImage
+# (AppImage will be available in releases)
+
+# Make executable and run
+chmod +x LinuxTrack-X-IR-*.AppImage
+./LinuxTrack-X-IR-*.AppImage
+
+# Or integrate with your system
+./LinuxTrack-X-IR-*.AppImage --appimage-extract-and-run
+```
+
+### **AppImage Benefits**
+- ✅ **No dependencies to install** - Everything included
+- ✅ **Works on any Linux distribution** - Universal compatibility
+- ✅ **Easy updates** - Just download new AppImage
+- ✅ **No system modifications** - Runs from any location
+- ✅ **Includes Wine components** - TrackIR firmware extraction ready
+
+### **Building Your Own AppImage**
+If you want to build the AppImage yourself:
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd linuxtrackx-ir
+
+# Build AppImage (requires Docker or similar isolation)
+./scripts/appimage/build_appimage_phase4.sh
+
+# The AppImage will be created in the project root
+```
+
+## 🖥️ Display Server Compatibility
+
+### **X11 (Recommended)**
+LinuxTrack works best with X11. If you're using X11, simply run:
+```bash
+ltr_gui
+```
+
+### **Wayland Compatibility**
+If you're using Wayland, you may need to force X11 compatibility:
+
+```bash
+# Force X11 backend for Qt applications
+QT_QPA_PLATFORM=xcb ltr_gui
+
+# Or set environment variable permanently
+export QT_QPA_PLATFORM=xcb
+ltr_gui
+```
+
+### **Wayland Best Practices**
+- **Use X11 backend**: `QT_QPA_PLATFORM=xcb` ensures compatibility
+- **Check your session**: `echo $XDG_SESSION_TYPE` to verify display server
+- **Fallback to X11**: If Wayland causes issues, switch to X11 session
+- **AppImage compatibility**: AppImage works on both X11 and Wayland with proper environment variables
+
+### **Troubleshooting Display Issues**
+```bash
+# Check your display server
+echo $XDG_SESSION_TYPE
+
+# Force X11 if using Wayland
+QT_QPA_PLATFORM=xcb ltr_gui
+
+# Check Qt platform plugins
+ls /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/
+
+# Verify X11 compatibility
+xrandr --listmonitors
+```
 
 ## 🎉 What's New
 
@@ -235,6 +345,22 @@ LinuxTrack works with games and simulators that support:
 
 **Note**: Without the XPlane SDK, configure will show "XPlane plugin... no". The SDK is only needed if you want to build X-Plane compatibility plugins.
 
+### OSC Support (Optional)
+- **liblo** (required for OSC support): Lightweight OSC (Open Sound Control) library
+- **Installation**: `sudo apt install liblo7 liblo-dev` (Debian/Ubuntu/MX) or `sudo dnf install liblo liblo-devel` (Fedora/RHEL) or `sudo pacman -S liblo` (Arch)
+- **Features**: Enables OSC server for real-time tracking data transmission
+- **Usage**: Builds `osc_server` binary for sending tracking data via OSC protocol
+
+**Note**: Without liblo, configure will show "OSC support... no". The library is only needed if you want to use OSC for real-time tracking data transmission to other applications.
+
+### Wiimote Support (Optional)
+- **libcwiid** (required for Wiimote support): Library to interface with Nintendo Wiimote
+- **Installation**: `sudo apt install libcwiid1 libcwiid-dev` (Debian/Ubuntu/MX) or `sudo dnf install libcwiid libcwiid-devel` (Fedora/RHEL) or `sudo pacman -S libcwiid` (Arch)
+- **Features**: Enables Wiimote tracking for head movement detection
+- **Usage**: Builds `wii_server` binary for Wiimote connection and tracking
+
+**Note**: Without libcwiid, configure will show "Wiimote support... no". The library is only needed if you want to use Nintendo Wiimote for head tracking.
+
 ## 📖 Documentation
 
 ### Fork Information
@@ -311,7 +437,11 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 
 2. **Launch GUI**:
    ```bash
+   # For X11 (recommended)
    ltr_gui
+   
+   # For Wayland (force X11 compatibility)
+   QT_QPA_PLATFORM=xcb ltr_gui
    ```
 
 3. **Configure tracking**:
@@ -334,6 +464,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | `libv4l2.h: No such file or directory` | V4L2 development headers missing. Install: `sudo apt install libv4l-dev` (Debian/Ubuntu/MX) or `sudo dnf install v4l-utils-devel` (Fedora/RHEL) or `sudo pacman -S v4l-utils` (Arch) |
 | `Unknown module(s) in QT: opengl help` | Qt5 help module missing. Install: `sudo apt install qttools5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qttools-devel` (Fedora) or `sudo pacman -S qt5-tools` (Arch) |
 | Qt5 not found | Install Qt5: `sudo apt install qtbase5-dev qttools5-dev-tools libqt5x11extras5-dev qttools5-dev` (Debian/Ubuntu/MX) or `sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel` (Fedora) or `sudo pacman -S qt5-base qt5-tools qt5-x11extras` (Arch) |
+| GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` or switch to X11 session |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
@@ -342,10 +473,12 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 
 ### Getting Help
 1. **Check the docs**: Start with the [Quick Start](#-quick-start) section for your distribution
-2. **Verify installation**: Run `ltr_gui` to test basic functionality
-3. **Check logs**: Look for error messages in terminal output
-4. **Hardware test**: Verify USB devices are detected
-5. **Distribution guides**: See the `docs/` directory for detailed guides
+2. **Try AppImage first**: Use the [AppImage Installation](#-appimage-installation-recommended) for easiest setup
+3. **Check display server**: Verify X11/Wayland compatibility with `echo $XDG_SESSION_TYPE`
+4. **Verify installation**: Run `ltr_gui` (X11) or `QT_QPA_PLATFORM=xcb ltr_gui` (Wayland) to test basic functionality
+5. **Check logs**: Look for error messages in terminal output
+6. **Hardware test**: Verify USB devices are detected
+7. **Distribution guides**: See the `docs/` directory for detailed guides
 
 ## 📁 Project Structure
 
@@ -444,6 +577,7 @@ pkg-config --exists libusb-1.0
 pkg-config --exists mxml
 pkg-config --exists liblo  # Optional: OSC support
 pkg-config --exists libcwiid  # Optional: Wii support
+ls /usr/include/xplane_sdk/XPLM/XPLMPlugin.h  # Optional: X-Plane support
 ```
 
 #### Development Headers
@@ -473,7 +607,7 @@ ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || ls /usr/i
 #### Debian/Ubuntu/MX Linux
 ```bash
 # Core dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks liblo7 liblo-dev libcwiid1 libcwiid-dev
 
 # Wine development tools
 sudo apt install -y wine-devel wine32:i386
@@ -482,7 +616,7 @@ sudo apt install -y wine-devel wine32:i386
 #### Fedora/RHEL/CentOS
 ```bash
 # Core dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks mfc42
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks liblo liblo-devel libcwiid libcwiid-devel
 
 # Wine development tools
 sudo dnf install -y wine-devel wine-tools
@@ -491,7 +625,7 @@ sudo dnf install -y wine-devel wine-tools
 #### Arch Linux/Manjaro
 ```bash
 # Core dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks mfc42
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks liblo libcwiid
 
 # NSIS installation (use our helper script if AUR package fails)
 ./scripts/install/install_nsis_arch.sh
@@ -535,6 +669,19 @@ sudo dnf install glibc-devel.i686 libstdc++-devel.i686
 
 # Install 32-bit libraries (Arch)
 sudo pacman -S lib32-glibc lib32-gcc-libs
+```
+
+#### X-Plane SDK Issues
+```bash
+# Check X-Plane SDK installation
+ls /usr/include/xplane_sdk/XPLM/XPLMPlugin.h
+
+# Manual installation if not found
+sudo mkdir -p /usr/include/xplane_sdk
+sudo cp -r /path/to/extracted/SDK/CHeaders/* /usr/include/xplane_sdk/
+
+# Verify configure detects X-Plane support
+./configure --prefix=/opt 2>&1 | grep "XPlane plugin"
 ```
 
 This comprehensive dependency analysis ensures that all required components are available for building LinuxTrack X-IR with full functionality.

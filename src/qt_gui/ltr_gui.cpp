@@ -91,6 +91,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.XplanePluginButton, SIGNAL(pressed()), this, SLOT(on_XplanePluginButton_pressed()));
   QObject::connect(ui.ViewLogButton, SIGNAL(pressed()), this, SLOT(on_ViewLogButton_pressed()));
   QObject::connect(ui.PackageLogsButton, SIGNAL(pressed()), this, SLOT(on_PackageLogsButton_pressed()));
+  QObject::connect(ui.LaunchMickeyButton, SIGNAL(pressed()), this, SLOT(on_LaunchMickeyButton_pressed()));
   
   ui.ModelEditSite->addWidget(me);
   ui.ProfileSetupSite->addWidget(ps);
@@ -389,6 +390,38 @@ void LinuxtrackGui::on_PackageLogsButton_pressed()
   QStringList args;
   args << QStringLiteral("-c") << QStringLiteral("zip %1 /tmp/linuxtrack*").arg(fname);
   zipper.start(QStringLiteral("bash"), args);
+}
+
+void LinuxtrackGui::on_LaunchMickeyButton_pressed()
+{
+  // Try to find mickey binary in common locations
+  QStringList mickeyPaths;
+  mickeyPaths << QStringLiteral("/opt/bin/mickey")
+              << QStringLiteral("/usr/local/bin/mickey")
+              << QStringLiteral("/usr/bin/mickey")
+              << QDir::homePath() + QStringLiteral("/.local/bin/mickey");
+  
+  QString mickeyPath;
+  for (const QString &path : mickeyPaths) {
+    if (QFile::exists(path)) {
+      mickeyPath = path;
+      break;
+    }
+  }
+  
+  if (mickeyPath.isEmpty()) {
+    warningMessage(QStringLiteral("Mickey binary not found!\n\n"
+                                 "Please ensure LinuxTrack is properly installed with Mickey support.\n"
+                                 "Expected locations:\n"
+                                 "- /opt/bin/mickey\n"
+                                 "- /usr/local/bin/mickey\n"
+                                 "- /usr/bin/mickey"));
+    return;
+  }
+  
+  // Launch mickey
+  QProcess::startDetached(mickeyPath, QStringList());
+  infoMessage(QStringLiteral("Mickey (TrackIR) launched successfully!"));
 }
 
 void LinuxtrackGui::logsPackaged(int exitCode, QProcess::ExitStatus exitStatus)

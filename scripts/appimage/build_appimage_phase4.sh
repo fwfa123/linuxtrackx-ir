@@ -155,16 +155,45 @@ create_apprun_script() {
 # Get the directory where the AppImage is mounted
 APPDIR="$(dirname "$(readlink -f "$0")")"
 
-# Set up optimized environment with proper library paths
-export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack:$LD_LIBRARY_PATH"
+# Set up completely isolated environment for self-contained AppImage
+export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
 export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
 export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
 export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
+
+# CRITICAL: Complete Qt isolation to prevent version mixing
+export QT_DISABLE_VERSION_CHECK=1
+export QT_LOGGING_RULES="qt.qpa.*=false"
+export QT_DEBUG_PLUGINS=0
+export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
+export QT_QPA_PLATFORM_PLUGIN_PATH_DEBUG="$APPDIR/usr/lib/qt5/plugins/platforms"
+
+# CRITICAL: Isolate GLib environment to prevent symbol conflicts
+export GIO_EXTRA_MODULES="$APPDIR/usr/lib/gio/modules"
+export GI_TYPELIB_PATH="$APPDIR/usr/lib/girepository-1.0"
+export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas"
+export G_DEBUG="fatal-warnings"
 
 # Force X11 usage to avoid Wayland compatibility issues
 export QT_QPA_PLATFORM="xcb"
 export QT_AUTO_SCREEN_SCALE_FACTOR=0
 export QT_SCALE_FACTOR=1
+
+# Completely isolate Qt environment to prevent system Qt conflicts
+export QT_DISABLE_VERSION_CHECK=1
+export QT_LOGGING_RULES="qt.qpa.*=false"
+export QT_DEBUG_PLUGINS=0
+
+# Additional Qt platform plugin environment variables
+export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
+export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+export QT_QPA_PLATFORM_PLUGIN_PATH_DEBUG="$APPDIR/usr/lib/qt5/plugins/platforms"
+
+# Debug Qt platform plugin loading if needed
+if [ "$DEBUG_QT_PLUGINS" = "1" ]; then
+    export QT_DEBUG_PLUGINS=1
+    echo "Qt plugin debugging enabled"
+fi
 
 # Dynamic theme detection and integration
 detect_and_set_theme() {
@@ -226,6 +255,63 @@ detect_and_set_theme() {
 # Call theme detection function
 detect_and_set_theme
 
+# CRITICAL: Prevent system Qt libraries from being loaded
+prevent_system_qt() {
+    # Clear any system Qt paths from environment
+    unset QT_DIR
+    unset QTDIR
+    unset QT_SELECT
+    unset QT4DIR
+    unset QT5DIR
+    
+    # Force use of bundled Qt only
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
+    export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+    export QT_DISABLE_VERSION_CHECK=1
+    export QT_LOGGING_RULES="qt.qpa.*=false"
+    export QT_DEBUG_PLUGINS=0
+    export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
+    export QT_QPA_PLATFORM_PLUGIN_PATH_DEBUG="$APPDIR/usr/lib/qt5/plugins/platforms"
+    
+    # Ensure LD_LIBRARY_PATH only contains our bundled libraries
+    export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    
+    echo "Qt environment isolated - using bundled Qt libraries only"
+}
+
+# Call Qt isolation function
+prevent_system_qt
+
+# Verify Qt isolation before launching
+verify_qt_isolation() {
+    echo "Verifying Qt isolation..."
+    
+    # Check if any system Qt libraries are in LD_LIBRARY_PATH
+    if echo "$LD_LIBRARY_PATH" | grep -q "/usr/lib\|/lib"; then
+        echo "WARNING: System library paths detected in LD_LIBRARY_PATH"
+        echo "Forcing complete isolation..."
+        export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    fi
+    
+    # Check if Qt environment variables are properly set
+    if [ "$QT_PLUGIN_PATH" != "$APPDIR/usr/lib/qt5/plugins" ]; then
+        echo "WARNING: Qt plugin path not properly isolated"
+        export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    fi
+    
+    if [ "$QT_QPA_PLATFORM_PLUGIN_PATH" != "$APPDIR/usr/lib/qt5/plugins/platforms" ]; then
+        echo "WARNING: Qt platform plugin path not properly isolated"
+        export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    fi
+    
+    echo "Qt isolation verified - using bundled libraries only"
+}
+
+# Verify Qt isolation
+verify_qt_isolation
+
 # Additional X11 forcing for problematic Wayland environments
 if [ "$XDG_SESSION_TYPE" = "wayland" ]; then
     echo "Wayland detected - forcing X11 compatibility mode"
@@ -252,6 +338,12 @@ if ! xset q >/dev/null 2>&1; then
     echo "If the application fails to start, try running: xhost +local:"
 fi
 
+# Note: udev rules installation is handled by the GUI permission dialog
+# The AppImage includes udev rules in the bundle but does not install them automatically
+
+# Note: Group creation and user management is handled by the GUI permission dialog
+# The AppImage does not automatically create groups or add users to groups
+
 # Wine bridge components are available for GUI-initiated installation
 # The GUI will handle Wine bridge installation when user clicks the button in Misc tab
 if command -v wine >/dev/null 2>&1; then
@@ -265,8 +357,85 @@ else
     echo "  Arch: sudo pacman -S wine wine-mono wine-gecko"
 fi
 
-# Launch the application
-exec "$APPDIR/usr/bin/ltr_gui" "$@"
+# Launch the application with platform plugin fallback
+launch_application() {
+    # Use completely isolated environment (no system libraries)
+    export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
+    export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+    export QT_DISABLE_VERSION_CHECK=1
+    export QT_LOGGING_RULES="qt.qpa.*=false"
+    export QT_DEBUG_PLUGINS=0
+    export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
+    export QT_QPA_PLATFORM_PLUGIN_PATH_DEBUG="$APPDIR/usr/lib/qt5/plugins/platforms"
+    
+    # CRITICAL: Isolate GLib environment to prevent symbol conflicts
+    export GIO_EXTRA_MODULES="$APPDIR/usr/lib/gio/modules"
+    export GI_TYPELIB_PATH="$APPDIR/usr/lib/girepository-1.0"
+    export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas"
+    export G_DEBUG="fatal-warnings"
+    
+    # Help system debugging and configuration
+    export QT_DEBUG_PLUGINS=1
+    export QT_LOGGING_RULES="qt.help.*=true;qt.qpa.*=false;qt.sql.*=true"
+    export QT_HELP_PATH="$APPDIR/usr/share/linuxtrack/help"
+    
+    # Enhanced SQLite driver configuration
+    export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+    
+    # Additional Qt environment variables for help system
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
+    export QT_IMAGEIO_MAXALLOC=0
+    export QT_AUTO_SCREEN_SCALE_FACTOR=1
+    
+    # Try xcb first with complete isolation
+    export QT_QPA_PLATFORM="xcb"
+    export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_DISABLE_VERSION_CHECK=1
+    echo "Attempting to launch with xcb platform (complete isolation)..."
+    if "$APPDIR/usr/bin/ltr_gui" "$@" 2>/dev/null; then
+        return 0
+    fi
+    
+    # Try wayland if xcb fails
+    export QT_QPA_PLATFORM="wayland"
+    export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_DISABLE_VERSION_CHECK=1
+    echo "xcb failed, trying wayland platform (complete isolation)..."
+    if "$APPDIR/usr/bin/ltr_gui" "$@" 2>/dev/null; then
+        return 0
+    fi
+    
+    # Try minimal as last resort
+    export QT_QPA_PLATFORM="minimal"
+    export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_DISABLE_VERSION_CHECK=1
+    echo "wayland failed, trying minimal platform (complete isolation)..."
+    if "$APPDIR/usr/bin/ltr_gui" "$@" 2>/dev/null; then
+        return 0
+    fi
+    
+    # If all fail, try with default platform and complete isolation
+    echo "All platform plugins failed, trying default (complete isolation)..."
+    export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
+    export QT_DISABLE_VERSION_CHECK=1
+    unset QT_QPA_PLATFORM
+    exec "$APPDIR/usr/bin/ltr_gui" "$@"
+}
+
+launch_application "$@"
 EOF
 
     chmod +x "$APPIMAGE_DIR/AppRun"
@@ -340,6 +509,58 @@ copy_udev_rules() {
     fi
     
     print_success "udev rules copied"
+}
+
+# Function to copy help files
+copy_help_files() {
+    print_status "Copying help files..."
+    
+    # Create help directory structure
+    mkdir -p "$APPIMAGE_DIR/usr/share/linuxtrack/help/ltr_gui"
+    mkdir -p "$APPIMAGE_DIR/usr/share/linuxtrack/help/mickey"
+    
+    # Copy ltr_gui help files
+    if file_exists "$PROJECT_ROOT/src/qt_gui/help.qhc"; then
+        cp "$PROJECT_ROOT/src/qt_gui/help.qhc" "$APPIMAGE_DIR/usr/share/linuxtrack/help/ltr_gui/"
+        print_status "Copied ltr_gui help.qhc"
+    else
+        print_warning "ltr_gui help.qhc not found"
+    fi
+    
+    if file_exists "$PROJECT_ROOT/src/qt_gui/help.qch"; then
+        cp "$PROJECT_ROOT/src/qt_gui/help.qch" "$APPIMAGE_DIR/usr/share/linuxtrack/help/ltr_gui/"
+        print_status "Copied ltr_gui help.qch"
+    else
+        print_warning "ltr_gui help.qch not found"
+    fi
+    
+    # Copy mickey help files
+    if file_exists "$PROJECT_ROOT/src/mickey/help.qhc"; then
+        cp "$PROJECT_ROOT/src/mickey/help.qhc" "$APPIMAGE_DIR/usr/share/linuxtrack/help/mickey/"
+        print_status "Copied mickey help.qhc"
+    else
+        print_warning "mickey help.qhc not found"
+    fi
+    
+    if file_exists "$PROJECT_ROOT/src/mickey/help.qch"; then
+        cp "$PROJECT_ROOT/src/mickey/help.qch" "$APPIMAGE_DIR/usr/share/linuxtrack/help/mickey/"
+        print_status "Copied mickey help.qch"
+    else
+        print_warning "mickey help.qch not found"
+    fi
+    
+    # Copy help content files if they exist
+    if [ -d "$PROJECT_ROOT/src/qt_gui/help" ]; then
+        cp -r "$PROJECT_ROOT/src/qt_gui/help" "$APPIMAGE_DIR/usr/share/linuxtrack/help/ltr_gui/"
+        print_status "Copied ltr_gui help content"
+    fi
+    
+    if [ -d "$PROJECT_ROOT/src/mickey/help" ]; then
+        cp -r "$PROJECT_ROOT/src/mickey/help" "$APPIMAGE_DIR/usr/share/linuxtrack/help/mickey/"
+        print_status "Copied mickey help content"
+    fi
+    
+    print_success "Help files copied"
 }
 
 # Function to prepare Wine bridge components (pre-built approach)
@@ -567,6 +788,33 @@ install_to_appdir() {
         return 1
     }
     
+    # Verify OSC server was installed (if built)
+    if [ -f "$APPIMAGE_DIR/usr/bin/osc_server" ]; then
+        print_success "OSC server included in AppImage"
+    else
+        print_warning "OSC server not found - OSC support may not have been built"
+    fi
+    
+    # Verify Wiimote server was installed (if built)
+    if [ -f "$APPIMAGE_DIR/usr/bin/wii_server" ]; then
+        print_success "Wiimote server included in AppImage"
+    else
+        print_warning "Wiimote server not found - Wiimote support may not have been built"
+    fi
+    
+    # Verify X-Plane plugins were installed (if built)
+    if [ -f "$APPIMAGE_DIR/usr/lib/linuxtrack/xlinuxtrack9.so" ]; then
+        print_success "X-Plane plugin (64-bit) included in AppImage"
+    else
+        print_warning "X-Plane plugin (64-bit) not found - X-Plane support may not have been built"
+    fi
+    
+    if [ -f "$APPIMAGE_DIR/usr/lib32/linuxtrack/xlinuxtrack9.so" ]; then
+        print_success "X-Plane plugin (32-bit) included in AppImage"
+    else
+        print_warning "X-Plane plugin (32-bit) not found - X-Plane support may not have been built"
+    fi
+    
     print_success "LinuxTrack installed to AppDir"
     return 0
 }
@@ -594,11 +842,33 @@ bundle_dependencies() {
     # Manual bundling of critical libraries
     print_status "Manual bundling of critical libraries..."
     
-    # Qt5 libraries
-    for qtlib in Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5OpenGL Qt5Help Qt5Sql Qt5X11Extras; do
+    # Bundle ALL Qt5 libraries to ensure complete self-containment
+    print_status "Bundling ALL Qt5 libraries for complete self-containment..."
+    
+    # Core Qt5 libraries
+    for qtlib in Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5OpenGL Qt5Help Qt5Sql Qt5X11Extras Qt5DBus Qt5XcbQpa Qt5Concurrent Qt5PrintSupport Qt5Svg Qt5Test Qt5Xml Qt5XmlPatterns; do
         if [ -f "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so.5" ]; then
             cp "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so.5" "usr/lib/" 2>/dev/null || true
             print_status "Bundled ${qtlib}"
+            
+            # CRITICAL: Also copy the actual library file that the symlink points to
+            actual_file=$(readlink -f "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so.5" 2>/dev/null || echo "")
+            if [ -n "$actual_file" ] && [ -f "$actual_file" ]; then
+                cp "$actual_file" "usr/lib/" 2>/dev/null || true
+                print_status "Bundled actual file: $(basename "$actual_file")"
+            fi
+        fi
+    done
+    
+    # Also bundle Qt5 library symlinks and dependencies
+    for qtlib in Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5OpenGL Qt5Help Qt5Sql Qt5X11Extras Qt5DBus Qt5XcbQpa; do
+        # Copy symlinks
+        if [ -L "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so" ]; then
+            cp -P "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so" "usr/lib/" 2>/dev/null || true
+        fi
+        # Copy versioned symlinks
+        if [ -L "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so.5" ]; then
+            cp -P "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so.5" "usr/lib/" 2>/dev/null || true
         fi
     done
     
@@ -611,18 +881,250 @@ bundle_dependencies() {
     done
     
     # System libraries
-    for syslib in libusb-1.0 libmxml libGLU libpng16 libudev libv4l2 libv4lconvert libjpeg; do
+    for syslib in libusb-1.0 libmxml libGLU libpng16 libudev libv4l2 libv4lconvert libjpeg liblo libcwiid; do
         if [ -f "/usr/lib/x86_64-linux-gnu/${syslib}.so.0" ]; then
             cp "/usr/lib/x86_64-linux-gnu/${syslib}.so.0" "usr/lib/" 2>/dev/null || true
             print_status "Bundled ${syslib}"
         fi
     done
     
+    # GLib/GObject libraries (CRITICAL for Qt compatibility)
+    for gliblib in libglib-2.0 libgobject-2.0 libgio-2.0 libgmodule-2.0; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${gliblib}.so.0" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${gliblib}.so.0" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${gliblib}"
+        fi
+    done
+    
+    # Additional GLib-related libraries to prevent symbol conflicts
+    for gliblib in libgthread-2.0 libgirepository-1.0 libffi; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${gliblib}.so.0" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${gliblib}.so.0" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${gliblib}"
+        fi
+    done
+    
+    # Security libraries (SELinux, etc.)
+    for seclib in libselinux libpcre libpcre2-8 libpcre2-16; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${seclib}.so.1" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${seclib}.so.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${seclib}"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${seclib}.so.0" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${seclib}.so.0" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${seclib}"
+        fi
+    done
+    
+    # OpenGL libraries for 3D view
+    for opengllib in libGL libGLU libGLX libOpenGL; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${opengllib}.so.1" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${opengllib}.so.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${opengllib}"
+        elif [ -f "/usr/lib/${opengllib}.so.1" ]; then
+            cp "/usr/lib/${opengllib}.so.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${opengllib}"
+        fi
+    done
+    
+    # X11 libraries for OpenGL context
+    for x11lib in libX11 libXext libXrender libXrandr libXfixes libXcursor libXinerama; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${x11lib}.so.6" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${x11lib}.so.6" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${x11lib}"
+        elif [ -f "/usr/lib/${x11lib}.so.6" ]; then
+            cp "/usr/lib/${x11lib}.so.6" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${x11lib}"
+        fi
+    done
+    
+    # XCB libraries for Qt platform plugins
+    for xcblib in libxcb libxcb-icccm libxcb-image libxcb-shm libxcb-keysyms libxcb-randr libxcb-render-util libxcb-render libxcb-shape libxcb-sync libxcb-xfixes libxcb-xinerama libxcb-xkb libxkbcommon libxkbcommon-x11; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${xcblib}.so.1" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${xcblib}.so.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${xcblib}"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${xcblib}.so.0" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${xcblib}.so.0" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${xcblib}"
+        fi
+    done
+    
+    # Additional Qt libraries for platform plugins
+    for qtlib in libQt5XcbQpa libQt5DBus libQt5Concurrent libQt5PrintSupport libQt5Svg libQt5Test libQt5Xml libQt5XmlPatterns; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${qtlib}.so.5" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${qtlib}.so.5" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${qtlib}"
+        fi
+    done
+    
+    # Bundle Qt library symlinks to ensure proper linking
+    for qtlib in Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5OpenGL Qt5Help Qt5Sql Qt5X11Extras Qt5DBus Qt5XcbQpa; do
+        if [ -L "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so" ]; then
+            cp -P "/usr/lib/x86_64-linux-gnu/lib${qtlib}.so" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${qtlib} symlink"
+        fi
+    done
+    
     # Ensure Qt plugins are bundled
+    echo "DEBUG: About to call ensure_qt_plugins_bundled"
     ensure_qt_plugins_bundled
+    echo "DEBUG: Finished ensure_qt_plugins_bundled"
+    echo "DEBUG: Checking if qt5/plugins directory was created:"
+    ls -la usr/lib/qt5/plugins/ 2>/dev/null || echo "DEBUG: qt5/plugins directory does not exist"
+    
+    # Bundle Qt help plugins specifically
+    print_status "Bundling Qt help plugins..."
+    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio" ]; then
+        mkdir -p "usr/lib/qt5/plugins/kf5/kio" 2>/dev/null || true
+        for plugin in kio_help.so kio_ghelp.so; do
+            if [ -f "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/$plugin" ]; then
+                cp "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/$plugin" "usr/lib/qt5/plugins/kf5/kio/" 2>/dev/null || true
+                print_status "Bundled Qt help plugin: $plugin"
+            fi
+        done
+        print_status "Bundled Qt help KIO plugins"
+    fi
+    
+    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper" ]; then
+        mkdir -p "usr/lib/qt5/plugins/kauth/helper" 2>/dev/null || true
+        if [ -f "/usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper/kauth_helper_plugin.so" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper/kauth_helper_plugin.so" "usr/lib/qt5/plugins/kauth/helper/" 2>/dev/null || true
+            print_status "Bundled Qt help plugin: kauth_helper_plugin.so"
+        fi
+        print_status "Bundled Qt help kauth plugins"
+    fi
+    
+    # CRITICAL: Bundle SQLite plugin for Qt help system
+    print_status "Bundling SQLite plugin for Qt help system..."
+    mkdir -p "usr/lib/qt5/plugins/sqldrivers"
+    
+    # Try multiple locations for SQLite plugin
+    SQLITE_PLUGIN_FOUND=false
+    SQLITE_PLUGIN_PATHS=(
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5"
+        "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so.5"
+    )
+    
+    for sqlite_path in "${SQLITE_PLUGIN_PATHS[@]}"; do
+        echo "DEBUG: Checking SQLite plugin path: $sqlite_path"
+        if [ -f "$sqlite_path" ]; then
+            echo "DEBUG: Found SQLite plugin at: $sqlite_path"
+            echo "DEBUG: Copying to: usr/lib/qt5/plugins/sqldrivers/"
+            cp "$sqlite_path" "usr/lib/qt5/plugins/sqldrivers/"
+            if [ -f "usr/lib/qt5/plugins/sqldrivers/$(basename "$sqlite_path")" ]; then
+                print_status "Bundled SQLite plugin: $(basename "$sqlite_path") from $sqlite_path"
+                SQLITE_PLUGIN_FOUND=true
+                break
+            else
+                print_warning "Failed to copy SQLite plugin from $sqlite_path"
+                echo "DEBUG: Copy failed - checking if directory exists"
+                ls -la "usr/lib/qt5/plugins/sqldrivers/" 2>/dev/null || echo "DEBUG: Directory does not exist"
+            fi
+        else
+            echo "DEBUG: SQLite plugin not found at: $sqlite_path"
+        fi
+    done
+    
+    if [ "$SQLITE_PLUGIN_FOUND" = false ]; then
+        print_error "SQLite plugin not found in any standard location!"
+        print_error "This will cause help system to fail in AppImage"
+        
+        # Try to find SQLite plugin using find
+        print_status "Searching for SQLite plugin in system..."
+        SQLITE_PLUGIN=$(find /usr -name "libqsqlite.so*" 2>/dev/null | head -1)
+        if [ -n "$SQLITE_PLUGIN" ] && [ -f "$SQLITE_PLUGIN" ]; then
+            cp "$SQLITE_PLUGIN" "usr/lib/qt5/plugins/sqldrivers/"
+            if [ -f "usr/lib/qt5/plugins/sqldrivers/$(basename "$SQLITE_PLUGIN")" ]; then
+                print_status "Bundled SQLite plugin from search: $(basename "$SQLITE_PLUGIN")"
+                SQLITE_PLUGIN_FOUND=true
+            fi
+        fi
+    fi
+    
+    if [ "$SQLITE_PLUGIN_FOUND" = false ]; then
+        print_error "CRITICAL: Could not find SQLite plugin anywhere!"
+        print_error "Help system will fail in AppImage"
+    else
+        print_success "SQLite plugin bundled successfully"
+    fi
+    
+    # Also bundle Qt5Sql library if not already present
+    if [ ! -f "usr/lib/libQt5Sql.so.5" ]; then
+        if [ -f "/usr/lib/x86_64-linux-gnu/libQt5Sql.so.5" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/libQt5Sql.so.5" "usr/lib/"
+            print_status "Bundled Qt5Sql library"
+        elif [ -f "/usr/lib/libQt5Sql.so.5" ]; then
+            cp "/usr/lib/libQt5Sql.so.5" "usr/lib/"
+            print_status "Bundled Qt5Sql library"
+        else
+            print_warning "Qt5Sql library not found - help system may fail"
+        fi
+    fi
+    
+    # CRITICAL: Fix rpath to ensure complete library isolation
+    print_status "Fixing rpath for complete library isolation..."
+    
+    # Set rpath for ALL binaries to use ONLY bundled libraries
+    for binary in usr/bin/*; do
+        if [ -f "$binary" ] && [ -x "$binary" ]; then
+            echo "Setting rpath for $(basename "$binary") to use ONLY bundled libraries"
+            patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib/linuxtrack' "$binary" 2>/dev/null || true
+        fi
+    done
+    
+    # Set rpath for all bundled libraries to use ONLY bundled libraries
+    find usr/lib -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
+    find usr/lib/linuxtrack -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
+    
+    # Additional library bundling based on common missing libraries
+    print_status "Bundling additional commonly missing libraries..."
+    for lib in libselinux libpcre libpcre2-8 libpcre2-16 libattr libacl libcap libseccomp libaudit libproxy; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${lib}.so.1" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${lib}.so.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${lib}"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${lib}.so.0" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${lib}.so.0" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${lib}"
+        fi
+    done
+    
+    # Bundle libproxy backend libraries
+    if [ -d "/usr/lib/x86_64-linux-gnu/libproxy" ]; then
+        mkdir -p "usr/lib/libproxy" 2>/dev/null || true
+        cp -r "/usr/lib/x86_64-linux-gnu/libproxy/"* "usr/lib/libproxy/" 2>/dev/null || true
+        print_status "Bundled libproxy backends"
+    fi
     
     # Advanced optimization
     optimize_library_structure
+    
+    # CRITICAL: Verify Qt libraries are properly bundled
+    print_status "Verifying Qt library bundling..."
+    qt_issues=0
+    for qtlib in Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5OpenGL Qt5Help Qt5Sql Qt5X11Extras; do
+        if [ -L "usr/lib/lib${qtlib}.so.5" ]; then
+            target=$(readlink "usr/lib/lib${qtlib}.so.5")
+            if [ ! -f "usr/lib/$target" ]; then
+                print_warning "Qt library symlink broken: lib${qtlib}.so.5 -> $target"
+                ((qt_issues++))
+            else
+                print_success "Qt library properly bundled: lib${qtlib}.so.5"
+            fi
+        elif [ -f "usr/lib/lib${qtlib}.so.5" ]; then
+            print_success "Qt library properly bundled: lib${qtlib}.so.5"
+        else
+            print_error "Qt library missing: lib${qtlib}.so.5"
+            ((qt_issues++))
+        fi
+    done
+    
+    if [ $qt_issues -eq 0 ]; then
+        print_success "All Qt libraries properly bundled"
+    else
+        print_warning "Found $qt_issues Qt library issues"
+    fi
     
     print_success "Dependencies bundled with Wine bridge optimization"
 }
@@ -630,17 +1132,48 @@ bundle_dependencies() {
 # Function to ensure Qt plugins are bundled
 ensure_qt_plugins_bundled() {
     print_status "Ensuring Qt plugins are bundled..."
+    echo "DEBUG: Starting ensure_qt_plugins_bundled function"
     
     # Create Qt plugins directory structure
+    echo "DEBUG: Creating Qt plugins directory structure"
     mkdir -p "usr/lib/qt5/plugins/platforms"
     mkdir -p "usr/lib/qt5/plugins/imageformats"
     mkdir -p "usr/lib/qt5/plugins/iconengines"
     mkdir -p "usr/lib/qt5/plugins/styles"
+    echo "DEBUG: Created directories, checking if they exist:"
+    ls -la usr/lib/qt5/plugins/ 2>/dev/null || echo "DEBUG: qt5/plugins directory creation failed"
     
-    # Copy Qt platform plugins
-    if [ -d "/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms" ]; then
-        cp /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/*.so usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
-        print_status "Copied Qt platform plugins"
+    # Copy Qt platform plugins with version compatibility check
+    QT_VERSION=$(qmake -query QT_VERSION 2>/dev/null | cut -d. -f1-2 || echo "5.15")
+    print_status "Detected Qt version: $QT_VERSION"
+    
+    # Try multiple locations for platform plugins
+    PLATFORM_PATHS=(
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms"
+        "/usr/lib/qt5/plugins/platforms"
+        "/usr/lib/qt/plugins/platforms"
+        "/usr/lib/x86_64-linux-gnu/qt${QT_VERSION}/plugins/platforms"
+    )
+    
+    PLUGINS_COPIED=false
+    for platform_path in "${PLATFORM_PATHS[@]}"; do
+        if [ -d "$platform_path" ]; then
+            print_status "Copying platform plugins from $platform_path"
+            cp "$platform_path"/*.so usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
+            PLUGINS_COPIED=true
+            break
+        fi
+    done
+    
+    if [ "$PLUGINS_COPIED" = false ]; then
+        print_warning "No Qt platform plugins found in standard locations"
+        # Try to find Qt platform plugins in other locations
+        find /usr -name "libqxcb.so" -o -name "libqwayland*.so" 2>/dev/null | head -5 | while read plugin; do
+            if [ -n "$plugin" ]; then
+                cp "$plugin" usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
+                print_status "Copied Qt platform plugin: $(basename "$plugin")"
+            fi
+        done
     fi
     
     # Copy Qt image format plugins
@@ -687,9 +1220,9 @@ optimize_library_structure() {
     
     # Optimize Qt5 plugins
     if [ -d "usr/lib/qt5/plugins" ]; then
-        # Keep only essential Qt5 plugins
-        find usr/lib/qt5/plugins -name "*.so" | grep -v -E "(platforms|imageformats|iconengines)" | xargs rm -f 2>/dev/null || true
-        print_status "Optimized Qt5 plugins"
+        # Keep only essential Qt5 plugins (including sqldrivers for help system)
+        find usr/lib/qt5/plugins -name "*.so" | grep -v -E "(platforms|imageformats|iconengines|sqldrivers)" | xargs rm -f 2>/dev/null || true
+        print_status "Optimized Qt5 plugins (preserved sqldrivers)"
     fi
     
     print_success "Advanced library structure optimization completed"
@@ -857,6 +1390,9 @@ main() {
     
     # Copy udev rules
     copy_udev_rules
+    
+    # Copy help files
+    copy_help_files
     
     # Build LinuxTrack if not skipped
     if [ "$skip_build_flag" = false ]; then

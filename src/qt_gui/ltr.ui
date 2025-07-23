@@ -168,6 +168,13 @@
               </property>
              </widget>
             </item>
+            <item row="1" column="1">
+             <widget class="QPushButton" name="LaunchMickeyButton">
+              <property name="text">
+               <string>Launch Mickey (TrackIR)</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
           <item>

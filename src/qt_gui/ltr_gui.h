@@ -55,6 +55,7 @@ class LinuxtrackGui : public QMainWindow
   void on_ViewLogButton_pressed();
   void on_XplanePluginButton_pressed();
   void on_PackageLogsButton_pressed();
+  void on_LaunchMickeyButton_pressed();
   void logsPackaged(int exitCode, QProcess::ExitStatus exitStatus);
   
   // Docking slots

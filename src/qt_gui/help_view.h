@@ -18,6 +18,10 @@ class HelpViewer : public QWidget{
   static HelpViewer *hlp;
   static HelpViewer &getHlp();
   void ChangeHelpPage(QString name);
+  
+  // Robust help system initialization with comprehensive error handling
+  bool initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngine);
+  
  public:
   static void ShowWindow();
   static void ChangePage(QString name);

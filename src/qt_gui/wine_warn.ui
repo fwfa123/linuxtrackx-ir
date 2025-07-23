@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>103</height>
+    <height>120</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -26,8 +26,8 @@
       </sizepolicy>
      </property>
      <property name="text">
-      <string>Wine is not available.
-You'll not be able to install NP firmware and Wine plugin!</string>
+      <string>Wine is not available or version is incompatible.
+You'll need Wine 9+ and winetricks 20240105-next+ installed for NP firmware support and Wine plugin functionality!</string>
      </property>
     </widget>
    </item>

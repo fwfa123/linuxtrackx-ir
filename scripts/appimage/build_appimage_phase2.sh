@@ -342,6 +342,33 @@ install_to_appdir() {
         return 1
     }
     
+    # Verify OSC server was installed (if built)
+    if [ -f "$APPIMAGE_DIR/usr/bin/osc_server" ]; then
+        print_success "OSC server included in AppImage"
+    else
+        print_warning "OSC server not found - OSC support may not have been built"
+    fi
+    
+    # Verify Wiimote server was installed (if built)
+    if [ -f "$APPIMAGE_DIR/usr/bin/wii_server" ]; then
+        print_success "Wiimote server included in AppImage"
+    else
+        print_warning "Wiimote server not found - Wiimote support may not have been built"
+    fi
+    
+    # Verify X-Plane plugins were installed (if built)
+    if [ -f "$APPIMAGE_DIR/usr/lib/linuxtrack/xlinuxtrack9.so" ]; then
+        print_success "X-Plane plugin (64-bit) included in AppImage"
+    else
+        print_warning "X-Plane plugin (64-bit) not found - X-Plane support may not have been built"
+    fi
+    
+    if [ -f "$APPIMAGE_DIR/usr/lib32/linuxtrack/xlinuxtrack9.so" ]; then
+        print_success "X-Plane plugin (32-bit) included in AppImage"
+    else
+        print_warning "X-Plane plugin (32-bit) not found - X-Plane support may not have been built"
+    fi
+    
     print_success "LinuxTrack installed to AppDir"
     return 0
 }
@@ -386,7 +413,7 @@ bundle_dependencies() {
     done
     
     # System libraries
-    for syslib in libusb-1.0 libmxml libGLU libpng16 libudev libv4l2 libv4lconvert libjpeg; do
+    for syslib in libusb-1.0 libmxml libGLU libpng16 libudev libv4l2 libv4lconvert libjpeg liblo libcwiid; do
         if [ -f "/usr/lib/x86_64-linux-gnu/${syslib}.so.0" ]; then
             cp "/usr/lib/x86_64-linux-gnu/${syslib}.so.0" "usr/lib/" 2>/dev/null || true
             print_status "Bundled ${syslib}"
