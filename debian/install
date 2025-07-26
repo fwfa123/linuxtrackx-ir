@@ -1,8 +1,0 @@
-# Main LinuxTrack package files
-opt/linuxtrack/bin/*                              usr/bin/
-opt/linuxtrack/lib/linuxtrack/*                   usr/lib/linuxtrack/
-opt/linuxtrack/share/linuxtrack/*                 usr/share/linuxtrack/
-usr/local/share/applications/*.desktop            usr/share/applications/
-usr/local/share/icons/hicolor/48x48/apps/*        usr/share/icons/hicolor/48x48/apps/
-usr/local/share/icons/hicolor/scalable/apps/*     usr/share/icons/hicolor/scalable/apps/
-usr/local/share/pixmaps/*                         usr/share/pixmaps/ 

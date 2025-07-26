@@ -1,4 +1,0 @@
-# Development package files
-opt/linuxtrack/include/*                          usr/include/
-opt/linuxtrack/lib/linuxtrack/*.a                 usr/lib/linuxtrack/
-opt/linuxtrack/lib/pkgconfig/*                    usr/lib/pkgconfig/ 
