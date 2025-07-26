@@ -88,12 +88,14 @@ cd ../..
 
 # Build and install
 autoreconf -fiv
-./configure --prefix=/opt
+./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
 
 # Add user to required group
 sudo usermod -a -G plugdev $USER
+
+**Note**: We use `/usr/local` instead of `/opt` to ensure the application appears in your desktop launcher. `/usr/local/bin` is in the default PATH, while `/opt/bin` is not.
 
 # Optional: Install X-Plane SDK for plugin support
 # Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
@@ -116,7 +118,7 @@ cd ../..
 
 # Build and install
 autoreconf -fiv
-./configure --prefix=/opt
+./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
 
@@ -153,7 +155,7 @@ cd linuxtrackx-ir
 
 # Build and install
 autoreconf -fiv
-./configure --prefix=/opt
+./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
 
@@ -385,7 +387,7 @@ make distclean 2>/dev/null || true
 autoreconf -fiv
 
 # Configure (PIE enabled by default for security)
-./configure --prefix=/opt
+./configure --prefix=/usr/local
 
 # Build
 make -j$(nproc)
@@ -398,19 +400,19 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 ### Build Options
 ```bash
 # Debug build
-./configure --prefix=/opt --enable-debug
+./configure --prefix=/usr/local --enable-debug
 
 # Disable PIE (not recommended for security)
-./configure --prefix=/opt --disable-pie
+./configure --prefix=/usr/local --disable-pie
 
 # Disable Windows components
-./configure --prefix=/opt --disable-wine-bridge
+./configure --prefix=/usr/local --disable-wine-bridge
 
 # Custom Qt5 location
-./configure --prefix=/opt QMAKE=/usr/bin/qmake-qt5
+./configure --prefix=/usr/local QMAKE=/usr/bin/qmake-qt5
 
 # Enable XPlane plugin support
-./configure --prefix=/opt --with-xplane-sdk=/usr/include/xplane_sdk
+./configure --prefix=/usr/local --with-xplane-sdk=/usr/include/xplane_sdk
 ```
 
 ## 🎯 Supported Hardware
@@ -467,6 +469,7 @@ sudo usermod -a -G plugdev $USER  # Add user to required group
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` or switch to X11 session |
 | Permission denied on device | Add user to plugdev group |
 | No tracking detected | Check device connection and driver installation |
+| Application not appearing in launcher | **Fixed**: Use `--prefix=/usr/local` instead of `/opt`. If already installed to `/opt`, fix desktop file: `sudo sed -i 's|Exec=ltr_gui|Exec=/opt/bin/ltr_gui|' /usr/share/applications/linuxtrack.desktop && sudo update-desktop-database /usr/share/applications` |
 | PIE/relocation linker errors | PIE is enabled by default. If you encounter issues, use: `./configure --disable-pie` |
 | XPlane plugin shows "no" | Install XPlane SDK from [Laminar Research](https://developer.x-plane.com/sdk/plugin-sdk-downloads/) or use `--with-xplane-sdk=/path/to/sdk` |
 | Firmware extraction fails | **Step 1**: Run `./scripts/wine_check.sh` to diagnose Wine issues. **Step 2**: Install Wine Staging (`sudo apt install wine-staging`) and switch to it (`sudo update-alternatives --config wine`). **Step 3**: Install 32-bit components (`sudo apt install wine32:i386`). **Step 4**: If issues persist, manually install TrackIR with Wine, then use "Browse Directory" option in GUI. |
@@ -510,7 +513,7 @@ git clone <repository-url>
 cd linuxtrackx-ir
 
 # Create development build
-./configure --prefix=/opt --enable-debug
+./configure --prefix=/usr/local --enable-debug
 make -j$(nproc)
 ```
 
@@ -681,7 +684,7 @@ sudo mkdir -p /usr/include/xplane_sdk
 sudo cp -r /path/to/extracted/SDK/CHeaders/* /usr/include/xplane_sdk/
 
 # Verify configure detects X-Plane support
-./configure --prefix=/opt 2>&1 | grep "XPlane plugin"
+./configure --prefix=/usr/local 2>&1 | grep "XPlane plugin"
 ```
 
 This comprehensive dependency analysis ensures that all required components are available for building LinuxTrack X-IR with full functionality.
