@@ -533,8 +533,15 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
   wineInit.setProcessEnvironment(env);
   
-  progress(QString::fromUtf8("Initializing 32-bit Wine prefix..."));
-  wineInit.start(QString::fromUtf8("wine"), QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
+  // NEW: Use the best available wine version for initialization
+  QString bestWine = wine->selectBestWineVersion();
+  if (bestWine.isEmpty()) {
+    progress(QString::fromUtf8("No compatible wine version found (requires 9.0+)"));
+    return false;
+  }
+  
+  progress(QString::fromUtf8("Initializing 32-bit Wine prefix using: %1").arg(bestWine));
+  wineInit.start(bestWine, QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
   
   if(!wineInit.waitForFinished(30000)) { // 30 second timeout
     progress(QString::fromUtf8("Failed to initialize Wine prefix (timeout)"));
@@ -585,23 +592,44 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   // Try to install mfc42 using winetricks
   QProcess winetricks;
   
-  // Use unattended mode to avoid GUI issues
+  // Use unattended mode and force download to avoid hanging
   QStringList args;
-  args << QString::fromUtf8("--unattended") << QString::fromUtf8("mfc42");
+  args << QString::fromUtf8("--unattended") << QString::fromUtf8("--force") << QString::fromUtf8("mfc42");
   
-  progress(QString::fromUtf8("Running: %1 --unattended mfc42").arg(winetricksPath));
+  progress(QString::fromUtf8("Running: %1 --unattended --force mfc42").arg(winetricksPath));
   
-  // Set environment for 32-bit operation
-  env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
-  winetricks.setProcessEnvironment(env);
+  // Set environment for 32-bit operation and add timeout variables
+  // Use the same environment that was used for wine initialization
+  QProcessEnvironment winetricksEnv = env;
+  winetricksEnv.insert(QString::fromUtf8("WINEPREFIX"), mfc42Prefix);
+  winetricksEnv.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+  winetricksEnv.insert(QString::fromUtf8("WINETRICKS_TIMEOUT"), QString::fromUtf8("60")); // 60 second timeout
+  winetricksEnv.insert(QString::fromUtf8("WINETRICKS_FORCE"), QString::fromUtf8("1")); // Force download
+  winetricks.setProcessEnvironment(winetricksEnv);
   
   // Use the fresh 32-bit prefix
   winetricks.setWorkingDirectory(winePrefix);
   
+  // Connect to process signals for better monitoring
+  connect(&winetricks, &QProcess::errorOccurred, [this, &winetricks](QProcess::ProcessError error) {
+    progress(QString::fromUtf8("Winetricks process error: %1").arg(error));
+  });
+  
   winetricks.start(winetricksPath, args);
   
-  if(!winetricks.waitForFinished(120000)) { // 2 minute timeout for winetricks
-    progress(QString::fromUtf8("Winetricks installation timed out"));
+  progress(QString::fromUtf8("Winetricks started - this may take several minutes for download and installation..."));
+  
+  // Use a longer timeout since winetricks can take time to download and install
+  if(!winetricks.waitForFinished(180000)) { // 3 minute timeout for winetricks
+    progress(QString::fromUtf8("Winetricks installation timed out - terminating process"));
+    winetricks.terminate();
+    
+    // Give it 10 seconds to terminate gracefully
+    if(!winetricks.waitForFinished(10000)) {
+      progress(QString::fromUtf8("Force killing winetricks process"));
+      winetricks.kill();
+      winetricks.waitForFinished(5000);
+    }
     return false;
   }
   
@@ -654,6 +682,8 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   progress(QString::fromUtf8("Winetricks installation failed"));
   return false;
 }
+
+
 
 void Mfc42uExtractor::startAutomaticInstallation()
 {
