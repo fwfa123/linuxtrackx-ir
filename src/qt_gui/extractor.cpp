@@ -516,15 +516,17 @@ bool Mfc42uExtractor::tryWinetricksInstall()
   }
   
   // Create a fresh 32-bit temp Wine prefix specifically for MFC42 installation
-  // Use user's home directory instead of /tmp to avoid ownership issues
-  QString mfc42Prefix = QDir::homePath() + QString::fromUtf8("/.linuxtrack_mfc42_") + QString::number(QDateTime::currentMSecsSinceEpoch());
-  progress(QString::fromUtf8("Creating fresh 32-bit Wine prefix for MFC42 installation: %1").arg(mfc42Prefix));
-  
-  // Clean up any existing prefix
-  QDir mfc42Dir(mfc42Prefix);
-  if(mfc42Dir.exists()) {
-    mfc42Dir.removeRecursively();
+  // Use mkdtemp() for proper permissions, just like the TIR firmware extractor
+  QString tempBase = QDir::tempPath();
+  QString mfc42Prefix = tempBase + QString::fromUtf8("/linuxtrack_mfc42_XXXXXX");
+  QByteArray charData = mfc42Prefix.toUtf8();
+  char *prefix = mkdtemp(charData.data());
+  if(prefix == NULL) {
+    progress(QString::fromUtf8("Failed to create temporary wine prefix directory"));
+    return false;
   }
+  mfc42Prefix = QString::fromUtf8(prefix);
+  progress(QString::fromUtf8("Creating fresh 32-bit Wine prefix for MFC42 installation: %1").arg(mfc42Prefix));
   
   // Initialize the new 32-bit prefix
   QProcess wineInit;
@@ -1054,8 +1056,7 @@ void Extractor::on_BrowseInstaller_pressed()
     return;
   }
   
-  winePrefix = QDir::tempPath();
-  winePrefix += QString::fromUtf8("/wineXXXXXX");
+  winePrefix = QDir::tempPath() + QString::fromUtf8("/wineXXXXXX");
   QByteArray charData = winePrefix.toUtf8();
   char *prefix = mkdtemp(charData.data());
   if(prefix == NULL){
