@@ -14,7 +14,7 @@ if WINE_PLUGIN
 endif
 
 
-dist_pkgdata_DATA = README.md README.devel README.xplane
+dist_pkgdata_DATA = README.md Legacy_README.devel Legacy_README.xplane docs/progress/TODO_FUTURE_DEVELOPMENT.md
 EXTRA_DIST = README.md Readme.rtf deploy mac_build pkgconf_extract mac_m4/fake_pkg_conf.m4 LICENSE.md
 AM_DISTCHECK_CONFIGURE_FLAGS = --with-xplane-sdk=$(HOME)/devel/SDK/CHeaders \
   --with-wine-libs="-L/usr/lib/i386-linux-gnu -L/usr/lib/i386-linux-gnu/wine"
