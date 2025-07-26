@@ -86,6 +86,48 @@ void PluginInstall::on_TIRViewsButton_pressed()
 
 void PluginInstall::installWinePlugin()
 {
+  // NEW: Check wine and winetricks compatibility before proceeding
+  std::ostringstream s;
+  s<<"Checking wine and winetricks compatibility for extractor...\n";
+  ltr_int_log_message(s.str().c_str());
+  
+  // Check if wine is compatible (9.0+)
+  if (!inst->isWineVersionCompatible(inst->selectBestWineVersion())) {
+    QMessageBox::critical(NULL, QString::fromUtf8("Wine Version Incompatible"),
+      QString::fromUtf8("The extractor requires Wine version 9.0 or higher.\n\n"
+      "Current wine version is incompatible. Please install a newer version:\n\n"
+      "Ubuntu/Debian/MX:\n"
+      "  sudo apt install wine-staging\n"
+      "  sudo update-alternatives --config wine\n\n"
+      "Fedora:\n"
+      "  sudo dnf install wine-staging\n\n"
+      "Arch:\n"
+      "  sudo pacman -S wine-staging\n\n"
+      "After installation, restart the LinuxTrack GUI and try again.")
+    );
+    return;
+  }
+  
+  // Check if winetricks is compatible (20240105-next+)
+  if (!inst->isWinetricksCompatible()) {
+    QMessageBox::critical(NULL, QString::fromUtf8("Winetricks Version Incompatible"),
+      QString::fromUtf8("The extractor requires Winetricks version 20240105-next or higher.\n\n"
+      "Current winetricks version is incompatible. Please update winetricks:\n\n"
+      "Method 1 (Recommended):\n"
+      "  wget https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks\n"
+      "  chmod +x winetricks\n"
+      "  sudo mv winetricks /usr/local/bin/\n\n"
+      "Method 2:\n"
+      "  sudo apt update && sudo apt install winetricks\n\n"
+      "After updating, restart the LinuxTrack GUI and try again.")
+    );
+    return;
+  }
+  
+  s.str(std::string(""));
+  s<<"Wine and winetricks compatibility verified. Proceeding with installation...\n";
+  ltr_int_log_message(s.str().c_str());
+  
   // First check if all required firmware files already exist
   if(isTirFirmwareInstalled() && isMfc42uInstalled()){
     // All firmware files exist, skip directly to Wine prefix selection

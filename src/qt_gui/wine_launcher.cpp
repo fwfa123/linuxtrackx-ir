@@ -5,6 +5,10 @@
 #include <iostream>
 #include <sstream>
 #include <QApplication>
+#include <QDir>
+#include <QFileInfo>
+#include <QRegularExpression>
+#include <QDebug>
 #include "wine_launcher.h"
 #include "utils.h"
 
@@ -20,6 +24,17 @@ WineLauncher::WineLauncher():winePath(QString::fromUtf8("")), available(false)
 {
   std::ostringstream s;
   env = QProcessEnvironment::systemEnvironment();
+  
+  // NEW: Select best wine version before checking
+  QString bestWine = selectBestWineVersion();
+  if (!bestWine.isEmpty()) {
+    winePath = bestWine;
+    // Don't add trailing slash - winePath should be the full path to the wine executable
+    s.str(std::string(""));
+    s<<"Selected wine version: "<<winePath.toUtf8().constData()<<"\n";
+    ltr_int_log_message(s.str().c_str());
+  }
+  
   if(!check()){
     envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
 #ifdef DARWIN
@@ -69,11 +84,258 @@ void WineLauncher::setEnv(const QString &var, const QString &val)
   env.insert(var, val);
 }
 
+// NEW: Set wine path after construction
+void WineLauncher::setWinePath(const QString &path)
+{
+  winePath = path;
+  // Don't add trailing slash - winePath should be the full path to the wine executable
+  std::ostringstream s;
+  s<<"Wine path set to: "<<winePath.toUtf8().constData()<<"\n";
+  ltr_int_log_message(s.str().c_str());
+}
+
+// NEW: Select best wine version based on compatibility requirements
+QString WineLauncher::selectBestWineVersion()
+{
+  std::ostringstream s;
+  s<<"Searching for compatible wine versions (requires 9.0+)...\n";
+  ltr_int_log_message(s.str().c_str());
+  
+  QStringList winePaths;
+  QStringList wineCommands;
+  
+  // Check common wine installation paths
+  winePaths << QStringLiteral("/opt/wine-staging/bin/wine")
+            << QStringLiteral("/usr/local/bin/wine-staging")
+            << QStringLiteral("/opt/wine/bin/wine")
+            << QStringLiteral("/usr/local/bin/wine");
+  
+  // Check common wine commands
+  wineCommands << QStringLiteral("wine-staging")
+               << QStringLiteral("wine-development")
+               << QStringLiteral("wine");
+  
+  QString bestWine;
+  int bestMajor = 0;
+  int bestMinor = 0;
+  
+  // Check wine paths first (these are usually newer versions)
+  for (const QString &path : winePaths) {
+    if (QFile::exists(path)) {
+      QString version = getWineVersion(path);
+      if (!version.isEmpty()) {
+        int major, minor;
+        if (parseWineVersion(version, major, minor)) {
+          s.str(std::string(""));
+          s<<"Found wine at "<<path.toUtf8().constData()<<" version "<<version.toUtf8().constData()<<"\n";
+          ltr_int_log_message(s.str().c_str());
+          
+          // Check if version is compatible (9.0+)
+          if (isVersionGreaterOrEqual(major, minor, 9, 0)) {
+            // Prefer wine-staging over regular wine
+            if (path.contains(QStringLiteral("wine-staging")) || path.contains(QStringLiteral("staging"))) {
+              if (isVersionGreaterOrEqual(major, minor, bestMajor, bestMinor)) {
+                bestWine = path;
+                bestMajor = major;
+                bestMinor = minor;
+              }
+            } else if (bestWine.isEmpty() || !bestWine.contains(QStringLiteral("wine-staging"))) {
+              // Only use regular wine if no wine-staging is found
+              if (isVersionGreaterOrEqual(major, minor, bestMajor, bestMinor)) {
+                bestWine = path;
+                bestMajor = major;
+                bestMinor = minor;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Check wine commands if no compatible path found
+  if (bestWine.isEmpty()) {
+    for (const QString &cmd : wineCommands) {
+      QString version = getWineVersion(cmd);
+      if (!version.isEmpty()) {
+        int major, minor;
+        if (parseWineVersion(version, major, minor)) {
+          s.str(std::string(""));
+          s<<"Found wine command "<<cmd.toUtf8().constData()<<" version "<<version.toUtf8().constData()<<"\n";
+          ltr_int_log_message(s.str().c_str());
+          
+          // Check if version is compatible (9.0+)
+          if (isVersionGreaterOrEqual(major, minor, 9, 0)) {
+            // Prefer wine-staging over regular wine
+            if (cmd.contains(QStringLiteral("wine-staging")) || cmd.contains(QStringLiteral("staging"))) {
+              if (isVersionGreaterOrEqual(major, minor, bestMajor, bestMinor)) {
+                bestWine = cmd;
+                bestMajor = major;
+                bestMinor = minor;
+              }
+            } else if (bestWine.isEmpty() || !bestWine.contains(QStringLiteral("wine-staging"))) {
+              // Only use regular wine if no wine-staging is found
+              if (isVersionGreaterOrEqual(major, minor, bestMajor, bestMinor)) {
+                bestWine = cmd;
+                bestMajor = major;
+                bestMinor = minor;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  if (!bestWine.isEmpty()) {
+    s.str(std::string(""));
+    s<<"Selected best wine version: "<<bestWine.toUtf8().constData()<<" (v"<<bestMajor<<"."<<bestMinor<<")\n";
+    ltr_int_log_message(s.str().c_str());
+  } else {
+    s.str(std::string(""));
+    s<<"No compatible wine version found (requires 9.0+)\n";
+    ltr_int_log_message(s.str().c_str());
+  }
+  
+  return bestWine;
+}
+
+// NEW: Get wine version string
+QString WineLauncher::getWineVersion(const QString &winePath)
+{
+  QProcess wineVersion;
+  wineVersion.start(winePath, QStringList() << QStringLiteral("--version"));
+  
+  if (wineVersion.waitForFinished(5000)) {
+    QString output = QString::fromUtf8(wineVersion.readAllStandardOutput());
+    QString error = QString::fromUtf8(wineVersion.readAllStandardError());
+    
+    if (wineVersion.exitCode() == 0) {
+      // Extract version from output (e.g., "wine-9.0.1" or "wine-9.0")
+      QRegularExpression versionRegex(QStringLiteral(R"(wine-(\d+\.\d+(?:\.\d+)?))"));
+      QRegularExpressionMatch match = versionRegex.match(output);
+      if (match.hasMatch()) {
+        return match.captured(1);
+      }
+    }
+  }
+  
+  return QString();
+}
+
+// NEW: Get winetricks version
+QString WineLauncher::getWinetricksVersion()
+{
+  QStringList winetricksPaths = {QStringLiteral("winetricks"), QStringLiteral("/usr/local/bin/winetricks"), QStringLiteral("/opt/winetricks/bin/winetricks")};
+  
+  for (const QString &path : winetricksPaths) {
+    QProcess winetricksVersion;
+    winetricksVersion.start(path, QStringList() << QStringLiteral("--version"));
+    
+    if (winetricksVersion.waitForFinished(5000)) {
+      QString output = QString::fromUtf8(winetricksVersion.readAllStandardOutput());
+      
+      if (winetricksVersion.exitCode() == 0) {
+        // Extract version from output (e.g., "20240105-next" or "20240105")
+        QRegularExpression versionRegex(QStringLiteral(R"((\d{8}(?:-next)?))"));
+        QRegularExpressionMatch match = versionRegex.match(output);
+        if (match.hasMatch()) {
+          return match.captured(1);
+        }
+      }
+    }
+  }
+  
+  return QString();
+}
+
+// NEW: Check if wine version is compatible (9.0+)
+bool WineLauncher::isWineVersionCompatible(const QString &winePath)
+{
+  QString version = getWineVersion(winePath);
+  if (version.isEmpty()) {
+    return false;
+  }
+  
+  int major, minor;
+  if (parseWineVersion(version, major, minor)) {
+    return isVersionGreaterOrEqual(major, minor, 9, 0);
+  }
+  
+  return false;
+}
+
+// NEW: Check if winetricks is compatible (20240105-next+)
+bool WineLauncher::isWinetricksCompatible()
+{
+  QString version = getWinetricksVersion();
+  if (version.isEmpty()) {
+    return false;
+  }
+  
+  int year, month, day;
+  if (parseWinetricksVersion(version, year, month, day)) {
+    // Check if version is 20240105 or newer
+    return isDateGreaterOrEqual(year, month, day, 2024, 1, 5);
+  }
+  
+  return false;
+}
+
+// NEW: Parse wine version string (e.g., "9.0.1" -> major=9, minor=0)
+bool WineLauncher::parseWineVersion(const QString &versionString, int &major, int &minor)
+{
+  QRegularExpression versionRegex(QStringLiteral(R"((\d+)\.(\d+)(?:\.\d+)?)"));
+  QRegularExpressionMatch match = versionRegex.match(versionString);
+  
+  if (match.hasMatch()) {
+    major = match.captured(1).toInt();
+    minor = match.captured(2).toInt();
+    return true;
+  }
+  
+  return false;
+}
+
+// NEW: Parse winetricks version string (e.g., "20240105-next" -> year=2024, month=1, day=5)
+bool WineLauncher::parseWinetricksVersion(const QString &versionString, int &year, int &month, int &day)
+{
+  QRegularExpression dateRegex(QStringLiteral(R"((\d{4})(\d{2})(\d{2})(?:-next)?)"));
+  QRegularExpressionMatch match = dateRegex.match(versionString);
+  
+  if (match.hasMatch()) {
+    year = match.captured(1).toInt();
+    month = match.captured(2).toInt();
+    day = match.captured(3).toInt();
+    return true;
+  }
+  
+  return false;
+}
+
+// NEW: Compare version numbers
+bool WineLauncher::isVersionGreaterOrEqual(int major1, int minor1, int major2, int minor2)
+{
+  if (major1 > major2) return true;
+  if (major1 < major2) return false;
+  return minor1 >= minor2;
+}
+
+// NEW: Compare dates
+bool WineLauncher::isDateGreaterOrEqual(int year1, int month1, int day1, int year2, int month2, int day2)
+{
+  if (year1 > year2) return true;
+  if (year1 < year2) return false;
+  if (month1 > month2) return true;
+  if (month1 < month2) return false;
+  return day1 >= day2;
+}
+
 void WineLauncher::run(const QString &tgt)
 {
   envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
-  QString cmd(QString::fromUtf8("%1wine").arg(winePath));
+  QString cmd(winePath);
   QStringList args(tgt);
   std::ostringstream s;
   s<<"Launching wine command: '" << cmd.toUtf8().constData() << " " << tgt.toUtf8().constData() << "'\n";
@@ -86,7 +348,7 @@ void WineLauncher::run(const QString &tgt, const QStringList &params)
 {
   envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
-  QString cmd(QString::fromUtf8("%1wine").arg(winePath));
+  QString cmd(winePath);
   QStringList args;
   args << tgt << params;
   std::ostringstream s;
@@ -170,7 +432,7 @@ bool WineLauncher::check()
 {
   envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
-  QString cmd(QString::fromUtf8("%1wine").arg(winePath));
+  QString cmd(winePath);
   QStringList args(QString::fromUtf8("--version"));
   std::ostringstream s;
   s<<"Launching wine command: '" << cmd.toUtf8().constData() << " --version'\n";

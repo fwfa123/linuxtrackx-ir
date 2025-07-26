@@ -19,9 +19,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
 APPIMAGE_DIR="$PROJECT_ROOT/AppDir_phase4"
 BUILD_DIR="$PROJECT_ROOT/build_appimage_phase4"
-VERSION="1.0.0-xir.4"
-APP_NAME="LinuxTrack"
-APP_ID="com.linuxtrack.linuxtrack"
+VERSION="0.99.21"
+APP_NAME="LinuxTrack-X-IR"
+APP_DISPLAY_NAME="LinuxTrack X-IR"
+APP_ID="com.linuxtrack.linuxtrackx-ir"
 
 # AppImage tools
 APPIMAGETOOL="$SCRIPT_DIR/appimagetool-x86_64.AppImage"
@@ -108,8 +109,8 @@ clean_build() {
     fi
     
     # Remove previous AppImage
-    if file_exists "$PROJECT_ROOT/${APP_NAME}-x86_64.AppImage"; then
-        rm -f "$PROJECT_ROOT/${APP_NAME}-x86_64.AppImage"
+    if file_exists "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage"; then
+        rm -f "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage"
         print_status "Removed previous AppImage"
     fi
     
@@ -448,7 +449,7 @@ create_desktop_file() {
     
     cat > "$APPIMAGE_DIR/linuxtrack.desktop" << EOF
 [Desktop Entry]
-Name=LinuxTrack
+Name=${APP_DISPLAY_NAME}
 Comment=Head tracking software for Linux with Wine bridge support
 Exec=usr/bin/ltr_gui
 Icon=linuxtrack
@@ -1235,12 +1236,12 @@ create_appimage() {
     cd "$PROJECT_ROOT"
     
     # Create AppImage with architecture specification
-    ARCH=x86_64 "$APPIMAGETOOL" "$APPIMAGE_DIR" "${APP_NAME}-x86_64.AppImage" || {
+    ARCH=x86_64 "$APPIMAGETOOL" "$APPIMAGE_DIR" "${APP_NAME}-${VERSION}-x86_64.AppImage" || {
         print_error "Failed to create AppImage"
         return 1
     }
     
-    print_success "Phase 4 AppImage created: ${APP_NAME}-x86_64.AppImage"
+    print_success "Phase 4 AppImage created: ${APP_NAME}-${VERSION}-x86_64.AppImage"
     return 0
 }
 
@@ -1248,18 +1249,18 @@ create_appimage() {
 verify_appimage() {
     print_status "Verifying Phase 4 AppImage..."
     
-    if [ ! -f "$PROJECT_ROOT/${APP_NAME}-x86_64.AppImage" ]; then
+    if [ ! -f "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage" ]; then
         print_error "AppImage not found"
         return 1
     fi
     
     # Check AppImage size
-    APPIMAGE_SIZE=$(du -h "$PROJECT_ROOT/${APP_NAME}-x86_64.AppImage" | cut -f1)
+    APPIMAGE_SIZE=$(du -h "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage" | cut -f1)
     print_status "AppImage size: $APPIMAGE_SIZE"
     
     # Extract and analyze dependencies
     print_status "Analyzing bundled dependencies..."
-    ./${APP_NAME}-x86_64.AppImage --appimage-extract
+    ./${APP_NAME}-${VERSION}-x86_64.AppImage --appimage-extract
     cd squashfs-root
     
     # Check if Qt5 libraries are bundled
@@ -1295,7 +1296,7 @@ verify_appimage() {
     
     # Test AppImage
     print_status "Testing AppImage..."
-    "$PROJECT_ROOT/${APP_NAME}-x86_64.AppImage" --appimage-extract-and-run --help 2>/dev/null || {
+    "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage" --appimage-extract-and-run --help 2>/dev/null || {
         print_warning "AppImage test failed, but this may be normal for GUI applications"
     }
     
@@ -1434,8 +1435,8 @@ main() {
     verify_appimage
     
     print_success "LinuxTrack Phase 4 Wine Bridge Integration completed successfully!"
-    print_status "AppImage location: $PROJECT_ROOT/${APP_NAME}-x86_64.AppImage"
-    print_status "You can now test the AppImage by running: ./${APP_NAME}-x86_64.AppImage"
+    print_status "AppImage location: $PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage"
+    print_status "You can now test the AppImage by running: ./${APP_NAME}-${VERSION}-x86_64.AppImage"
     print_status "Wine bridge components are included and will be installed automatically when Wine is detected"
 }
 
