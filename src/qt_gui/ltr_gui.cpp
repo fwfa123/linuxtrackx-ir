@@ -396,6 +396,12 @@ void LinuxtrackGui::on_LaunchMickeyButton_pressed()
 {
   // Try to find mickey binary in common locations
   QStringList mickeyPaths;
+  
+  // Check AppImage internal path first (for AppImage distribution)
+  QString appImagePath = QCoreApplication::applicationDirPath() + QStringLiteral("/mickey");
+  mickeyPaths << appImagePath;
+  
+  // Then check system paths
   mickeyPaths << QStringLiteral("/opt/bin/mickey")
               << QStringLiteral("/usr/local/bin/mickey")
               << QStringLiteral("/usr/bin/mickey")
@@ -413,6 +419,7 @@ void LinuxtrackGui::on_LaunchMickeyButton_pressed()
     warningMessage(QStringLiteral("Mickey binary not found!\n\n"
                                  "Please ensure LinuxTrack is properly installed with Mickey support.\n"
                                  "Expected locations:\n"
+                                 "- AppImage internal path (for AppImage distribution)\n"
                                  "- /opt/bin/mickey\n"
                                  "- /usr/local/bin/mickey\n"
                                  "- /usr/bin/mickey"));
