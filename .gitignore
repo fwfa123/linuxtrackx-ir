@@ -129,8 +129,8 @@ yarn.lock
 test_results/
 *.test
 
-# AppImage build artifacts
-*.AppImage
+# AppImage build artifacts (keep final AppImages)
+# *.AppImage  # Commented out to preserve final AppImages
 AppDir_*/
 squashfs-root/
 appimagetool-*
