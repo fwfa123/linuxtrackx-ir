@@ -13,11 +13,12 @@
 #endif
 
 PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):QObject(parent),
-  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc(NULL),
+  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc(NULL), dlmfc140(NULL),
   poem1(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem1.txt")),
   poem2(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem2.txt")),
   gameData(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/gamedata.txt")),
   mfc42u(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll")),
+  mfc140u(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll")),
   tirViews(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/TIRViews.dll"))
 {
 #ifndef DARWIN
@@ -41,6 +42,9 @@ void PluginInstall::close()
   if(dlmfc != NULL){
     dlmfc->close();
   }
+  if(dlmfc140 != NULL){
+    dlmfc140->close();
+  }
 }
 
 PluginInstall::~PluginInstall()
@@ -54,6 +58,11 @@ PluginInstall::~PluginInstall()
     dlmfc->close();
     delete dlmfc;
     dlmfc = NULL;
+  }
+  if(dlmfc140 != NULL){
+    dlmfc140->close();
+    delete dlmfc140;
+    dlmfc140 = NULL;
   }
   delete inst;
 }
@@ -129,7 +138,7 @@ void PluginInstall::installWinePlugin()
   ltr_int_log_message(s.str().c_str());
   
   // First check if all required firmware files already exist
-  if(isTirFirmwareInstalled() && isMfc42uInstalled()){
+  if(isTirFirmwareInstalled() && (isMfc140uInstalled() || isMfc42uInstalled())){
     // All firmware files exist, skip directly to Wine prefix selection
     installLinuxtrackWine();
     state = LTR_W;
@@ -140,9 +149,10 @@ void PluginInstall::installWinePlugin()
   if(!isTirFirmwareInstalled()){
     state = TIR_FW;
     tirFirmwareInstall();
-  }else if(!isMfc42uInstalled()){
+  }else if(!isMfc140uInstalled() && !isMfc42uInstalled()){
+    // Try MFC140 first (modern approach), fallback to MFC42
     state = MFC;
-    mfc42uInstall();
+    mfc140uInstall();
   }else{
     installLinuxtrackWine();
     state = LTR_W;
@@ -161,6 +171,11 @@ bool PluginInstall::isMfc42uInstalled()
   return QFile::exists(mfc42u);
 }
 
+bool PluginInstall::isMfc140uInstalled()
+{
+  return QFile::exists(mfc140u);
+}
+
 
 void PluginInstall::installLinuxtrackWine()
 {
@@ -171,24 +186,26 @@ void PluginInstall::installLinuxtrackWine()
     dlmfc->hide();
   }
   
-  // Double-check that mfc42u.dll exists before proceeding
-  if(!isMfc42uInstalled()) {
-    QMessageBox::warning(NULL, QString::fromUtf8("MFC42 Required"),
-      QString::fromUtf8("mfc42u.dll is required but not found in the tir_firmware directory.\\n\\n"
-      "Please install MFC42 support first using one of these methods:\\n\\n"
-      "1. Install via winetricks (Recommended for Debian/Ubuntu/MX):\\n"
+  // Double-check that MFC libraries exist before proceeding
+  if(!isMfc140uInstalled() && !isMfc42uInstalled()) {
+    QMessageBox::warning(NULL, QString::fromUtf8("MFC Libraries Required"),
+      QString::fromUtf8("MFC libraries are required but not found in the tir_firmware directory.\\n\\n"
+      "Please install Visual C++ 2015-2022 MFC libraries first using one of these methods:\\n\\n"
+      "1. Install via winetricks (Recommended):\\n"
       "   sudo apt install winetricks\\n"
-      "   winetricks mfc42\\n"
+      "   winetricks vcrun2015 vcrun2017 vcrun2019 vcrun2022\\n"
       "   # Then copy the DLL to LinuxTrack:\\n"
-      "   sudo cp ~/.wine/drive_c/windows/system32/mfc42u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
-      "2. Install via package manager (Fedora/RHEL/Arch only):\\n"
-      "   Fedora: sudo dnf install mfc42\\n"
-      "   Arch: sudo pacman -S mfc42\\n"
+      "   sudo cp ~/.wine/drive_c/windows/system32/mfc140u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
+      "2. Install via package manager:\\n"
+      "   Debian/Ubuntu/MX: sudo apt install wine-staging wine32:i386\\n"
+      "   Fedora: sudo dnf install wine-staging wine-core wine-desktop\\n"
+      "   Arch: sudo pacman -S wine-staging wine-mono wine-gecko\\n"
       "   # Then copy the DLL to LinuxTrack:\\n"
-      "   sudo cp /usr/lib/mfc42u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
+      "   sudo cp ~/.wine/drive_c/windows/system32/mfc140u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
       "3. Manual installation:\\n"
-      "   Copy mfc42u.dll from Windows system to:\\n"
-      "   sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
+      "   Download Visual C++ 2015-2022 Redistributable from Microsoft\\n"
+      "   Install in Wine and copy mfc140u.dll to:\\n"
+      "   sudo cp mfc140u.dll /usr/share/linuxtrack/tir_firmware/\\n\\n"
       "After copying the DLL, try the Wine support installation again.")
     );
     return;
@@ -250,6 +267,31 @@ void PluginInstall::mfc42uInstall()
   // For manual installation, dialog is already shown and user can interact
 }
 
+void PluginInstall::mfc140uInstall()
+{
+  if(!isTirFirmwareInstalled()){
+    QMessageBox::warning(NULL, QString::fromUtf8("Mfc140u install"),
+                         QString::fromUtf8("Install TrackIR firmware first!"));
+    state = TIR_FW;
+    tirFirmwareInstall();
+    return;
+  }
+  if(dlmfc140 == NULL){
+    dlmfc140 = new Mfc140uExtractor();
+    QObject::connect(dlmfc140, SIGNAL(finished(bool)),
+      this, SLOT(finished(bool)));
+  }
+  
+  // Always show the dialog first
+  dlmfc140->show();
+  
+  // Then start automatic installation if in automatic flow
+  if(state == MFC) {
+    dlmfc140->startAutomaticInstallation();
+  }
+  // For manual installation, dialog is already shown and user can interact
+}
+
 void PluginInstall::finished(bool ok)
 {
   if(dlfw != NULL){
@@ -258,11 +300,14 @@ void PluginInstall::finished(bool ok)
   if(dlmfc != NULL){
     dlmfc->hide();
   }
+  if(dlmfc140 != NULL){
+    dlmfc140->hide();
+  }
   switch(state){
     case TIR_FW:
       if(ok) {
         state = MFC;
-        mfc42uInstall();
+        mfc140uInstall(); // Try MFC140 first (modern approach)
       } else {
         // TIR firmware extraction failed - don't proceed
         state = DONE;
@@ -271,14 +316,20 @@ void PluginInstall::finished(bool ok)
       break;
     case MFC:
       if(ok) {
-        // Only proceed to Wine bridge installation if MFC42 was successfully installed
+        // MFC140 installation successful - proceed to Wine bridge installation
         state = LTR_W;
         installLinuxtrackWine();
       } else {
-        // MFC42 extraction failed - don't proceed to Wine bridge
-        // User needs to manually install mfc42u.dll first
-        state = DONE;
-        enableButtons(true);
+        // MFC140 extraction failed - try MFC42 fallback
+        if(!isMfc42uInstalled()) {
+          QMessageBox::information(NULL, QString::fromUtf8("MFC140 Installation Failed"),
+            QString::fromUtf8("Visual C++ 2015-2022 MFC installation failed. Trying MFC42 fallback..."));
+          mfc42uInstall();
+        } else {
+          // MFC42 already exists, proceed to Wine bridge installation
+          state = LTR_W;
+          installLinuxtrackWine();
+        }
       }
       break;
     case LTR_W:

@@ -1160,6 +1160,600 @@ void Mfc42uExtractor::enableButtons(bool enable)
   ui.QuitButton->setEnabled(enable);
 }
 
+// MFC140 Extractor Implementation
+Mfc140uExtractor::Mfc140uExtractor(QWidget *parent) : Extractor(parent), cabextract(NULL)
+{
+  cabextract = new QProcess(this);
+  QObject::connect(cabextract, SIGNAL(finished(int, QProcess::ExitStatus)),
+                   this, SLOT(cabextractFinished(int, QProcess::ExitStatus)));
+  QObject::connect(wine, SIGNAL(finished(bool)), this, SLOT(wineFinished(bool)));
+  QString sources = QString::fromUtf8("sources_mfc140.txt");
+  readSources(sources);
+  ui.AnalyzeSourceButton->setVisible(false);
+  ui.BrowseDir->setEnabled(false);
+}
+
+Mfc140uExtractor::~Mfc140uExtractor()
+{
+}
+
+void Mfc140uExtractor::wineFinished(bool result)
+{
+  if(!result){
+    // Modern approach: Try Visual C++ 2015-2022 MFC libraries
+    progress(QString::fromUtf8("Wine extraction failed, trying modern MFC140 alternatives..."));
+    
+    // Check if mfc140u.dll already exists in common locations
+    QStringList searchPaths;
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc140u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc140u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/mfc140u.dll");
+    
+    bool found = false;
+    for(const QString& searchPath : searchPaths) {
+      if(QFile::exists(searchPath)) {
+        progress(QString::fromUtf8("Found mfc140u.dll at: %1").arg(searchPath));
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
+        if(QFile::copy(searchPath, destPath)) {
+          progress(QString::fromUtf8("Mfc140u.dll copied successfully"));
+          found = true;
+          break;
+        }
+      }
+    }
+    
+    if(!found) {
+      // Try modern installation methods for MFC140
+      progress(QString::fromUtf8("Attempting modern MFC140 installation methods..."));
+      
+      if(tryWinetricksInstall()) {
+        progress(QString::fromUtf8("MFC140 installation completed successfully"));
+        QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+          QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed."));
+        enableButtons(true);
+        emit finished(true);
+        hide();
+        return;
+      }
+      
+      if(tryPackageManagerInstall()) {
+        progress(QString::fromUtf8("MFC140 installation completed successfully"));
+        QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+          QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed."));
+        enableButtons(true);
+        emit finished(true);
+        hide();
+        return;
+      }
+      
+      if(tryVCRedistInstall()) {
+        progress(QString::fromUtf8("MFC140 installation completed successfully"));
+        QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+          QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed."));
+        enableButtons(true);
+        emit finished(true);
+        hide();
+        return;
+      }
+      
+      // If all methods fail, show manual installation instructions
+      showModernInstallationInstructions();
+      enableButtons(true);
+      emit finished(false);
+      return;
+    }
+    
+    if(found) {
+      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+        QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully found and copied."));
+    } else {
+      QMessageBox::warning(this, QString::fromUtf8("Installation Failed"),
+        QString::fromUtf8("Automatic MFC140 installation failed. You can try manual installation methods using the buttons below."));
+    }
+    emit finished(found);
+    if(found) {
+      hide();
+    }
+    return;
+  }
+  
+  // Handle successful Wine extraction (if any)
+  switch(stage){
+    case 0:{
+        stage = 1;
+        QString file = winePrefix + QString::fromUtf8("/drive_c/vcredist.exe");
+        progress(QString::fromUtf8("Extracting %1").arg(file));
+        QStringList args;
+        args << QStringLiteral("/C") << QStringLiteral("/Q") << QStringLiteral("/T:c:\\");
+        wine->run(file, args);
+      }
+      break;
+    case 1:{
+        stage = 0;
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
+        QString srcPath = winePrefix + QString::fromUtf8("/drive_c/mfc140u.dll");
+        if(!QFile::copy(srcPath, destPath)){
+          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc140u.dll"),
+            QString::fromUtf8("There was an error extracting mfc140u.dll.\n"
+            "Please see the help to learn other ways\n"
+  	  "ways of obtaining this file.\n\n")
+          );
+        }else{
+          progress(QString::fromUtf8("Mfc140u.dll extracted successfully"));
+        }
+        enableButtons(true);
+        emit finished(true);
+        hide();
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+bool Mfc140uExtractor::tryWinetricksInstall()
+{
+  progress(QString::fromUtf8("Trying winetricks installation for Visual C++ 2015-2022 MFC..."));
+  
+  // First, check if winetricks is available and get its version
+  QString winetricksPath = checkWinetricksAvailability();
+  if(winetricksPath.isEmpty()) {
+    progress(QString::fromUtf8("Winetricks not found - attempting to install latest version..."));
+    if(!installLatestWinetricks()) {
+      progress(QString::fromUtf8("Failed to install winetricks"));
+      return false;
+    }
+    winetricksPath = QString::fromUtf8("/usr/local/bin/winetricks");
+  } else {
+    // Check if we have a recent version (avoid outdated packaged versions)
+    if(!isWinetricksVersionRecent(winetricksPath)) {
+      progress(QString::fromUtf8("Outdated winetricks detected - updating to latest version..."));
+      if(!installLatestWinetricks()) {
+        progress(QString::fromUtf8("Failed to update winetricks, trying with existing version..."));
+      } else {
+        winetricksPath = QString::fromUtf8("/usr/local/bin/winetricks");
+      }
+    }
+  }
+  
+  // Create a fresh 32-bit temp Wine prefix specifically for MFC140 installation
+  QString tempBase = QDir::tempPath();
+  QString mfc140Prefix = tempBase + QString::fromUtf8("/linuxtrack_mfc140_XXXXXX");
+  QByteArray charData = mfc140Prefix.toUtf8();
+  char *prefix = mkdtemp(charData.data());
+  if(prefix == NULL) {
+    progress(QString::fromUtf8("Failed to create temporary wine prefix directory"));
+    return false;
+  }
+  mfc140Prefix = QString::fromUtf8(prefix);
+  progress(QString::fromUtf8("Creating fresh 32-bit Wine prefix for MFC140 installation: %1").arg(mfc140Prefix));
+  
+  // Initialize the new 32-bit prefix
+  QProcess wineInit;
+  QProcessEnvironment env = wine->getProcessEnvironment();
+  env.insert(QString::fromUtf8("WINEPREFIX"), mfc140Prefix);
+  env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+  wineInit.setProcessEnvironment(env);
+  
+  // Use the best available wine version for initialization
+  QString bestWine = wine->selectBestWineVersion();
+  if (bestWine.isEmpty()) {
+    progress(QString::fromUtf8("No compatible wine version found (requires 9.0+)"));
+    return false;
+  }
+  
+  progress(QString::fromUtf8("Initializing 32-bit Wine prefix using: %1").arg(bestWine));
+  wineInit.start(bestWine, QStringList() << QString::fromUtf8("wineboot") << QString::fromUtf8("--init"));
+  
+  if(!wineInit.waitForFinished(30000)) { // 30 second timeout
+    progress(QString::fromUtf8("Failed to initialize Wine prefix (timeout)"));
+    return false;
+  }
+  
+  if(wineInit.exitCode() != 0) {
+    progress(QString::fromUtf8("Failed to initialize Wine prefix (exit code: %1)").arg(wineInit.exitCode()));
+    return false;
+  }
+  
+  progress(QString::fromUtf8("32-bit Wine prefix initialized successfully"));
+  winePrefix = mfc140Prefix;
+  
+  // Install Visual C++ 2015-2022 MFC libraries using winetricks
+  QProcess winetricks;
+  
+  // Use unattended mode and force download to avoid hanging
+  QStringList args;
+  args << QString::fromUtf8("--unattended") << QString::fromUtf8("--force");
+  args << QString::fromUtf8("vcrun2015") << QString::fromUtf8("vcrun2017") 
+       << QString::fromUtf8("vcrun2019") << QString::fromUtf8("vcrun2022");
+  
+  progress(QString::fromUtf8("Running: %1 --unattended --force vcrun2015 vcrun2017 vcrun2019 vcrun2022").arg(winetricksPath));
+  
+  // Set environment for 32-bit operation
+  QProcessEnvironment winetricksEnv = env;
+  winetricksEnv.insert(QString::fromUtf8("WINEPREFIX"), mfc140Prefix);
+  winetricksEnv.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+  winetricksEnv.insert(QString::fromUtf8("WINETRICKS_TIMEOUT"), QString::fromUtf8("120")); // 2 minute timeout
+  winetricksEnv.insert(QString::fromUtf8("WINETRICKS_FORCE"), QString::fromUtf8("1")); // Force download
+  winetricks.setProcessEnvironment(winetricksEnv);
+  
+  // Use the fresh 32-bit prefix
+  winetricks.setWorkingDirectory(winePrefix);
+  
+  // Connect to process signals for better monitoring
+  connect(&winetricks, &QProcess::errorOccurred, [this, &winetricks](QProcess::ProcessError error) {
+    progress(QString::fromUtf8("Winetricks process error: %1").arg(error));
+  });
+  
+  winetricks.start(winetricksPath, args);
+  
+  progress(QString::fromUtf8("Winetricks started - this may take several minutes for download and installation..."));
+  
+  if(!winetricks.waitForStarted()) {
+    progress(QString::fromUtf8("Failed to start winetricks"));
+    return false;
+  }
+  
+  if(!winetricks.waitForFinished(300000)) { // 5 minute timeout for MFC140 installation
+    progress(QString::fromUtf8("Winetricks installation timed out"));
+    winetricks.terminate();
+    winetricks.waitForFinished(10000);
+    return false;
+  }
+  
+  if(winetricks.exitCode() == 0) {
+    progress(QString::fromUtf8("Winetricks MFC140 installation successful"));
+    
+    // Check if mfc140u.dll was installed
+    QStringList checkPaths;
+    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc140u.dll");
+    checkPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc140u.dll");
+    
+    for(const QString& path : checkPaths) {
+      if(QFile::exists(path)) {
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
+        if(QFile::copy(path, destPath)) {
+          progress(QString::fromUtf8("Mfc140u.dll installed via winetricks"));
+          
+          // Clean up the temporary MFC140 prefix
+          QDir tempDir(winePrefix);
+          if(tempDir.exists()) {
+            tempDir.removeRecursively();
+            progress(QString::fromUtf8("Cleaned up temporary MFC140 Wine prefix"));
+          }
+          
+          return true;
+        }
+      }
+    }
+  } else {
+    // If winetricks failed, clean up the temporary MFC140 prefix
+    progress(QString::fromUtf8("Winetricks failed - cleaning up temporary MFC140 prefix..."));
+    QDir tempDir(winePrefix);
+    if(tempDir.exists()) {
+      tempDir.removeRecursively();
+      progress(QString::fromUtf8("Temporary MFC140 Wine prefix cleaned up"));
+    }
+  }
+  
+  progress(QString::fromUtf8("Winetricks MFC140 installation failed"));
+  return false;
+}
+
+bool Mfc140uExtractor::tryPackageManagerInstall()
+{
+  progress(QString::fromUtf8("Trying package manager installation for MFC140..."));
+  
+  // For MFC140, we need to install Wine with Visual C++ 2015-2022 support
+  QStringList packageManagers;
+  packageManagers << QString::fromUtf8("apt") << QString::fromUtf8("dnf") << QString::fromUtf8("pacman") << QString::fromUtf8("zypper");
+  
+  for(const QString& pm : packageManagers) {
+    QProcess checkPM;
+    checkPM.start(QString::fromUtf8("which"), QStringList() << pm);
+    if(checkPM.waitForFinished(5000) && checkPM.exitCode() == 0) {
+      progress(QString::fromUtf8("Found package manager: %1").arg(pm));
+      
+      // Try to install the appropriate package
+      QString packageName;
+      if(pm == QString::fromUtf8("apt")) {
+        packageName = QString::fromUtf8("wine-staging wine32:i386");
+      } else if(pm == QString::fromUtf8("dnf")) {
+        packageName = QString::fromUtf8("wine-staging wine-core wine-desktop");
+      } else if(pm == QString::fromUtf8("pacman")) {
+        packageName = QString::fromUtf8("wine-staging wine-mono wine-gecko");
+      } else if(pm == QString::fromUtf8("zypper")) {
+        packageName = QString::fromUtf8("wine-staging wine-32bit");
+      }
+      
+      if(!packageName.isEmpty()) {
+        progress(QString::fromUtf8("Attempting to install: %1").arg(packageName));
+        
+        // Note: This would require sudo, so we'll just inform the user
+        QMessageBox::information(this, QString::fromUtf8("Package Installation Required"),
+          QString::fromUtf8("Please install the required packages manually:\n\n"
+          "For %1: sudo %1 install %2\n\n"
+          "After installation, try the Wine support installation again.")
+          .arg(pm).arg(packageName)
+        );
+        return false; // Let user handle the installation
+      }
+    }
+  }
+  
+  return false;
+}
+
+bool Mfc140uExtractor::tryVCRedistInstall()
+{
+  progress(QString::fromUtf8("Trying direct Visual C++ 2015-2022 Redistributable installation..."));
+  
+  // This method would download and install the official Microsoft Visual C++ 2015-2022 Redistributable
+  // For now, we'll provide instructions to the user
+  QMessageBox::information(this, QString::fromUtf8("Manual Installation Required"),
+    QString::fromUtf8("Please download and install the Visual C++ 2015-2022 Redistributable manually:\n\n"
+    "1. Download from Microsoft: https://aka.ms/vs/17/release/vc_redist.x86.exe\n"
+    "2. Install in your Wine prefix: wine vc_redist.x86.exe\n"
+    "3. Copy mfc140u.dll from the installed location to:\n"
+    "   sudo cp ~/.wine/drive_c/windows/system32/mfc140u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
+    "After installation, try the Wine support installation again.")
+  );
+  
+  return false;
+}
+
+void Mfc140uExtractor::showModernInstallationInstructions()
+{
+  QMessageBox::information(this, QString::fromUtf8("Manual Installation Required"),
+    QString::fromUtf8("Automatic MFC140 installation failed. Please use one of these manual approaches:\n\n"
+    "1. Install via winetricks (Recommended):\n"
+    "   sudo apt install winetricks\n"
+    "   winetricks vcrun2015 vcrun2017 vcrun2019 vcrun2022\n"
+    "   # Then copy the DLL to LinuxTrack:\n"
+    "   sudo cp ~/.wine/drive_c/windows/system32/mfc140u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
+    "2. Install via package manager:\n"
+    "   Debian/Ubuntu/MX: sudo apt install wine-staging wine32:i386\n"
+    "   Fedora: sudo dnf install wine-staging wine-core wine-desktop\n"
+    "   Arch: sudo pacman -S wine-staging wine-mono wine-gecko\n"
+    "   # Then copy the DLL to LinuxTrack:\n"
+    "   sudo cp ~/.wine/drive_c/windows/system32/mfc140u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
+    "3. Manual installation:\n"
+    "   Download Visual C++ 2015-2022 Redistributable from Microsoft\n"
+    "   Install in Wine and copy mfc140u.dll to:\n"
+    "   sudo cp mfc140u.dll /usr/share/linuxtrack/tir_firmware/\n\n"
+    "After copying the DLL, try the Wine support installation again.\n\n"
+    "You can also try the manual installation methods using the buttons in this dialog.")
+  );
+}
+
+QString Mfc140uExtractor::checkWinetricksAvailability()
+{
+  QProcess winetricksCheck;
+  winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
+  if(!winetricksCheck.waitForFinished(5000) || winetricksCheck.exitCode() != 0) {
+    return QString();
+  }
+  
+  // Get the path to winetricks
+  winetricksCheck.start(QString::fromUtf8("which"), QStringList() << QString::fromUtf8("winetricks"));
+  if(winetricksCheck.waitForFinished(5000) && winetricksCheck.exitCode() == 0) {
+    QString output = QString::fromUtf8(winetricksCheck.readAllStandardOutput()).trimmed();
+    if(!output.isEmpty()) {
+      return output;
+    }
+  }
+  
+  return QString();
+}
+
+bool Mfc140uExtractor::isWinetricksVersionRecent(const QString& winetricksPath)
+{
+  if(winetricksPath.isEmpty()) {
+    return false;
+  }
+  
+  // Check winetricks version
+  QProcess versionCheck;
+  versionCheck.start(winetricksPath, QStringList() << QString::fromUtf8("--version"));
+  if(!versionCheck.waitForFinished(5000) || versionCheck.exitCode() != 0) {
+    return false;
+  }
+  
+  QString versionOutput = QString::fromUtf8(versionCheck.readAllStandardOutput()).trimmed();
+  
+  // Extract version number (format: "winetricks 20231210" or similar)
+  QRegExp versionRegex(QString::fromUtf8("winetricks\\s+(\\d{8})"));
+  if(versionRegex.indexIn(versionOutput) != -1) {
+    QString versionStr = versionRegex.cap(1);
+    bool ok;
+    int version = versionStr.toInt(&ok);
+    if(ok) {
+      // Consider versions from 2023 onwards as recent
+      return version >= 20230101;
+    }
+  }
+  
+  // If we can't parse the version, assume it's recent enough
+  return true;
+}
+
+bool Mfc140uExtractor::installLatestWinetricks()
+{
+  progress(QString::fromUtf8("Downloading latest winetricks..."));
+  
+  // Create temporary directory
+  QString tempDir = QDir::tempPath() + QString::fromUtf8("/winetricks_install_XXXXXX");
+  QByteArray tempDirBytes = tempDir.toUtf8();
+  char* tempDirPath = mkdtemp(tempDirBytes.data());
+  if(!tempDirPath) {
+    progress(QString::fromUtf8("Failed to create temporary directory"));
+    return false;
+  }
+  tempDir = QString::fromUtf8(tempDirPath);
+  
+  // Download latest winetricks
+  QProcess downloadProcess;
+  downloadProcess.setWorkingDirectory(tempDir);
+  downloadProcess.start(QString::fromUtf8("wget"), QStringList() 
+    << QString::fromUtf8("--no-verbose")
+    << QString::fromUtf8("https://raw.githubusercontent.com/Winetricks/winetricks/master/src/winetricks"));
+  
+  if(!downloadProcess.waitForFinished(30000)) { // 30 second timeout
+    progress(QString::fromUtf8("Download timed out"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  if(downloadProcess.exitCode() != 0) {
+    progress(QString::fromUtf8("Download failed"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  // Make winetricks executable
+  QString winetricksPath = tempDir + QString::fromUtf8("/winetricks");
+  QFile winetricksFile(winetricksPath);
+  if(!winetricksFile.setPermissions(QFile::ExeOwner | QFile::ExeUser | QFile::ExeGroup | QFile::ExeOther)) {
+    progress(QString::fromUtf8("Failed to set executable permissions"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  // Install to /usr/local/bin (requires sudo)
+  progress(QString::fromUtf8("Installing winetricks to /usr/local/bin..."));
+  QProcess installProcess;
+  installProcess.start(QString::fromUtf8("sudo"), QStringList() 
+    << QString::fromUtf8("mv") 
+    << winetricksPath 
+    << QString::fromUtf8("/usr/local/bin/winetricks"));
+  
+  if(!installProcess.waitForFinished(30000)) { // 30 second timeout
+    progress(QString::fromUtf8("Installation timed out"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  if(installProcess.exitCode() != 0) {
+    progress(QString::fromUtf8("Installation failed - user may need to run with sudo privileges"));
+    QDir(tempDir).removeRecursively();
+    return false;
+  }
+  
+  // Clean up temporary directory
+  QDir(tempDir).removeRecursively();
+  
+  progress(QString::fromUtf8("Latest winetricks installed successfully"));
+  return true;
+}
+
+void Mfc140uExtractor::startAutomaticInstallation()
+{
+  // Dialog should already be visible from mfc140uInstall()
+  // Disable manual buttons during automatic installation
+  enableButtons(false);
+  
+  progress(QString::fromUtf8("Starting automatic MFC140 installation..."));
+  
+  // Try winetricks installation first
+  if(tryWinetricksInstall()) {
+    progress(QString::fromUtf8("MFC140 installation completed successfully"));
+    // Show success message
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed via winetricks."));
+    enableButtons(true);
+    emit finished(true);
+    hide();
+    return;
+  }
+  
+  // If winetricks fails, try package manager
+  if(tryPackageManagerInstall()) {
+    progress(QString::fromUtf8("MFC140 installation completed successfully"));
+    // Show success message
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed via package manager."));
+    enableButtons(true);
+    emit finished(true);
+    hide();
+    return;
+  }
+  
+  // If all automatic methods fail, show the manual installation dialog
+  progress(QString::fromUtf8("Automatic installation failed, showing manual options"));
+  enableButtons(true);
+  // Keep dialog open for manual installation
+}
+
+void Mfc140uExtractor::commenceExtraction(QString file)
+{
+  stage = 0;
+#ifndef DARWIN
+  progress(QString::fromUtf8("Initializing wine and extracting %1").arg(file));
+  QStringList args;
+  args << QStringLiteral("/C") << QStringLiteral("/Q") << QStringLiteral("/T:c:\\");
+  wine->setEnv(QString::fromUtf8("WINEPREFIX"), winePrefix);
+  wine->run(file, args);
+#else
+  progress(QString::fromUtf8("Starting cabextract to extract '%1' in '%2'.").arg(file).arg(winePrefix));
+  QString c = PREF.getDataPath(QString::fromUtf8("/../../helper/cabextract"));
+  cabextract->setWorkingDirectory(winePrefix);
+  QStringList args;
+  args << file;
+  cabextract->start(c, args);
+#endif
+}
+
+void Mfc140uExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus status)
+{
+  if((exitCode != 0) || (status != QProcess::NormalExit)){
+    QMessageBox::warning(this, QString::fromUtf8("Error running cabextract"),
+      QString::fromUtf8("There was an error extracting\n"
+      "the VC redistributable.\n"
+      "Please see the log for more details.\n\n")
+    );
+    enableButtons(true);
+    return;
+  }
+  switch(stage){
+    case 0:{
+        stage = 1;
+        QString file = winePrefix + QString::fromUtf8("/vcredist.exe");
+        progress(QString::fromUtf8("Extracting %1").arg(file));
+        QString c = PREF.getDataPath(QString::fromUtf8("/../../helper/cabextract"));
+        QStringList args;
+        args << file;
+        cabextract->start(c, args);
+      }
+      break;
+    case 1:{
+        stage = 0;
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
+        QString srcPath = winePrefix + QString::fromUtf8("/mfc140u.dll");
+        if(!QFile::copy(srcPath, destPath)){
+          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc140u.dll"),
+            QString::fromUtf8("There was an error extracting mfc140u.dll.\n"
+            "Please see the help to learn other ways\n"
+          "ways of obtaining this file.\n\n")
+          );
+        }else{
+          progress(QString::fromUtf8("Mfc140u.dll extracted successfully"));
+        }
+        enableButtons(true);
+        emit finished(true);
+        hide();
+      }
+      break;
+    default:
+      break;
+  }
+}
+
+void Mfc140uExtractor::enableButtons(bool enable)
+{
+  ui.BrowseInstaller->setEnabled(enable);
+  ui.QuitButton->setEnabled(enable);
+}
+
 
 void Extractor::on_QuitButton_pressed()
 {
