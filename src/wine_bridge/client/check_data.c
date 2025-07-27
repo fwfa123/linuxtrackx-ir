@@ -205,25 +205,42 @@ int main()
     fflush(stdout);
   }
 
-  printf("DEBUG: Building mfc42u.dll path...\n");
-  fflush(stdout);
-  sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42u.dll", home);
-  printf("DEBUG: mfc42u.dll path: %s\n", path1);
+  printf("DEBUG: Building MFC library paths...\n");
   fflush(stdout);
   
-  printf("DEBUG: Creating symlink for mfc42u.dll...\n");
+  // Try MFC140 first (modern approach)
+  sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc140u.dll", home);
+  printf("DEBUG: mfc140u.dll path: %s\n", path1);
   fflush(stdout);
-  if(symlink(path1, "mfc42u.dll") != 0){
-    printf("DEBUG: Failed to create symlink for mfc42u.dll\n");
+  
+  printf("DEBUG: Creating symlink for mfc140u.dll...\n");
+  fflush(stdout);
+  if(symlink(path1, "mfc140u.dll") != 0){
+    printf("DEBUG: Failed to create symlink for mfc140u.dll, trying MFC42 fallback\n");
     fflush(stdout);
-    MessageBox(NULL,
-    "Failed to create symlink to mfc42u.dll!\n"
-    "Try to install TIRViews support in ltr_gui,\n"
-    "or install mfc42 into this bottle using winetricks.",
-    "Linuxtrack-wine check",
-    MB_OK);
+    
+    // Fallback to MFC42
+    sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42u.dll", home);
+    printf("DEBUG: mfc42u.dll path: %s\n", path1);
+    fflush(stdout);
+    
+    printf("DEBUG: Creating symlink for mfc42u.dll...\n");
+    fflush(stdout);
+    if(symlink(path1, "mfc42u.dll") != 0){
+      printf("DEBUG: Failed to create symlink for mfc42u.dll\n");
+      fflush(stdout);
+      MessageBox(NULL,
+      "Failed to create symlink to MFC libraries!\n"
+      "Try to install Visual C++ 2015-2022 MFC libraries:\n"
+      "winetricks vcrun2015 vcrun2017 vcrun2019 vcrun2022",
+      "Linuxtrack-wine check",
+      MB_OK);
+    } else {
+      printf("DEBUG: Successfully created symlink for mfc42u.dll (fallback)\n");
+      fflush(stdout);
+    }
   } else {
-    printf("DEBUG: Successfully created symlink for mfc42u.dll\n");
+    printf("DEBUG: Successfully created symlink for mfc140u.dll\n");
     fflush(stdout);
   }
 
