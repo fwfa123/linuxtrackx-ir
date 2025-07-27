@@ -10,6 +10,7 @@
 have a Mac and other items I am not supporting these at this time, although the code 
 reamains embedded.
 
+Lots left TODO  (https://github.com/fwfa123/linuxtrackx-ir/blob/main/docs/progress/TODO_FUTURE_DEVELOPMENT.md)
 ## 🚀 Quick Start
 
 ### **Recommended: AppImage Installation (Easiest)**
