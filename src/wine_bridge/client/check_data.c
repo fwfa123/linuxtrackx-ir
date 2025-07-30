@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
 
 int main()
 {
@@ -63,6 +64,15 @@ int main()
   }
   
   printf("DEBUG: Using home directory: %s\n", home);
+  fflush(stdout);
+  
+  // Get current working directory for debugging
+  char cwd[1024];
+  if (getcwd(cwd, sizeof(cwd)) != NULL) {
+    printf("DEBUG: Current working directory: %s\n", cwd);
+  } else {
+    printf("DEBUG: Failed to get current working directory\n");
+  }
   fflush(stdout);
   
   // Check if firmware directory exists before trying to access gamedata.txt
@@ -194,12 +204,27 @@ int main()
   printf("DEBUG: Creating symlink for TIRViews.dll...\n");
   fflush(stdout);
   if(symlink(path1, "TIRViews.dll") != 0){
-    printf("DEBUG: Failed to create symlink for TIRViews.dll\n");
+    printf("DEBUG: Failed to create symlink for TIRViews.dll (error: %d)\n", errno);
     fflush(stdout);
-    MessageBox(NULL,
-    "Failed to create symlink to TIRViews.dll!\nSome games will not have headtracking available.",
-    "Linuxtrack-wine check",
-    MB_OK);
+    
+    // Check if error is EEXIST (file already exists) - this is not a problem
+    if(errno == EEXIST) {
+      printf("DEBUG: TIRViews.dll symlink already exists (this is normal)\n");
+      fflush(stdout);
+    } else {
+      // Show detailed error information to user only for real errors
+      char error_msg[512];
+      sprintf(error_msg, 
+        "Failed to create symlink to TIRViews.dll!\n\n"
+        "Error code: %d\n"
+        "Target path: %s\n"
+        "Working directory: %s\n\n"
+        "This usually means the TrackIR firmware files are not properly installed.\n"
+        "Please run the TrackIR firmware extraction in the LinuxTrack GUI first.",
+        errno, path1, cwd);
+      
+      MessageBox(NULL, error_msg, "Linuxtrack-wine check", MB_OK);
+    }
   } else {
     printf("DEBUG: Successfully created symlink for TIRViews.dll\n");
     fflush(stdout);
@@ -216,28 +241,48 @@ int main()
   printf("DEBUG: Creating symlink for mfc140u.dll...\n");
   fflush(stdout);
   if(symlink(path1, "mfc140u.dll") != 0){
-    printf("DEBUG: Failed to create symlink for mfc140u.dll, trying MFC42 fallback\n");
+    printf("DEBUG: Failed to create symlink for mfc140u.dll, trying MFC42 fallback (error: %d)\n", errno);
     fflush(stdout);
     
-    // Fallback to MFC42
-    sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42u.dll", home);
-    printf("DEBUG: mfc42u.dll path: %s\n", path1);
-    fflush(stdout);
-    
-    printf("DEBUG: Creating symlink for mfc42u.dll...\n");
-    fflush(stdout);
-    if(symlink(path1, "mfc42u.dll") != 0){
-      printf("DEBUG: Failed to create symlink for mfc42u.dll\n");
+        // Check if error is EEXIST (file already exists) - this is not a problem
+    if(errno == EEXIST) {
+      printf("DEBUG: mfc140u.dll symlink already exists (this is normal)\n");
       fflush(stdout);
-      MessageBox(NULL,
-      "Failed to create symlink to MFC libraries!\n"
-      "Try to install Visual C++ 2015-2022 MFC libraries:\n"
-      "winetricks vcrun2015 vcrun2017 vcrun2019 vcrun2022",
-      "Linuxtrack-wine check",
-      MB_OK);
     } else {
-      printf("DEBUG: Successfully created symlink for mfc42u.dll (fallback)\n");
+      // Fallback to MFC42 only for real errors
+      sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42u.dll", home);
+      printf("DEBUG: mfc42u.dll path: %s\n", path1);
       fflush(stdout);
+      
+      printf("DEBUG: Creating symlink for mfc42u.dll...\n");
+      fflush(stdout);
+      
+      if(symlink(path1, "mfc42u.dll") != 0){
+        printf("DEBUG: Failed to create symlink for mfc42u.dll (error: %d)\n", errno);
+        fflush(stdout);
+        
+        // Check if error is EEXIST (file already exists) - this is not a problem
+        if(errno == EEXIST) {
+          printf("DEBUG: mfc42u.dll symlink already exists (this is normal)\n");
+          fflush(stdout);
+        } else {
+          // Show detailed error information to user only for real errors
+          char error_msg[512];
+          sprintf(error_msg, 
+            "Failed to create symlink to MFC libraries!\n\n"
+            "Error code: %d\n"
+            "Target path: %s\n"
+            "Working directory: %s\n\n"
+            "This usually means the MFC libraries are not properly installed.\n"
+            "Please run the MFC library installation in the LinuxTrack GUI first.",
+            errno, path1, cwd);
+          
+          MessageBox(NULL, error_msg, "Linuxtrack-wine check", MB_OK);
+        }
+      } else {
+        printf("DEBUG: Successfully created symlink for mfc42u.dll (fallback)\n");
+        fflush(stdout);
+      }
     }
   } else {
     printf("DEBUG: Successfully created symlink for mfc140u.dll\n");
