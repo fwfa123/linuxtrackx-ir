@@ -905,6 +905,74 @@ bundle_dependencies() {
         fi
     done
     
+    # ICU (International Components for Unicode) libraries - CRITICAL for Qt
+    print_status "Bundling ICU libraries for Qt compatibility..."
+    for iculib in libicui18n libicuuc libicudata; do
+        # Try version 72 first (common on newer systems)
+        if [ -f "/usr/lib/x86_64-linux-gnu/${iculib}.so.72" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${iculib}.so.72" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${iculib}.so.72"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${iculib}.so.71" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${iculib}.so.71" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${iculib}.so.71"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${iculib}.so.70" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${iculib}.so.70" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${iculib}.so.70"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${iculib}.so.69" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${iculib}.so.69" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${iculib}.so.69"
+        fi
+        
+        # Also copy the actual library file that the symlink points to
+        actual_file=$(readlink -f "/usr/lib/x86_64-linux-gnu/${iculib}.so.72" 2>/dev/null || echo "")
+        if [ -n "$actual_file" ] && [ -f "$actual_file" ]; then
+            cp "$actual_file" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled actual ICU file: $(basename "$actual_file")"
+        fi
+    done
+    
+    # Compression libraries - CRITICAL for Qt data handling
+    print_status "Bundling compression libraries..."
+    for complib in libz libzstd libbz2 liblzma; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${complib}.so.1" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${complib}.so.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${complib}.so.1"
+        fi
+    done
+    
+    # Data conversion libraries - Qt dependency
+    print_status "Bundling data conversion libraries..."
+    for convlib in libdouble-conversion; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${convlib}.so.3" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${convlib}.so.3" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${convlib}.so.3"
+        fi
+    done
+    
+    # SSL/Crypto libraries - For network features
+    print_status "Bundling SSL/Crypto libraries..."
+    for ssllib in libssl libcrypto; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${ssllib}.so.3" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${ssllib}.so.3" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${ssllib}.so.3"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${ssllib}.so.1.1" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${ssllib}.so.1.1" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${ssllib}.so.1.1"
+        fi
+    done
+    
+    # Text rendering libraries - For Qt text display
+    print_status "Bundling text rendering libraries..."
+    for textlib in libharfbuzz libfreetype libfontconfig; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/${textlib}.so.0" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${textlib}.so.0" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${textlib}.so.0"
+        elif [ -f "/usr/lib/x86_64-linux-gnu/${textlib}.so.6" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/${textlib}.so.6" "usr/lib/" 2>/dev/null || true
+            print_status "Bundled ${textlib}.so.6"
+        fi
+    done
+    
     # Security libraries (SELinux, etc.)
     for seclib in libselinux libpcre libpcre2-8 libpcre2-16; do
         if [ -f "/usr/lib/x86_64-linux-gnu/${seclib}.so.1" ]; then
