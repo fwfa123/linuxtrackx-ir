@@ -255,5 +255,4 @@ void TirPrefs::on_TirInstallFirmware_pressed()
   dlfw->raise();
 }
 
-#include "moc_tir_prefs.cpp"
 

@@ -18,7 +18,8 @@ HINSTANCE hInst;
 HANDLE mutex;
 bool hidden = false;
 
-HMODULE tvHandle;
+HMODULE tvHandle = NULL;
+HMODULE mfcHandle = NULL;
 typedef int (WINAPI *TIRViewsFun_t)(void);
 TIRViewsFun_t TIRViewsVersion;
 TIRViewsFun_t TIRViewsStart;
@@ -77,11 +78,11 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                 18, 20, 170, 15, hwnd, (HMENU)IDQUIT+2, hInst, 0);
             /* SetDlgItemInt(hwndDlg, IDC_APPID, 2307, true); */
             // Try MFC140 first (modern approach)
-            tvHandle = LoadLibrary("mfc140u.dll");
-            if(!tvHandle){
+            mfcHandle = LoadLibrary("mfc140u.dll");
+            if(!mfcHandle){
               // Fallback to MFC42 for backward compatibility
-              tvHandle = LoadLibrary("mfc42u.dll");
-              if(!tvHandle){
+              mfcHandle = LoadLibrary("mfc42u.dll");
+              if(!mfcHandle){
                 /* DWORD err = GetLastError(); */
                 message_("Can't load MFC libraries needed by TIRViews.dll.\n"
                          "Try installing Visual C++ 2015-2022 MFC libraries:\n"
@@ -113,6 +114,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
       return 0;
       break;
     case WM_DESTROY:
+      if(tvHandle != NULL){
+        FreeLibrary(tvHandle);
+        tvHandle = NULL;
+      }
+      if(mfcHandle != NULL){
+        FreeLibrary(mfcHandle);
+        mfcHandle = NULL;
+      }
       PostQuitMessage(0);
       return 0;
       break;
@@ -127,6 +136,14 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                    if(client != NULL){
                      free(client);
                      client = NULL;
+                   }
+                   if(tvHandle != NULL){
+                     FreeLibrary(tvHandle);
+                     tvHandle = NULL;
+                   }
+                   if(mfcHandle != NULL){
+                     FreeLibrary(mfcHandle);
+                     mfcHandle = NULL;
                    }
           DestroyWindow(hwnd);
           break;

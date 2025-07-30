@@ -23,6 +23,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "windef.h"
 #include "winbase.h"
 #include "NPClient_dll.h"
@@ -357,12 +358,255 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         table[7] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
       }
     }
-    if(linuxtrack_init(gd.name) < LINUXTRACK_OK){
-      return 1;
+    
+    // Try to initialize LinuxTrack - if it fails, try to start the daemon first
+    linuxtrack_state_type init_result = linuxtrack_init(gd.name);
+    if(init_result < LINUXTRACK_OK){
+      printf("LinuxTrack initialization failed (%d): %s\n", init_result, linuxtrack_explain(init_result));
+      
+      // Try to start the LinuxTrack daemon if it's not running
+      printf("Attempting to start LinuxTrack daemon...\n");
+      
+      // First, check if the daemon is already running by checking for the socket file
+      char check_socket_cmd[512];
+      snprintf(check_socket_cmd, sizeof(check_socket_cmd), "test -S /tmp/linuxtrack.sock > /dev/null 2>&1");
+      int socket_exists = (system(check_socket_cmd) == 0);
+      
+      if(socket_exists){
+        printf("LinuxTrack socket found - daemon appears to be running\n");
+        // Try initialization again
+        init_result = linuxtrack_init(gd.name);
+        if(init_result >= LINUXTRACK_OK){
+          printf("LinuxTrack initialization successful after socket check\n");
+        } else {
+          printf("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
+                 init_result, linuxtrack_explain(init_result));
+        }
+      } else {
+        printf("LinuxTrack socket not found - daemon not running, attempting to start...\n");
+        
+        // Look for ltr_server1 in common locations (this is the actual daemon name)
+        const char* possible_paths[] = {
+          "/usr/bin/ltr_server1",
+          "/usr/local/bin/ltr_server1", 
+          "/opt/bin/ltr_server1",
+          "ltr_server1"  // Try PATH
+        };
+        
+        int daemon_started = 0;
+        for(int i = 0; i < sizeof(possible_paths)/sizeof(possible_paths[0]); i++){
+          printf("Trying to start daemon from: %s\n", possible_paths[i]);
+          
+          // Check if the daemon is already running first
+          char check_cmd[512];
+          snprintf(check_cmd, sizeof(check_cmd), "pgrep -f ltr_server1 > /dev/null 2>&1");
+          if(system(check_cmd) == 0){
+            printf("LinuxTrack daemon is already running\n");
+            daemon_started = 1;
+            break;
+          }
+          
+          // Try to start the daemon using the proper method
+          // The daemon needs to be started with specific parameters
+          char cmd[512];
+          // Try starting as standalone daemon first
+          snprintf(cmd, sizeof(cmd), "%s > /dev/null 2>&1 &", possible_paths[i]);
+          
+          if(system(cmd) == 0){
+            printf("Daemon start command executed successfully\n");
+            // Wait a moment for the daemon to start
+            Sleep(3000);  // 3 second delay for daemon to fully start
+            
+            // Verify the daemon is actually running
+            if(system(check_cmd) == 0){
+              printf("Daemon verification successful - daemon is running\n");
+              daemon_started = 1;
+              break;
+            } else {
+              printf("Daemon verification failed - daemon may not have started properly\n");
+            }
+          } else {
+            printf("Failed to start daemon from: %s\n", possible_paths[i]);
+          }
+        }
+        
+        // If direct daemon start failed, try starting the GUI which will start the daemon
+        if(!daemon_started){
+          printf("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
+          const char* gui_paths[] = {
+            "/usr/bin/ltr_gui",
+            "/usr/local/bin/ltr_gui", 
+            "/opt/bin/ltr_gui",
+            "ltr_gui"  // Try PATH
+          };
+          
+          for(int i = 0; i < sizeof(gui_paths)/sizeof(gui_paths[0]); i++){
+            printf("Trying to start GUI from: %s\n", gui_paths[i]);
+            char gui_cmd[512];
+            snprintf(gui_cmd, sizeof(gui_cmd), "%s > /dev/null 2>&1 &", gui_paths[i]);
+            
+            if(system(gui_cmd) == 0){
+              printf("GUI start command executed successfully\n");
+              Sleep(5000);  // 5 second delay for GUI to start daemon
+              
+              // Check if socket was created
+              if(system(check_socket_cmd) == 0){
+                printf("LinuxTrack socket created - GUI successfully started daemon\n");
+                daemon_started = 1;
+                break;
+              } else {
+                printf("GUI started but socket not created - daemon may not be running\n");
+              }
+            } else {
+              printf("Failed to start GUI from: %s\n", gui_paths[i]);
+            }
+          }
+        }
+        
+        if(daemon_started){
+          // Try initialization again after starting the daemon
+          printf("Retrying LinuxTrack initialization after daemon start...\n");
+          init_result = linuxtrack_init(gd.name);
+          if(init_result < LINUXTRACK_OK){
+            printf("LinuxTrack initialization still failed after daemon start (%d): %s\n", 
+                   init_result, linuxtrack_explain(init_result));
+            return 1;
+          } else {
+            printf("LinuxTrack initialization successful after daemon start\n");
+          }
+        } else {
+          printf("Could not start LinuxTrack daemon - TrackIR functionality will not work\n");
+          printf("Please ensure LinuxTrack is properly installed and ltr_server1 is available\n");
+          printf("You can start the daemon manually by running: ltr_server1\n");
+          printf("Or start the LinuxTrack GUI which will start the daemon automatically: ltr_gui\n");
+          return 1;
+        }
+      }
     }
   }else{
-    if(linuxtrack_init("Default") < LINUXTRACK_OK){
-      return 1;
+    // Try to initialize with default profile
+    linuxtrack_state_type init_result = linuxtrack_init("Default");
+    if(init_result < LINUXTRACK_OK){
+      printf("LinuxTrack initialization failed with default profile (%d): %s\n", 
+             init_result, linuxtrack_explain(init_result));
+      
+      // Try to start the LinuxTrack daemon if it's not running
+      printf("Attempting to start LinuxTrack daemon for default profile...\n");
+      
+      // First, check if the daemon is already running by checking for the socket file
+      char check_socket_cmd[512];
+      snprintf(check_socket_cmd, sizeof(check_socket_cmd), "test -S /tmp/linuxtrack.sock > /dev/null 2>&1");
+      int socket_exists = (system(check_socket_cmd) == 0);
+      
+      if(socket_exists){
+        printf("LinuxTrack socket found - daemon appears to be running\n");
+        // Try initialization again
+        init_result = linuxtrack_init("Default");
+        if(init_result >= LINUXTRACK_OK){
+          printf("LinuxTrack initialization successful after socket check\n");
+        } else {
+          printf("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
+                 init_result, linuxtrack_explain(init_result));
+        }
+      } else {
+        printf("LinuxTrack socket not found - daemon not running, attempting to start...\n");
+        
+        // Look for ltr_server1 in common locations (this is the actual daemon name)
+        const char* possible_paths[] = {
+          "/usr/bin/ltr_server1",
+          "/usr/local/bin/ltr_server1", 
+          "/opt/bin/ltr_server1",
+          "ltr_server1"  // Try PATH
+        };
+        
+        int daemon_started = 0;
+        for(int i = 0; i < sizeof(possible_paths)/sizeof(possible_paths[0]); i++){
+          printf("Trying to start daemon from: %s\n", possible_paths[i]);
+          
+          // Check if the daemon is already running first
+          char check_cmd[512];
+          snprintf(check_cmd, sizeof(check_cmd), "pgrep -f ltr_server1 > /dev/null 2>&1");
+          if(system(check_cmd) == 0){
+            printf("LinuxTrack daemon is already running\n");
+            daemon_started = 1;
+            break;
+          }
+          
+          // Try to start the daemon using the proper method
+          char cmd[512];
+          // Try starting as standalone daemon first
+          snprintf(cmd, sizeof(cmd), "%s > /dev/null 2>&1 &", possible_paths[i]);
+          
+          if(system(cmd) == 0){
+            printf("Daemon start command executed successfully\n");
+            // Wait a moment for the daemon to start
+            Sleep(3000);  // 3 second delay for daemon to fully start
+            
+            // Verify the daemon is actually running
+            if(system(check_cmd) == 0){
+              printf("Daemon verification successful - daemon is running\n");
+              daemon_started = 1;
+              break;
+            } else {
+              printf("Daemon verification failed - daemon may not have started properly\n");
+            }
+          } else {
+            printf("Failed to start daemon from: %s\n", possible_paths[i]);
+          }
+        }
+        
+        // If direct daemon start failed, try starting the GUI which will start the daemon
+        if(!daemon_started){
+          printf("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
+          const char* gui_paths[] = {
+            "/usr/bin/ltr_gui",
+            "/usr/local/bin/ltr_gui", 
+            "/opt/bin/ltr_gui",
+            "ltr_gui"  // Try PATH
+          };
+          
+          for(int i = 0; i < sizeof(gui_paths)/sizeof(gui_paths[0]); i++){
+            printf("Trying to start GUI from: %s\n", gui_paths[i]);
+            char gui_cmd[512];
+            snprintf(gui_cmd, sizeof(gui_cmd), "%s > /dev/null 2>&1 &", gui_paths[i]);
+            
+            if(system(gui_cmd) == 0){
+              printf("GUI start command executed successfully\n");
+              Sleep(5000);  // 5 second delay for GUI to start daemon
+              
+              // Check if socket was created
+              if(system(check_socket_cmd) == 0){
+                printf("LinuxTrack socket created - GUI successfully started daemon\n");
+                daemon_started = 1;
+                break;
+              } else {
+                printf("GUI started but socket not created - daemon may not be running\n");
+              }
+            } else {
+              printf("Failed to start GUI from: %s\n", gui_paths[i]);
+            }
+          }
+        }
+        
+        if(daemon_started){
+          // Try initialization again after starting the daemon
+          printf("Retrying LinuxTrack initialization after daemon start...\n");
+          init_result = linuxtrack_init("Default");
+          if(init_result < LINUXTRACK_OK){
+            printf("LinuxTrack initialization still failed after daemon start (%d): %s\n", 
+                   init_result, linuxtrack_explain(init_result));
+            return 1;
+          } else {
+            printf("LinuxTrack initialization successful after daemon start\n");
+          }
+        } else {
+          printf("Could not start LinuxTrack daemon - TrackIR functionality will not work\n");
+          printf("Please ensure LinuxTrack is properly installed and ltr_server1 is available\n");
+          printf("You can start the daemon manually by running: ltr_server1\n");
+          printf("Or start the LinuxTrack GUI which will start the daemon automatically: ltr_gui\n");
+          return 1;
+        }
+      }
     }
   }
   char *toLock = file_path("NPClient.dll");

@@ -428,4 +428,3 @@ void TrackIRPermissionDialog::setDialogShown()
     settings.sync();
 }
 
-#include "moc_trackir_permission_dialog.cpp" 
