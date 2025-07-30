@@ -774,13 +774,83 @@ install_to_appdir() {
     
     # Make sure Wine bridge is built before install
     if [ -d "src/wine_bridge" ]; then
-        print_status "Building Wine bridge components..."
-        cd src/wine_bridge
-        make || {
-            print_error "Failed to build Wine bridge components"
-            return 1
-        }
-        cd ../..
+        print_status "Building Wine bridge components with multi-distribution support..."
+        
+        # Detect distribution and wine library paths
+        DISTRO="unknown"
+        if [ -f "/etc/arch-release" ]; then
+            DISTRO="arch"
+            print_status "Detected: Arch Linux"
+        elif [ -f "/etc/debian_version" ]; then
+            DISTRO="debian"
+            print_status "Detected: Debian/Ubuntu"
+        elif [ -f "/etc/fedora-release" ]; then
+            DISTRO="fedora"
+            print_status "Detected: Fedora"
+        elif [ -f "/etc/SuSE-release" ] || ( [ -f "/etc/os-release" ] && grep -q "openSUSE" /etc/os-release ); then
+            DISTRO="opensuse"
+            print_status "Detected: OpenSUSE"
+        else
+            print_warning "Unknown distribution, using generic wine paths"
+        fi
+        
+        # Find appropriate wine library paths for current distribution
+        WINE_LIBS_PATH=""
+        case "$DISTRO" in
+            "arch")
+                for path in "/usr/lib/wine/i386-unix" "/usr/lib32/wine/i386-unix" "/usr/lib/wine" "/usr/lib32/wine"; do
+                    if [ -d "$path" ]; then
+                        WINE_LIBS_PATH="$path"
+                        break
+                    fi
+                done
+                ;;
+            "debian")
+                for path in "/usr/lib/i386-linux-gnu/wine" "/usr/lib/x86_64-linux-gnu/wine" "/usr/lib/wine"; do
+                    if [ -d "$path" ]; then
+                        WINE_LIBS_PATH="$path"
+                        break
+                    fi
+                done
+                ;;
+            "fedora"|"opensuse")
+                for path in "/usr/lib/wine" "/usr/lib64/wine"; do
+                    if [ -d "$path" ]; then
+                        WINE_LIBS_PATH="$path"
+                        break
+                    fi
+                done
+                ;;
+            *)
+                # Generic fallback - try all common paths
+                for path in "/usr/lib/i386-linux-gnu/wine" "/usr/lib/x86_64-linux-gnu/wine" "/usr/lib/wine/i386-unix" "/usr/lib32/wine/i386-unix" "/usr/lib/wine" "/usr/lib32/wine" "/usr/lib64/wine"; do
+                    if [ -d "$path" ]; then
+                        WINE_LIBS_PATH="$path"
+                        break
+                    fi
+                done
+                ;;
+        esac
+        
+        if [ -n "$WINE_LIBS_PATH" ]; then
+            print_success "Using wine library path: $WINE_LIBS_PATH"
+            
+            # Build wine bridge with detected paths
+            cd src/wine_bridge
+            WINE_LIBS="-L$WINE_LIBS_PATH" make || {
+                print_error "Failed to build Wine bridge components with $DISTRO wine paths"
+                return 1
+            }
+            cd ../..
+        else
+            print_warning "Could not detect wine library paths, using default build"
+            cd src/wine_bridge
+            make || {
+                print_error "Failed to build Wine bridge components"
+                return 1
+            }
+            cd ../..
+        fi
     fi
     
     # Install to AppDir

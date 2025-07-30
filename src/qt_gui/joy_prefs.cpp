@@ -294,5 +294,4 @@ void JoyPrefs::on_PPSFreq_valueChanged(int i)
   }
 }
 
-#include "moc_joy_prefs.cpp"
 

@@ -601,6 +601,5 @@ void LinuxtrackGui::loadDockingState()
   gui_settings->endGroup();
 }
 
-#include "moc_ltr_gui.cpp"
 
 

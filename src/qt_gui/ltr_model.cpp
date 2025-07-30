@@ -406,5 +406,4 @@ void ClipTweaking::on_ClipRight_toggled()
   tweakHx();
 }
 
-#include "moc_ltr_model.cpp"
 

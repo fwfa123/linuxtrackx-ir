@@ -83,10 +83,36 @@ AC_CHECK_LIB([z], [gzopen], [LIBZ=true])
 AC_CHECK_LIB([usb-1.0], [libusb_init], [LIBUSB10=true])
 # used to communicate with a Wiimote
 AC_CHECK_LIB([cwiid], [cwiid_open], [LIBCWIID=true])
+
+# Enhanced cwiid detection for Arch Linux
+# Check for cwiid in common Arch Linux locations
+if test "$LIBCWIID" != "true"; then
+    # Try to find cwiid in Arch Linux specific paths
+    for cwiid_path in "/usr/lib/libcwiid.so" "/usr/lib/libcwiid.so.0" "/usr/lib32/libcwiid.so" "/usr/lib32/libcwiid.so.0"; do
+        if test -f "$cwiid_path"; then
+            AC_MSG_NOTICE([Found cwiid library: $cwiid_path])
+            LIBCWIID=true
+            break
+        fi
+    done
+fi
 # used by the osc frontend
 AC_CHECK_LIB([lo], [lo_send_bundle], [LIBLO=true])
 AC_CHECK_LIB([lo], [lo_bundle_free_recursive], [AC_DEFINE([HAVE_NEW_LIBLO], [1],
       [New version of liblo containing lo_bundle_free_recursive available])])
+
+# Enhanced liblo detection for Arch Linux
+# Check for liblo in common Arch Linux locations
+if test "$LIBLO" != "true"; then
+    # Try to find liblo in Arch Linux specific paths
+    for liblo_path in "/usr/lib/liblo.so" "/usr/lib/liblo.so.7" "/usr/lib32/liblo.so" "/usr/lib32/liblo.so.7"; do
+        if test -f "$liblo_path"; then
+            AC_MSG_NOTICE([Found liblo library: $liblo_path])
+            LIBLO=true
+            break
+        fi
+    done
+fi
 
 
 # Checks for header files.
@@ -142,10 +168,30 @@ AC_CHECK_PROG([with_makensis], [makensis], [yes])
 XPL_CPPFLAGS=
 AC_ARG_WITH([xplane_sdk],
             [AS_HELP_STRING([--with-xplane-sdk],
-              [specify path to XPlane SDK @<:@default=/usr/include/xplane_sdk@:>@])],
+              [specify path to XPlane SDK @<:@default=/opt/xplane-sdk/CHeaders@:>@])],
             [XPL_CPPFLAGS=" -I${with_xplane_sdk}/XPLM -I${with_xplane_sdk}/Widgets "],
-            [XPL_CPPFLAGS=" -I/usr/include/xplane_sdk/XPLM -I/usr/include/xplane_sdk/Widgets "]
+            [XPL_CPPFLAGS=" -I/opt/xplane-sdk/CHeaders/XPLM -I/opt/xplane-sdk/CHeaders/Widgets "]
 )
+
+# Enhanced X-Plane SDK detection for Arch Linux
+# Check for X-Plane SDK in common locations
+AC_MSG_CHECKING([for X-Plane SDK])
+xplane_sdk_found=no
+for sdk_path in "/opt/xplane-sdk/CHeaders" "/usr/include/xplane_sdk" "/usr/local/include/xplane_sdk" "$HOME/xplane-sdk/CHeaders"; do
+    if test -d "$sdk_path" && test -f "$sdk_path/XPLM/XPLMPlugin.h"; then
+        AC_MSG_RESULT([found in $sdk_path])
+        xplane_sdk_found=yes
+        XPL_CPPFLAGS=" -I$sdk_path/XPLM -I$sdk_path/Widgets "
+        break
+    fi
+done
+
+if test "$xplane_sdk_found" = "no"; then
+    AC_MSG_RESULT([not found])
+    AC_MSG_WARN([X-Plane SDK not found. X-Plane plugin will not be built.])
+    AC_MSG_WARN([Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/])
+    AC_MSG_WARN([And extract to: /opt/xplane-sdk/])
+fi
 
 BCK_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS+="$XPL_CPPFLAGS -DLIN=1"
@@ -185,15 +231,22 @@ WINE_LIBS_DEFAULT=""
 # Enhanced wine library path detection for modern distributions
 case "$host_os" in
   linux*)
+    # Arch Linux with wine32 from AUR
+    if test -d "/usr/lib32/wine/i386-unix"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib32/wine/i386-unix"
+      AC_MSG_NOTICE([Found Arch Linux wine32 installation in /usr/lib32/wine/i386-unix])
+    elif test -d "/usr/lib32/wine"; then
+      WINE_LIBS_DEFAULT="-L/usr/lib32/wine"
+      AC_MSG_NOTICE([Found Arch Linux wine32 installation in /usr/lib32/wine])
     # Modern Ubuntu/Debian (22.04+)
-    if test -d "/usr/lib/i386-linux-gnu/wine"; then
+    elif test -d "/usr/lib/i386-linux-gnu/wine"; then
       WINE_LIBS_DEFAULT="-L/usr/lib/i386-linux-gnu/wine"
     elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
       WINE_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
     # Modern Fedora (38+)
     elif test -d "/usr/lib/wine"; then
       WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    # Arch Linux
+    # Arch Linux standard wine
     elif test -d "/usr/lib/wine"; then
       WINE_LIBS_DEFAULT="-L/usr/lib/wine"
     # OpenSUSE
@@ -221,15 +274,19 @@ WINE64_LIBS_DEFAULT=""
 # Enhanced wine64 library path detection for modern distributions
 case "$host_os" in
   linux*)
+    # Arch Linux with wine32 from AUR (includes 64-bit support)
+    if test -d "/usr/lib/wine/x86_64-unix"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine/x86_64-unix"
+      AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine/x86_64-unix])
+    elif test -d "/usr/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+      AC_MSG_NOTICE([Found Arch Linux wine installation in /usr/lib/wine])
     # Modern Ubuntu/Debian (22.04+)
-    if test -d "/usr/lib/x86_64-linux-gnu/wine"; then
+    elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
     # Modern Fedora (38+)
     elif test -d "/usr/lib64/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
-    # Arch Linux
-    elif test -d "/usr/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     # OpenSUSE
     elif test -d "/usr/lib64/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
@@ -248,6 +305,34 @@ AC_ARG_WITH([wine64-libs],
             [WINE64_LIBS=${with_wine64_libs}],
             [WINE64_LIBS=${WINE64_LIBS_DEFAULT}]
 )
+
+# Arch Linux specific wine32 detection and setup
+AC_MSG_CHECKING([for Arch Linux wine32 installation])
+arch_wine32_found=no
+if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
+  # Check if wine32 is installed from AUR
+  if test -d "/usr/lib32/wine/i386-unix" || test -d "/usr/lib32/wine"; then
+    arch_wine32_found=yes
+    AC_MSG_RESULT([found])
+    # Set proper environment for Arch Linux wine32
+    if test -d "/usr/lib32/wine/i386-unix"; then
+      WINE_LIBS="-L/usr/lib32/wine/i386-unix"
+      AC_MSG_NOTICE([Using Arch Linux wine32 path: /usr/lib32/wine/i386-unix])
+    else
+      WINE_LIBS="-L/usr/lib32/wine"
+      AC_MSG_NOTICE([Using Arch Linux wine32 path: /usr/lib32/wine])
+    fi
+    # Set 32-bit compilation flags for Arch Linux
+    CFLAGS+=" -m32"
+    CXXFLAGS+=" -m32"
+    LDFLAGS+=" -m32"
+  else
+    AC_MSG_RESULT([not found - wine32 not properly installed])
+    AC_MSG_WARN([For Arch Linux, install wine32 from AUR: yay -S wine32])
+  fi
+else
+  AC_MSG_RESULT([not found])
+fi
 
 # is this needed anymore?
 LIB32DIR="lib32"
