@@ -1236,8 +1236,8 @@ bundle_dependencies() {
         print_status "Bundled libproxy backends"
     fi
     
-    # Advanced optimization
-    optimize_library_structure
+    # Advanced optimization (re-enabled with conservative approach)
+    optimize_library_structure_conservative
     
     # CRITICAL: Verify Qt libraries are properly bundled
     print_status "Verifying Qt library bundling..."
@@ -1336,9 +1336,9 @@ ensure_qt_plugins_bundled() {
     print_success "Qt plugins bundling ensured"
 }
 
-# Function to optimize library structure
+# Function to optimize library structure with enhanced size reduction
 optimize_library_structure() {
-    print_status "Advanced library structure optimization..."
+    print_status "Enhanced library structure optimization with size reduction..."
     
     # Remove duplicate libraries and broken symlinks
     find usr/lib -name "*.so*" -type f | while read lib; do
@@ -1350,21 +1350,247 @@ optimize_library_structure() {
         fi
     done
     
-    # Strip debug symbols to reduce size
+    # CRITICAL: Remove duplicate libraries by comparing content (more conservative)
+    print_status "Removing duplicate libraries..."
+    find usr/lib -name "*.so*" -type f | while read lib1; do
+        if [ -f "$lib1" ]; then
+            find usr/lib -name "*.so*" -type f | while read lib2; do
+                if [ "$lib1" != "$lib2" ] && [ -f "$lib2" ]; then
+                    # Only remove if both files are identical AND one is a versioned symlink
+                    if cmp -s "$lib1" "$lib2" 2>/dev/null; then
+                        lib1_basename=$(basename "$lib1")
+                        lib2_basename=$(basename "$lib2")
+                        # Only remove if one is clearly a duplicate (has version number)
+                        if [[ "$lib1_basename" =~ \.[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$lib2_basename" =~ \.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                            print_status "Removing duplicate: $lib2_basename (same as $lib1_basename)"
+                            rm -f "$lib2"
+                        elif [[ "$lib2_basename" =~ \.[0-9]+\.[0-9]+\.[0-9]+$ ]] && [[ ! "$lib1_basename" =~ \.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                            print_status "Removing duplicate: $lib1_basename (same as $lib2_basename)"
+                            rm -f "$lib1"
+                        fi
+                    fi
+                fi
+            done
+        fi
+    done
+    
+    # Strip debug symbols to reduce size (more aggressive)
+    print_status "Stripping debug symbols from all libraries..."
     find usr/bin usr/lib -type f -executable -exec strip --strip-unneeded {} \; 2>/dev/null || true
+    find usr/lib -name "*.so*" -type f -exec strip --strip-unneeded {} \; 2>/dev/null || true
     
     # Remove unnecessary files
     find usr -name "*.la" -delete 2>/dev/null || true
     find usr -name "*.a" -delete 2>/dev/null || true
+    find usr -name "*.o" -delete 2>/dev/null || true
     
-    # Optimize Qt5 plugins
+    # Optimize Qt5 plugins - keep only essential ones
     if [ -d "usr/lib/qt5/plugins" ]; then
-        # Keep only essential Qt5 plugins (including sqldrivers for help system)
-        find usr/lib/qt5/plugins -name "*.so" | grep -v -E "(platforms|imageformats|iconengines|sqldrivers)" | xargs rm -f 2>/dev/null || true
-        print_status "Optimized Qt5 plugins (preserved sqldrivers)"
+        print_status "Optimizing Qt5 plugins..."
+        
+        # Keep only essential platform plugins
+        if [ -d "usr/lib/qt5/plugins/platforms" ]; then
+            cd usr/lib/qt5/plugins/platforms
+            # Keep only xcb and minimal platforms
+            for plugin in *.so; do
+                if [ -f "$plugin" ]; then
+                    case "$plugin" in
+                        libqxcb.so|libqminimal.so|libqminimalegl.so)
+                            print_status "Keeping essential platform plugin: $plugin"
+                            ;;
+                        *)
+                            print_status "Removing non-essential platform plugin: $plugin"
+                            rm -f "$plugin"
+                            ;;
+                    esac
+                fi
+            done
+            cd ../../../../..
+        fi
+        
+        # Keep only essential image formats
+        if [ -d "usr/lib/qt5/plugins/imageformats" ]; then
+            cd usr/lib/qt5/plugins/imageformats
+            for plugin in *.so; do
+                if [ -f "$plugin" ]; then
+                    case "$plugin" in
+                        libqjpeg.so|libqpng.so|libqsvg.so|libqgif.so)
+                            print_status "Keeping essential image format: $plugin"
+                            ;;
+                        *)
+                            print_status "Removing non-essential image format: $plugin"
+                            rm -f "$plugin"
+                            ;;
+                    esac
+                fi
+            done
+            cd ../../../../..
+        fi
+        
+        # Keep only essential icon engines
+        if [ -d "usr/lib/qt5/plugins/iconengines" ]; then
+            cd usr/lib/qt5/plugins/iconengines
+            for plugin in *.so; do
+                if [ -f "$plugin" ]; then
+                    case "$plugin" in
+                        libqsvgicon.so)
+                            print_status "Keeping essential icon engine: $plugin"
+                            ;;
+                        *)
+                            print_status "Removing non-essential icon engine: $plugin"
+                            rm -f "$plugin"
+                            ;;
+                    esac
+                fi
+            done
+            cd ../../../../..
+        fi
+        
+        # Keep only essential styles
+        if [ -d "usr/lib/qt5/plugins/styles" ]; then
+            cd usr/lib/qt5/plugins/styles
+            for plugin in *.so; do
+                if [ -f "$plugin" ]; then
+                    case "$plugin" in
+                        libqcleanlooksstyle.so|libqgtkstyle.so|libqplastiquestyle.so)
+                            print_status "Keeping essential style: $plugin"
+                            ;;
+                        *)
+                            print_status "Removing non-essential style: $plugin"
+                            rm -f "$plugin"
+                            ;;
+                    esac
+                fi
+            done
+            cd ../../../../..
+        fi
+        
+        print_status "Qt5 plugins optimized (preserved sqldrivers and essential plugins)"
     fi
     
-    print_success "Advanced library structure optimization completed"
+    # Remove unnecessary documentation files
+    print_status "Removing unnecessary documentation files..."
+    find usr/share/doc -name "copyright" -delete 2>/dev/null || true
+    find usr/share/doc -name "*.txt" -not -name "README*" -delete 2>/dev/null || true
+    
+    # Remove unnecessary man pages (keep only essential ones)
+    print_status "Optimizing man pages..."
+    cd usr/share/man/man1
+    for manpage in *.1; do
+        if [ -f "$manpage" ]; then
+            case "$manpage" in
+                ltr_gui.1|mickey.1)
+                    print_status "Keeping essential man page: $manpage"
+                    ;;
+                *)
+                    print_status "Removing non-essential man page: $manpage"
+                    rm -f "$manpage"
+                    ;;
+            esac
+        fi
+    done
+    cd ../../../../..
+    
+    # Remove unnecessary help files (keep only essential ones)
+    print_status "Optimizing help files..."
+    if [ -d "usr/share/linuxtrack/help/ltr_gui/help" ]; then
+        cd usr/share/linuxtrack/help/ltr_gui/help
+        # Keep only essential help images
+        for image in *.png; do
+            if [ -f "$image" ]; then
+                case "$image" in
+                    welcome.png|interface.png|tracking.png|misc.png)
+                        print_status "Keeping essential help image: $image"
+                        ;;
+                    *)
+                        print_status "Removing non-essential help image: $image"
+                        rm -f "$image"
+                        ;;
+                esac
+            fi
+        done
+        cd ../../../../../..
+    fi
+    
+    print_success "Enhanced library structure optimization completed"
+}
+
+# Function to optimize Wine bridge components
+optimize_wine_bridge() {
+    print_status "Optimizing Wine bridge components..."
+    
+    # Optimize wine bridge installer size
+    if [ -f "wine_bridge/linuxtrack-wine.exe" ]; then
+        # Strip debug symbols from wine bridge installer
+        strip --strip-unneeded wine_bridge/linuxtrack-wine.exe 2>/dev/null || true
+        print_status "Stripped debug symbols from wine bridge installer"
+        
+        # Check if wine bridge installer is unnecessarily large
+        WINE_SIZE=$(du -h wine_bridge/linuxtrack-wine.exe | cut -f1)
+        print_status "Wine bridge installer size: $WINE_SIZE"
+    fi
+    
+    # Optimize wine bridge scripts
+    if [ -d "wine_bridge/scripts" ]; then
+        # Remove any backup files or temporary files
+        find wine_bridge/scripts -name "*.bak" -o -name "*.tmp" -o -name "*~" | xargs rm -f 2>/dev/null || true
+        print_status "Cleaned wine bridge scripts"
+    fi
+    
+    # Remove unnecessary wine documentation
+    if [ -f "usr/share/linuxtrack/wine/README.wine" ]; then
+        # Keep only essential wine documentation
+        if [ -f "usr/share/linuxtrack/wine/WINE_SETUP.md" ]; then
+            # Combine documentation into single file to save space
+            cat usr/share/linuxtrack/wine/README.wine usr/share/linuxtrack/wine/WINE_SETUP.md > usr/share/linuxtrack/wine/WINE_SETUP.md.tmp
+            mv usr/share/linuxtrack/wine/WINE_SETUP.md.tmp usr/share/linuxtrack/wine/WINE_SETUP.md
+            rm -f usr/share/linuxtrack/wine/README.wine
+            print_status "Consolidated wine documentation"
+        fi
+    fi
+    
+    print_success "Wine bridge components optimized"
+}
+
+# Function to report optimization statistics
+report_optimization_stats() {
+    print_status "Reporting optimization statistics..."
+    
+    cd "$APPIMAGE_DIR"
+    
+    # Count libraries before and after optimization
+    LIB_COUNT=$(find usr/lib -name "*.so*" | wc -l)
+    print_status "Total libraries after optimization: $LIB_COUNT"
+    
+    # Calculate total size
+    TOTAL_SIZE=$(du -sh . | cut -f1)
+    print_status "Total AppDir size: $TOTAL_SIZE"
+    
+    # Library size breakdown
+    LIB_SIZE=$(du -sh usr/lib | cut -f1)
+    SHARE_SIZE=$(du -sh usr/share | cut -f1)
+    BIN_SIZE=$(du -sh usr/bin | cut -f1)
+    WINE_SIZE=$(du -sh wine_bridge 2>/dev/null | cut -f1 || echo "N/A")
+    
+    print_status "Size breakdown:"
+    print_status "  Libraries: $LIB_SIZE"
+    print_status "  Share data: $SHARE_SIZE"
+    print_status "  Binaries: $BIN_SIZE"
+    print_status "  Wine bridge: $WINE_SIZE"
+    
+    # Qt plugin count
+    QT_PLUGIN_COUNT=$(find usr/lib/qt5/plugins -name "*.so" 2>/dev/null | wc -l)
+    print_status "Qt plugins: $QT_PLUGIN_COUNT"
+    
+    # Check for potential size savings
+    if [ "$LIB_COUNT" -gt 150 ]; then
+        print_warning "High library count ($LIB_COUNT) - consider further optimization"
+    else
+        print_success "Library count optimized ($LIB_COUNT)"
+    fi
+    
+    cd "$PROJECT_ROOT"
+    print_success "Optimization statistics reported"
 }
 
 # Function to create AppImage
@@ -1562,6 +1788,14 @@ main() {
     else
         print_status "Skipping dependency bundling"
     fi
+    
+    # Apply optimizations AFTER AppDir is complete (temporarily disabled)
+    print_status "Applying size optimizations..."
+    cd "$APPIMAGE_DIR"
+    # optimize_library_structure  # Temporarily disabled due to aggressive optimization
+    optimize_wine_bridge
+    report_optimization_stats
+    cd "$PROJECT_ROOT"
     
     # Create AppImage
     if ! create_appimage; then
