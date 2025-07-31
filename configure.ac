@@ -332,10 +332,7 @@ if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
     AC_MSG_RESULT([found - Debian/Ubuntu wine32])
     WINE_LIBS="-L/usr/lib/i386-linux-gnu/wine"
     AC_MSG_NOTICE([Using Debian/Ubuntu wine32 path: /usr/lib/i386-linux-gnu/wine])
-    # Set 32-bit compilation flags for Debian/Ubuntu
-    CFLAGS+=" -m32"
-    CXXFLAGS+=" -m32"
-    LDFLAGS+=" -m32"
+    # Note: Don't force -m32 for Debian/Ubuntu - let the build system decide
   else
     AC_MSG_RESULT([not found - wine32 not properly installed])
     AC_MSG_WARN([For Arch Linux, install wine32 from AUR: yay -S wine32])
