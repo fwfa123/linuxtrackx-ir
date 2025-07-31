@@ -170,7 +170,7 @@ void WebcamFtPrefs::on_FindCascade_pressed()
     QDir tmp(path);
     path = tmp.filePath(path);
   }
-  QString fileName = QFileDialog::getOpenFileName(NULL,
+  QString fileName = QFileDialog::getOpenFileName(this,
      QString::fromUtf8("Find Harr/LBP cascade"), path, QString::fromUtf8("xml Files (*.xml)"));
   ui.CascadePath->setText(fileName);
   on_CascadePath_editingFinished();
@@ -200,5 +200,4 @@ void WebcamFtPrefs::on_OptimLevel_valueChanged(int value)
 }
 
 
-#include "moc_webcam_ft_prefs.cpp"
 

@@ -10,6 +10,7 @@
 ModelCreate::ModelCreate(QWidget *parent) : QDialog(parent), validator(NULL), modelEditor(NULL)
 {
   ui.setupUi(this);
+  setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
   validator = new QRegExpValidator(QRegExp(QString::fromUtf8("^[^\\[\\]]*$")), this);
   ui.ModelName->setValidator(validator);
 }
@@ -43,13 +44,13 @@ void ModelCreate::on_CreateButton_pressed()
   QStringList sectionList;
   PREF.getSectionList(sectionList);
   if(sec.isEmpty()){
-    QMessageBox::warning(NULL, QString::fromUtf8("Linuxtrack"),
+    QMessageBox::warning(this, QString::fromUtf8("Linuxtrack"),
       QString::fromUtf8("Please specify the Model name!"), QMessageBox::Ok);
     ui.ModelName->setFocus();
     return;
   }
   if(sectionList.contains(sec, Qt::CaseInsensitive)){
-    QMessageBox::warning(NULL, QString::fromUtf8("Linuxtrack"),
+    QMessageBox::warning(this, QString::fromUtf8("Linuxtrack"),
       QString::fromUtf8("The name is already taken, please change the Model name!"), QMessageBox::Ok);
     return;
   }
@@ -406,5 +407,4 @@ void ClipTweaking::on_ClipRight_toggled()
   tweakHx();
 }
 
-#include "moc_ltr_model.cpp"
 

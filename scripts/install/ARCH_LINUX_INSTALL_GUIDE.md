@@ -4,6 +4,8 @@
 
 This guide provides step-by-step instructions for installing LinuxTrack X-IR on Arch Linux and its derivatives (Manjaro, EndeavourOS, etc.). It addresses common package name issues and provides solutions for problematic dependencies.
 
+**Note**: For comprehensive Arch Linux support with wine32 integration, see the full guide at `docs/guides/ARCH_LINUX_INSTALL_GUIDE.md`
+
 ## Common Issues on Arch Linux
 
 ### 1. Package Name Differences

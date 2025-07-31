@@ -57,5 +57,4 @@ LogView::~LogView()
   delete(viewer);
 }
 
-#include "moc_log_view.cpp"
 

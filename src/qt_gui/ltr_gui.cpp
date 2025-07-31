@@ -55,7 +55,13 @@ static QMessageBox::StandardButton warningMessage(const QString &message)
 
 static QMessageBox::StandardButton infoMessage(const QString &message)
 {
- return QMessageBox::information(nullptr, APP_TITLE, message, QMessageBox::Ok);
+ QMessageBox msgBox;
+ msgBox.setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
+ msgBox.setWindowTitle(APP_TITLE);
+ msgBox.setText(message);
+ msgBox.setStandardButtons(QMessageBox::Ok);
+ msgBox.setIcon(QMessageBox::Information);
+ return static_cast<QMessageBox::StandardButton>(msgBox.exec());
 }
 
 LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(nullptr), 
@@ -70,6 +76,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   ui.setupUi(mainWidget);
   PREF;
   setWindowTitle(QStringLiteral("Linuxtrack GUI v") + QStringLiteral(PACKAGE_VERSION));
+  setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
   setCentralWidget(mainWidget);
   
   grd = new Guardian(this);
@@ -601,6 +608,5 @@ void LinuxtrackGui::loadDockingState()
   gui_settings->endGroup();
 }
 
-#include "moc_ltr_gui.cpp"
 
 

@@ -55,12 +55,16 @@ moc_predefs.h
 ltr_gui
 ltr_gui_qt5_debug
 ltr_gui_qt5_standalone_debug
-ltr_server*
+ltr_server
 ltr_extractor
 ltr_pipe
 ltr_recenter
 osc_server
 test_*
+
+# Allow source files that match ltr_server* pattern
+!src/ltr_server1.c
+!src/ltr_server.h
 
 # Library files
 *.lai
@@ -142,8 +146,10 @@ wine_bridge/build/
 wine_bridge/dist/
 *.exe
 *.dll
-*.ico
 *.nsi
+
+# Allow source icon files
+!src/wine_bridge/controller/*.ico
 
 # Temporary test scripts (keep essential ones)
 test_wayland_x11.sh
