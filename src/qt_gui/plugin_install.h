@@ -5,6 +5,7 @@
 #include "ui_ltr.h"
 #include "wine_launcher.h"
 #include "extractor.h"
+#include "lutris_integration.h"
 
 class Extractor;
 
@@ -27,6 +28,7 @@ class PluginInstall : public QObject
   // New Gaming tab methods
   void installTirFirmwareAndMfc140();
   void installWineBridgeToCustomPrefix();
+  void installLutrisWineBridge();
  private:
   enum state{TIR_FW, MFC, LTR_W, DONE, TIR_FW_ONLY, MFC_ONLY} state;
   const Ui::LinuxtrackMainForm &gui;
@@ -44,6 +46,7 @@ class PluginInstall : public QObject
   const QString gameData;
   const QString mfc140u;
   const QString tirViews;
+  LutrisIntegration *lutrisIntegration;
 };
 
 
