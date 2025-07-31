@@ -306,14 +306,14 @@ AC_ARG_WITH([wine64-libs],
             [WINE64_LIBS=${WINE64_LIBS_DEFAULT}]
 )
 
-# Arch Linux specific wine32 detection and setup
-AC_MSG_CHECKING([for Arch Linux wine32 installation])
+# Multi-distribution wine32 detection and setup
+AC_MSG_CHECKING([for wine32 installation])
 arch_wine32_found=no
 if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
-  # Check if wine32 is installed from AUR
+  # Check for Arch Linux wine32 paths
   if test -d "/usr/lib32/wine/i386-unix" || test -d "/usr/lib32/wine"; then
     arch_wine32_found=yes
-    AC_MSG_RESULT([found])
+    AC_MSG_RESULT([found - Arch Linux wine32])
     # Set proper environment for Arch Linux wine32
     if test -d "/usr/lib32/wine/i386-unix"; then
       WINE_LIBS="-L/usr/lib32/wine/i386-unix"
@@ -326,9 +326,20 @@ if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
     CFLAGS+=" -m32"
     CXXFLAGS+=" -m32"
     LDFLAGS+=" -m32"
+  # Check for Debian/Ubuntu wine32 paths
+  elif test -d "/usr/lib/i386-linux-gnu/wine"; then
+    arch_wine32_found=yes
+    AC_MSG_RESULT([found - Debian/Ubuntu wine32])
+    WINE_LIBS="-L/usr/lib/i386-linux-gnu/wine"
+    AC_MSG_NOTICE([Using Debian/Ubuntu wine32 path: /usr/lib/i386-linux-gnu/wine])
+    # Set 32-bit compilation flags for Debian/Ubuntu
+    CFLAGS+=" -m32"
+    CXXFLAGS+=" -m32"
+    LDFLAGS+=" -m32"
   else
     AC_MSG_RESULT([not found - wine32 not properly installed])
     AC_MSG_WARN([For Arch Linux, install wine32 from AUR: yay -S wine32])
+    AC_MSG_WARN([For Debian/Ubuntu, install wine32: sudo apt install wine32])
   fi
 else
   AC_MSG_RESULT([not found])
