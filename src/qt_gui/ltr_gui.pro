@@ -54,8 +54,8 @@ SOURCES += main.cpp ltr_gui.cpp ltr_show.cpp ltr_dev_help.cpp \
            macps3eye_prefs.cpp macwebcam_info.cpp macps3eyeft_prefs.cpp \
            help_viewer.cpp ../extract.c ../digest.c trackir_permission_dialog.cpp
 
-QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'" -I /opt/include
-QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI  -I /opt/include
+QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'" -I /usr/include
+QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI  -I /usr/include
 
 QMAKE_CXXFLAGS += $$(CXXFLAGS)
 QMAKE_CFLAGS += $$(CFLAGS)
@@ -69,15 +69,15 @@ unix:!macx {
   HEADERS += webcam_prefs.h webcam_info.h webcam_ft_prefs.h joy_prefs.h
   FORMS += l_wc_setup.ui l_wcft_setup.ui joy_setup.ui
   SOURCES += webcam_info.cpp webcam_prefs.cpp webcam_ft_prefs.cpp joy_prefs.cpp
-  LIBS += "-L../.libs" "-L/opt/lib" "-L$${LIBDIR}" -lm -lltr -lGLU -lmxml \
-           "-Wl,-rpath,$${LIBDIR}" "-Wl,-rpath,/opt/lib"
+  LIBS += "-L../.libs" "-L/usr/lib" "-L$${LIBDIR}" -lm -lltr -lGLU -lmxml \
+           "-Wl,-rpath,$${LIBDIR}" "-Wl,-rpath,/usr/lib"
 
-  data.path += /opt/share/linuxtrack
+  data.path += /usr/share/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png sources.txt spec.txt \
-                 sphere.obj sphere.png sources_mfc.txt sources_mfc140.txt win7.reg win10.reg
-  help.path += /opt/share/linuxtrack/help/ltr_gui
+                 sphere.obj sphere.png sources_mfc.txt win7.reg win10.reg
+  help.path += /usr/share/linuxtrack/help/ltr_gui
   help.files += help.qhc help.qch 
-  target.path = /opt/bin
+  target.path = /usr/bin
   INSTALLS += target data help
 }
 
@@ -88,7 +88,7 @@ macx {
   #QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
   #QMAKE_MAC_SDK=/Developer/SDKs/MacOSX10.6.sdk
   CONFIG+=x86_64
-  LIBS += -L../.libs "-L$${LIBDIR}" -L/opt/lib -lm -lltr -lmxml
+  LIBS += -L../.libs "-L$${LIBDIR}" -L/usr/lib -lm -lltr -lmxml
   data.path += ltr_gui.app/Contents/Resources/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png ../linuxtrack1.conf \
                 sources_mac.txt spec.txt sphere.obj sphere.png sources_mfc.txt sources_mfc140.txt win7.reg win10.reg
