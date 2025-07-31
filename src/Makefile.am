@@ -511,7 +511,7 @@ qt_gui/profile_selector.cpp qt_gui/profile_selector.h qt_gui/profile_selector.ui
 qt_gui/profile_setup.cpp qt_gui/profile_setup.h qt_gui/profile_setup.ui qt_gui/joy_prefs.cpp qt_gui/joy_prefs.h \
 qt_gui/joy_setup.ui qt_gui/m_ps3eye_ft_setup.ui qt_gui/m_ps3eye_setup.ui qt_gui/macps3eyeft_prefs.cpp \
 qt_gui/macps3eyeft_prefs.h qt_gui/macps3eye_prefs.cpp qt_gui/macps3eye_prefs.h \
-qt_gui/progress.ui qt_gui/single_edit.ui qt_gui/sources.txt qt_gui/sources_mac.txt qt_gui/spec.txt qt_gui/tir_setup.ui \
+qt_gui/progress.ui qt_gui/single_edit.ui qt_gui/sources.txt qt_gui/sources_mac.txt qt_gui/sources_mfc140.txt qt_gui/spec.txt qt_gui/tir_setup.ui \
 qt_gui/wii_setup.ui qt_gui/help/extractor.htm qt_gui/sphere.png qt_gui/sphere.txt \
 qt_gui/wine_launcher.cpp qt_gui/wine_launcher.h qt_gui/xplugin.cpp qt_gui/xplugin.h \
 qt_gui/xplugin.ui qt_gui/help/Wiimote.png qt_gui/help/KeysSetup1.png qt_gui/help/Misc.png \

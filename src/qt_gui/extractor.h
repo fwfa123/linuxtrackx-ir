@@ -101,35 +101,40 @@ class TirFwExtractor : public Extractor
   void on_QuitButton_pressed();
 };
 
-//mfc42u.dll is needed by TIRViews.dll
-class Mfc42uExtractor : public Extractor
+
+
+//mfc140u.dll is needed by modern TIRViews.dll (Visual C++ 2015-2022)
+class Mfc140uExtractor : public Extractor
 {
  Q_OBJECT
  public:
-  Mfc42uExtractor(QWidget *parent = 0);
-  ~Mfc42uExtractor();
+  Mfc140uExtractor(QWidget *parent = 0);
+  ~Mfc140uExtractor();
   
-  // Public method to start automatic winetricks installation
+  // Public method to start automatic installation
   void startAutomaticInstallation();
   
  private:
   void commenceExtraction(QString file);
   void enableButtons(bool enable);
+  void browseDirPressed();
   int stage;
   QProcess *cabextract;
+  QString installerFile;
+  QString cachedDownloadPath;
   
-  // Modern installation methods
-  bool tryWinetricksInstall();
-  bool tryPackageManagerInstall();
-  bool tryCabextractFallback();
-  void showModernInstallationInstructions();
-  QString checkWinetricksAvailability();
-  bool isWinetricksVersionRecent(const QString& winetricksPath);
-  bool installLatestWinetricks();
+  // Download and extraction methods
+  bool downloadVCRedist();
+  bool extractMfc140FromInstaller(const QString &installerPath);
+  QString findCachedDownload();
+  void showDownloadInstructions();
+  void populateDownloadCombo();
   
  private slots:
   void wineFinished(bool result);
   void cabextractFinished(int exitCode, QProcess::ExitStatus status);
+  void on_BrowseInstaller_pressed();
+  void on_DownloadButton_pressed();
 };
 
 

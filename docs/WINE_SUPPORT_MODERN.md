@@ -1,62 +1,62 @@
-# LinuxTrack Wine Support - Modern Installation Guide
+# LinuxTrack Wine Support - Modern MFC140 Installation Guide
 
 ## Overview
 
-LinuxTrack provides head tracking support for Windows applications running under Wine. This guide covers the modern installation approach that replaces the old Wine-based extraction method with more reliable alternatives.
+LinuxTrack provides head tracking support for Windows applications running under Wine. This guide covers the modern MFC140 installation approach that replaces the old MFC42/winetricks method with a more reliable and copyright-free solution.
 
-## Modern Installation Methods
+## Modern MFC140 Installation Methods
 
-### Method 1: Automatic Winetricks Installation (Recommended for Debian/Ubuntu/MX)
+### Method 1: Built-in MFC140 Installer (Recommended)
 
-**Important**: LinuxTrack now automatically handles winetricks installation and updates to address the issue of outdated packaged versions mentioned on the [winetricks GitHub page](https://github.com/Winetricks/winetricks?tab=readme-ov-file).
+**Important**: LinuxTrack now uses modern Visual C++ 2015-2022 MFC libraries (MFC140) instead of legacy MFC42, eliminating copyright issues and improving compatibility.
 
-The most reliable approach for Debian-based systems is to use winetricks:
+The most reliable approach is to use the built-in MFC140 installer:
 
 ```bash
-# Option 1: Let LinuxTrack handle it automatically (Recommended)
+# Option 1: Use the built-in MFC140 installer (Recommended)
 # Simply run the LinuxTrack GUI and use "Install Linuxtrack-Wine support"
 # The system will automatically:
-# - Check if winetricks is installed
-# - Download and install the latest version if needed
-# - Install MFC42 via winetricks
+# - Download Visual C++ 2015-2022 Redistributable
+# - Extract MFC140 libraries
+# - Install mfc140u.dll to the correct location
 
-# Option 2: Manual winetricks installation (if needed)
-# Install winetricks if not already installed
-sudo apt install winetricks  # Ubuntu/Debian/MX
-sudo dnf install winetricks  # Fedora/RHEL
-sudo pacman -S winetricks    # Arch Linux
+# Option 2: Manual installation (if needed)
+# Download Visual C++ 2015-2022 Redistributable manually:
+# - Go to: https://aka.ms/vs/17/release/vc_redist.x64.exe
+# - Download and run the installer in Wine
+# - Extract mfc140u.dll from the installation
 
-# Option 3: Install latest winetricks manually (recommended by winetricks maintainers)
-# Use the provided script to install the latest version
-./scripts/install_winetricks.sh
-
-# Install MFC42 via winetricks
-winetricks mfc42
+# Option 3: Browse for existing installer
+# If you already have the Visual C++ 2015-2022 Redistributable:
+# - Use the "Browse for Installer" option in the GUI
+# - Select your existing installer file
 ```
 
-### Method 2: Package Manager Installation (Fedora/RHEL/Arch only)
+### Method 2: Package Manager Installation (Legacy - Not Recommended)
 
-Some distributions provide MFC42 packages:
+Some distributions provide MFC42 packages, but these are not recommended due to copyright issues:
 
 ```bash
-# Fedora/RHEL/CentOS
+# Fedora/RHEL/CentOS (Legacy - Not Recommended)
 sudo dnf install mfc42
 
-# Arch Linux/Manjaro
+# Arch Linux/Manjaro (Legacy - Not Recommended)
 sudo pacman -S mfc42
 
-# Note: Debian/Ubuntu/MX do not have MFC42 packages in their repositories
+# Note: These packages use legacy MFC42 libraries with copyright issues
+# Use the built-in MFC140 installer instead
 ```
 
-### Method 3: Manual Installation
+### Method 3: Manual Installation (Legacy - Not Recommended)
 
-As a last resort, you can manually copy `mfc42u.dll` from a Windows system:
+As a last resort, you can manually copy `mfc140u.dll` from a Windows system:
 
-1. Copy `mfc42u.dll` from a Windows system (typically found in `C:\Windows\System32\`)
-2. Place it in the LinuxTrack firmware directory:
+1. Download Visual C++ 2015-2022 Redistributable from Microsoft
+2. Extract `mfc140u.dll` from the installation
+3. Place it in the LinuxTrack firmware directory:
    ```bash
-   sudo cp mfc42u.dll /usr/share/linuxtrack/tir_firmware/
-   sudo chmod 644 /usr/share/linuxtrack/tir_firmware/mfc42u.dll
+   sudo cp mfc140u.dll /usr/share/linuxtrack/tir_firmware/
+   sudo chmod 644 /usr/share/linuxtrack/tir_firmware/mfc140u.dll
    ```
 
 ## Installation Process
@@ -69,13 +69,12 @@ As a last resort, you can manually copy `mfc42u.dll` from a Windows system:
 
 ### Step 2: Install Wine Support
 1. In the **Misc** tab, click **Install Linuxtrack-Wine support**
-2. The system will automatically try modern installation methods:
-   - First: Check for existing `mfc42u.dll`
-   - Second: Check winetricks availability and version
-   - Third: Download and install latest winetricks if needed (addresses outdated packaged versions)
-   - Fourth: Try winetricks installation
-   - Fifth: Try package manager installation
-   - Sixth: Fall back to cabextract (old method)
+2. The system will automatically try modern MFC140 installation methods:
+   - First: Check for existing `mfc140u.dll`
+   - Second: Download Visual C++ 2015-2022 Redistributable
+   - Third: Extract MFC140 libraries using Wine
+   - Fourth: Install `mfc140u.dll` to the correct location
+   - Fifth: Fall back to manual installation if needed
 
 ### Step 3: Select Wine Prefix
 1. Choose your Wine prefix (bottle) for installation
@@ -83,21 +82,22 @@ As a last resort, you can manually copy `mfc42u.dll` from a Windows system:
 
 ## Troubleshooting
 
-### Wine Extraction Fails
-If the old Wine extraction method fails, the system will automatically try modern alternatives. You'll see a dialog with installation instructions.
+### MFC140 Installation Fails
+If the MFC140 installation fails, the system will automatically try alternative methods. You'll see a dialog with installation instructions.
 
-### Package Manager Not Found
-If your distribution doesn't have the required package, use winetricks instead:
+### Download Fails
+If the automatic download fails, try manual installation:
 
-```bash
-winetricks mfc42
-```
+1. **Download manually**: Go to https://aka.ms/vs/17/release/vc_redist.x64.exe
+2. **Use browse option**: Select the downloaded file in the GUI
+3. **Check network**: Ensure you have internet access for downloads
 
-### Winetricks Not Available or Outdated
-LinuxTrack now automatically handles this issue:
+### Wine Issues
+If Wine extraction fails, try these steps:
 
-1. **Automatic Installation**: The GUI will automatically download and install the latest winetricks version
-2. **Manual Installation**: Use the provided script:
+1. **Update Wine**: Ensure you have a recent version of Wine
+2. **Check Wine prefix**: Verify your Wine prefix is working
+3. **Manual extraction**: Use the browse options to select existing files
    ```bash
    ./scripts/install_winetricks.sh
    ```

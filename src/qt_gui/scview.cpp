@@ -185,5 +185,4 @@ void SCView::movePoint(float new_x)
 }
 */
 
-#include "moc_scview.cpp"
 

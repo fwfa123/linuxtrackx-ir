@@ -290,5 +290,4 @@ float Tracker::getCommonFilterFactor()
   return common_ff;
 }
 
-#include "moc_tracker.cpp"
 

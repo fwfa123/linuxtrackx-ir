@@ -11,6 +11,5 @@ void LtrDevHelp::on_DumpPrefsButton_pressed()
   ltr_int_dump_prefs("");
 }
 
-#include "moc_ltr_dev_help.cpp"
 
 

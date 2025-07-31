@@ -28,15 +28,15 @@ class PluginInstall : public QObject
   void Connect();
   WineLauncher *inst;
   TirFwExtractor *dlfw;
-  Mfc42uExtractor *dlmfc;
+  Mfc140uExtractor *dlmfc140;
   bool isTirFirmwareInstalled();
-  bool isMfc42uInstalled();
+  bool isMfc140uInstalled();
   void enableButtons(bool ena);
-  void mfc42uInstall();
+  void mfc140uInstall();
   const QString poem1;
   const QString poem2;
   const QString gameData;
-  const QString mfc42u;
+  const QString mfc140u;
   const QString tirViews;
 };
 
