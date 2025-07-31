@@ -116,7 +116,85 @@
      </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">
-       <string>Misc.</string>
+       <string>Gaming</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="gamingLayout">
+       <item>
+        <widget class="QPushButton" name="InstallTirMfcButton">
+         <property name="text">
+          <string>Install Linuxtrack-Wine support (TIR Firmware + MFC140)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="platformButtonsLayout">
+         <item>
+          <widget class="QPushButton" name="SteamProtonButton">
+           <property name="text">
+            <string>Steam (Proton)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="LutrisButton">
+           <property name="text">
+            <string>Lutris</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="OtherPlatformButton">
+           <property name="text">
+            <string>Other Platform</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="utilityButtonsLayout">
+         <item>
+          <widget class="QPushButton" name="CustomPrefixButton">
+           <property name="text">
+            <string>Custom Prefix</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="BatchInstallButton">
+           <property name="text">
+            <string>Batch Install</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="WinePrefixButton">
+           <property name="text">
+            <string>Wine Prefix</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="QPushButton" name="LaunchMickeyButton">
+         <property name="text">
+          <string>Launch Mickey (TrackIR)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="LaunchLtrPipeButton">
+         <property name="text">
+          <string>Launch ltr_pipe for Antimicrox</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_5">
+      <attribute name="title">
+       <string>System</string>
       </attribute>
       <layout class="QHBoxLayout" name="horizontalLayout_7">
        <item>
@@ -144,16 +222,7 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QPushButton" name="LinuxtrackWineButton">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="text">
-               <string>Install Linuxtrack-Wine support...</string>
-              </property>
-             </widget>
-            </item>
+
             <item row="3" column="1">
              <widget class="QPushButton" name="PackageLogsButton">
               <property name="text">
@@ -168,13 +237,7 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="LaunchMickeyButton">
-              <property name="text">
-               <string>Launch Mickey (TrackIR)</string>
-              </property>
-             </widget>
-            </item>
+
            </layout>
           </item>
           <item>
