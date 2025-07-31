@@ -122,7 +122,7 @@ bool TirPrefs::Activate(const QString &ID, bool init)
     //ui.TirInstallFirmware->setDisabled(true);
   }else{
     ui.TirFwLabel->setText(QString::fromUtf8("Firmware not found - TrackIr will not work!"));
-    QMessageBox::warning(NULL, QString::fromUtf8("TrackIR Firmware Installation"),
+    QMessageBox::warning(this, QString::fromUtf8("TrackIR Firmware Installation"),
         QString::fromUtf8("TrackIR device was found, but you don't have the firmware installed."));
     //on_TirInstallFirmware_pressed();
   }
