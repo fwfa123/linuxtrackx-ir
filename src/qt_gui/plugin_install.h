@@ -22,6 +22,11 @@ class PluginInstall : public QObject
   void on_TIRFWButton_pressed();
   //void on_TIRViewsButton_pressed();
   void finished(bool ok);
+  
+ public:
+  // New Gaming tab methods
+  void installTirFirmwareAndMfc140();
+  void installWineBridgeToCustomPrefix();
  private:
   enum state{TIR_FW, MFC, LTR_W, DONE, TIR_FW_ONLY, MFC_ONLY} state;
   const Ui::LinuxtrackMainForm &gui;
@@ -33,6 +38,7 @@ class PluginInstall : public QObject
   bool isMfc140uInstalled();
   void enableButtons(bool ena);
   void mfc140uInstall();
+  QWidget* getParentWidget();
   const QString poem1;
   const QString poem2;
   const QString gameData;

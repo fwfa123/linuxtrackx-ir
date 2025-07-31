@@ -100,6 +100,16 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.PackageLogsButton, SIGNAL(pressed()), this, SLOT(on_PackageLogsButton_pressed()));
   QObject::connect(ui.LaunchMickeyButton, SIGNAL(pressed()), this, SLOT(on_LaunchMickeyButton_pressed()));
   
+  // Connect Gaming tab buttons
+  QObject::connect(ui.InstallTirMfcButton, SIGNAL(pressed()), this, SLOT(on_InstallTirMfcButton_pressed()));
+  QObject::connect(ui.SteamProtonButton, SIGNAL(pressed()), this, SLOT(on_SteamProtonButton_pressed()));
+  QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
+  QObject::connect(ui.OtherPlatformButton, SIGNAL(pressed()), this, SLOT(on_OtherPlatformButton_pressed()));
+  QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
+  QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
+  QObject::connect(ui.WinePrefixButton, SIGNAL(pressed()), this, SLOT(on_WinePrefixButton_pressed()));
+  QObject::connect(ui.LaunchLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_LaunchLtrPipeButton_pressed()));
+  
   ui.ModelEditSite->addWidget(me);
   ui.ProfileSetupSite->addWidget(ps);
 
@@ -608,5 +618,61 @@ void LinuxtrackGui::loadDockingState()
   gui_settings->endGroup();
 }
 
+// Gaming tab slot implementations
+void LinuxtrackGui::on_InstallTirMfcButton_pressed()
+{
+    // Call the new TIR/MFC140 installation method
+    if (pi) {
+        pi->installTirFirmwareAndMfc140();
+    }
+}
 
+void LinuxtrackGui::on_SteamProtonButton_pressed()
+{
+    // TODO: Implement Steam Proton installation
+    QMessageBox::information(this, QString::fromUtf8("Steam Proton"),
+        QString::fromUtf8("Steam Proton installation will be implemented in Phase 2."));
+}
 
+void LinuxtrackGui::on_LutrisButton_pressed()
+{
+    // TODO: Implement Lutris installation
+    QMessageBox::information(this, QString::fromUtf8("Lutris"),
+        QString::fromUtf8("Lutris installation will be implemented in Phase 2."));
+}
+
+void LinuxtrackGui::on_OtherPlatformButton_pressed()
+{
+    // TODO: Implement other platform installation
+    QMessageBox::information(this, QString::fromUtf8("Other Platform"),
+        QString::fromUtf8("Other platform installation will be implemented in Phase 2."));
+}
+
+void LinuxtrackGui::on_CustomPrefixButton_pressed()
+{
+    // Call the wine bridge installation method
+    if (pi) {
+        pi->installWineBridgeToCustomPrefix();
+    }
+}
+
+void LinuxtrackGui::on_BatchInstallButton_pressed()
+{
+    // TODO: Implement batch installation
+    QMessageBox::information(this, QString::fromUtf8("Batch Install"),
+        QString::fromUtf8("Batch installation will be implemented in Phase 2."));
+}
+
+void LinuxtrackGui::on_WinePrefixButton_pressed()
+{
+    // TODO: Implement direct wine prefix installation
+    QMessageBox::information(this, QString::fromUtf8("Wine Prefix"),
+        QString::fromUtf8("Direct wine prefix installation will be implemented in Phase 2."));
+}
+
+void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
+{
+    // TODO: Implement ltr_pipe launch for Antimicrox
+    QMessageBox::information(this, QString::fromUtf8("Launch ltr_pipe"),
+        QString::fromUtf8("ltr_pipe for Antimicrox will be implemented in Phase 2."));
+}

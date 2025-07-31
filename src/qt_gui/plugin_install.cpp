@@ -29,7 +29,6 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   }
 #endif
   inst = new WineLauncher();
-  gui.LinuxtrackWineButton->setEnabled(true);
   Connect();
 }
 
@@ -60,8 +59,8 @@ PluginInstall::~PluginInstall()
 
 void PluginInstall::Connect()
 {
-  QObject::connect(gui.LinuxtrackWineButton, SIGNAL(pressed()),
-    this, SLOT(installWinePlugin()));
+  // Note: LinuxtrackWineButton moved to Gaming tab as CustomPrefixButton
+  // Connection handled in ltr_gui.cpp
   QObject::connect(gui.TIRFWButton, SIGNAL(pressed()),
     this, SLOT(on_TIRFWButton_pressed()));
 //  QObject::connect(gui.TIRViewsButton, SIGNAL(pressed()),
@@ -195,7 +194,6 @@ void PluginInstall::installLinuxtrackWine()
     );
   }
 #endif
-  gui.LinuxtrackWineButton->setEnabled(true);
 }
 
 void PluginInstall::tirFirmwareInstall()
@@ -287,9 +285,67 @@ void PluginInstall::finished(bool ok)
 
 void PluginInstall::enableButtons(bool ena)
 {
-  gui.LinuxtrackWineButton->setEnabled(ena);
+  // Note: LinuxtrackWineButton moved to Gaming tab as CustomPrefixButton
+  // Button state managed in ltr_gui.cpp
   gui.TIRFWButton->setEnabled(ena);
   //gui.TIRViewsButton->setEnabled(ena);
+}
+
+// Helper method to get parent widget
+QWidget* PluginInstall::getParentWidget()
+{
+  QWidget *parentWidget = nullptr;
+  QObject *obj = parent();
+  while (obj && !parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(obj);
+    if (parentWidget && parentWidget->isWindow()) {
+      break; // Found the main window
+    }
+    obj = obj->parent();
+  }
+  if (!parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+  }
+  return parentWidget;
+}
+
+// New method for TIR/MFC140 installation only
+void PluginInstall::installTirFirmwareAndMfc140()
+{
+  // Check if all required firmware files already exist
+  if(isTirFirmwareInstalled() && isMfc140uInstalled()){
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
+      QString::fromUtf8("TIR Firmware and MFC140 libraries are already installed."));
+    return;
+  }
+  
+  // Otherwise, proceed with the normal extraction flow
+  if(!isTirFirmwareInstalled()){
+    state = TIR_FW;
+    tirFirmwareInstall();
+  } else if(!isMfc140uInstalled()){
+    // Install MFC140 (modern approach only)
+    state = MFC;
+    mfc140uInstall();
+  } else {
+    // Both already installed
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
+      QString::fromUtf8("TIR Firmware and MFC140 libraries are already installed."));
+  }
+}
+
+// New method for wine bridge installation to custom prefix
+void PluginInstall::installWineBridgeToCustomPrefix()
+{
+  // Check prerequisites
+  if(!isTirFirmwareInstalled() || !isMfc140uInstalled()) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
+      QString::fromUtf8("Please install TIR Firmware and MFC140 libraries first using the button above."));
+    return;
+  }
+  
+  // Proceed with wine bridge installation (existing functionality)
+  installLinuxtrackWine();
 }
 
 
