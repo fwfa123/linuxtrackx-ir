@@ -8,7 +8,7 @@ class XPluginInstall : public QDialog
 {
   Q_OBJECT
  public:
-  XPluginInstall(){ui.setupUi(this);};
+  XPluginInstall(){ui.setupUi(this); setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));};
  private:
   Ui::XPluginInstall ui;
  public slots:

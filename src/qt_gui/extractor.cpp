@@ -267,6 +267,7 @@ bool Extractor::readSpec()
 Extractor::Extractor(QWidget *parent) : QDialog(parent), dl(NULL), progressDlg(NULL)
 {
   ui.setupUi(this);
+  setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
   wine = new WineLauncher();
   dl = new Downloading();
   progressDlg = new Progress();
@@ -290,6 +291,26 @@ TirFwExtractor::TirFwExtractor(QWidget *parent) : Extractor(parent), et(NULL)
   if(!dbg.contains(QChar::fromLatin1('d'))){
     ui.AnalyzeSourceButton->setVisible(false);
   }
+  
+  // Hide download UI elements for TIR firmware extractor since we don't provide download links
+  ui.downloadLabel->setVisible(false);
+  ui.FWCombo->setVisible(false);
+  ui.DownloadButton->setVisible(false);
+  
+  // Update title and instructions for TIR firmware extraction
+  ui.label_2->setText(QString::fromUtf8("TrackIR Firmware Extraction"));
+  ui.downloadInstructions->setText(QString::fromUtf8(
+    "<div style='margin: 0; padding: 0;'>"
+    "<p>To extract TrackIR firmware, you need to download the latest TrackIR software from NaturalPoint's website.</p>"
+    "<p><b>Steps:</b></p>"
+    "<div style='margin-left: 20px;'>"
+    "<p style='margin: 5px 0;'>1. Visit <a href='https://www.naturalpoint.com/trackir/'>https://www.naturalpoint.com/trackir/</a></p>"
+    "<p style='margin: 5px 0;'>2. Download the latest TrackIR software installer</p>"
+    "<p style='margin: 5px 0;'>3. Use the 'Extract from installer' button below to select and process the downloaded file</p>"
+    "</div>"
+    "<p>The firmware will be extracted from the installer and made available for LinuxTrack.</p>"
+    "</div>"
+  ));
 }
 
 
@@ -512,7 +533,7 @@ void TirFwExtractor::threadFinished()
   if(everything){
     linkResult(destPath);
   }else{
-    QMessageBox::warning(NULL, QString::fromUtf8("Firmware extraction unsuccessfull"),
+    QMessageBox::warning(this, QString::fromUtf8("Firmware extraction unsuccessfull"),
       QString::fromUtf8("Some of the files needed to fully utilize TrackIR were not "
       "found! Please see the log for more details.")
     );
@@ -563,11 +584,15 @@ Mfc140uExtractor::Mfc140uExtractor(QWidget *parent) : Extractor(parent), cabextr
   // Update the UI text for MFC140 installation
   ui.label_2->setText(QString::fromUtf8("Install Visual C++ 2015-2022 MFC Libraries"));
   ui.downloadInstructions->setText(QString::fromUtf8(
-    "To install the required MFC140 libraries, you can:\n\n"
-    "1. <b>Download and install</b>: Select a source from the dropdown and click 'Download'\n"
-    "2. <b>Browse for installer</b>: If you already have the Visual C++ 2015-2022 Redistributable\n"
-    "3. <b>Browse directory</b>: If you have extracted the installer to a directory\n\n"
-    "The Visual C++ 2015-2022 Redistributable contains the required mfc140u.dll file."
+    "<div style='margin: 0; padding: 0;'>"
+    "<p>To install the required MFC140 libraries, you can:</p>"
+    "<div style='margin-left: 20px;'>"
+    "<p style='margin: 5px 0;'>1. <b>Download and install</b>: Select a source from the dropdown and click 'Download'</p>"
+    "<p style='margin: 5px 0;'>2. <b>Browse for installer</b>: If you already have the Visual C++ 2015-2022 Redistributable</p>"
+    "<p style='margin: 5px 0;'>3. <b>Browse directory</b>: If you have extracted the installer to a directory</p>"
+    "</div>"
+    "<p>The Visual C++ 2015-2022 Redistributable contains the required mfc140u.dll file.</p>"
+    "</div>"
   ));
   
   // Set up download combo box and button for MFC140

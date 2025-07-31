@@ -131,7 +131,20 @@ void PluginInstall::installLinuxtrackWine()
   
   // Double-check that MFC140 library exists before proceeding
   if(!isMfc140uInstalled()) {
-    QMessageBox::warning(NULL, QString::fromUtf8("MFC140 Library Required"),
+    // Get the main window by finding the top-level widget
+    QWidget *parentWidget = nullptr;
+    QObject *obj = parent();
+    while (obj && !parentWidget) {
+      parentWidget = qobject_cast<QWidget*>(obj);
+      if (parentWidget && parentWidget->isWindow()) {
+        break; // Found the main window
+      }
+      obj = obj->parent();
+    }
+    if (!parentWidget) {
+      parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+    }
+    QMessageBox::warning(parentWidget, QString::fromUtf8("MFC140 Library Required"),
       QString::fromUtf8("MFC140 library is required but not found in the tir_firmware directory.\\n\\n"
       "Please install Visual C++ 2015-2022 MFC libraries first using the MFC140 installer.")
     );
@@ -139,7 +152,20 @@ void PluginInstall::installLinuxtrackWine()
   }
   
 #ifndef DARWIN
-  QString prefix = QFileDialog::getExistingDirectory(NULL, QString::fromUtf8("Select Wine Prefix..."),
+  // Get the main window by finding the top-level widget
+  QWidget *parentWidget = nullptr;
+  QObject *obj = parent();
+  while (obj && !parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(obj);
+    if (parentWidget && parentWidget->isWindow()) {
+      break; // Found the main window
+    }
+    obj = obj->parent();
+  }
+  if (!parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+  }
+  QString prefix = QFileDialog::getExistingDirectory(parentWidget, QString::fromUtf8("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
   
   // Use the wine directory location
@@ -149,7 +175,20 @@ void PluginInstall::installLinuxtrackWine()
   inst->run(installerPath);
 #else
   if(isTirFirmwareInstalled() && isMfc140uInstalled()){
-    QMessageBox::information(NULL, QString::fromUtf8("Firmware extraction successfull"),
+    // Get the main window by finding the top-level widget
+    QWidget *parentWidget = nullptr;
+    QObject *obj = parent();
+    while (obj && !parentWidget) {
+      parentWidget = qobject_cast<QWidget*>(obj);
+      if (parentWidget && parentWidget->isWindow()) {
+        break; // Found the main window
+      }
+      obj = obj->parent();
+    }
+    if (!parentWidget) {
+      parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+    }
+    QMessageBox::information(parentWidget, QString::fromUtf8("Firmware extraction successfull"),
       QString::fromUtf8("Firmware extraction finished successfully!"
       "\nNow you can install linuxtrack-wine.exe to the Wine bottle/prefix of your choice."
       )
@@ -174,7 +213,20 @@ void PluginInstall::tirFirmwareInstall()
 void PluginInstall::mfc140uInstall()
 {
   if(!isTirFirmwareInstalled()){
-    QMessageBox::warning(NULL, QString::fromUtf8("Mfc140u install"),
+    // Get the main window by finding the top-level widget
+    QWidget *parentWidget = nullptr;
+    QObject *obj = parent();
+    while (obj && !parentWidget) {
+      parentWidget = qobject_cast<QWidget*>(obj);
+      if (parentWidget && parentWidget->isWindow()) {
+        break; // Found the main window
+      }
+      obj = obj->parent();
+    }
+    if (!parentWidget) {
+      parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+    }
+    QMessageBox::warning(parentWidget, QString::fromUtf8("Mfc140u install"),
                          QString::fromUtf8("Install TrackIR firmware first!"));
     state = TIR_FW;
     tirFirmwareInstall();

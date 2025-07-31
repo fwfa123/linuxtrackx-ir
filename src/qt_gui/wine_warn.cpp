@@ -4,6 +4,7 @@
 WineWarn::WineWarn(QWidget *parent) : QDialog(parent)
 {
   ui.setupUi(this);
+  setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
 }
 
 WineWarn::~WineWarn()
