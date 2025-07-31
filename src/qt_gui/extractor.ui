@@ -50,6 +50,43 @@
        </widget>
       </item>
       <item>
+       <widget class="QLabel" name="downloadLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>Select Package to Download (any of them should do)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QComboBox" name="FWCombo">
+          <property name="editable">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="DownloadButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Download</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
        <widget class="QLabel" name="label">
         <property name="font">
          <font>
@@ -132,6 +169,8 @@ unpacked</string>
   </layout>
  </widget>
  <tabstops>
+  <tabstop>FWCombo</tabstop>
+  <tabstop>DownloadButton</tabstop>
   <tabstop>LogView</tabstop>
   <tabstop>HelpButton</tabstop>
   <tabstop>AnalyzeSourceButton</tabstop>

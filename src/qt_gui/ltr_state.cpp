@@ -41,5 +41,4 @@ void TrackerState::pollState()
   prev_state = current_state;
 }
 
-#include "moc_ltr_state.cpp"
 

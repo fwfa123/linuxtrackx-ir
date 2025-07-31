@@ -98,7 +98,7 @@ void WineLauncher::setWinePath(const QString &path)
 QString WineLauncher::selectBestWineVersion()
 {
   std::ostringstream s;
-  s<<"Searching for compatible wine versions (requires 9.0+)...\n";
+  s<<"Searching for compatible wine versions (requires 9.0+ for TrackIR 5.5.2 installer)...\n";
   ltr_int_log_message(s.str().c_str());
   
   QStringList winePaths;
@@ -130,7 +130,7 @@ QString WineLauncher::selectBestWineVersion()
           s<<"Found wine at "<<path.toUtf8().constData()<<" version "<<version.toUtf8().constData()<<"\n";
           ltr_int_log_message(s.str().c_str());
           
-          // Check if version is compatible (9.0+)
+          // Check if version is compatible (9.0+ for TrackIR 5.5.2 installer)
           if (isVersionGreaterOrEqual(major, minor, 9, 0)) {
             // Prefer wine-staging over regular wine
             if (path.contains(QStringLiteral("wine-staging")) || path.contains(QStringLiteral("staging"))) {
@@ -164,7 +164,7 @@ QString WineLauncher::selectBestWineVersion()
           s<<"Found wine command "<<cmd.toUtf8().constData()<<" version "<<version.toUtf8().constData()<<"\n";
           ltr_int_log_message(s.str().c_str());
           
-          // Check if version is compatible (9.0+)
+          // Check if version is compatible (9.0+ for TrackIR 5.5.2 installer)
           if (isVersionGreaterOrEqual(major, minor, 9, 0)) {
             // Prefer wine-staging over regular wine
             if (cmd.contains(QStringLiteral("wine-staging")) || cmd.contains(QStringLiteral("staging"))) {
@@ -193,7 +193,7 @@ QString WineLauncher::selectBestWineVersion()
     ltr_int_log_message(s.str().c_str());
   } else {
     s.str(std::string(""));
-    s<<"No compatible wine version found (requires 9.0+)\n";
+    s<<"No compatible wine version found (requires 9.0+ for TrackIR 5.5.2 installer)\n";
     ltr_int_log_message(s.str().c_str());
   }
   
@@ -479,4 +479,3 @@ void Extractor::extractFirmware(QString file)
 }
 */
 
-#include "moc_wine_launcher.cpp"

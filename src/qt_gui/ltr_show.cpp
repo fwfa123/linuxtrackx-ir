@@ -370,5 +370,4 @@ void LtrGuiForm::undockFromMainWindow()
   }
 }
 
-#include "moc_ltr_show.cpp"
 

@@ -156,7 +156,7 @@ void MacWebcamFtPrefs::on_FindCascadeMac_pressed()
     QDir tmp(path);
     path = tmp.filePath(path);
   }
-  QString fileName = QFileDialog::getOpenFileName(NULL,
+  QString fileName = QFileDialog::getOpenFileName(this,
      QString::fromUtf8("Find Harr/LBP cascade"), path, QString::fromUtf8("xml Files (*.xml)"));
   ui.CascadePathMac->setText(fileName);
   on_CascadePathMac_editingFinished();
