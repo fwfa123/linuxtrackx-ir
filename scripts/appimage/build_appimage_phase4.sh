@@ -1237,7 +1237,7 @@ bundle_dependencies() {
     fi
     
     # Advanced optimization (re-enabled with conservative approach)
-    optimize_library_structure_conservative
+    # optimize_library_structure  # Temporarily disabled due to aggressive optimization
     
     # CRITICAL: Verify Qt libraries are properly bundled
     print_status "Verifying Qt library bundling..."
