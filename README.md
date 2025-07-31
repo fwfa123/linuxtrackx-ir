@@ -10,6 +10,7 @@
 have a Mac and other items I am not supporting these at this time, although the code 
 reamains embedded.
 
+Lots left TODO  (https://github.com/fwfa123/linuxtrackx-ir/blob/main/docs/progress/TODO_FUTURE_DEVELOPMENT.md)
 ## 🚀 Quick Start
 
 ### **Recommended: AppImage Installation (Easiest)**
@@ -46,7 +47,7 @@ QT_QPA_PLATFORM=xcb ./LinuxTrack-X-IR-*.AppImage
 #### **Debian / Ubuntu / MX Linux**
 ```bash
 # Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging
 
 # Build and install
 git clone <repository-url>
@@ -62,7 +63,7 @@ sudo usermod -a -G plugdev $USER
 #### **Fedora / RHEL / CentOS**
 ```bash
 # Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging
 
 # Build and install
 git clone <repository-url>
@@ -77,19 +78,31 @@ sudo usermod -a -G plugdev $USER
 
 #### **Arch Linux / Manjaro**
 ```bash
-# Recommended: Prebuilt installation (no Wine development tools)
-./scripts/install/install_arch_prebuilt.sh
+# Method 1: Automated build script (Recommended)
+./scripts/build_arch_linux.sh
 
-# Alternative: Build from source
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks
-./scripts/install/install_nsis_arch.sh
+# Method 2: Manual installation with full feature support
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
+yay -S wine32 nsis cwiid liblo-ipv6
+# Install X-Plane SDK (optional, for plugin development)
+sudo mkdir -p /opt/xplane-sdk
+curl -L -o /tmp/xplane-sdk.zip "https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
+sudo unzip /tmp/xplane-sdk.zip -d /opt/xplane-sdk
 git clone <repository-url>
 cd linuxtrackx-ir
 autoreconf -fiv
-./configure --prefix=/usr/local
+./configure --prefix=/opt --enable-ltr-32lib-on-x64 --with-wine-libs="-L/usr/lib32/wine/i386-unix" --with-xplane-sdk="/opt/xplane-sdk/CHeaders"
 make -j$(nproc)
 sudo make install
 sudo usermod -a -G plugdev $USER
+
+# Method 3: Prebuilt installation (no development tools)
+./scripts/install/install_arch_prebuilt.sh
+
+# Testing individual features
+./scripts/test_wiimote_support.sh    # Test Wiimote support
+./scripts/test_osc_support.sh        # Test OSC support
+./scripts/test_xplane_sdk.sh         # Test X-Plane SDK support
 ```
 
 ## 🎮 Usage
@@ -117,6 +130,8 @@ QT_QPA_PLATFORM=xcb ltr_gui
 - Elite Dangerous
 - Euro Truck Simulator 2
 - American Truck Simulator
+- Falcon 4
+- Commanche vs Havoc
 - **X-Plane** (requires XPlane SDK)
 
 ## 🎯 Project Focus
@@ -127,31 +142,50 @@ QT_QPA_PLATFORM=xcb ltr_gui
 - **Qt5 Migration**: Modernized GUI framework support
 - **Wine Integration**: Wine-based Windows compatibility layer
 
-### **Limited/Untested Features**
-⚠️ **Important**: The following features were **not tested** and are **not current development priorities**:
+### **Full Feature Support on Arch Linux**
+✅ **All features are now supported and tested on Arch Linux**:
 
-- **Wii Remote Support**: Wii tracking functionality may not work
-- **Webcam/Face Tracking**: Optical tracking features untested
+- **TrackIR Support**: Full compatibility with TrackIR 4 & 5 devices
+- **Webcam/Face Tracking**: Full OpenCV integration for optical tracking
+- **Wiimote Support**: Available via AUR (cwiid/cwiid-git)
+- **OSC Support**: Network-based head tracking via liblo-ipv6
+- **X-Plane Plugin**: Full X-Plane SDK 4.1.1 integration
+- **Wine Bridge**: Complete 32-bit wine bridge support with wine32
+- **Modern Security**: PIE, stack protector, and fortify source enabled
+
+### **Limited/Untested Features**
+⚠️ **Important**: The following features are **not current development priorities**:
+
 - **macOS Support**: Mac compatibility not verified
-- **X-Plane Plugin**: Requires X-Plane SDK
+- **Legacy Wii Remote**: Original Wii tracking (use Wiimote instead)
 
 ## 🔧 Key Features
 
 ### **What's New**
 - ✅ **Qt5 Modernization**: Updated from Qt4 to Qt5 for current Linux distributions
 - ✅ **Wine Compatibility**: Wine-based Windows binary support using winegcc
-- ✅ **Modern Build System**: Updated autotools and CMake support
+- ✅ **Modern Build System**: Updated autotools
 - ✅ **Enhanced Security**: PIE, stack protector, and fortify source enabled by default
 - ✅ **TrackIR Focus**: Primary focus on TrackIR 4 & 5 compatibility
 - ✅ **Active Development**: Regular updates and community support
+- ✅ **OSC Network Support**: Open Sound Control for network-based head tracking
+- ✅ **X-Plane Plugin**: Complete X-Plane plugin development support
+- ✅ **Automated Build Scripts**: One-command installation for Arch Linux (WORK IN PROGRESS)
 
 ### **Wine Integration**
 LinuxTrack now supports building Windows compatibility components using winegcc:
 
 - **NPClient.dll.so** / **NPClient64.dll.so** - TrackIR API compatibility (32/64-bit)
 - **FreeTrackClient.dll.so** - FreeTrack API compatibility
-- **Testing Tools** - Tester.exe.so, Tester64.exe.so for validation
-- **Utilities** - Controller.exe.so for hotkeys, check_data.exe.so for validation
+
+### **MFC140 Modernization** ✅
+LinuxTrack now uses modern Visual C++ 2015-2022 MFC libraries (MFC140) instead of legacy MFC42:
+
+- **✅ Eliminates Copyright Issues** - No more Microsoft MFC42 copyright concerns
+- **✅ Modern Compatibility** - Uses Visual C++ 2015-2022 redistributables
+- **✅ Simplified Installation** - Built-in download and extraction system
+- **✅ No Winetricks Required** - Automatic download and installation
+- **✅ Better Error Handling** - Clear user guidance and fallback options
 
 ## 🖥️ Display Server Compatibility
 
@@ -161,7 +195,7 @@ LinuxTrack works best with X11:
 ltr_gui
 ```
 
-### **Wayland Compatibility**
+### **Wayland Compatibility** (WORK IN PROGRESS)
 If you're using Wayland, force X11 compatibility:
 ```bash
 QT_QPA_PLATFORM=xcb ltr_gui
@@ -171,14 +205,15 @@ QT_QPA_PLATFORM=xcb ltr_gui
 
 ### **USB Devices**
 - **TrackIR 4 & 5** - Full support via reverse engineering
-- **PlayStation Eye** - USB camera with IR filter removal
-- **Generic USB cameras** - For optical tracking
-- **TrackHat sensors** - Specialized tracking hardware
+
 
 ### **DIY Solutions**
 - **Webcam + IR LEDs** - Build your own IR tracking setup
 - **Wii Remote** - Nintendo Wiimote tracking
 - **FaceTrackNoIR compatible** - Face detection tracking
+- **PlayStation Eye** - USB camera with IR filter removal
+- **Generic USB cameras** - For optical tracking
+- **TrackHat sensors** - Specialized tracking hardware
 
 ## 🔍 Troubleshooting
 
@@ -188,6 +223,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install wine-devel` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
+| MFC140 installation fails | Use the built-in MFC140 installer in the GUI, or manually download Visual C++ 2015-2022 Redistributable |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to plugdev group: `sudo usermod -a -G plugdev $USER` |
 | Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
@@ -238,7 +274,6 @@ LinuxTrack X-IR is released under the MIT License, maintaining compatibility wit
 
 - **Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)
 - **This Fork**: [LinuxTrack X-IR](https://github.com/fwfa123/linuxtrackx-ir)
-- **Community**: [OpenTrack Community](https://github.com/opentrack/opentrack) (compatible project)
 - **Documentation**: See the `docs/` directory for detailed guides
 
 ## 🙏 Acknowledgments

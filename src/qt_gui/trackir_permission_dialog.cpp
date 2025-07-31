@@ -17,6 +17,7 @@ TrackIRPermissionDialog::TrackIRPermissionDialog(QWidget *parent)
     , statusLabel(nullptr)
 {
     setupUI();
+    setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
     setWindowTitle(tr("TrackIR Permission Setup"));
     setModal(true);
     setFixedSize(500, 300);
@@ -428,4 +429,3 @@ void TrackIRPermissionDialog::setDialogShown()
     settings.sync();
 }
 
-#include "moc_trackir_permission_dialog.cpp" 
