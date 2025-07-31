@@ -636,9 +636,10 @@ void LinuxtrackGui::on_SteamProtonButton_pressed()
 
 void LinuxtrackGui::on_LutrisButton_pressed()
 {
-    // TODO: Implement Lutris installation
-    QMessageBox::information(this, QString::fromUtf8("Lutris"),
-        QString::fromUtf8("Lutris installation will be implemented in Phase 2."));
+    // Call the Lutris wine bridge installation method
+    if (pi) {
+        pi->installLutrisWineBridge();
+    }
 }
 
 void LinuxtrackGui::on_OtherPlatformButton_pressed()
