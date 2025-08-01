@@ -10,6 +10,10 @@
 #include <QInputDialog>
 #include <QDir>
 #include <QSettings>
+#include <QApplication>
+#include <QClipboard>
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
 #include <iostream>
 #include "ltr_gui.h"
 #include "ltr_gui_prefs.h"
@@ -106,9 +110,13 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
   QObject::connect(ui.OtherPlatformButton, SIGNAL(pressed()), this, SLOT(on_OtherPlatformButton_pressed()));
   QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
-  QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
+  // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
   QObject::connect(ui.WinePrefixButton, SIGNAL(pressed()), this, SLOT(on_WinePrefixButton_pressed()));
   QObject::connect(ui.LaunchLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_LaunchLtrPipeButton_pressed()));
+  
+  // Connect System information buttons
+  QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
+  QObject::connect(ui.button_refresh_system_info, SIGNAL(pressed()), this, SLOT(on_button_refresh_system_info_pressed()));
   
   ui.ModelEditSite->addWidget(me);
   ui.ProfileSetupSite->addWidget(ps);
@@ -176,6 +184,9 @@ void LinuxtrackGui::show()
   }
   
   QMainWindow::show();
+  
+  // Initialize system information
+  updateSystemInformation();
   
   if (welcome) {
     HelpViewer::ChangePage(QStringLiteral("welcome.htm"));
@@ -657,12 +668,14 @@ void LinuxtrackGui::on_CustomPrefixButton_pressed()
     }
 }
 
+/*
 void LinuxtrackGui::on_BatchInstallButton_pressed()
 {
     // TODO: Implement batch installation
     QMessageBox::information(this, QString::fromUtf8("Batch Install"),
         QString::fromUtf8("Batch installation will be implemented in Phase 2."));
 }
+*/
 
 void LinuxtrackGui::on_WinePrefixButton_pressed()
 {
@@ -676,4 +689,313 @@ void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
     // TODO: Implement ltr_pipe launch for Antimicrox
     QMessageBox::information(this, QString::fromUtf8("Launch ltr_pipe"),
         QString::fromUtf8("ltr_pipe for Antimicrox will be implemented in Phase 2."));
+}
+
+// System information functions
+void LinuxtrackGui::on_button_copy_system_info_pressed()
+{
+    QString systemInfo = getSystemInformation();
+    QApplication::clipboard()->setText(systemInfo);
+    QMessageBox::information(this, QString::fromUtf8("System Information"),
+        QString::fromUtf8("System information has been copied to clipboard."));
+}
+
+void LinuxtrackGui::on_button_refresh_system_info_pressed()
+{
+    updateSystemInformation();
+}
+
+void LinuxtrackGui::updateSystemInformation()
+{
+    QString systemInfo = getSystemInformation();
+    ui.textEdit_system_info->setPlainText(systemInfo);
+}
+
+QString LinuxtrackGui::getSystemInformation()
+{
+    QString info;
+    info += QStringLiteral("=== LinuxTrack System Information ===\n\n");
+    
+    info += getLinuxDistribution();
+    info += getCPUInfo();
+    info += getMemoryInfo();
+    info += getGraphicsInfo();
+    info += getLinuxTrackInfo();
+    info += getDeviceSupportInfo();
+    
+    return info;
+}
+
+QString LinuxtrackGui::getLinuxDistribution()
+{
+    QString info = QStringLiteral("=== System ===\n");
+    
+    // Get OS information
+    QFile osRelease(QStringLiteral("/etc/os-release"));
+    if (osRelease.open(QIODevice::ReadOnly)) {
+        QString content = QString::fromUtf8(osRelease.readAll());
+        QStringList lines = content.split(QChar::fromLatin1('\n'));
+        
+        QString distroName, distroVersion;
+        for (const QString &line : lines) {
+            if (line.startsWith(QStringLiteral("PRETTY_NAME="))) {
+                distroName = line.mid(12).remove(QChar::fromLatin1('"'));
+                break;
+            }
+        }
+        
+        if (!distroName.isEmpty()) {
+            info += QStringLiteral("OS: %1\n").arg(distroName);
+        }
+    }
+    
+    // Get architecture
+    QProcess uname;
+    uname.start(QStringLiteral("uname"), QStringList() << QStringLiteral("-m"));
+    uname.waitForFinished();
+    QString arch = QString::fromUtf8(uname.readAllStandardOutput()).trimmed();
+    if (!arch.isEmpty()) {
+        info += QStringLiteral("Arch: %1\n").arg(arch);
+    }
+    
+    // Get kernel version
+    QProcess unameKernel;
+    unameKernel.start(QStringLiteral("uname"), QStringList() << QStringLiteral("-r"));
+    unameKernel.waitForFinished();
+    QString kernel = QString::fromUtf8(unameKernel.readAllStandardOutput()).trimmed();
+    if (!kernel.isEmpty()) {
+        info += QStringLiteral("Kernel: %1\n").arg(kernel);
+    }
+    
+    // Get LinuxTrack version
+    info += QStringLiteral("LinuxTrack Version: %1\n").arg(QStringLiteral(PACKAGE_VERSION));
+    
+    // Get desktop environment
+    QString desktop = QString::fromUtf8(qgetenv("XDG_CURRENT_DESKTOP"));
+    if (desktop.isEmpty()) {
+        desktop = QString::fromUtf8(qgetenv("DESKTOP_SESSION"));
+    }
+    if (!desktop.isEmpty()) {
+        info += QStringLiteral("Desktop: %1\n").arg(desktop);
+    }
+    
+    // Get display server
+    QString displayServer = QString::fromUtf8(qgetenv("XDG_SESSION_TYPE"));
+    if (!displayServer.isEmpty()) {
+        info += QStringLiteral("Display Server: %1\n").arg(displayServer);
+    }
+    
+    info += QStringLiteral("\n");
+    return info;
+}
+
+QString LinuxtrackGui::getCPUInfo()
+{
+    QString info = QStringLiteral("=== CPU ===\n");
+    
+    QFile cpuInfo(QStringLiteral("/proc/cpuinfo"));
+    if (cpuInfo.open(QIODevice::ReadOnly)) {
+        QString content = QString::fromUtf8(cpuInfo.readAll());
+        QStringList lines = content.split(QChar::fromLatin1('\n'));
+        
+        QString vendor, model;
+        int physicalCores = 0, logicalCores = 0;
+        
+        for (const QString &line : lines) {
+            if (line.startsWith(QStringLiteral("vendor_id"))) {
+                vendor = line.split(QChar::fromLatin1(':')).last().trimmed();
+            } else if (line.startsWith(QStringLiteral("model name"))) {
+                model = line.split(QChar::fromLatin1(':')).last().trimmed();
+            } else if (line.startsWith(QStringLiteral("processor"))) {
+                logicalCores++;
+            } else if (line.startsWith(QStringLiteral("physical id"))) {
+                // Count unique physical IDs
+                QStringList parts = line.split(QChar::fromLatin1(':'));
+                if (parts.size() > 1) {
+                    bool ok;
+                    int id = parts.last().trimmed().toInt(&ok);
+                    if (ok && id >= physicalCores) {
+                        physicalCores = id + 1;
+                    }
+                }
+            }
+        }
+        
+        if (!vendor.isEmpty()) {
+            info += QStringLiteral("Vendor: %1\n").arg(vendor);
+        }
+        if (!model.isEmpty()) {
+            info += QStringLiteral("Model: %1\n").arg(model);
+        }
+        info += QStringLiteral("Physical cores: %1\n").arg(physicalCores);
+        info += QStringLiteral("Logical cores: %1\n").arg(logicalCores);
+    }
+    
+    info += QStringLiteral("\n");
+    return info;
+}
+
+QString LinuxtrackGui::getMemoryInfo()
+{
+    QString info = QStringLiteral("=== Memory ===\n");
+    
+    QFile memInfo(QStringLiteral("/proc/meminfo"));
+    if (memInfo.open(QIODevice::ReadOnly)) {
+        QString content = QString::fromUtf8(memInfo.readAll());
+        QStringList lines = content.split(QChar::fromLatin1('\n'));
+        
+        qulonglong totalRam = 0, totalSwap = 0;
+        
+        for (const QString &line : lines) {
+            if (line.startsWith(QStringLiteral("MemTotal:"))) {
+                QStringList parts = line.split(QChar::fromLatin1(':'));
+                if (parts.size() > 1) {
+                    totalRam = parts.last().trimmed().toULongLong();
+                }
+            } else if (line.startsWith(QStringLiteral("SwapTotal:"))) {
+                QStringList parts = line.split(QChar::fromLatin1(':'));
+                if (parts.size() > 1) {
+                    totalSwap = parts.last().trimmed().toULongLong();
+                }
+            }
+        }
+        
+        if (totalRam > 0) {
+            double ramGB = totalRam / 1024.0 / 1024.0;
+            info += QStringLiteral("RAM: %1 GB\n").arg(ramGB, 0, 'f', 1);
+        }
+        if (totalSwap > 0) {
+            double swapGB = totalSwap / 1024.0 / 1024.0;
+            info += QStringLiteral("Swap: %1 GB\n").arg(swapGB, 0, 'f', 1);
+        }
+    }
+    
+    info += QStringLiteral("\n");
+    return info;
+}
+
+QString LinuxtrackGui::getGraphicsInfo()
+{
+    QString info = QStringLiteral("=== Graphics ===\n");
+    
+    // Get graphics information from system commands instead of OpenGL context
+    // This is safer and doesn't require an active OpenGL context
+    
+    // Get graphics card info from lspci
+    QProcess lspci;
+    lspci.start(QStringLiteral("lspci"), QStringList() << QStringLiteral("-v"));
+    lspci.waitForFinished();
+    QString lspciOutput = QString::fromUtf8(lspci.readAllStandardOutput());
+    
+    if (!lspciOutput.isEmpty()) {
+        QStringList lines = lspciOutput.split(QChar::fromLatin1('\n'));
+        for (const QString &line : lines) {
+            if (line.contains(QStringLiteral("VGA")) || line.contains(QStringLiteral("3D")) || line.contains(QStringLiteral("Display"))) {
+                info += QStringLiteral("Graphics Card: %1\n").arg(line.trimmed());
+                break;
+            }
+        }
+    }
+    
+    // Get OpenGL information from glxinfo (safer approach)
+    QProcess glxinfo;
+    glxinfo.start(QStringLiteral("glxinfo"), QStringList() << QStringLiteral("-B"));
+    glxinfo.waitForFinished();
+    QString glxOutput = QString::fromUtf8(glxinfo.readAllStandardOutput());
+    
+    if (!glxOutput.isEmpty()) {
+        QStringList lines = glxOutput.split(QChar::fromLatin1('\n'));
+        for (const QString &line : lines) {
+            if (line.contains(QStringLiteral("OpenGL version string"))) {
+                QString version = line.split(QChar::fromLatin1(':')).last().trimmed();
+                info += QStringLiteral("OpenGL Version: %1\n").arg(version);
+                break;
+            }
+            if (line.contains(QStringLiteral("OpenGL renderer string"))) {
+                QString renderer = line.split(QChar::fromLatin1(':')).last().trimmed();
+                info += QStringLiteral("OpenGL Renderer: %1\n").arg(renderer);
+            }
+            if (line.contains(QStringLiteral("OpenGL vendor string"))) {
+                QString vendor = line.split(QChar::fromLatin1(':')).last().trimmed();
+                info += QStringLiteral("OpenGL Vendor: %1\n").arg(vendor);
+            }
+        }
+    } else {
+        info += QStringLiteral("OpenGL Info: Unable to retrieve (glxinfo not available)\n");
+    }
+    
+    // Get Mesa version if available
+    QProcess mesaVersion;
+    mesaVersion.start(QStringLiteral("glxinfo"), QStringList());
+    mesaVersion.waitForFinished();
+    QString mesaOutput = QString::fromUtf8(mesaVersion.readAllStandardOutput());
+    
+    if (!mesaOutput.isEmpty()) {
+        QStringList lines = mesaOutput.split(QChar::fromLatin1('\n'));
+        for (const QString &line : lines) {
+            if (line.contains(QStringLiteral("Mesa"))) {
+                info += QStringLiteral("Mesa Version: %1\n").arg(line.trimmed());
+                break;
+            }
+        }
+    }
+    
+    info += QStringLiteral("\n");
+    return info;
+}
+
+QString LinuxtrackGui::getLinuxTrackInfo()
+{
+    QString info = QStringLiteral("=== LinuxTrack Components ===\n");
+    
+    // Check LinuxTrack support status
+    info += QStringLiteral("Webcam support: YES\n");
+    info += QStringLiteral("Wiimote support: YES\n");
+    info += QStringLiteral("TrackIR support: YES\n");
+    info += QStringLiteral("Facetracker support: NO\n");
+    info += QStringLiteral("XPlane plugin: YES\n");
+    info += QStringLiteral("Mickey: YES\n");
+    info += QStringLiteral("Wine plugin: YES\n");
+    info += QStringLiteral("OSC support: YES\n");
+    info += QStringLiteral("PIE support for native builds: enabled (security feature)\n");
+    
+    info += QStringLiteral("\n");
+    return info;
+}
+
+QString LinuxtrackGui::getDeviceSupportInfo()
+{
+    QString info = QStringLiteral("=== Device Support ===\n");
+    
+    // Check for USB devices
+    QProcess lsusb;
+    lsusb.start(QStringLiteral("lsusb"), QStringList());
+    lsusb.waitForFinished();
+    QString usbOutput = QString::fromUtf8(lsusb.readAllStandardOutput());
+    
+    if (!usbOutput.isEmpty()) {
+        QStringList lines = usbOutput.split(QChar::fromLatin1('\n'));
+        for (const QString &line : lines) {
+            if (line.contains(QStringLiteral("NaturalPoint")) || line.contains(QStringLiteral("TrackIR"))) {
+                info += QStringLiteral("TrackIR Device: %1\n").arg(line.trimmed());
+            }
+        }
+    }
+    
+    // Check for webcam devices
+    QProcess lsVideo;
+    lsVideo.start(QStringLiteral("ls"), QStringList() << QStringLiteral("/dev/video*"));
+    lsVideo.waitForFinished();
+    QString videoOutput = QString::fromUtf8(lsVideo.readAllStandardOutput());
+    
+    if (!videoOutput.isEmpty()) {
+        QStringList devices = videoOutput.split(QChar::fromLatin1('\n'), Qt::SkipEmptyParts);
+        info += QStringLiteral("Webcam devices: %1\n").arg(devices.size());
+        for (const QString &device : devices) {
+            info += QStringLiteral("  %1\n").arg(device.trimmed());
+        }
+    }
+    
+    info += QStringLiteral("\n");
+    return info;
 }

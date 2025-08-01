@@ -64,9 +64,21 @@ class LinuxtrackGui : public QMainWindow
   void on_LutrisButton_pressed();
   void on_OtherPlatformButton_pressed();
   void on_CustomPrefixButton_pressed();
-  void on_BatchInstallButton_pressed();
+  // void on_BatchInstallButton_pressed();
   void on_WinePrefixButton_pressed();
   void on_LaunchLtrPipeButton_pressed();
+  
+  // System information slots
+  void on_button_copy_system_info_pressed();
+  void on_button_refresh_system_info_pressed();
+  void updateSystemInformation();
+  QString getSystemInformation();
+  QString getLinuxDistribution();
+  QString getCPUInfo();
+  QString getMemoryInfo();
+  QString getGraphicsInfo();
+  QString getLinuxTrackInfo();
+  QString getDeviceSupportInfo();
   
   // Docking slots
   void dockTrackingWindow();
