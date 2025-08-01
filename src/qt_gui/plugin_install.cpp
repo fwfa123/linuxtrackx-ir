@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QInputDialog>
 #include <zlib.h>
 #include "extractor.h"
 #include "utils.h"
@@ -13,7 +14,7 @@
 #endif
 
 PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):QObject(parent),
-  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc140(NULL),
+  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc140(NULL), lutrisIntegration(NULL),
   poem1(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem1.txt")),
   poem2(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem2.txt")),
   gameData(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/gamedata.txt")),
@@ -29,7 +30,6 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   }
 #endif
   inst = new WineLauncher();
-  gui.LinuxtrackWineButton->setEnabled(true);
   Connect();
 }
 
@@ -56,12 +56,15 @@ PluginInstall::~PluginInstall()
     dlmfc140 = NULL;
   }
   delete inst;
+  if (lutrisIntegration) {
+    delete lutrisIntegration;
+  }
 }
 
 void PluginInstall::Connect()
 {
-  QObject::connect(gui.LinuxtrackWineButton, SIGNAL(pressed()),
-    this, SLOT(installWinePlugin()));
+  // Note: LinuxtrackWineButton moved to Gaming tab as CustomPrefixButton
+  // Connection handled in ltr_gui.cpp
   QObject::connect(gui.TIRFWButton, SIGNAL(pressed()),
     this, SLOT(on_TIRFWButton_pressed()));
 //  QObject::connect(gui.TIRViewsButton, SIGNAL(pressed()),
@@ -195,7 +198,6 @@ void PluginInstall::installLinuxtrackWine()
     );
   }
 #endif
-  gui.LinuxtrackWineButton->setEnabled(true);
 }
 
 void PluginInstall::tirFirmwareInstall()
@@ -287,9 +289,152 @@ void PluginInstall::finished(bool ok)
 
 void PluginInstall::enableButtons(bool ena)
 {
-  gui.LinuxtrackWineButton->setEnabled(ena);
+  // Note: LinuxtrackWineButton moved to Gaming tab as CustomPrefixButton
+  // Button state managed in ltr_gui.cpp
   gui.TIRFWButton->setEnabled(ena);
   //gui.TIRViewsButton->setEnabled(ena);
+}
+
+// Helper method to get parent widget
+QWidget* PluginInstall::getParentWidget()
+{
+  QWidget *parentWidget = nullptr;
+  QObject *obj = parent();
+  while (obj && !parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(obj);
+    if (parentWidget && parentWidget->isWindow()) {
+      break; // Found the main window
+    }
+    obj = obj->parent();
+  }
+  if (!parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+  }
+  return parentWidget;
+}
+
+// New method for TIR/MFC140 installation only
+void PluginInstall::installTirFirmwareAndMfc140()
+{
+  // Check if all required firmware files already exist
+  if(isTirFirmwareInstalled() && isMfc140uInstalled()){
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
+      QString::fromUtf8("TIR Firmware and MFC140 libraries are already installed."));
+    return;
+  }
+  
+  // Otherwise, proceed with the normal extraction flow
+  if(!isTirFirmwareInstalled()){
+    state = TIR_FW;
+    tirFirmwareInstall();
+  } else if(!isMfc140uInstalled()){
+    // Install MFC140 (modern approach only)
+    state = MFC;
+    mfc140uInstall();
+  } else {
+    // Both already installed
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
+      QString::fromUtf8("TIR Firmware and MFC140 libraries are already installed."));
+  }
+}
+
+// New method for wine bridge installation to custom prefix
+void PluginInstall::installWineBridgeToCustomPrefix()
+{
+  // Check prerequisites
+  if(!isTirFirmwareInstalled() || !isMfc140uInstalled()) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
+      QString::fromUtf8("Please install TIR Firmware and MFC140 libraries first using the button above."));
+    return;
+  }
+  
+  // Proceed with wine bridge installation (existing functionality)
+  installLinuxtrackWine();
+}
+
+// New method for Lutris wine bridge installation
+void PluginInstall::installLutrisWineBridge()
+{
+  // Check prerequisites
+  if(!isTirFirmwareInstalled() || !isMfc140uInstalled()) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
+      QString::fromUtf8("Please install TIR Firmware and MFC140 libraries first using the button above."));
+    return;
+  }
+  
+  // Initialize Lutris integration if not already done
+  if (!lutrisIntegration) {
+    lutrisIntegration = new LutrisIntegration(this);
+  }
+  
+  // Check if Lutris is installed
+  if (!lutrisIntegration->isLutrisInstalled()) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Lutris Not Found"),
+      QString::fromUtf8("Lutris is not installed or not properly configured.\n\n") +
+      QString::fromUtf8("Error: ") + lutrisIntegration->getLastError());
+    return;
+  }
+  
+  // Get available Lutris games
+  QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
+  if (games.isEmpty()) {
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("No Lutris Games Found"),
+      QString::fromUtf8("No Wine-based games were found in Lutris.\n\n") +
+      QString::fromUtf8("Please install some games in Lutris first, then try again.\n\n") +
+      QString::fromUtf8("Debug Info: ") + lutrisIntegration->getDebugInfo());
+    return;
+  }
+  
+  // Create game selection dialog
+  QStringList gameNames;
+  QStringList gameSlugs;
+  for (const LutrisGame &game : games) {
+    QString displayName = game.game_name.isEmpty() ? game.game_slug : game.game_name;
+    gameNames.append(displayName);
+    gameSlugs.append(game.game_slug);
+  }
+  
+  bool ok;
+  QString selectedGame = QInputDialog::getItem(getParentWidget(),
+    QString::fromUtf8("Select Lutris Game"),
+    QString::fromUtf8("Choose a game to install Linuxtrack Wine Bridge:"),
+    gameNames, 0, false, &ok);
+  
+  if (!ok || selectedGame.isEmpty()) {
+    return; // User cancelled
+  }
+  
+  // Find the selected game
+  int selectedIndex = gameNames.indexOf(selectedGame);
+  if (selectedIndex == -1) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Selection Error"),
+      QString::fromUtf8("Invalid game selection."));
+    return;
+  }
+  
+  QString selectedSlug = gameSlugs[selectedIndex];
+  
+  // Show information dialog about interactive installation
+  QMessageBox::information(getParentWidget(), QString::fromUtf8("Starting Interactive Installation"),
+    QString::fromUtf8("Starting Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
+    QString::fromUtf8("The NSIS installer will open in a new window.\n") +
+    QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
+    QString::fromUtf8("Click OK to start the installation."));
+  
+  // Install to the selected game
+  bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
+  
+  if (success) {
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Started"),
+      QString::fromUtf8("Linuxtrack Wine Bridge installer has been launched for: ") + selectedGame + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("Please complete the installation in the NSIS window that opened.\n") +
+      QString::fromUtf8("You can now use Linuxtrack with this game in Lutris once the installation is complete."));
+  } else {
+    QMessageBox::critical(getParentWidget(), QString::fromUtf8("Installation Failed"),
+      QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("Error: ") + lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("Debug Info: ") + lutrisIntegration->getDebugInfo());
+  }
 }
 
 

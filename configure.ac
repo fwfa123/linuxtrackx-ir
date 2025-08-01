@@ -162,6 +162,12 @@ AC_CHECK_HEADER([linux/uinput.h], [build_mickey=yes], [build_mickey=no])
 # if wine64 is present, try building the 64bit binaries too
 AC_CHECK_PROG([with_wine64], [wine64], [yes])
 
+# Always test 64-bit winegcc compilation on x86_64 systems
+# winegcc can build 64-bit components without the -m32 flag
+AS_IF([test "x$host_cpu" = xx86_64],
+      [with_wine64=yes],
+      [])
+
 #needed to create an installer for the linuxtrack-wine
 AC_CHECK_PROG([with_makensis], [makensis], [yes])
 
@@ -257,7 +263,12 @@ case "$host_os" in
       WINE_LIBS_DEFAULT="-L/usr/lib/wine"
     elif test -d "/usr/local/lib/wine"; then
       WINE_LIBS_DEFAULT="-L/usr/local/lib/wine"
+    else
+      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
     fi
+    ;;
+  *)
+    WINE_LIBS_DEFAULT="-L/usr/lib/wine"
     ;;
 esac
 
@@ -268,34 +279,43 @@ AC_ARG_WITH([wine-libs],
             [WINE_LIBS=${WINE_LIBS_DEFAULT}]
 )
 
+# Enhanced wine64 library path detection for modern distributions
 WINE64_LIBS=
 WINE64_LIBS_DEFAULT=""
 
 # Enhanced wine64 library path detection for modern distributions
 case "$host_os" in
   linux*)
-    # Arch Linux with wine32 from AUR (includes 64-bit support)
+    # Arch Linux with wine64
     if test -d "/usr/lib/wine/x86_64-unix"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/wine/x86_64-unix"
       AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine/x86_64-unix])
     elif test -d "/usr/lib/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
-      AC_MSG_NOTICE([Found Arch Linux wine installation in /usr/lib/wine])
+      AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine])
     # Modern Ubuntu/Debian (22.04+)
     elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
     # Modern Fedora (38+)
-    elif test -d "/usr/lib64/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+    elif test -d "/usr/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+    # Arch Linux standard wine
+    elif test -d "/usr/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     # OpenSUSE
-    elif test -d "/usr/lib64/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+    elif test -d "/usr/lib/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     # Legacy paths for older distributions
     elif test -d "/usr/lib/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     elif test -d "/usr/local/lib/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/local/lib/wine"
+    else
+      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     fi
+    ;;
+  *)
+    WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     ;;
 esac
 
@@ -364,7 +384,9 @@ ac_exeext=".exe"
 
 CFLAGS=""
 
-AS_IF([test x$with_wine64 = xyes],
+# Always test 64-bit winegcc compilation on x86_64 systems
+# winegcc can build 64-bit components without the -m32 flag
+AS_IF([test "x$host_cpu" = xx86_64],
  [
    LDFLAGS=" $WINE64_LIBS "
    AC_MSG_CHECKING([64bit winegcc])
@@ -373,6 +395,20 @@ AS_IF([test x$with_wine64 = xyes],
    AC_MSG_CHECKING([64bit wineg++])
    AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])], [WINEGPP_COMPILES=yes], [WINEGPP_COMPILES=no])
    AS_IF([test  "x$WINEGPP_COMPILES" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+ ],
+ [
+   # On non-x86_64 systems, only test if wine64 command exists
+   AS_IF([test x$with_wine64 = xyes],
+    [
+      LDFLAGS=" $WINE64_LIBS "
+      AC_MSG_CHECKING([64bit winegcc])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])], [WINEGCC_COMPILES=yes], [WINEGCC_COMPILES=no])
+      AS_IF([test  "x$WINEGCC_COMPILES" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+      AC_MSG_CHECKING([64bit wineg++])
+      AC_LINK_IFELSE([AC_LANG_PROGRAM([], [])], [WINEGPP_COMPILES=yes], [WINEGPP_COMPILES=no])
+      AS_IF([test  "x$WINEGPP_COMPILES" = xyes], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+    ]
+   )
  ]
 )
 

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>678</width>
-    <height>425</height>
+    <width>948</width>
+    <height>777</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -33,7 +33,7 @@
       </sizepolicy>
      </property>
      <property name="currentIndex">
-      <number>0</number>
+      <number>3</number>
      </property>
      <widget class="QWidget" name="tab">
       <attribute name="title">
@@ -116,69 +116,254 @@
      </widget>
      <widget class="QWidget" name="tab_4">
       <attribute name="title">
-       <string>Misc.</string>
+       <string>Gaming</string>
       </attribute>
-      <layout class="QHBoxLayout" name="horizontalLayout_7">
+      <layout class="QVBoxLayout" name="gamingTabLayout">
        <item>
-        <widget class="QFrame" name="frame_2">
+        <widget class="QPushButton" name="InstallTirMfcButton">
+         <property name="text">
+          <string>Install Linuxtrack-Wine support (TIR Firmware + MFC140)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QGridLayout" name="gridLayout_3">
+         <item row="0" column="0">
+          <widget class="QPushButton" name="SteamProtonButton">
+           <property name="text">
+            <string>Steam (Proton)</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <widget class="QPushButton" name="CustomPrefixButton">
+           <property name="text">
+            <string>Custom Prefix</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="2">
+          <widget class="QPushButton" name="LutrisButton">
+           <property name="text">
+            <string>Lutris</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QPushButton" name="OtherPlatformButton">
+           <property name="text">
+            <string>Other Platform</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <widget class="QPushButton" name="WinePrefixButton">
+           <property name="text">
+            <string>Wine Prefix</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="1">
+          <widget class="QPushButton" name="XplanePluginButton">
+           <property name="text">
+            <string>Install Xplane plugin...</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <item>
+          <widget class="QPushButton" name="LaunchMickeyButton">
+           <property name="text">
+            <string>Launch Mickey (TrackIR)</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="LaunchLtrPipeButton">
+           <property name="text">
+            <string>Launch ltr_pipe for Antimicrox</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_5">
+      <attribute name="title">
+       <string>System</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="systemTabLayout">
+       <item>
+        <widget class="QFrame" name="frame_system_info">
          <property name="frameShape">
           <enum>QFrame::StyledPanel</enum>
          </property>
          <property name="frameShadow">
           <enum>QFrame::Raised</enum>
          </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <layout class="QVBoxLayout" name="verticalLayout_system_info">
           <item>
-           <layout class="QGridLayout" name="gridLayout">
-            <item row="0" column="0">
-             <widget class="QPushButton" name="XplanePluginButton">
+           <widget class="QLabel" name="label_system_info_title">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>LinuxTrack System Information</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+             </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QScrollArea" name="scrollArea_system_info">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="widgetResizable">
+             <bool>true</bool>
+            </property>
+            <widget class="QWidget" name="scrollAreaWidgetContents">
+             <property name="geometry">
+              <rect>
+               <x>0</x>
+               <y>0</y>
+               <width>200</width>
+               <height>200</height>
+              </rect>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_system_details">
+              <item>
+               <widget class="QTextEdit" name="textEdit_system_info">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="readOnly">
+                 <bool>true</bool>
+                </property>
+                <property name="text">
+                 <string>Loading system information...</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_system_buttons">
+            <item>
+             <widget class="QPushButton" name="button_copy_system_info">
               <property name="text">
-               <string>Install Xplane plugin...</string>
+               <string>Copy System Info to Clipboard</string>
               </property>
              </widget>
             </item>
-            <item row="3" column="0">
-             <widget class="QPushButton" name="ViewLogButton">
+            <item>
+             <widget class="QPushButton" name="button_refresh_system_info">
               <property name="text">
-               <string>View logfile</string>
+               <string>Refresh</string>
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QPushButton" name="LinuxtrackWineButton">
-              <property name="enabled">
-               <bool>false</bool>
+            <item>
+             <spacer name="horizontalSpacer_system_info">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
               </property>
-              <property name="text">
-               <string>Install Linuxtrack-Wine support...</string>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
               </property>
-             </widget>
-            </item>
-            <item row="3" column="1">
-             <widget class="QPushButton" name="PackageLogsButton">
-              <property name="text">
-               <string>Package logs...</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QPushButton" name="TIRFWButton">
-              <property name="text">
-               <string>Reinstall TrackIR firmware</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QPushButton" name="LaunchMickeyButton">
-              <property name="text">
-               <string>Launch Mickey (TrackIR)</string>
-              </property>
-             </widget>
+             </spacer>
             </item>
            </layout>
           </item>
           <item>
-           <widget class="QFrame" name="frame_7">
+           <widget class="QPushButton" name="CopySystemInfoButton">
+            <property name="text">
+             <string>Copy system info to Clipboard</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
+         <item>
+          <widget class="QFrame" name="frame_2">
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Raised</enum>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <layout class="QGridLayout" name="gridLayout">
+              <item row="1" column="0">
+               <widget class="QPushButton" name="TIRFWButton">
+                <property name="text">
+                 <string>Reinstall TrackIR firmware</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="1">
+               <widget class="QPushButton" name="PackageLogsButton">
+                <property name="text">
+                 <string>Package logs...</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QPushButton" name="ViewLogButton">
+                <property name="text">
+                 <string>View logfile</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QFrame" name="frame_7">
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
@@ -304,9 +489,8 @@
            </spacer>
           </item>
          </layout>
-        </widget>
-       </item>
-      </layout>
+        </item>
+       </layout>
      </widget>
     </widget>
    </item>
@@ -377,7 +561,6 @@
   <tabstop>DiscardChangesButton</tabstop>
   <tabstop>SaveButton</tabstop>
   <tabstop>QuitButton</tabstop>
-  <tabstop>XplanePluginButton</tabstop>
   <tabstop>ViewLogButton</tabstop>
  </tabstops>
  <resources>
