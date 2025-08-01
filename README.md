@@ -103,6 +103,46 @@ sudo usermod -a -G plugdev $USER
 ./scripts/test_wiimote_support.sh    # Test Wiimote support
 ./scripts/test_osc_support.sh        # Test OSC support
 ./scripts/test_xplane_sdk.sh         # Test X-Plane SDK support
+
+### **Option 3: Build AppImage (Advanced)**
+
+#### **AppImage Dependencies**
+For optimal AppImage creation with enhanced Qt5 support and Wayland compatibility:
+
+```bash
+# Essential build dependencies
+sudo apt-get install -y build-essential autoconf automake libtool
+
+# Qt5 development dependencies (enhanced)
+sudo apt-get install -y qtbase5-dev qtwayland5-dev libqt5waylandclient5 libqt5x11extras5-dev
+
+# Additional dependencies for AppImage creation
+sudo apt-get install -y patchelf appstream-util
+
+# Standard LinuxTrack dependencies
+sudo apt-get install -y qttools5-dev-tools qttools5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging
+```
+
+#### **Build AppImage**
+```bash
+# Clone repository
+git clone <repository-url>
+cd linuxtrackx-ir
+
+# Build and create AppImage
+./scripts/appimage/build_appimage_phase4.sh --clean
+
+# The AppImage will be created as: LinuxTrack-X-IR-0.99.21-x86_64.AppImage
+```
+
+#### **AppImage Features**
+- ✅ **Self-contained**: All dependencies bundled
+- ✅ **Cross-distribution**: Works on any Linux distribution
+- ✅ **Qt5 Enhanced**: Full Qt5 development support
+- ✅ **Wayland Compatible**: Includes Wayland libraries for modern desktop environments
+- ✅ **Wine Bridge**: Complete Wine integration for Windows game compatibility
+- ✅ **Help System**: Integrated Qt help system with SQLite support
+- ✅ **Library Isolation**: Complete library isolation for maximum compatibility
 ```
 
 ## 🎮 Usage

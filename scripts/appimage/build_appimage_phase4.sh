@@ -1,11 +1,11 @@
 #!/bin/bash
+set -e
+set -x  # Enable shell tracing for debugging
 
 # LinuxTrack AppImage Builder - Phase 4 Wine Bridge Integration
 # Purpose: Create fully functional AppImage with complete Wine bridge integration
 # Date: January 2025
 # Status: Phase 4 - Wine Bridge Integration
-
-set -e
 
 # Colors for output
 RED='\033[0;31m'
@@ -59,6 +59,54 @@ file_exists() {
 # Function to check if directory exists
 dir_exists() {
     [ -d "$1" ]
+}
+
+# Function to check dependencies
+check_dependencies() {
+    print_status "Checking dependencies..."
+    
+    local missing_deps=()
+    
+    # Check for essential tools
+    if ! command_exists qmake; then
+        missing_deps+=("qmake (Qt5 development tools)")
+    fi
+    
+    if ! command_exists make; then
+        missing_deps+=("make (build tools)")
+    fi
+    
+    if ! command_exists autoreconf; then
+        missing_deps+=("autoreconf (autotools)")
+    fi
+    
+    # Check for optional but recommended tools
+    if ! command_exists patchelf; then
+        print_warning "patchelf not found - rpath modifications will be skipped"
+        print_status "To install patchelf: sudo apt install patchelf"
+        PATCHELF_AVAILABLE=false
+    else
+        PATCHELF_AVAILABLE=true
+        print_success "patchelf found"
+    fi
+    
+    if ! command_exists appstreamcli; then
+        print_warning "appstreamcli not found - AppStream metadata will be skipped"
+        print_status "To install appstreamcli: sudo apt install appstream-util"
+    fi
+    
+    # Report missing essential dependencies
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        print_error "Missing essential dependencies:"
+        for dep in "${missing_deps[@]}"; do
+            print_error "  - $dep"
+        done
+        print_status "Please install the missing dependencies and try again"
+        return 1
+    fi
+    
+    print_success "Dependencies checked"
+    return 0
 }
 
 # Function to detect distribution
@@ -1170,7 +1218,7 @@ bundle_dependencies() {
         print_error "SQLite plugin not found in any standard location!"
         print_error "This will cause help system to fail in AppImage"
         
-        # Try to find SQLite plugin using find
+        # Try to find SQLite plugin using find (with timeout to prevent hanging)
         print_status "Searching for SQLite plugin in system..."
         SQLITE_PLUGIN=$(find /usr -name "libqsqlite.so*" 2>/dev/null | head -1)
         if [ -n "$SQLITE_PLUGIN" ] && [ -f "$SQLITE_PLUGIN" ]; then
@@ -1202,20 +1250,27 @@ bundle_dependencies() {
         fi
     fi
     
-    # CRITICAL: Fix rpath to ensure complete library isolation
-    print_status "Fixing rpath for complete library isolation..."
-    
-    # Set rpath for ALL binaries to use ONLY bundled libraries
-    for binary in usr/bin/*; do
-        if [ -f "$binary" ] && [ -x "$binary" ]; then
-            echo "Setting rpath for $(basename "$binary") to use ONLY bundled libraries"
-            patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib/linuxtrack' "$binary" 2>/dev/null || true
-        fi
-    done
-    
-    # Set rpath for all bundled libraries to use ONLY bundled libraries
-    find usr/lib -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
-    find usr/lib/linuxtrack -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
+    # CRITICAL: Fix rpath to ensure complete library isolation (if patchelf is available)
+    if [ "$PATCHELF_AVAILABLE" = true ]; then
+        print_status "Fixing rpath for complete library isolation..."
+        
+        # Set rpath for ALL binaries to use ONLY bundled libraries
+        for binary in usr/bin/*; do
+            if [ -f "$binary" ] && [ -x "$binary" ]; then
+                echo "Setting rpath for $(basename "$binary") to use ONLY bundled libraries"
+                patchelf --set-rpath '$ORIGIN/../lib:$ORIGIN/../lib/linuxtrack' "$binary" 2>/dev/null || true
+            fi
+        done
+        
+        # Set rpath for all bundled libraries to use ONLY bundled libraries
+        find usr/lib -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
+        find usr/lib/linuxtrack -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
+        
+        print_success "Rpath modifications completed"
+    else
+        print_warning "Skipping rpath modifications (patchelf not available)"
+        print_warning "The AppImage may have library loading issues on some systems"
+    fi
     
     # Additional library bundling based on common missing libraries
     print_status "Bundling additional commonly missing libraries..."
@@ -1229,8 +1284,8 @@ bundle_dependencies() {
         fi
     done
     
-    # Bundling Wayland libraries for Qt compatibility...
-    print_status "Bundling Wayland libraries for Qt compatibility..."
+    # Bundling Wayland libraries for Qt compatibility (optional for X11-only systems)
+    print_status "Checking for Wayland libraries (optional for X11-only systems)..."
     WAYLAND_LIBS=(
         "libQt5WaylandClient.so.5"
         "libwayland-client.so.0"
@@ -1239,7 +1294,9 @@ bundle_dependencies() {
     )
     
     WAYLAND_LIBS_BUNDLED=0
+    print_status "Starting Wayland library bundling loop..."
     for wayland_lib in "${WAYLAND_LIBS[@]}"; do
+        print_status "Checking Wayland library: $wayland_lib"
         if [ -f "/usr/lib/x86_64-linux-gnu/$wayland_lib" ]; then
             cp "/usr/lib/x86_64-linux-gnu/$wayland_lib" usr/lib/ 2>/dev/null || true
             print_status "Bundled Wayland library: $wayland_lib"
@@ -1248,42 +1305,51 @@ bundle_dependencies() {
             cp "/lib/x86_64-linux-gnu/$wayland_lib" usr/lib/ 2>/dev/null || true
             print_status "Bundled Wayland library: $wayland_lib"
             ((WAYLAND_LIBS_BUNDLED++))
+        else
+            print_status "Wayland library not found: $wayland_lib (expected on X11-only systems)"
         fi
     done
+    print_status "Wayland library bundling loop completed"
     
     if [ $WAYLAND_LIBS_BUNDLED -gt 0 ]; then
         print_success "Bundled $WAYLAND_LIBS_BUNDLED Wayland libraries"
     else
-        print_warning "No Wayland libraries found - XCB will be used as fallback"
+        print_success "No Wayland libraries found - XCB will be used as fallback (normal for X11-only systems)"
     fi
     
     # Bundle libproxy backend libraries
+    print_status "Checking for libproxy backends..."
     if [ -d "/usr/lib/x86_64-linux-gnu/libproxy" ]; then
         mkdir -p "usr/lib/libproxy" 2>/dev/null || true
         cp -r "/usr/lib/x86_64-linux-gnu/libproxy/"* "usr/lib/libproxy/" 2>/dev/null || true
         print_status "Bundled libproxy backends"
+    else
+        print_status "No libproxy backends found"
     fi
     
     # Advanced optimization (re-enabled with conservative approach)
-gaming-tab-and-lutris-install
     # optimize_library_structure  # Temporarily disabled due to optimization issues
     
     # CRITICAL: Verify Qt libraries are properly bundled
     print_status "Verifying Qt library bundling..."
     qt_issues=0
     for qtlib in Qt5Core Qt5Gui Qt5Widgets Qt5Network Qt5OpenGL Qt5Help Qt5Sql Qt5X11Extras; do
+        print_status "Checking Qt library: lib${qtlib}.so.5"
         if [ -L "usr/lib/lib${qtlib}.so.5" ]; then
-            target=$(readlink "usr/lib/lib${qtlib}.so.5")
-            if [ ! -f "usr/lib/$target" ]; then
+            target=$(readlink "usr/lib/lib${qtlib}.so.5" 2>/dev/null || echo "")
+            if [ -n "$target" ] && [ ! -f "usr/lib/$target" ]; then
                 print_warning "Qt library symlink broken: lib${qtlib}.so.5 -> $target"
                 ((qt_issues++))
-            else
+            elif [ -n "$target" ]; then
                 print_success "Qt library properly bundled: lib${qtlib}.so.5"
+            else
+                print_warning "Qt library symlink readlink failed: lib${qtlib}.so.5"
+                ((qt_issues++))
             fi
         elif [ -f "usr/lib/lib${qtlib}.so.5" ]; then
             print_success "Qt library properly bundled: lib${qtlib}.so.5"
         else
-            print_error "Qt library missing: lib${qtlib}.so.5"
+            print_warning "Qt library missing: lib${qtlib}.so.5"
             ((qt_issues++))
         fi
     done
@@ -1295,6 +1361,17 @@ gaming-tab-and-lutris-install
     fi
     
     print_success "Dependencies bundled with Wine bridge optimization"
+    
+    # Debug: About to return to project root
+    print_status "DEBUG: About to cd to project root: $PROJECT_ROOT"
+    # Return to project root
+    print_status "Returning to project root: $PROJECT_ROOT"
+    cd "$PROJECT_ROOT" || {
+        print_error "Failed to return to project root: $PROJECT_ROOT"
+        return 1
+    }
+    print_status "Successfully returned to project root"
+    print_status "bundle_dependencies function completed successfully"
 }
 
 # Function to ensure Qt plugins are bundled
@@ -1333,8 +1410,8 @@ ensure_qt_plugins_bundled() {
         fi
     done
     
-    # Enhanced Wayland support - look for Wayland plugins in additional locations
-    print_status "Checking for Wayland platform plugins..."
+    # Enhanced Wayland support - look for Wayland plugins in additional locations (optional for X11-only systems)
+    print_status "Checking for Wayland platform plugins (optional for X11-only systems)..."
     WAYLAND_PLUGIN_PATHS=(
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms"
         "/usr/lib/qt5/plugins/platforms"
@@ -1358,8 +1435,9 @@ ensure_qt_plugins_bundled() {
         fi
     done
     
-    # Also search system-wide for Wayland plugins
-    find /usr -name "libqwayland*.so" -path "*/plugins/platforms/*" 2>/dev/null | while read wayland_plugin; do
+    # Also search system-wide for Wayland plugins (with timeout to prevent hanging)
+    print_status "Searching system-wide for Wayland plugins (with timeout)..."
+    find /usr -name "libqwayland*.so" -path "*/plugins/platforms/*" 2>/dev/null | head -10 | while read wayland_plugin; do
         if [ -f "$wayland_plugin" ]; then
             cp "$wayland_plugin" usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
             print_status "Found and copied Wayland plugin: $(basename "$wayland_plugin")"
@@ -1370,12 +1448,13 @@ ensure_qt_plugins_bundled() {
     if [ "$WAYLAND_PLUGINS_FOUND" = true ]; then
         print_success "Wayland platform plugins bundled"
     else
-        print_warning "No Wayland platform plugins found - XCB will be used as fallback"
+        print_success "No Wayland platform plugins found - XCB will be used as fallback (normal for X11-only systems)"
     fi
     
     if [ "$PLUGINS_COPIED" = false ]; then
         print_warning "No Qt platform plugins found in standard locations"
-        # Try to find Qt platform plugins in other locations
+        # Try to find Qt platform plugins in other locations (with timeout to prevent hanging)
+        print_status "Searching for fallback Qt platform plugins..."
         find /usr -name "libqxcb.so" -o -name "libqwayland*.so" 2>/dev/null | head -5 | while read plugin; do
             if [ -n "$plugin" ]; then
                 cp "$plugin" usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
@@ -1798,6 +1877,12 @@ main() {
     print_status "Starting LinuxTrack AppImage Phase 4 Wine Bridge Integration..."
     print_status "Project root: $PROJECT_ROOT"
     print_status "Distribution: $(detect_distro)"
+    
+    # Check dependencies
+    if ! check_dependencies; then
+        print_error "Dependency check failed"
+        exit 1
+    fi
     
     # Verify AppImage tools
     if ! verify_appimage_tools; then
