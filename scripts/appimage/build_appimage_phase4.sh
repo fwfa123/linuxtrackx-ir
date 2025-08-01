@@ -1265,6 +1265,7 @@ bundle_dependencies() {
     fi
     
     # Advanced optimization (re-enabled with conservative approach)
+gaming-tab-and-lutris-install
     # optimize_library_structure  # Temporarily disabled due to optimization issues
     
     # CRITICAL: Verify Qt libraries are properly bundled
