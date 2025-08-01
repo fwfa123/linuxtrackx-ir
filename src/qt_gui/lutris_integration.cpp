@@ -24,15 +24,88 @@ LutrisIntegration::~LutrisIntegration()
 bool LutrisIntegration::initializePaths()
 {
     QString homeDir = getHomeDirectory();
+    
+    // CRITICAL: Verify that the home directory is not a hardcoded build-time path
+    QString currentUser = QString::fromUtf8(qgetenv("USER"));
+    QString expectedHome = QString::fromUtf8("/home/") + currentUser;
+    
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Current user: %s\n", currentUser.toUtf8().constData());
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Expected home: %s\n", expectedHome.toUtf8().constData());
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Actual home: %s\n", homeDir.toUtf8().constData());
+    
+    // If the home directory looks like a hardcoded build-time path, try to fix it
+    // Check if the home directory contains a username that doesn't match the current user
+    QStringList homeParts = homeDir.split(QString::fromUtf8("/"));
+    if (homeParts.size() >= 3 && homeParts[1] == QString::fromUtf8("home") && 
+        homeParts[2] != currentUser && !currentUser.isEmpty()) {
+        ltr_int_log_message("LutrisIntegration::initializePaths() - WARNING: Detected hardcoded build-time path!\n");
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Attempting to fix by using current user's home\n");
+        homeDir = expectedHome;
+    }
+    
     databasePath = homeDir + QString::fromUtf8("/.local/share/lutris/pga.db");
     configPath = homeDir + QString::fromUtf8("/.config/lutris/games/");
+    
+    // Debug logging to help identify path issues
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Final home directory: %s\n", homeDir.toUtf8().constData());
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Database path: %s\n", databasePath.toUtf8().constData());
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Config path: %s\n", configPath.toUtf8().constData());
     
     return true;
 }
 
 QString LutrisIntegration::getHomeDirectory()
 {
-    return QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    // CRITICAL: Use environment variables first to avoid build-time path capture
+    QString homeDir = QString::fromUtf8(qgetenv("HOME"));
+    
+    // Debug logging
+    ltr_int_log_message("LutrisIntegration::getHomeDirectory() - HOME env var: %s\n", homeDir.toUtf8().constData());
+    
+    // Fallback to QStandardPaths only if environment variable is empty
+    if (homeDir.isEmpty()) {
+        homeDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+        ltr_int_log_message("LutrisIntegration::getHomeDirectory() - QStandardPaths fallback: %s\n", homeDir.toUtf8().constData());
+    }
+    
+    // Additional fallback using USER environment variable
+    if (homeDir.isEmpty()) {
+        QString user = QString::fromUtf8(qgetenv("USER"));
+        if (!user.isEmpty()) {
+            homeDir = QString::fromUtf8("/home/") + user;
+            ltr_int_log_message("LutrisIntegration::getHomeDirectory() - Using /home/$USER: %s\n", homeDir.toUtf8().constData());
+        }
+    }
+    
+    // Final fallback - try to get from passwd
+    if (homeDir.isEmpty()) {
+        // Try to get home directory from passwd file
+        QFile passwdFile(QString::fromUtf8("/etc/passwd"));
+        if (passwdFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            QTextStream in(&passwdFile);
+            QString user = QString::fromUtf8(qgetenv("USER"));
+            if (!user.isEmpty()) {
+                while (!in.atEnd()) {
+                    QString line = in.readLine();
+                    QStringList parts = line.split(QString::fromUtf8(":"));
+                    if (parts.size() >= 6 && parts[0] == user) {
+                        homeDir = parts[5];
+                        ltr_int_log_message("LutrisIntegration::getHomeDirectory() - Found in passwd: %s\n", homeDir.toUtf8().constData());
+                        break;
+                    }
+                }
+            }
+            passwdFile.close();
+        }
+    }
+    
+    // If all else fails, use a reasonable default
+    if (homeDir.isEmpty()) {
+        homeDir = QString::fromUtf8("/home/unknown");
+        ltr_int_log_message("LutrisIntegration::getHomeDirectory() - Using fallback: %s\n", homeDir.toUtf8().constData());
+    }
+    
+    return homeDir;
 }
 
 QString LutrisIntegration::getLutrisDatabasePath()
@@ -47,20 +120,42 @@ QString LutrisIntegration::getLutrisConfigPath()
 
 bool LutrisIntegration::isLutrisInstalled()
 {
+    // Debug logging to show what paths are being checked
+    ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Checking database path: %s\n", databasePath.toUtf8().constData());
+    ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Checking config path: %s\n", configPath.toUtf8().constData());
+    
     // Check if Lutris database exists
     QFileInfo dbFile(databasePath);
     if (!dbFile.exists()) {
-        lastError = QString::fromUtf8("Lutris database not found at: ") + databasePath;
+        // Provide more helpful error message with suggestions
+        QString currentUser = QString::fromUtf8(qgetenv("USER"));
+        QString expectedPath = QString::fromUtf8("/home/") + currentUser + QString::fromUtf8("/.local/share/lutris/pga.db");
+        
+        lastError = QString::fromUtf8("Lutris database not found at: ") + databasePath + QString::fromUtf8("\n\n");
+        lastError += QString::fromUtf8("Expected location: ") + expectedPath + QString::fromUtf8("\n\n");
+        lastError += QString::fromUtf8("This could mean:\n");
+        lastError += QString::fromUtf8("1. Lutris is not installed\n");
+        lastError += QString::fromUtf8("2. Lutris database is in a different location\n");
+        lastError += QString::fromUtf8("3. The path was hardcoded during AppImage build\n\n");
+        lastError += QString::fromUtf8("To install Lutris:\n");
+        lastError += QString::fromUtf8("  Ubuntu/Debian: sudo apt install lutris\n");
+        lastError += QString::fromUtf8("  Fedora: sudo dnf install lutris\n");
+        lastError += QString::fromUtf8("  Arch: sudo pacman -S lutris");
+        
+        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Database file does not exist\n");
         return false;
     }
     
     // Check if config directory exists
     QDir configDir(configPath);
     if (!configDir.exists()) {
-        lastError = QString::fromUtf8("Lutris config directory not found at: ") + configPath;
+        lastError = QString::fromUtf8("Lutris config directory not found at: ") + configPath + QString::fromUtf8("\n\n");
+        lastError += QString::fromUtf8("This usually means Lutris is not properly installed or configured.");
+        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Config directory does not exist\n");
         return false;
     }
     
+    ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Lutris installation found\n");
     return true;
 }
 
