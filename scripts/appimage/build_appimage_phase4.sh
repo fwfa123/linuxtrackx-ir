@@ -1229,6 +1229,34 @@ bundle_dependencies() {
         fi
     done
     
+    # Bundling Wayland libraries for Qt compatibility...
+    print_status "Bundling Wayland libraries for Qt compatibility..."
+    WAYLAND_LIBS=(
+        "libQt5WaylandClient.so.5"
+        "libwayland-client.so.0"
+        "libwayland-cursor.so.0"
+        "libwayland-egl.so.1"
+    )
+    
+    WAYLAND_LIBS_BUNDLED=0
+    for wayland_lib in "${WAYLAND_LIBS[@]}"; do
+        if [ -f "/usr/lib/x86_64-linux-gnu/$wayland_lib" ]; then
+            cp "/usr/lib/x86_64-linux-gnu/$wayland_lib" usr/lib/ 2>/dev/null || true
+            print_status "Bundled Wayland library: $wayland_lib"
+            ((WAYLAND_LIBS_BUNDLED++))
+        elif [ -f "/lib/x86_64-linux-gnu/$wayland_lib" ]; then
+            cp "/lib/x86_64-linux-gnu/$wayland_lib" usr/lib/ 2>/dev/null || true
+            print_status "Bundled Wayland library: $wayland_lib"
+            ((WAYLAND_LIBS_BUNDLED++))
+        fi
+    done
+    
+    if [ $WAYLAND_LIBS_BUNDLED -gt 0 ]; then
+        print_success "Bundled $WAYLAND_LIBS_BUNDLED Wayland libraries"
+    else
+        print_warning "No Wayland libraries found - XCB will be used as fallback"
+    fi
+    
     # Bundle libproxy backend libraries
     if [ -d "/usr/lib/x86_64-linux-gnu/libproxy" ]; then
         mkdir -p "usr/lib/libproxy" 2>/dev/null || true
@@ -1237,7 +1265,7 @@ bundle_dependencies() {
     fi
     
     # Advanced optimization (re-enabled with conservative approach)
-    optimize_library_structure_conservative
+    # optimize_library_structure  # Temporarily disabled due to optimization issues
     
     # CRITICAL: Verify Qt libraries are properly bundled
     print_status "Verifying Qt library bundling..."
@@ -1303,6 +1331,46 @@ ensure_qt_plugins_bundled() {
             break
         fi
     done
+    
+    # Enhanced Wayland support - look for Wayland plugins in additional locations
+    print_status "Checking for Wayland platform plugins..."
+    WAYLAND_PLUGIN_PATHS=(
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms"
+        "/usr/lib/qt5/plugins/platforms"
+        "/usr/lib/qt/plugins/platforms"
+        "/usr/lib/x86_64-linux-gnu/qt${QT_VERSION}/plugins/platforms"
+        "/usr/lib/qt5/plugins/platforms"
+        "/usr/lib/qt/plugins/platforms"
+    )
+    
+    WAYLAND_PLUGINS_FOUND=false
+    for wayland_path in "${WAYLAND_PLUGIN_PATHS[@]}"; do
+        if [ -d "$wayland_path" ]; then
+            # Look for Wayland-specific plugins
+            for wayland_plugin in libqwayland*.so libqwayland-*.so; do
+                if [ -f "$wayland_path/$wayland_plugin" ]; then
+                    cp "$wayland_path/$wayland_plugin" usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
+                    print_status "Copied Wayland platform plugin: $wayland_plugin"
+                    WAYLAND_PLUGINS_FOUND=true
+                fi
+            done
+        fi
+    done
+    
+    # Also search system-wide for Wayland plugins
+    find /usr -name "libqwayland*.so" -path "*/plugins/platforms/*" 2>/dev/null | while read wayland_plugin; do
+        if [ -f "$wayland_plugin" ]; then
+            cp "$wayland_plugin" usr/lib/qt5/plugins/platforms/ 2>/dev/null || true
+            print_status "Found and copied Wayland plugin: $(basename "$wayland_plugin")"
+            WAYLAND_PLUGINS_FOUND=true
+        fi
+    done
+    
+    if [ "$WAYLAND_PLUGINS_FOUND" = true ]; then
+        print_success "Wayland platform plugins bundled"
+    else
+        print_warning "No Wayland platform plugins found - XCB will be used as fallback"
+    fi
     
     if [ "$PLUGINS_COPIED" = false ]; then
         print_warning "No Qt platform plugins found in standard locations"
