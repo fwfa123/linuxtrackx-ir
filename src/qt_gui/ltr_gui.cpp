@@ -640,9 +640,10 @@ void LinuxtrackGui::on_InstallTirMfcButton_pressed()
 
 void LinuxtrackGui::on_SteamProtonButton_pressed()
 {
-    // TODO: Implement Steam Proton installation
-    QMessageBox::information(this, QString::fromUtf8("Steam Proton"),
-        QString::fromUtf8("Steam Proton installation will be implemented in Phase 2."));
+    // Call the Steam Proton wine bridge installation method
+    if (pi) {
+        pi->installSteamProtonBridge();
+    }
 }
 
 void LinuxtrackGui::on_LutrisButton_pressed()
