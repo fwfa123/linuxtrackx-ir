@@ -34,10 +34,19 @@ if DARWIN
              client/check_data$(WINE_EXT) views/TrackIR$(WINE_EXT)
 	makensis $<
 else
+if WINE64
+  # Use 64-bit installer which includes both 32-bit and 64-bit components
+  linuxtrack-wine.exe : ltr_wine64.nsi tester/Tester$(WINE_EXT) tester/Tester64$(WINE_EXT) controller/Controller$(WINE_EXT) client/NPClient$(WINE_DLL_EXT) client/NPClient64$(WINE_DLL_EXT) \
+                        ft_client/FreeTrackClient$(WINE_DLL_EXT) ft_tester/ftc$(WINE_EXT) client/check_data$(WINE_EXT) \
+                        views/TrackIR$(WINE_EXT)
+	makensis $<
+else
+  # Fallback to 32-bit installer only
   linuxtrack-wine.exe : ltr_wine.nsi tester/Tester$(WINE_EXT) controller/Controller$(WINE_EXT) client/NPClient$(WINE_DLL_EXT) \
                         ft_client/FreeTrackClient$(WINE_DLL_EXT) ft_tester/ftc$(WINE_EXT) client/check_data$(WINE_EXT) \
                         views/TrackIR$(WINE_EXT)
 	makensis $<
+endif #WINE64
 endif #DARWIN
 
 
