@@ -342,10 +342,11 @@ if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
       WINE_LIBS="-L/usr/lib32/wine"
       AC_MSG_NOTICE([Using Arch Linux wine32 path: /usr/lib32/wine])
     fi
-    # Set 32-bit compilation flags for Arch Linux
-    CFLAGS+=" -m32"
-    CXXFLAGS+=" -m32"
-    LDFLAGS+=" -m32"
+    # Set 32-bit compilation flags for Arch Linux only if 32-bit library build is enabled
+    AS_IF([test "x$with_ltr_32lib_on_x64" = xyes],
+          [CFLAGS+=" -m32"
+           CXXFLAGS+=" -m32"
+           LDFLAGS+=" -m32"])
   # Check for Debian/Ubuntu wine32 paths
   elif test -d "/usr/lib/i386-linux-gnu/wine"; then
     arch_wine32_found=yes
