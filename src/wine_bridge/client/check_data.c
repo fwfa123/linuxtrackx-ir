@@ -202,6 +202,9 @@ int main()
   fflush(stdout);
   
   printf("DEBUG: Creating symlink for TIRViews.dll...\n");
+  printf("DEBUG: Target path: %s\n", path1);
+  printf("DEBUG: Link name: TIRViews.dll\n");
+  printf("DEBUG: Current working directory: %s\n", cwd);
   fflush(stdout);
   if(symlink(path1, "TIRViews.dll") != 0){
     printf("DEBUG: Failed to create symlink for TIRViews.dll (error: %d)\n", errno);
@@ -286,6 +289,26 @@ int main()
     }
   } else {
     printf("DEBUG: Successfully created symlink for mfc140u.dll\n");
+    fflush(stdout);
+  }
+
+  // Create MFC42u.dll symlink pointing to mfc140u.dll for compatibility
+  printf("DEBUG: Creating MFC42u.dll symlink for compatibility...\n");
+  fflush(stdout);
+  if(symlink("mfc140u.dll", "MFC42u.dll") != 0){
+    printf("DEBUG: Failed to create symlink for MFC42u.dll (error: %d)\n", errno);
+    fflush(stdout);
+    
+    // Check if error is EEXIST (file already exists) - this is not a problem
+    if(errno == EEXIST) {
+      printf("DEBUG: MFC42u.dll symlink already exists (this is normal)\n");
+      fflush(stdout);
+    } else {
+      printf("DEBUG: Warning: Could not create MFC42u.dll symlink, but continuing...\n");
+      fflush(stdout);
+    }
+  } else {
+    printf("DEBUG: Successfully created symlink for MFC42u.dll\n");
     fflush(stdout);
   }
 
