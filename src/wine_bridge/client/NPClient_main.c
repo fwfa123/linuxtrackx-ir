@@ -717,12 +717,32 @@ int __stdcall NPCLIENT_NP_StartCursor(void)
 int __stdcall NPCLIENT_NP_StartDataTransmission(void)
 {
   dbg_report("StartDataTransmission request\n");
-  // Send CMD_WAKEUP (3) to master to start TrackIR device
+  
+  // First check if master is running by trying to connect
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock == -1) {
+    dbg_report("Failed to create socket for master check: %s\n", strerror(errno));
+    return 0;
+  }
+  
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+  
+  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    dbg_report("LinuxTrack master is not running. Please start the LinuxTrack GUI first.\n");
+    close(sock);
+    return 0;
+  }
+  close(sock);
+  
+  // Master is running, try to send CMD_WAKEUP
   if (send_command_to_master(3, 0) == 0) {
     dbg_report("Successfully sent CMD_WAKEUP to master\n");
   } else {
-    dbg_report("Failed to send CMD_WAKEUP to master, falling back to direct call\n");
-    linuxtrack_wakeup();
+    dbg_report("Failed to send CMD_WAKEUP to master, device may need manual start\n");
+    // Don't fall back to direct call as it won't work in Wine
   }
   return 0;
 }
@@ -745,12 +765,32 @@ int __stdcall NPCLIENT_NP_StopCursor(void)
 int __stdcall NPCLIENT_NP_StopDataTransmission(void)
 {
   dbg_report("StopDataTransmission request\n");
-  // Send CMD_PAUSE (2) to master to stop TrackIR device
+  
+  // First check if master is running by trying to connect
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock == -1) {
+    dbg_report("Failed to create socket for master check: %s\n", strerror(errno));
+    return 0;
+  }
+  
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+  
+  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    dbg_report("LinuxTrack master is not running.\n");
+    close(sock);
+    return 0;
+  }
+  close(sock);
+  
+  // Master is running, try to send CMD_PAUSE
   if (send_command_to_master(2, 0) == 0) {
     dbg_report("Successfully sent CMD_PAUSE to master\n");
   } else {
-    dbg_report("Failed to send CMD_PAUSE to master, falling back to direct call\n");
-    linuxtrack_suspend();
+    dbg_report("Failed to send CMD_PAUSE to master\n");
+    // Don't fall back to direct call as it won't work in Wine
   }
   return 0;
 }
