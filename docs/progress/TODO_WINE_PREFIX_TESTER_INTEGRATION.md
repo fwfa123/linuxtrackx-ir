@@ -8,18 +8,19 @@
 
 ## 📋 Overview
 
-This feature adds the ability to run Tester.exe/Tester4.exe within Wine prefixes after Wine Bridge installation, allowing users to verify TrackIR device detection and functionality. This will be implemented across all gaming platforms (Steam Proton, Lutris, Custom Prefix).
+This feature integrates Tester.exe/Tester64.exe execution directly into the NSIS installer workflow, automatically launching the tester immediately after Wine Bridge installation completes. This provides seamless TrackIR device verification across all gaming platforms (Steam Proton, Lutris, Custom Prefix) without requiring additional user interaction.
 
 ## 🎯 Goals
 
 ### Primary Objectives
-1. **Post-Installation Testing**: Run Tester.exe/Tester4.exe after Wine Bridge installation
-2. **Cross-Platform Support**: Work with Steam Proton, Lutris, and Custom Prefixes
-3. **User Validation**: Allow users to verify TrackIR device detection
-4. **Interactive Experience**: Provide clear feedback and testing results
+1. **Automatic Testing**: Launch Tester.exe/Tester64.exe automatically after NSIS installation
+2. **Seamless Integration**: Integrate testing into existing installation workflow
+3. **Cross-Platform Support**: Work with Steam Proton, Lutris, and Custom Prefixes
+4. **Immediate Validation**: Provide instant TrackIR device verification
 
 ### User Experience Goals
-- **One-Click Testing**: Easy access to run tester after installation
+- **Zero-Click Testing**: Automatic testing without user interaction
+- **Seamless Workflow**: Installation → Testing happens automatically
 - **Clear Results**: Understandable feedback about TrackIR detection
 - **Platform Agnostic**: Same experience across all gaming platforms
 - **Error Handling**: Graceful handling of testing failures
@@ -29,19 +30,19 @@ This feature adds the ability to run Tester.exe/Tester4.exe within Wine prefixes
 ## 🔧 Technical Requirements
 
 ### Core Functionality
-1. **Tester Executable Detection**: Find Tester.exe/Tester64.exe in Wine prefix (already installed by NSIS)
-2. **Wine Prefix Environment**: Set up proper environment for tester execution
-3. **Process Management**: Launch and monitor tester process
-4. **Result Interpretation**: Parse and display tester output
-5. **Error Handling**: Handle missing files, execution failures, etc.
+1. **NSIS Integration**: Modify NSIS installer to launch Tester.exe/Tester64.exe at completion
+2. **Automatic Execution**: Launch tester in the same environment as NSIS installer
+3. **User Interaction**: Let user interact directly with Tester.exe/Tester64.exe UI
+4. **Error Handling**: Handle missing files, execution failures, etc.
 
 ### Simplified Implementation Approach
-Since the Tester executables are already installed to the Wine prefix during the NSIS installation process, our implementation is significantly simplified:
+Since the Tester executables are already installed to the Wine prefix during the NSIS installation process, and we're leveraging the existing NSIS installer environment, our implementation is extremely simplified:
 
-- **No System-Wide Search**: Testers are prefix-specific, not system-wide
-- **Direct Prefix Access**: Use the same prefix path where Wine Bridge was installed
-- **Consistent Location**: Testers are always in the same location within the prefix
-- **Post-Installation Testing**: Can only run after successful Wine Bridge installation
+- **Perfect Environment**: Already in correct Wine/Proton environment with all variables set
+- **No Additional Setup**: No need to recreate environment or manage processes
+- **Automatic Execution**: Tester launches immediately after installation completes
+- **Seamless Integration**: Part of the existing installation workflow
+- **Cross-Platform**: Works with Steam Proton, Lutris, and Custom Prefixes automatically
 
 ### Platform-Specific Requirements
 
@@ -64,146 +65,104 @@ Since the Tester executables are already installed to the Wine prefix during the
 
 ## 📁 Implementation Plan
 
-### Phase 1: Core Tester Integration
+### Phase 1: NSIS Integration
 
-#### 1.1 Tester Executable Management
-**Files to Create/Modify:**
-- `src/qt_gui/wine_tester.h` - Tester integration interface
-- `src/qt_gui/wine_tester.cpp` - Core tester functionality
-- `src/qt_gui/plugin_install.h` - Add tester methods
-- `src/qt_gui/plugin_install.cpp` - Implement tester integration
-
-**Implementation:**
-```cpp
-class WineTester {
-public:
-    // Tester detection (in Wine prefix)
-    QString findTesterInPrefix(const QString& prefixPath);
-    bool isTesterAvailableInPrefix(const QString& prefixPath);
-    
-    // Tester execution
-    bool runTesterInPrefix(const QString& prefixPath, const QString& winePath);
-    QString getTesterOutput();
-    
-    // Result interpretation
-    bool parseTesterResults(const QString& output);
-    QString getTesterStatus();
-    
-    // Error handling
-    QString getLastError();
-    QString getDebugInfo();
-};
-```
-
-#### 1.2 Tester Executable Detection
-**Implementation:**
-- Tester.exe/Tester64.exe are already installed to the Wine prefix during NSIS installation
-- Look for testers in the Wine prefix directory where Wine Bridge was installed
-- Common locations within prefix:
-  - `[prefix]/drive_c/Program Files/Linuxtrack/`
-  - `[prefix]/drive_c/Program Files (x86)/Linuxtrack/`
-- Verify executable permissions
-- Handle both 32-bit (Tester.exe) and 64-bit (Tester64.exe) versions
-
-#### 1.3 Basic Wine Environment Setup
-**Implementation:**
-- Set up basic Wine environment variables
-- Configure Wine prefix path
-- Handle Wine version selection
-- Set up process environment
-
-### Phase 2: Platform-Specific Integration
-
-#### 2.1 Steam Proton Integration
+#### 1.1 NSIS Installer Modification
 **Files to Modify:**
-- `src/qt_gui/steam_integration.h` - Add tester methods
-- `src/qt_gui/steam_integration.cpp` - Implement Proton tester
+- `src/wine_bridge/installer/linuxtrack-wine.nsi` - Add tester execution
+- `src/wine_bridge/installer/linuxtrack-wine64.nsi` - Add tester execution for 64-bit
 
 **Implementation:**
-```cpp
-// Add to SteamIntegration class
-bool runTesterInSteamProton(const QString& gameId);
-QString getSteamProtonTesterResults(const QString& gameId);
+```nsis
+; Add to NSIS installer at the end
+Section "Post-Installation Testing"
+    ; Launch Tester.exe from installed location
+    ExecWait '"$INSTDIR\Tester.exe"'
+    ; Or for 64-bit: ExecWait '"$INSTDIR\Tester64.exe"'
+    
+    ; Capture exit code and return to Qt
+    SetOutPath $TEMP
+    FileOpen $0 "$TEMP\tester_result.txt" w
+    FileWrite $0 $R0  ; Exit code
+    FileClose $0
+SectionEnd
 ```
 
-#### 2.2 Lutris Integration
+#### 1.2 Automatic Tester Launch
 **Files to Modify:**
-- `src/qt_gui/lutris_integration.h` - Add tester methods
-- `src/qt_gui/lutris_integration.cpp` - Implement Lutris tester
+- `src/wine_bridge/installer/linuxtrack-wine.nsi` - Add tester execution
+- `src/wine_bridge/installer/linuxtrack-wine64.nsi` - Add tester execution for 64-bit
 
 **Implementation:**
-```cpp
-// Add to LutrisIntegration class
-bool runTesterInLutrisPrefix(const QString& gameName);
-QString getLutrisTesterResults(const QString& gameName);
+```nsis
+; Add to NSIS installer at the end
+Section "Post-Installation Testing"
+    ; Launch Tester.exe from installed location
+    Exec '"$INSTDIR\Tester.exe"'
+    ; Or for 64-bit: Exec '"$INSTDIR\Tester64.exe"'
+SectionEnd
 ```
 
-#### 2.3 Custom Prefix Integration
-**Files to Modify:**
-- `src/qt_gui/plugin_install.h` - Add custom prefix tester
-- `src/qt_gui/plugin_install.cpp` - Implement custom prefix tester
-
+#### 1.3 User Interaction
 **Implementation:**
-```cpp
-// Add to PluginInstall class
-bool runTesterInCustomPrefix(const QString& prefixPath);
-QString getCustomPrefixTesterResults(const QString& prefixPath);
-```
+- Tester.exe/Tester64.exe launches with its own UI
+- User interacts directly with tester interface
+- No additional Qt dialogs needed
+- Tester handles all device detection and feedback
+
+### Phase 2: Cross-Platform Testing
+
+#### 2.1 Universal Integration
+**Implementation:**
+- NSIS installer automatically works with all platforms
+- Same tester execution for Steam Proton, Lutris, and Custom Prefix
+- No platform-specific code needed for tester execution
+- Results parsing is platform-agnostic
+
+#### 2.2 Universal Integration
+**Implementation:**
+- NSIS installer automatically works with all platforms
+- Same tester execution for Steam Proton, Lutris, and Custom Prefix
+- No platform-specific code needed for tester execution
+- Tester handles all device detection and user interaction
 
 ### Phase 3: UI Integration
 
-#### 3.1 Post-Installation Testing
+#### 3.1 Automatic Testing Flow
 **Implementation:**
-- Add "Test TrackIR" button after successful Wine Bridge installation
-- Show testing progress and results
-- Provide clear success/failure feedback
-- Allow retesting if needed
+- Tester runs automatically after successful Wine Bridge installation
+- No additional user interaction required
+- Seamless installation → testing workflow
+- Results displayed immediately after testing
 
-#### 3.2 Testing Results Display
+#### 3.2 Automatic Tester Launch
 **Implementation:**
-- Create results dialog showing:
-  - TrackIR device detection status
-  - Device information (if detected)
-  - Error messages (if any)
-  - Recommendations for troubleshooting
+- Tester.exe/Tester64.exe launches automatically after installation
+- User interacts directly with tester's built-in UI
+- No additional Qt dialogs needed
+- Tester provides all necessary feedback and device information
 
 #### 3.3 Error Handling and User Guidance
 **Implementation:**
 - Clear error messages for common issues
 - Troubleshooting suggestions
 - Links to documentation
-- Option to retry or skip testing
+- Option to retry testing if needed
 
 ---
 
 ## 🎨 UI Design
 
-### Post-Installation Flow
+### Automatic Testing Flow
 ```
-1. Wine Bridge Installation → 2. Success Message → 3. "Test TrackIR" Button → 4. Testing Results
+1. Wine Bridge Installation → 2. Tester.exe automatically launches → 3. Testing Results displayed
 ```
 
-### Testing Results Dialog
-```
-┌─────────────────────────────────────────────────────────┐
-│                    TrackIR Test Results                │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Status: ✅ TrackIR Device Detected                    │
-│                                                         │
-│  Device Information:                                    │
-│  - Device: TrackIR 5                                   │
-│  - Firmware: 2.0.0.35                                 │
-│  - Status: Connected                                   │
-│                                                         │
-│  Test Output:                                          │
-│  [Detailed tester output here]                         │
-│                                                         │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
-│  │    Retry    │  │   Close     │  │   Help      │   │
-│  └─────────────┘  └─────────────┘  └─────────────┘   │
-└─────────────────────────────────────────────────────────┘
-```
+### User Experience
+- **Automatic Launch**: Tester.exe/Tester64.exe launches immediately after installation
+- **Direct Interaction**: User interacts directly with tester's built-in UI
+- **Built-in Feedback**: Tester provides all device detection and status information
+- **No Additional Dialogs**: No need for separate Qt result dialogs
 
 ---
 
@@ -217,39 +176,39 @@ QString getCustomPrefixTesterResults(const QString& prefixPath);
 - Use the same prefix path where Wine Bridge was installed
 - No need to search system directories - testers are prefix-specific
 
-### 2. Wine Environment Setup
-**Challenge**: Proper environment configuration for different platforms
+### 2. NSIS Integration
+**Challenge**: Modifying NSIS installer to launch tester automatically
 **Solution**:
-- Platform-specific environment setup
-- Use existing environment logic from NSIS installer
-- Handle Wine version differences
-- Proper error handling for environment issues
+- Add tester execution to NSIS installer script
+- Use ExecWait to launch Tester.exe/Tester64.exe
+- Capture exit code and output
+- Handle both 32-bit and 64-bit testers
 
-### 3. Process Management
-**Challenge**: Launching and monitoring tester process
+### 3. Automatic Launch
+**Challenge**: Launching tester automatically after NSIS installation
 **Solution**:
-- Use QProcess for process management
-- Set up proper environment variables
-- Handle process timeouts
-- Capture and parse output
+- Use Exec command in NSIS to launch Tester.exe/Tester64.exe
+- Launch in same environment as NSIS installer
+- Let user interact directly with tester UI
+- No need to capture or parse results
 
-### 4. Result Interpretation
-**Challenge**: Parsing tester output for meaningful results
+### 4. User Experience
+**Challenge**: Providing seamless testing experience
 **Solution**:
-- Define expected output patterns
-- Parse device detection status
-- Extract device information
-- Handle different tester versions
+- Tester launches automatically after installation
+- User interacts directly with tester's built-in UI
+- Tester handles all device detection and feedback
+- No additional Qt dialogs needed
 
 ---
 
 ## 🧪 Testing Strategy
 
 ### Unit Testing
-- **Tester Detection**: Test executable finding logic
-- **Environment Setup**: Test Wine environment configuration
-- **Process Launch**: Test tester process execution
-- **Result Parsing**: Test output interpretation
+- **NSIS Integration**: Test NSIS installer modifications
+- **Tester Execution**: Test automatic tester launch
+- **User Interaction**: Test that tester UI launches correctly
+- **Error Handling**: Test failure scenarios
 
 ### Integration Testing
 - **Steam Proton**: Test with real Steam Proton prefixes
@@ -268,16 +227,15 @@ QString getCustomPrefixTesterResults(const QString& prefixPath);
 ## 📊 Success Criteria
 
 ### Functional Requirements
-- [ ] **Tester Detection**: Finds Tester.exe/Tester64.exe in Wine prefix correctly
-- [ ] **Process Launch**: Successfully launches tester in Wine prefix
-- [ ] **Result Parsing**: Correctly interprets tester output
-- [ ] **Cross-Platform**: Works with Steam Proton, Lutris, Custom Prefix
+- [ ] **NSIS Integration**: Automatically launches Tester.exe/Tester64.exe after installation
+- [ ] **User Interaction**: Tester UI launches and user can interact with it
+- [ ] **Cross-Platform**: Works with Steam Proton, Lutris, Custom Prefix automatically
 - [ ] **Error Handling**: Graceful handling of all error scenarios
 
 ### User Experience Requirements
-- [ ] **Easy Access**: One-click testing after installation
-- [ ] **Clear Results**: Understandable feedback about TrackIR status
-- [ ] **Helpful Guidance**: Clear error messages and troubleshooting
+- [ ] **Automatic Testing**: Zero-click testing after installation
+- [ ] **Direct Interaction**: User can interact directly with Tester.exe/Tester64.exe UI
+- [ ] **Built-in Feedback**: Tester provides all necessary device detection and status
 - [ ] **Consistent Experience**: Same workflow across all platforms
 
 ### Technical Requirements
@@ -290,20 +248,20 @@ QString getCustomPrefixTesterResults(const QString& prefixPath);
 
 ## 🚀 Implementation Priority
 
-### Phase 1: Foundation (Week 1)
-1. **Create WineTester Class**: Basic structure and detection
-2. **Tester Executable Detection**: Find and validate tester files
-3. **Basic Wine Environment**: Simple Wine prefix testing
-4. **Process Management**: Launch and monitor tester process
+### Phase 1: NSIS Integration (Week 1)
+1. **Modify NSIS Installer**: Add tester execution to installer scripts
+2. **Result Capture**: Capture tester output and exit code
+3. **Basic Result Parsing**: Parse and display basic results
+4. **Error Handling**: Handle tester execution failures
 
-### Phase 2: Platform Integration (Week 2)
-1. **Steam Proton Integration**: Test within Proton environment
-2. **Lutris Integration**: Test within Lutris prefixes
-3. **Custom Prefix Integration**: Test with user-selected prefixes
-4. **Environment Configuration**: Platform-specific setup
+### Phase 2: Cross-Platform Testing (Week 2)
+1. **Universal Integration**: Test with Steam Proton, Lutris, Custom Prefix
+2. **Result Display**: Create comprehensive results dialog
+3. **Error Handling**: Platform-specific error handling
+4. **User Experience**: Polish automatic testing workflow
 
 ### Phase 3: UI Integration (Week 3)
-1. **Post-Installation Testing**: Add testing button after installation
+1. **Automatic Testing Flow**: Seamless installation → testing workflow
 2. **Results Display**: Create results dialog and feedback
 3. **Error Handling**: Comprehensive error messages and guidance
 4. **User Experience**: Polish UI and workflow
@@ -319,16 +277,16 @@ QString getCustomPrefixTesterResults(const QString& prefixPath);
 ## 📋 Next Steps
 
 ### Immediate Actions
-1. **Research Tester Executable**: Locate and understand Tester.exe/Tester64.exe in Wine prefixes
-2. **Study Wine Environment**: Understand Wine prefix environment setup
-3. **Create WineTester Class**: Basic structure and detection methods
-4. **Test Basic Functionality**: Verify tester can be launched in Wine prefix after NSIS installation
+1. **Research NSIS Installer**: Locate and understand NSIS installer scripts
+2. **Study Tester Executable**: Understand Tester.exe/Tester64.exe behavior and output
+3. **Modify NSIS Scripts**: Add tester execution to installer scripts
+4. **Test Basic Functionality**: Verify tester launches automatically after NSIS installation
 
 ### Success Metrics
-- [ ] Tester executable found and launched successfully
-- [ ] TrackIR device detected in Wine prefix
-- [ ] Results displayed clearly to user
-- [ ] Works across all gaming platforms
+- [ ] Tester launches automatically after NSIS installation
+- [ ] User can interact with Tester.exe/Tester64.exe UI
+- [ ] Tester provides device detection and status information
+- [ ] Works across all gaming platforms automatically
 - [ ] Error handling provides helpful feedback
 
 ---
