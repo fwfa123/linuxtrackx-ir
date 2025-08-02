@@ -77,6 +77,10 @@ Section "Linuxtrack / TrackIR Interface"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" "NoRepair" 1
   WriteUninstaller "uninstall.exe"
   Exec '"$INSTDIR\check_data.exe"'
+  DetailPrint "Launching TrackIR Tester for device verification..."
+  Exec '"$INSTDIR\Tester.exe"'
+  DetailPrint "Launching FreeTrack Tester for device verification..."
+  Exec '"$INSTDIR\FreeTrackTester.exe"'
 SectionEnd
 
 Section "Linuxtrack / Freetrack Interface"
