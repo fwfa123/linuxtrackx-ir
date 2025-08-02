@@ -529,10 +529,9 @@ void PluginInstall::installSteamProtonBridge()
   bool success = steamIntegration->installToSteamGame(selectedGameId);
   
   if (success) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Started"),
-      QString::fromUtf8("Linuxtrack Wine Bridge installer has been launched for: ") + selectedGame + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("Please complete the installation in the NSIS window that opened.\n") +
-      QString::fromUtf8("You can now use Linuxtrack with this game in Steam once the installation is complete."));
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Completed"),
+      QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed for: ") + selectedGame + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("You can now use Linuxtrack with this game in Steam!"));
   } else {
     QMessageBox::critical(getParentWidget(), QString::fromUtf8("Installation Failed"),
       QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
