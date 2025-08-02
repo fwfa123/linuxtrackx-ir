@@ -8,6 +8,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QProcess>
 
 class SteamGame {
 public:
@@ -42,6 +43,7 @@ public:
     bool parseLibraryFolders();
     QStringList getLibraryPaths();
     QString findGameLibrary(const QString &gameId);
+    void scanLibrariesForGames();
     QList<SteamGame> scanLibraryForGames(const QString &libraryPath);
     
     // Game information parsing
