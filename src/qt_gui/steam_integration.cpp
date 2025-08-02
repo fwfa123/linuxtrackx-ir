@@ -610,7 +610,7 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
     QProcess process;
     process.setProcessEnvironment(env);
     
-    // Change to prefix directory
+    // Set working directory to the Proton prefix root (like Wstart example)
     process.setWorkingDirectory(prefixPath);
     
     // Get wine bridge installer path
@@ -620,14 +620,17 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
         return false;
     }
     
-    // Set environment variables for Proton
+    // Set environment variables for Proton (following Wstart example)
     QProcessEnvironment processEnv = QProcessEnvironment::systemEnvironment();
-    processEnv.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), prefixPath);
+    // STEAM_COMPAT_DATA_PATH should point to the compatdata/[GAME_ID] directory (without /pfx)
+    QString compatDataPath = prefixPath;
+    compatDataPath.chop(4); // Remove "/pfx" from the end
+    processEnv.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), compatDataPath);
     processEnv.insert(QStringLiteral("WINEPREFIX"), prefixPath);
     processEnv.insert(QStringLiteral("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamPath);
     process.setProcessEnvironment(processEnv);
     
-    // Build command: proton run [installer_path]
+    // Build command: proton run [installer_path] (following Wstart example)
     QStringList arguments;
     arguments << QStringLiteral("run") << installerPath;
     
@@ -635,10 +638,12 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
         protonPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Prefix path: %s\n", 
         prefixPath.toUtf8().constData());
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Working directory: %s\n", 
+        prefixPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Installer path: %s\n", 
         installerPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - STEAM_COMPAT_DATA_PATH: %s\n", 
-        prefixPath.toUtf8().constData());
+        compatDataPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - WINEPREFIX: %s\n", 
         prefixPath.toUtf8().constData());
     
