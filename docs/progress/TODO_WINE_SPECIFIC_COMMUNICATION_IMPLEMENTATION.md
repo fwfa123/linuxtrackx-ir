@@ -72,10 +72,10 @@
 - [x] Test basic socket communication
 
 ### Step 3: Integrate with Wine Bridge Functions
-- [ ] Modify NPCLIENT_NP_StartDataTransmission to use socket communication
-- [ ] Modify NPCLIENT_NP_StopDataTransmission to use socket communication
-- [ ] Add cleanup handlers for proper process management
-- [ ] Test automatic start/stop functionality
+- [x] Modify NPCLIENT_NP_StartDataTransmission to use socket communication
+- [x] Modify NPCLIENT_NP_StopDataTransmission to use socket communication
+- [x] Add cleanup handlers for proper process management
+- [x] Test automatic start/stop functionality
 
 ### Step 4: FreeTrack Client Integration
 - [ ] Add similar socket communication to FreeTrackClient_main.c
