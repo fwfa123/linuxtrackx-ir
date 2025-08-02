@@ -14,7 +14,7 @@
 #endif
 
 PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):QObject(parent),
-  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc140(NULL), lutrisIntegration(NULL),
+  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc140(NULL), lutrisIntegration(NULL), steamIntegration(NULL),
   poem1(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem1.txt")),
   poem2(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem2.txt")),
   gameData(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/gamedata.txt")),
@@ -58,6 +58,9 @@ PluginInstall::~PluginInstall()
   delete inst;
   if (lutrisIntegration) {
     delete lutrisIntegration;
+  }
+  if (steamIntegration) {
+    delete steamIntegration;
   }
 }
 
@@ -434,6 +437,106 @@ void PluginInstall::installLutrisWineBridge()
       QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
       QString::fromUtf8("Error: ") + lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
       QString::fromUtf8("Debug Info: ") + lutrisIntegration->getDebugInfo());
+  }
+}
+
+// New method for Steam Proton bridge installation
+void PluginInstall::installSteamProtonBridge()
+{
+  // Check prerequisites
+  if(!isTirFirmwareInstalled() || !isMfc140uInstalled()) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
+      QString::fromUtf8("Please install TIR Firmware and MFC140 libraries first using the button above."));
+    return;
+  }
+  
+  // Initialize Steam integration if not already done
+  if (!steamIntegration) {
+    steamIntegration = new SteamIntegration(this);
+  }
+  
+  // Check if Steam is installed
+  if (!steamIntegration->isSteamInstalled()) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Steam Not Found"),
+      QString::fromUtf8("Steam is not installed or not properly configured.\n\n") +
+      QString::fromUtf8("Error: ") + steamIntegration->getLastError());
+    return;
+  }
+  
+  // Get available Steam games with Proton prefixes
+  QList<SteamGame> games = steamIntegration->getSteamGames();
+  if (games.isEmpty()) {
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("No Steam Games Found"),
+      QString::fromUtf8("No Steam games with Proton prefixes were found.\n\n") +
+      QString::fromUtf8("Please install some games in Steam first, then try again.\n\n") +
+      QString::fromUtf8("Debug Info: ") + steamIntegration->getDebugInfo());
+    return;
+  }
+  
+  // Filter games that have Proton prefixes
+  QList<SteamGame> protonGames;
+  for (const SteamGame &game : games) {
+    if (!game.prefix_path.isEmpty()) {
+      protonGames.append(game);
+    }
+  }
+  
+  if (protonGames.isEmpty()) {
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("No Proton Games Found"),
+      QString::fromUtf8("No Steam games with Proton prefixes were found.\n\n") +
+      QString::fromUtf8("Please install some games that use Proton in Steam first, then try again.\n\n") +
+      QString::fromUtf8("Debug Info: ") + steamIntegration->getDebugInfo());
+    return;
+  }
+  
+  // Create game selection dialog
+  QStringList gameNames;
+  QStringList gameIds;
+  for (const SteamGame &game : protonGames) {
+    QString displayName = game.game_name.isEmpty() ? game.game_id : game.game_name;
+    gameNames.append(displayName);
+    gameIds.append(game.game_id);
+  }
+  
+  bool ok;
+  QString selectedGame = QInputDialog::getItem(getParentWidget(),
+    QString::fromUtf8("Select Steam Game"),
+    QString::fromUtf8("Choose a game to install Linuxtrack Wine Bridge:"),
+    gameNames, 0, false, &ok);
+  
+  if (!ok || selectedGame.isEmpty()) {
+    return; // User cancelled
+  }
+  
+  // Find the selected game
+  int selectedIndex = gameNames.indexOf(selectedGame);
+  if (selectedIndex == -1) {
+    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Selection Error"),
+      QString::fromUtf8("Invalid game selection."));
+    return;
+  }
+  
+  QString selectedGameId = gameIds[selectedIndex];
+  
+  // Show information dialog about interactive installation
+  QMessageBox::information(getParentWidget(), QString::fromUtf8("Starting Interactive Installation"),
+    QString::fromUtf8("Starting Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
+    QString::fromUtf8("The NSIS installer will open in a new window.\n") +
+    QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
+    QString::fromUtf8("Click OK to start the installation."));
+  
+  // Install to the selected game
+  bool success = steamIntegration->installToSteamGame(selectedGameId);
+  
+  if (success) {
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Completed"),
+      QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed for: ") + selectedGame + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("You can now use Linuxtrack with this game in Steam!"));
+  } else {
+    QMessageBox::critical(getParentWidget(), QString::fromUtf8("Installation Failed"),
+      QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("Error: ") + steamIntegration->getLastError() + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("Debug Info: ") + steamIntegration->getDebugInfo());
   }
 }
 
