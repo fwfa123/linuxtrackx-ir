@@ -240,17 +240,55 @@ void PluginInstall::mfc42uInstall()
     tirFirmwareInstall();
     return;
   }
+  
+  // Get the main window for user interaction
+  QWidget *parentWidget = nullptr;
+  QObject *obj = parent();
+  while (obj && !parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(obj);
+    if (parentWidget && parentWidget->isWindow()) {
+      break; // Found the main window
+    }
+    obj = obj->parent();
+  }
+  if (!parentWidget) {
+    parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
+  }
+  
+  // Show user what's about to happen and get confirmation
+  QMessageBox::StandardButton reply = QMessageBox::question(parentWidget, 
+    QString::fromUtf8("MFC42 Installation"),
+    QString::fromUtf8("TrackIR firmware installation completed successfully!\n\n"
+    "Next, we need to install MFC42 libraries using winetricks.\n\n"
+    "This process will:\n"
+    "• Create a temporary Wine prefix\n"
+    "• Run 'winetricks mfc42' (this may take several minutes)\n"
+    "• Extract the required mfc42u.dll file\n"
+    "• Copy it to the firmware directory\n\n"
+    "The system may appear to hang during winetricks installation, but this is normal.\n"
+    "You'll see progress updates in the installer window.\n\n"
+    "Do you want to proceed with MFC42 installation?"),
+    QMessageBox::Yes | QMessageBox::No);
+  
+  if(reply == QMessageBox::No) {
+    // User cancelled - stay in current state
+    state = DONE;
+    enableButtons(true);
+    return;
+  }
+  
+  // User confirmed - proceed with MFC42 installation
   if(dlmfc42 == NULL){
     dlmfc42 = new Mfc42uWinetricksExtractor();
     QObject::connect(dlmfc42, SIGNAL(finished(bool)),
       this, SLOT(finished(bool)));
   }
   
-  // Show the dialog (same as TIR firmware installer)
+  // Show the dialog with clear instructions
   dlmfc42->show();
   
   // Don't start automatic installation - let user interact with UI first
-  // The user can choose to browse for installer or directory
+  // The user can choose winetricks installation or manual methods
 }
 
 void PluginInstall::finished(bool ok)

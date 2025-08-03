@@ -229,18 +229,27 @@ if(symlink(path1, "mfc42u.dll") != 0){
   - [x] Updated installation flow and state machine
   - [x] Updated `isMfc140uInstalled()` to `isMfc42uInstalled()`
   - [x] Updated all references in ltr_gui.cpp
+- [x] **Phase 1: Create MFC42 Winetricks Extractor** ✅
+  - [x] Add `Mfc42uWinetricksExtractor` class (replacing `Mfc140uExtractor`)
+  - [x] Define winetricks installation methods
+  - [x] Add fallback to manual installation
+  - [x] Integrate with existing `mfc42_alternative_installers.sh` script
+  - [x] Implement `Mfc42uWinetricksExtractor` class
+  - [x] Add winetricks installation logic (prefer `winetricks mfc42`)
+  - [x] Add manual installation fallback using existing script
+  - [x] Add error handling and user guidance
+  - [x] Call `scripts/install/mfc42_alternative_installers.sh` as fallback
 
 ### In Progress
-- [ ] Phase 1: Create MFC42 Winetricks Extractor (implementation needed)
 - [ ] Phase 5: Update Documentation
 
 ### Blocked Tasks
 - None currently
 
 ### Next Steps
-1. Implement `Mfc42uWinetricksExtractor` class
-2. Update plugin installer to use new extractor
-3. Modify check_data.c to remove MFC140 logic
+1. ✅ Implement `Mfc42uWinetricksExtractor` class
+2. ✅ Update plugin installer to use new extractor
+3. ✅ Modify check_data.c to remove MFC140 logic
 4. Test winetricks installation process
 5. Update documentation
 
