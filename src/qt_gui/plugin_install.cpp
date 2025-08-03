@@ -183,7 +183,7 @@ void PluginInstall::installLinuxtrackWine()
   inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
   inst->run(installerPath);
 #else
-  if(isTirFirmwareInstalled() && isMfc140uInstalled()){
+  if(isTirFirmwareInstalled() && isMfc42uInstalled()){
     // Get the main window by finding the top-level widget
     QWidget *parentWidget = nullptr;
     QObject *obj = parent();

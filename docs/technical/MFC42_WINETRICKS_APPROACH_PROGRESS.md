@@ -94,7 +94,7 @@ if(symlink(path1, "mfc42u.dll") != 0){
   - [ ] Replace complex fallback logic with simple MFC42-only approach
 
 ### Phase 4: Update Sources and Configuration
-- [ ] **File**: `src/qt_gui/sources_mfc140.txt`
+- [x] **File**: `src/qt_gui/sources_mfc42.txt`
   - [ ] Rename to `sources_mfc42.txt`
   - [ ] Update URLs to MFC42 sources (Visual C++ 6.0 redistributable)
   - [ ] Add winetricks installation instructions
@@ -241,7 +241,15 @@ if(symlink(path1, "mfc42u.dll") != 0){
   - [x] Call `scripts/install/mfc42_alternative_installers.sh` as fallback
 
 ### In Progress
-- [ ] Phase 5: Update Documentation
+- [x] **Phase 5: Update Documentation** ✅
+  - [x] Add comprehensive MFC42 winetricks troubleshooting section
+  - [x] Update Wine Bridge Installation Guide to reflect MFC42 approach
+  - [x] Update main README to replace MFC140 with MFC42 winetricks
+  - [x] Create detailed MFC42 Winetricks Installation Guide
+  - [x] Remove mfc42 from dependency lists (now installed via winetricks)
+  - [x] Add cross-distribution compatibility information
+  - [x] Include troubleshooting for common winetricks installation issues
+  - [x] Add verification and testing procedures
 - [x] **UX Improvements for Winetricks Installation** ✅
   - [x] Add user confirmation dialog before MFC42 installation
   - [x] Provide clear explanation of winetricks process

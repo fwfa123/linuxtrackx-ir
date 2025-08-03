@@ -40,7 +40,7 @@ This document summarizes the successful implementation of MFC140 modernization f
   - Updated error messages and user guidance
 
 #### 5. Sources and Configuration
-- **File**: `src/qt_gui/sources_mfc140.txt`
+- **File**: `src/qt_gui/sources_mfc42.txt` (renamed from sources_mfc140.txt)
 - **Content**: Official Microsoft Visual C++ 2015-2022 redistributable URLs
 - **Legal Status**: Legally redistributable libraries
 
@@ -141,7 +141,7 @@ The implementation maintains full backward compatibility:
 6. `src/qt_gui/plugin_install.cpp` - Updated installation flow
 
 ### Configuration Files
-7. `src/qt_gui/sources_mfc140.txt` - MFC140 installation sources
+7. `src/qt_gui/sources_mfc42.txt` - MFC42 installation sources (renamed from sources_mfc140.txt)
 
 ### Documentation Files
 8. `docs/technical/MFC140_MODERNIZATION_PLAN.md` - Implementation plan
