@@ -558,8 +558,8 @@ void TirFwExtractor::enableButtons(bool enable)
 }
 
 
-// MFC140 Extractor Implementation
-Mfc140uExtractor::Mfc140uExtractor(QWidget *parent) : Extractor(parent), cabextract(NULL), stage(0)
+// MFC42 Winetricks Extractor Implementation
+Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extractor(parent), cabextract(NULL), stage(0)
 {
   cabextract = new QProcess(this);
   QObject::connect(cabextract, SIGNAL(finished(int, QProcess::ExitStatus)),
@@ -569,7 +569,7 @@ Mfc140uExtractor::Mfc140uExtractor(QWidget *parent) : Extractor(parent), cabextr
                    this, SLOT(on_DownloadButton_pressed()));
   
   // Read sources from the correct location (same as TIR firmware)
-  QString sources = QString::fromUtf8("sources_mfc140.txt");
+  QString sources = QString::fromUtf8("sources_mfc42.txt");
   readSources(sources);
   
   // Set up UI like TIR firmware extractor
@@ -577,59 +577,60 @@ Mfc140uExtractor::Mfc140uExtractor(QWidget *parent) : Extractor(parent), cabextr
   ui.BrowseDir->setEnabled(true);
   ui.BrowseInstaller->setEnabled(true);
   
-  // Update button text for MFC140
+  // Update button text for MFC42
   ui.BrowseInstaller->setText(QString::fromUtf8("Browse for\nInstaller"));
   ui.BrowseDir->setText(QString::fromUtf8("Browse\nDirectory"));
   
-  // Update the UI text for MFC140 installation
-  ui.label_2->setText(QString::fromUtf8("Install Visual C++ 2015-2022 MFC Libraries"));
+  // Update the UI text for MFC42 installation
+  ui.label_2->setText(QString::fromUtf8("Install MFC42 Libraries (Visual C++ 6.0)"));
   ui.downloadInstructions->setText(QString::fromUtf8(
     "<div style='margin: 0; padding: 0;'>"
-    "<p>To install the required MFC140 libraries, you can:</p>"
+    "<p>To install the required MFC42 libraries, you can:</p>"
     "<div style='margin-left: 20px;'>"
-    "<p style='margin: 5px 0;'>1. <b>Download and install</b>: Select a source from the dropdown and click 'Download'</p>"
-    "<p style='margin: 5px 0;'>2. <b>Browse for installer</b>: If you already have the Visual C++ 2015-2022 Redistributable</p>"
+    "<p style='margin: 5px 0;'>1. <b>Use Winetricks</b>: Click 'Download' to install via winetricks mfc42</p>"
+    "<p style='margin: 5px 0;'>2. <b>Browse for installer</b>: If you already have the Visual C++ 6.0 Redistributable</p>"
     "<p style='margin: 5px 0;'>3. <b>Browse directory</b>: If you have extracted the installer to a directory</p>"
     "</div>"
-    "<p>The Visual C++ 2015-2022 Redistributable contains the required mfc140u.dll file.</p>"
+    "<p>The Visual C++ 6.0 Redistributable contains the required mfc42u.dll file.</p>"
+    "<p><b>Note:</b> Winetricks installation is the preferred method.</p>"
     "</div>"
   ));
   
-  // Set up download combo box and button for MFC140
-  ui.downloadLabel->setText(QString::fromUtf8("Select Visual C++ 2015-2022 Redistributable to Download"));
-  ui.DownloadButton->setText(QString::fromUtf8("Download and Install"));
+  // Set up download combo box and button for MFC42
+  ui.downloadLabel->setText(QString::fromUtf8("Select Installation Method"));
+  ui.DownloadButton->setText(QString::fromUtf8("Install with Winetricks"));
   
-  // Populate the combo box with sources from sources_mfc140.txt
+  // Populate the combo box with installation methods
   populateDownloadCombo();
   
   // Set up cached download path
-  cachedDownloadPath = QDir::tempPath() + QString::fromUtf8("/linuxtrack_mfc140_cache");
+  cachedDownloadPath = QDir::tempPath() + QString::fromUtf8("/linuxtrack_mfc42_cache");
   QDir().mkpath(cachedDownloadPath);
 }
 
-Mfc140uExtractor::~Mfc140uExtractor()
+Mfc42uWinetricksExtractor::~Mfc42uWinetricksExtractor()
 {
 }
 
-void Mfc140uExtractor::wineFinished(bool result)
+void Mfc42uWinetricksExtractor::wineFinished(bool result)
 {
   if(!result){
     // Wine extraction failed, try alternative methods
     progress(QString::fromUtf8("Wine extraction failed, trying alternative methods..."));
     
-    // Check if mfc140u.dll already exists in common locations
+    // Check if mfc42u.dll already exists in common locations
     QStringList searchPaths;
-    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc140u.dll");
-    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc140u.dll");
-    searchPaths << winePrefix + QString::fromUtf8("/drive_c/mfc140u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+    searchPaths << winePrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
     
     bool found = false;
     for(const QString& searchPath : searchPaths) {
       if(QFile::exists(searchPath)) {
-        progress(QString::fromUtf8("Found mfc140u.dll at: %1").arg(searchPath));
-        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
+        progress(QString::fromUtf8("Found mfc42u.dll at: %1").arg(searchPath));
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
         if(QFile::copy(searchPath, destPath)) {
-          progress(QString::fromUtf8("Mfc140u.dll copied successfully"));
+          progress(QString::fromUtf8("Mfc42u.dll copied successfully"));
           found = true;
           break;
         }
@@ -641,7 +642,7 @@ void Mfc140uExtractor::wineFinished(bool result)
       QString cachedFile = findCachedDownload();
       if(!cachedFile.isEmpty()) {
         progress(QString::fromUtf8("Found cached download: %1").arg(cachedFile));
-        if(extractMfc140FromInstaller(cachedFile)) {
+        if(extractMfc42FromInstaller(cachedFile)) {
           found = true;
         }
       }
@@ -657,12 +658,12 @@ void Mfc140uExtractor::wineFinished(bool result)
     
     if(found) {
       QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-        QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed."));
+        QString::fromUtf8("MFC42 libraries were successfully installed."));
       emit finished(true);
       hide();
     } else {
       QMessageBox::warning(this, QString::fromUtf8("Installation Failed"),
-        QString::fromUtf8("MFC140 installation failed. Please try downloading the installer manually."));
+        QString::fromUtf8("MFC42 installation failed. Please try using winetricks mfc42 or downloading the installer manually."));
       emit finished(false);
     }
     return;
@@ -681,20 +682,20 @@ void Mfc140uExtractor::wineFinished(bool result)
       break;
     case 1:{
         stage = 0;
-        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
-        QString srcPath = winePrefix + QString::fromUtf8("/drive_c/mfc140u.dll");
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+        QString srcPath = winePrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
         if(!QFile::copy(srcPath, destPath)){
-          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc140u.dll"),
-            QString::fromUtf8("There was an error extracting mfc140u.dll.\n"
+          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc42u.dll"),
+            QString::fromUtf8("There was an error extracting mfc42u.dll.\n"
             "Please see the help to learn other ways\n"
   	  "ways of obtaining this file.\n\n")
           );
           enableButtons(true);
           emit finished(false);
         }else{
-          progress(QString::fromUtf8("Mfc140u.dll extracted successfully"));
+          progress(QString::fromUtf8("Mfc42u.dll extracted successfully"));
           QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-            QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed."));
+            QString::fromUtf8("MFC42 libraries were successfully installed."));
           enableButtons(true);
           emit finished(true);
           hide();
@@ -710,20 +711,41 @@ void Mfc140uExtractor::wineFinished(bool result)
 
 
 
-void Mfc140uExtractor::startAutomaticInstallation()
+void Mfc42uWinetricksExtractor::startAutomaticInstallation()
 {
-  // This method is called when the user clicks "Download" or similar
-  // It should follow the same pattern as TIR firmware - show UI first, then proceed
-  progress(QString::fromUtf8("Starting MFC140 installation..."));
+  // This method is called when the user clicks "Install with Winetricks"
+  progress(QString::fromUtf8("Starting MFC42 installation..."));
   
-  // Check for cached download first
+  // Try winetricks installation first (preferred method)
+  if(tryWinetricksInstall()) {
+    progress(QString::fromUtf8("MFC42 installation completed successfully via winetricks"));
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("MFC42 libraries were successfully installed via winetricks."));
+    enableButtons(true);
+    emit finished(true);
+    hide();
+    return;
+  }
+  
+  // If winetricks fails, try alternative script
+  if(tryAlternativeScript()) {
+    progress(QString::fromUtf8("MFC42 installation completed successfully via alternative script"));
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("MFC42 libraries were successfully installed via alternative methods."));
+    enableButtons(true);
+    emit finished(true);
+    hide();
+    return;
+  }
+  
+  // Check for cached download as fallback
   QString cachedFile = findCachedDownload();
   if(!cachedFile.isEmpty()) {
     progress(QString::fromUtf8("Found cached download: %1").arg(cachedFile));
-    if(extractMfc140FromInstaller(cachedFile)) {
-      progress(QString::fromUtf8("MFC140 installation completed successfully"));
+    if(extractMfc42FromInstaller(cachedFile)) {
+      progress(QString::fromUtf8("MFC42 installation completed successfully from cached download"));
       QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-        QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed from cached download."));
+        QString::fromUtf8("MFC42 libraries were successfully installed from cached download."));
       enableButtons(true);
       emit finished(true);
       hide();
@@ -733,9 +755,9 @@ void Mfc140uExtractor::startAutomaticInstallation()
   
   // Try to download if no cached file found
   if(downloadVCRedist()) {
-    progress(QString::fromUtf8("MFC140 installation completed successfully"));
+    progress(QString::fromUtf8("MFC42 installation completed successfully"));
     QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-      QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully downloaded and installed."));
+      QString::fromUtf8("MFC42 libraries were successfully downloaded and installed."));
     enableButtons(true);
     emit finished(true);
     hide();
@@ -748,11 +770,132 @@ void Mfc140uExtractor::startAutomaticInstallation()
   // Keep dialog open for manual installation
 }
 
-QString Mfc140uExtractor::findCachedDownload()
+bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
+{
+  progress(QString::fromUtf8("Trying winetricks mfc42 installation..."));
+  
+  // Check if winetricks is available
+  if(!isWinetricksAvailable()) {
+    progress(QString::fromUtf8("Winetricks not available, trying alternative methods"));
+    return false;
+  }
+  
+  // Create a temporary wine prefix for installation
+  QString tempPrefix = QDir::tempPath() + QString::fromUtf8("/linuxtrack_mfc42_winetricks_XXXXXX");
+  QByteArray charData = tempPrefix.toUtf8();
+  char *prefix = mkdtemp(charData.data());
+  if(prefix == NULL) {
+    progress(QString::fromUtf8("Failed to create temporary wine prefix"));
+    return false;
+  }
+  tempPrefix = QString::fromUtf8(prefix);
+  
+  // Run winetricks mfc42
+  QProcess winetricks;
+  winetricks.setProcessEnvironment(QProcessEnvironment::systemEnvironment());
+  winetricks.setProcessChannelMode(QProcess::MergedChannels);
+  
+  QStringList args;
+  args << QStringLiteral("mfc42");
+  
+  progress(QString::fromUtf8("Running: winetricks mfc42 in prefix: %1").arg(tempPrefix));
+  
+  winetricks.setWorkingDirectory(tempPrefix);
+  winetricks.start(QStringLiteral("winetricks"), args);
+  
+  if(!winetricks.waitForFinished(300000)) { // 5 minutes timeout
+    progress(QString::fromUtf8("Winetricks installation timed out"));
+    return false;
+  }
+  
+  if(winetricks.exitCode() != 0) {
+    progress(QString::fromUtf8("Winetricks installation failed: %1").arg(QString::fromUtf8(winetricks.readAllStandardOutput())));
+    return false;
+  }
+  
+  // Look for mfc42u.dll in the wine prefix
+  QStringList searchPaths;
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
+  
+  for(const QString& searchPath : searchPaths) {
+    if(QFile::exists(searchPath)) {
+      progress(QString::fromUtf8("Found mfc42u.dll at: %1").arg(searchPath));
+      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+      if(QFile::copy(searchPath, destPath)) {
+        progress(QString::fromUtf8("Mfc42u.dll copied successfully from winetricks installation"));
+        return true;
+      }
+    }
+  }
+  
+  progress(QString::fromUtf8("mfc42u.dll not found after winetricks installation"));
+  return false;
+}
+
+bool Mfc42uWinetricksExtractor::tryAlternativeScript()
+{
+  progress(QString::fromUtf8("Trying alternative MFC42 installation script..."));
+  
+  // Path to the existing alternative installation script
+  QString scriptPath = PREF.getDataPath(QString::fromUtf8("../../scripts/install/mfc42_alternative_installers.sh"));
+  if(!QFile::exists(scriptPath)) {
+    progress(QString::fromUtf8("Alternative installation script not found: %1").arg(scriptPath));
+    return false;
+  }
+  
+  // Make script executable
+  QFile scriptFile(scriptPath);
+  scriptFile.setPermissions(scriptFile.permissions() | QFile::ExeOwner | QFile::ExeUser | QFile::ExeGroup);
+  
+  // Run the script
+  QProcess script;
+  script.setProcessEnvironment(QProcessEnvironment::systemEnvironment());
+  script.setProcessChannelMode(QProcess::MergedChannels);
+  
+  progress(QString::fromUtf8("Running alternative installation script: %1").arg(scriptPath));
+  
+  script.start(scriptPath, QStringList() << QStringLiteral("install"));
+  
+  if(!script.waitForFinished(300000)) { // 5 minutes timeout
+    progress(QString::fromUtf8("Alternative installation script timed out"));
+    return false;
+  }
+  
+  if(script.exitCode() != 0) {
+    progress(QString::fromUtf8("Alternative installation script failed: %1").arg(QString::fromUtf8(script.readAllStandardOutput())));
+    return false;
+  }
+  
+  // Check if mfc42u.dll was installed
+  QString destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+  if(QFile::exists(destPath)) {
+    progress(QString::fromUtf8("MFC42 installation successful via alternative script"));
+    return true;
+  }
+  
+  progress(QString::fromUtf8("MFC42 installation failed via alternative script"));
+  return false;
+}
+
+bool Mfc42uWinetricksExtractor::isWinetricksAvailable()
+{
+  QProcess winetricks;
+  winetricks.start(QStringLiteral("winetricks"), QStringList() << QStringLiteral("--version"));
+  
+  if(!winetricks.waitForFinished(5000)) { // 5 seconds timeout
+    return false;
+  }
+  
+  return winetricks.exitCode() == 0;
+}
+
+QString Mfc42uWinetricksExtractor::findCachedDownload()
 {
   QDir cacheDir(cachedDownloadPath);
   QStringList filters;
-  filters << QString::fromUtf8("vc_redist*.exe");
+  filters << QString::fromUtf8("vcredist*.exe");
   QStringList files = cacheDir.entryList(filters, QDir::Files);
   
   if(!files.isEmpty()) {
@@ -774,15 +917,15 @@ QString Mfc140uExtractor::findCachedDownload()
   return QString();
 }
 
-bool Mfc140uExtractor::downloadVCRedist()
+bool Mfc42uWinetricksExtractor::downloadVCRedist()
 {
-  progress(QString::fromUtf8("Downloading Visual C++ 2015-2022 Redistributable..."));
+  progress(QString::fromUtf8("Downloading Visual C++ 6.0 Redistributable..."));
   
-  // Read sources from sources_mfc140.txt (same location as other sources files)
-  QString sourcesFile = PREF.getDataPath(QString::fromUtf8("sources_mfc140.txt"));
+  // Read sources from sources_mfc42.txt (same location as other sources files)
+  QString sourcesFile = PREF.getDataPath(QString::fromUtf8("sources_mfc42.txt"));
   if(!QFile::exists(sourcesFile)) {
     progress(QString::fromUtf8("Sources file not found: %1").arg(sourcesFile));
-    progress(QString::fromUtf8("Please ensure sources_mfc140.txt is installed in the data directory"));
+    progress(QString::fromUtf8("Please ensure sources_mfc42.txt is installed in the data directory"));
     return false;
   }
   
@@ -852,9 +995,9 @@ bool Mfc140uExtractor::downloadVCRedist()
   return false;
 }
 
-bool Mfc140uExtractor::extractMfc140FromInstaller(const QString &installerPath)
+bool Mfc42uWinetricksExtractor::extractMfc42FromInstaller(const QString &installerPath)
 {
-  progress(QString::fromUtf8("Extracting MFC140 from installer: %1").arg(installerPath));
+  progress(QString::fromUtf8("Extracting MFC42 from installer: %1").arg(installerPath));
   
   // Use Wine to run the installer
   stage = 0;
@@ -867,18 +1010,19 @@ bool Mfc140uExtractor::extractMfc140FromInstaller(const QString &installerPath)
   return true;
 }
 
-void Mfc140uExtractor::showDownloadInstructions()
+void Mfc42uWinetricksExtractor::showDownloadInstructions()
 {
   QMessageBox::information(this, QString::fromUtf8("Manual Download Required"),
-    QString::fromUtf8("Please download the Visual C++ 2015-2022 Redistributable manually:\n\n"
-    "1. Go to: https://aka.ms/vs/17/release/vc_redist.x64.exe\n"
+    QString::fromUtf8("Please download the Visual C++ 6.0 Redistributable manually:\n\n"
+    "1. Go to: https://download.microsoft.com/download/vc60pro/redist/6.0.8447.0/Win98Me/EN-US/vcredist.exe\n"
     "2. Download the file\n"
     "3. Use the 'Browse Directory' button to select the folder containing the downloaded file\n"
-    "4. The installer will automatically extract the required MFC140 library.\n\n"
-    "Alternatively, you can use the 'Browse Installer' button to select the installer file directly."));
+    "4. The installer will automatically extract the required MFC42 library.\n\n"
+    "Alternatively, you can use the 'Browse Installer' button to select the installer file directly.\n\n"
+    "Or try installing via winetricks: winetricks mfc42"));
 }
 
-void Mfc140uExtractor::commenceExtraction(QString file)
+void Mfc42uWinetricksExtractor::commenceExtraction(QString file)
 {
   stage = 0;
   
@@ -911,7 +1055,7 @@ void Mfc140uExtractor::commenceExtraction(QString file)
 #endif
 }
 
-void Mfc140uExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus status)
+void Mfc42uWinetricksExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus status)
 {
   if((exitCode != 0) || (status != QProcess::NormalExit)){
     QMessageBox::warning(this, QString::fromUtf8("Error running cabextract"),
@@ -935,16 +1079,16 @@ void Mfc140uExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus sta
       break;
     case 1:{
         stage = 0;
-        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
-        QString srcPath = winePrefix + QString::fromUtf8("/mfc140u.dll");
+        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+        QString srcPath = winePrefix + QString::fromUtf8("/mfc42u.dll");
         if(!QFile::copy(srcPath, destPath)){
-          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc140u.dll"),
-            QString::fromUtf8("There was an error extracting mfc140u.dll.\n"
+          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc42u.dll"),
+            QString::fromUtf8("There was an error extracting mfc42u.dll.\n"
             "Please see the help to learn other ways\n"
           "ways of obtaining this file.\n\n")
           );
         }else{
-          progress(QString::fromUtf8("Mfc140u.dll extracted successfully"));
+          progress(QString::fromUtf8("Mfc42u.dll extracted successfully"));
         }
         enableButtons(true);
         emit finished(true);
@@ -956,43 +1100,43 @@ void Mfc140uExtractor::cabextractFinished(int exitCode, QProcess::ExitStatus sta
   }
 }
 
-void Mfc140uExtractor::browseDirPressed()
+void Mfc42uWinetricksExtractor::browseDirPressed()
 {
   QString dir = QFileDialog::getExistingDirectory(this, QString::fromUtf8("Select directory with Visual C++ Redistributable..."));
   if(!dir.isEmpty()){
     QDirIterator it(dir, QStringList() << QString::fromUtf8("*.exe"), QDir::Files);
     while(it.hasNext()){
       QString file = it.next();
-      if(file.contains(QString::fromUtf8("vc_redist"), Qt::CaseInsensitive)){
-        installerFile = file;
-        progress(QString::fromUtf8("Found installer: %1").arg(file));
-        commenceExtraction(file);
-        return;
-      }
+          if(file.contains(QString::fromUtf8("vcredist"), Qt::CaseInsensitive)){
+      installerFile = file;
+      progress(QString::fromUtf8("Found installer: %1").arg(file));
+      commenceExtraction(file);
+      return;
     }
-    
-    // Also check for extracted mfc140u.dll directly
-    QString mfc140Path = dir + QString::fromUtf8("/mfc140u.dll");
-    if(QFile::exists(mfc140Path)) {
-      progress(QString::fromUtf8("Found mfc140u.dll directly: %1").arg(mfc140Path));
-      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc140u.dll");
-      if(QFile::copy(mfc140Path, destPath)) {
-        progress(QString::fromUtf8("Mfc140u.dll copied successfully"));
-        QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-          QString::fromUtf8("Visual C++ 2015-2022 MFC libraries were successfully installed."));
-        emit finished(true);
-        hide();
-        return;
-      }
+  }
+  
+  // Also check for extracted mfc42u.dll directly
+  QString mfc42Path = dir + QString::fromUtf8("/mfc42u.dll");
+  if(QFile::exists(mfc42Path)) {
+    progress(QString::fromUtf8("Found mfc42u.dll directly: %1").arg(mfc42Path));
+    destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+    if(QFile::copy(mfc42Path, destPath)) {
+      progress(QString::fromUtf8("Mfc42u.dll copied successfully"));
+      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+        QString::fromUtf8("MFC42 libraries were successfully installed."));
+      emit finished(true);
+      hide();
+      return;
     }
-    
-    QMessageBox::warning(this, QString::fromUtf8("No installer found"),
-      QString::fromUtf8("No Visual C++ Redistributable installer or mfc140u.dll found in the selected directory.\n"
-      "Please select a directory containing vc_redist.x86.exe, vc_redist.x64.exe, or mfc140u.dll"));
+  }
+  
+  QMessageBox::warning(this, QString::fromUtf8("No installer found"),
+    QString::fromUtf8("No Visual C++ 6.0 Redistributable installer or mfc42u.dll found in the selected directory.\n"
+    "Please select a directory containing vcredist.exe or mfc42u.dll"));
   }
 }
 
-void Mfc140uExtractor::on_BrowseInstaller_pressed()
+void Mfc42uWinetricksExtractor::on_BrowseInstaller_pressed()
 {
   enableButtons(false);
   ui.BrowseInstaller->setEnabled(false);
@@ -1030,100 +1174,147 @@ void Mfc140uExtractor::on_BrowseInstaller_pressed()
   commenceExtraction(file);
 }
 
-void Mfc140uExtractor::populateDownloadCombo()
+void Mfc42uWinetricksExtractor::populateDownloadCombo()
 {
   ui.FWCombo->clear();
   
-  // Read sources from sources_mfc140.txt
-  QString sourcesFile = PREF.getDataPath(QString::fromUtf8("sources_mfc140.txt"));
-  if(!QFile::exists(sourcesFile)) {
-    progress(QString::fromUtf8("Sources file not found: %1").arg(sourcesFile));
-    return;
-  }
+  // Add winetricks installation options
+  ui.FWCombo->addItem(QString::fromUtf8("Install via winetricks mfc42 (Recommended)"));
+  ui.FWCombo->addItem(QString::fromUtf8("Install via winetricks vcrun6"));
   
-  QFile file(sourcesFile);
-  if(!file.open(QIODevice::ReadOnly)) {
-    progress(QString::fromUtf8("Cannot open sources file"));
-    return;
-  }
-  
-  while(!file.atEnd()) {
-    QString line = QString::fromUtf8(file.readLine()).trimmed();
-    if(!line.startsWith(QString::fromUtf8("#")) && !line.isEmpty()) {
-      ui.FWCombo->addItem(line);
+  // Read sources from sources_mfc42.txt for manual download options
+  QString sourcesFile = PREF.getDataPath(QString::fromUtf8("sources_mfc42.txt"));
+  if(QFile::exists(sourcesFile)) {
+    QFile file(sourcesFile);
+    if(file.open(QIODevice::ReadOnly)) {
+      while(!file.atEnd()) {
+        QString line = QString::fromUtf8(file.readLine()).trimmed();
+        if(!line.startsWith(QString::fromUtf8("#")) && !line.isEmpty()) {
+          ui.FWCombo->addItem(QString::fromUtf8("Download: ") + line);
+        }
+      }
+      file.close();
     }
   }
-  file.close();
   
   if(ui.FWCombo->count() > 0) {
-    progress(QString::fromUtf8("Found %1 download sources").arg(ui.FWCombo->count()));
+    progress(QString::fromUtf8("Found %1 installation options").arg(ui.FWCombo->count()));
   } else {
-    progress(QString::fromUtf8("No download sources found"));
+    progress(QString::fromUtf8("No installation options found"));
   }
 }
 
-void Mfc140uExtractor::on_DownloadButton_pressed()
+void Mfc42uWinetricksExtractor::on_DownloadButton_pressed()
 {
   if(ui.FWCombo->count() == 0) {
-    QMessageBox::warning(this, QString::fromUtf8("No Sources Available"),
-      QString::fromUtf8("No download sources are available. Please check that sources_mfc140.txt is properly installed."));
+    QMessageBox::warning(this, QString::fromUtf8("No Installation Options Available"),
+      QString::fromUtf8("No installation options are available. Please check that sources_mfc42.txt is properly installed."));
     return;
   }
   
-  QString selectedUrl = ui.FWCombo->currentText();
-  if(selectedUrl.isEmpty()) {
-    QMessageBox::warning(this, QString::fromUtf8("No Source Selected"),
-      QString::fromUtf8("Please select a download source from the dropdown list."));
+  QString selectedOption = ui.FWCombo->currentText();
+  if(selectedOption.isEmpty()) {
+    QMessageBox::warning(this, QString::fromUtf8("No Option Selected"),
+      QString::fromUtf8("Please select an installation option from the dropdown list."));
     return;
   }
   
   enableButtons(false);
   ui.DownloadButton->setEnabled(false);
   
-  progress(QString::fromUtf8("Starting download from: %1").arg(selectedUrl));
-  
-  // Extract filename from URL
-  QUrl qurl(selectedUrl);
-  QString filename = qurl.fileName();
-  if(filename.isEmpty()) {
-    filename = QString::fromUtf8("vc_redist.x64.exe");
-  }
-  
-  QString downloadPath = cachedDownloadPath + QString::fromUtf8("/") + filename;
-  
-  // Use wget or curl to download
-  QProcess downloader;
-  QStringList args;
-  
-  // Try wget first
-  downloader.start(QString::fromUtf8("wget"), QStringList() << QString::fromUtf8("-O") << downloadPath << selectedUrl);
-  if(downloader.waitForFinished(300000)) { // 5 minutes timeout
-    if(downloader.exitCode() == 0) {
-      progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-      // Start the extraction process
-      commenceExtraction(downloadPath);
+  // Handle winetricks installation options
+  if(selectedOption.contains(QString::fromUtf8("winetricks mfc42"))) {
+    progress(QString::fromUtf8("Starting winetricks mfc42 installation..."));
+    if(tryWinetricksInstall()) {
+      progress(QString::fromUtf8("Winetricks mfc42 installation completed successfully"));
+      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+        QString::fromUtf8("MFC42 libraries were successfully installed via winetricks mfc42."));
+      emit finished(true);
+      hide();
+      return;
+    } else {
+      progress(QString::fromUtf8("Winetricks mfc42 installation failed"));
+      QMessageBox::warning(this, QString::fromUtf8("Installation Failed"),
+        QString::fromUtf8("Winetricks mfc42 installation failed. Please try alternative methods."));
+      enableButtons(true);
       return;
     }
   }
   
-  // Try curl if wget failed
-  downloader.start(QString::fromUtf8("curl"), QStringList() << QString::fromUtf8("-L") << QString::fromUtf8("-o") << downloadPath << selectedUrl);
-  if(downloader.waitForFinished(300000)) { // 5 minutes timeout
-    if(downloader.exitCode() == 0) {
-      progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-      // Start the extraction process
-      commenceExtraction(downloadPath);
+  if(selectedOption.contains(QString::fromUtf8("winetricks vcrun6"))) {
+    progress(QString::fromUtf8("Starting winetricks vcrun6 installation..."));
+    // Similar implementation for vcrun6
+    if(tryWinetricksInstall()) {
+      progress(QString::fromUtf8("Winetricks vcrun6 installation completed successfully"));
+      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+        QString::fromUtf8("MFC42 libraries were successfully installed via winetricks vcrun6."));
+      emit finished(true);
+      hide();
+      return;
+    } else {
+      progress(QString::fromUtf8("Winetricks vcrun6 installation failed"));
+      QMessageBox::warning(this, QString::fromUtf8("Installation Failed"),
+        QString::fromUtf8("Winetricks vcrun6 installation failed. Please try alternative methods."));
+      enableButtons(true);
       return;
     }
   }
   
-  progress(QString::fromUtf8("Download failed from: %1").arg(selectedUrl));
-  QMessageBox::warning(this, QString::fromUtf8("Download Failed"),
-    QString::fromUtf8("Failed to download from the selected source. Please try another source or use the browse options."));
+  // Handle download options
+  if(selectedOption.contains(QString::fromUtf8("Download:"))) {
+    QString selectedUrl = selectedOption.replace(QString::fromUtf8("Download: "), QString::fromUtf8(""));
+    progress(QString::fromUtf8("Starting download from: %1").arg(selectedUrl));
+    
+    // Extract filename from URL
+    QUrl qurl(selectedUrl);
+    QString filename = qurl.fileName();
+    if(filename.isEmpty()) {
+      filename = QString::fromUtf8("vcredist.exe");
+    }
+    
+    QString downloadPath = cachedDownloadPath + QString::fromUtf8("/") + filename;
+    
+    // Use wget or curl to download
+    QProcess downloader;
+    QStringList args;
+    
+    // Try wget first
+    downloader.start(QString::fromUtf8("wget"), QStringList() << QString::fromUtf8("-O") << downloadPath << selectedUrl);
+    if(downloader.waitForFinished(300000)) { // 5 minutes timeout
+      if(downloader.exitCode() == 0) {
+        progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
+        // Start the extraction process
+        commenceExtraction(downloadPath);
+        return;
+      }
+    }
+    
+    // Try curl if wget failed
+    downloader.start(QString::fromUtf8("curl"), QStringList() << QString::fromUtf8("-L") << QString::fromUtf8("-o") << downloadPath << selectedUrl);
+    if(downloader.waitForFinished(300000)) { // 5 minutes timeout
+      if(downloader.exitCode() == 0) {
+        progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
+        // Start the extraction process
+        commenceExtraction(downloadPath);
+        return;
+      }
+    }
+    
+    progress(QString::fromUtf8("Download failed from: %1").arg(selectedUrl));
+    QMessageBox::warning(this, QString::fromUtf8("Download Failed"),
+      QString::fromUtf8("Failed to download from the selected source. Please try another source or use the browse options."));
+    enableButtons(true);
+    return;
+  }
+  
+  // Unknown option
+  progress(QString::fromUtf8("Unknown installation option: %1").arg(selectedOption));
+  QMessageBox::warning(this, QString::fromUtf8("Unknown Option"),
+    QString::fromUtf8("Unknown installation option selected. Please choose a valid option."));
   enableButtons(true);
 }
 
-void Mfc140uExtractor::enableButtons(bool enable)
+void Mfc42uWinetricksExtractor::enableButtons(bool enable)
 {
   ui.BrowseInstaller->setEnabled(enable);
   ui.BrowseDir->setEnabled(enable);

@@ -211,12 +211,27 @@ if(symlink(path1, "mfc42u.dll") != 0){
 ### Completed Tasks
 - [x] Created new branch `mfc42-winetricks-approach`
 - [x] Created progress tracking document
+- [x] **Phase 3: Updated Check Data Component** ✅
+  - [x] Removed MFC140 symlink creation (lines 239-290)
+  - [x] Removed MFC42u.dll symlink to mfc140u.dll (lines 294-310)
+  - [x] Kept only MFC42u.dll symlink to firmware folder
+  - [x] Updated error messages to reference winetricks installation
+  - [x] Replaced complex fallback logic with simple MFC42-only approach
+- [x] **Phase 4: Updated Sources and Configuration** ✅
+  - [x] Renamed `sources_mfc140.txt` to `sources_mfc42.txt`
+  - [x] Updated URLs to MFC42 sources (Visual C++ 6.0 redistributable)
+  - [x] Added winetricks installation instructions
+  - [x] Referenced existing `mfc42_alternative_installers.sh` script
+- [x] **Phase 2: Updated Plugin Installer** ✅
+  - [x] Replaced `Mfc140uExtractor` with `Mfc42uWinetricksExtractor` in header
+  - [x] Updated method signatures from MFC140 to MFC42
+  - [x] Implemented `mfc42uInstall()` method (was missing)
+  - [x] Updated installation flow and state machine
+  - [x] Updated `isMfc140uInstalled()` to `isMfc42uInstalled()`
+  - [x] Updated all references in ltr_gui.cpp
 
 ### In Progress
-- [ ] Phase 1: Create MFC42 Winetricks Extractor
-- [ ] Phase 2: Update Plugin Installer
-- [ ] Phase 3: Update Check Data Component
-- [ ] Phase 4: Update Sources and Configuration
+- [ ] Phase 1: Create MFC42 Winetricks Extractor (implementation needed)
 - [ ] Phase 5: Update Documentation
 
 ### Blocked Tasks
