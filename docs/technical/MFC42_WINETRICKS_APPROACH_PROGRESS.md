@@ -242,6 +242,15 @@ if(symlink(path1, "mfc42u.dll") != 0){
 
 ### In Progress
 - [ ] Phase 5: Update Documentation
+- [x] **UX Improvements for Winetricks Installation** ✅
+  - [x] Add user confirmation dialog before MFC42 installation
+  - [x] Provide clear explanation of winetricks process
+  - [x] Add progress updates every 30 seconds during installation
+  - [x] Warn users about potential system hang appearance
+  - [x] Improve error messages and output logging
+  - [x] Add additional search paths for MFC42 libraries
+  - [x] Update UI instructions to emphasize winetricks
+  - [x] Add QTimer include for progress updates
 
 ### Blocked Tasks
 - None currently

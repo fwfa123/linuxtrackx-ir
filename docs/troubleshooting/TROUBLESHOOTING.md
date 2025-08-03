@@ -668,6 +668,204 @@ cp /opt/linuxtrack/share/linuxtrack/linuxtrack1.conf ~/.config/linuxtrack/
 
 ---
 
+## 🔧 MFC42 Winetricks Installation Issues
+
+### Problem: Winetricks installation appears to hang
+
+**Symptoms:**
+- System appears frozen during winetricks mfc42 installation
+- No progress updates for several minutes
+- User thinks computer has locked up
+
+**Solutions:**
+```bash
+# 1. This is normal behavior - winetricks installation can take 5-10 minutes
+# 2. Check if winetricks is actually running
+ps aux | grep winetricks
+
+# 3. Monitor Wine prefix creation
+ls -la /tmp/linuxtrack_mfc42_winetricks_*
+
+# 4. Check for progress in the LinuxTrack GUI
+# Look for progress messages like "Winetricks installation in progress... (X minutes elapsed)"
+```
+
+### Problem: Winetricks not available
+
+**Symptoms:**
+- "Winetricks not available" error message
+- Installation falls back to alternative methods
+
+**Solutions:**
+```bash
+# Install winetricks (Ubuntu/Debian)
+sudo apt update
+sudo apt install winetricks
+
+# Install winetricks (Fedora/RHEL)
+sudo dnf install winetricks
+
+# Install winetricks (Arch Linux)
+sudo pacman -S winetricks
+
+# Verify installation
+winetricks --version
+```
+
+### Problem: MFC42 installation fails via winetricks
+
+**Symptoms:**
+- Winetricks installation completes but mfc42u.dll not found
+- Error messages about missing MFC42 libraries
+
+**Solutions:**
+```bash
+# 1. Check if winetricks actually installed MFC42
+find ~/.wine -name "*mfc42*" -type f
+
+# 2. Try alternative winetricks command
+winetricks vcrun6
+
+# 3. Use the alternative installation script
+cd /path/to/linuxtrack/scripts/install/
+./mfc42_alternative_installers.sh install
+
+# 4. Manual installation fallback
+# Download Visual C++ 6.0 Redistributable manually
+# Extract mfc42u.dll and copy to ~/.config/linuxtrack/tir_firmware/
+```
+
+### Problem: MFC42 libraries not found after installation
+
+**Symptoms:**
+- "mfc42u.dll not found" error messages
+- Wine applications fail to start with MFC42 errors
+
+**Solutions:**
+```bash
+# 1. Check if MFC42 libraries are in the correct location
+ls -la ~/.config/linuxtrack/tir_firmware/mfc42u.dll
+
+# 2. Verify file permissions
+chmod 644 ~/.config/linuxtrack/tir_firmware/mfc42u.dll
+
+# 3. Check Wine prefix for MFC42 libraries
+find ~/.wine -name "*mfc42*" -type f
+
+# 4. Copy MFC42 libraries from Wine prefix to firmware directory
+cp ~/.wine/drive_c/windows/system32/mfc42u.dll ~/.config/linuxtrack/tir_firmware/
+```
+
+### Problem: Alternative installation script fails
+
+**Symptoms:**
+- "Alternative installation script not found" error
+- Script exits with non-zero code
+
+**Solutions:**
+```bash
+# 1. Verify script exists and is executable
+ls -la /path/to/linuxtrack/scripts/install/mfc42_alternative_installers.sh
+
+# 2. Make script executable
+chmod +x /path/to/linuxtrack/scripts/install/mfc42_alternative_installers.sh
+
+# 3. Run script manually to see detailed output
+cd /path/to/linuxtrack/scripts/install/
+./mfc42_alternative_installers.sh install
+
+# 4. Check script dependencies
+# Ensure cabextract, wget, and other tools are installed
+```
+
+### Problem: User cancels MFC42 installation
+
+**Symptoms:**
+- User clicks "No" in confirmation dialog
+- Installation stops at MFC42 step
+
+**Solutions:**
+```bash
+# 1. Restart the installation process
+# Run LinuxTrack GUI and try MFC42 installation again
+
+# 2. Manual installation
+# Use the "Browse Installer" or "Browse Directory" options in the GUI
+
+# 3. Command line installation
+winetricks mfc42
+# Then copy mfc42u.dll to firmware directory manually
+```
+
+### Problem: Cross-distribution compatibility issues
+
+**Symptoms:**
+- Winetricks works on one distribution but not another
+- Different package managers have different winetricks versions
+
+**Solutions:**
+```bash
+# 1. Use distribution-specific winetricks installation
+# Ubuntu/Debian: sudo apt install winetricks
+# Fedora/RHEL: sudo dnf install winetricks
+# Arch Linux: sudo pacman -S winetricks
+
+# 2. Use alternative installation methods
+# - Manual download and extraction
+# - Alternative installation script
+# - Package manager MFC42 packages (if available)
+
+# 3. Check winetricks version compatibility
+winetricks --version
+# Some older versions may not support mfc42
+```
+
+### Problem: Wine prefix creation fails
+
+**Symptoms:**
+- "Failed to create temporary wine prefix" error
+- Permission denied errors during prefix creation
+
+**Solutions:**
+```bash
+# 1. Check disk space
+df -h /tmp
+
+# 2. Check permissions on /tmp
+ls -la /tmp
+
+# 3. Clean up old temporary prefixes
+rm -rf /tmp/linuxtrack_mfc42_winetricks_*
+
+# 4. Use different temporary directory
+export TMPDIR=~/tmp
+mkdir -p ~/tmp
+```
+
+### Problem: MFC42 installation timeout
+
+**Symptoms:**
+- Installation times out after 5 minutes
+- Network issues during download
+
+**Solutions:**
+```bash
+# 1. Check network connectivity
+ping -c 3 google.com
+
+# 2. Try alternative download sources
+# Use the "Browse Installer" option with manually downloaded files
+
+# 3. Increase timeout (if modifying source code)
+# Default timeout is 300 seconds (5 minutes)
+
+# 4. Use offline installation
+# Download Visual C++ 6.0 Redistributable manually
+# Use "Browse Directory" option in GUI
+```
+
+---
+
 ## 🆘 Getting Help
 
 ### Collecting Debug Information

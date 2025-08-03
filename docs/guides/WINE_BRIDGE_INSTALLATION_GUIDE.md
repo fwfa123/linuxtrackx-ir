@@ -143,7 +143,7 @@ sudo make install
 sudo pacman -S --needed base-devel autoconf automake libtool \
     qt5-base qt5-tools qt5-x11extras opencv libusb mxml \
     libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs \
-    v4l-utils wine-staging winetricks mfc42 nsis
+    v4l-utils wine-staging winetricks nsis
 ```
 
 #### **Step 2: Run Automated Installer**
@@ -212,7 +212,7 @@ sudo dnf install -y gcc gcc-c++ make autoconf automake libtool \
     qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel \
     opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel \
     bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel \
-    wine-staging winetricks mfc42
+    wine-staging winetricks
 
 # Install Wine development tools
 sudo dnf install -y wine-devel wine-tools
@@ -305,6 +305,33 @@ sudo dnf install glibc-devel.i686 libstdc++-devel.i686
 
 # Arch Linux
 sudo pacman -S lib32-glibc lib32-gcc-libs
+```
+
+#### **MFC42 Installation Issues**
+```bash
+# MFC42 libraries are now installed via winetricks during LinuxTrack setup
+# If you encounter MFC42 issues:
+
+# 1. Install winetricks if not already installed
+# Ubuntu/Debian/MX
+sudo apt install winetricks
+
+# Fedora/RHEL
+sudo dnf install winetricks
+
+# Arch Linux
+sudo pacman -S winetricks
+
+# 2. Manual MFC42 installation
+winetricks mfc42
+
+# 3. Copy MFC42 libraries to LinuxTrack firmware directory
+cp ~/.wine/drive_c/windows/system32/mfc42u.dll ~/.config/linuxtrack/tir_firmware/
+
+# 4. Alternative installation methods
+# - Use the LinuxTrack GUI MFC42 installer
+# - Download Visual C++ 6.0 Redistributable manually
+# - Use the alternative installation script: scripts/install/mfc42_alternative_installers.sh
 ```
 
 #### **Wine Bridge Components Not Working**
