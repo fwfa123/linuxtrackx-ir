@@ -506,15 +506,47 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
     QString winePath;
     if (!wineVersion.isEmpty()) {
         QString homeDir = getHomeDirectory();
-        winePath = homeDir + QString::fromUtf8("/.local/share/lutris/runners/wine/") + wineVersion + QString::fromUtf8("/bin/wine");
+        
+        // Handle special cases for "Default wine" and "winehq-staging"
+        QString actualWineVersion = wineVersion;
+        if (wineVersion == QString::fromUtf8("winehq-staging") || 
+            wineVersion == QString::fromUtf8("Default wine") ||
+            wineVersion == QString::fromUtf8("wine-staging")) {
+            debugInfo += QString::fromUtf8("Detected 'Default wine' or 'winehq-staging', checking for system Wine\n");
+            ltr_int_log_message("Detected 'Default wine' or 'winehq-staging', checking for system Wine\n");
+        }
+        
+        winePath = homeDir + QString::fromUtf8("/.local/share/lutris/runners/wine/") + actualWineVersion + QString::fromUtf8("/bin/wine");
         
         QFileInfo wineFile(winePath);
         if (!wineFile.exists()) {
             debugInfo += QString::fromUtf8("Lutris Wine version not found at: ") + winePath + QString::fromUtf8("\n");
             ltr_int_log_message("Lutris Wine version not found at: %s\n", winePath.toUtf8().constData());
-            winePath = QString::fromUtf8("wine"); // Fallback to system wine
-            debugInfo += QString::fromUtf8("Falling back to system wine\n");
-            ltr_int_log_message("Falling back to system wine\n");
+            
+            // Try to find alternative Wine installations
+            QStringList alternativePaths;
+            alternativePaths << QString::fromUtf8("/usr/bin/wine");
+            alternativePaths << QString::fromUtf8("/usr/local/bin/wine");
+            alternativePaths << QString::fromUtf8("/opt/wine-staging/bin/wine");
+            alternativePaths << QString::fromUtf8("/opt/wine-stable/bin/wine");
+            
+            bool foundAlternative = false;
+            for (const QString &altPath : alternativePaths) {
+                QFileInfo altWineFile(altPath);
+                if (altWineFile.exists() && altWineFile.isExecutable()) {
+                    winePath = altPath;
+                    debugInfo += QString::fromUtf8("Found alternative Wine at: ") + winePath + QString::fromUtf8("\n");
+                    ltr_int_log_message("Found alternative Wine at: %s\n", winePath.toUtf8().constData());
+                    foundAlternative = true;
+                    break;
+                }
+            }
+            
+            if (!foundAlternative) {
+                winePath = QString::fromUtf8("wine"); // Fallback to system wine
+                debugInfo += QString::fromUtf8("Falling back to system wine\n");
+                ltr_int_log_message("Falling back to system wine\n");
+            }
         } else {
             debugInfo += QString::fromUtf8("Using Lutris Wine version: ") + winePath + QString::fromUtf8("\n");
             ltr_int_log_message("Using Lutris Wine version: %s\n", winePath.toUtf8().constData());
