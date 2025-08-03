@@ -57,7 +57,7 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Fedora / RHEL / CentOS**
@@ -73,7 +73,7 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Arch Linux / Manjaro**
@@ -116,7 +116,7 @@ make -j$(nproc)
 
 # Install
 sudo make install
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Method 3: Optimized Wine Installation (Advanced)**
@@ -345,7 +345,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | MFC140 installation fails | Use the built-in MFC140 installer in the GUI, or manually download Visual C++ 2015-2022 Redistributable |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied on device | Add user to plugdev group: `sudo usermod -a -G plugdev $USER` |
+| Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
 | Firmware extraction fails | Run `./scripts/wine_check.sh` to diagnose Wine issues |
 

@@ -117,8 +117,8 @@ make -j$(nproc)
 # Install
 sudo make install
 
-# Add user to plugdev group
-sudo usermod -a -G plugdev $USER
+# Add user to required groups
+sudo usermod -a -G plugdev,input $USER
 ```
 
 ### Method 3: Prebuilt Installation
@@ -570,7 +570,7 @@ ltr_gui
 
 # Check USB permissions
 ls -la /dev/bus/usb/
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 ## 📖 Additional Resources

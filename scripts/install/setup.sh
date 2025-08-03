@@ -80,14 +80,14 @@ setup_groups() {
         fi
         
         print_status "Adding user $USERNAME to required groups..."
-        usermod -a -G plugdev,linuxtrack "$USERNAME"
+        usermod -a -G plugdev,linuxtrack,input "$USERNAME"
         print_success "User added to groups"
         print_warning "User must log out and log back in for group changes to take effect"
     else
         print_warning "Cannot configure groups without root privileges"
         print_warning "To configure groups manually:"
         print_warning "  sudo groupadd linuxtrack  # if group doesn't exist"
-        print_warning "  sudo usermod -a -G plugdev,linuxtrack $USER"
+        print_warning "  sudo usermod -a -G plugdev,linuxtrack,input $USER"
     fi
 }
 

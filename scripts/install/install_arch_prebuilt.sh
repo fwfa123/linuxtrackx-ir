@@ -199,7 +199,7 @@ install_linuxtrack() {
     }
     
     # Add user to required groups
-    sudo usermod -a -G plugdev "$USER" 2>/dev/null || true
+    sudo usermod -a -G plugdev,input "$USER" 2>/dev/null || true
     
     print_success "LinuxTrack installed successfully"
     return 0
