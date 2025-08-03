@@ -27,6 +27,11 @@
 #include "windef.h"
 #include "winbase.h"
 #include "NPClient_dll.h"
+
+// Wine-specific socket communication includes (after Windows headers)
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <errno.h>
 #ifndef __MINGW32__
 #include "wine/debug.h"
 #else
@@ -54,6 +59,50 @@ static void dbg_report(const char *msg,...)
     fflush(f);
     va_end(ap);
   }
+}
+
+// Wine-specific socket communication functions
+static int send_command_to_master(uint32_t cmd, uint32_t data)
+{
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock == -1) {
+    dbg_report("Failed to create socket: %s\n", strerror(errno));
+    return -1;
+  }
+
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+
+  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    dbg_report("Failed to connect to master socket: %s\n", strerror(errno));
+    close(sock);
+    return -1;
+  }
+
+  // Send command message using the same structure as ltr_srv_comm.h
+  struct {
+    uint32_t cmd;
+    uint32_t data;
+    char str[500];
+  } msg;
+  
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = cmd;
+  msg.data = data;
+  msg.str[0] = '\0';
+
+  ssize_t sent = send(sock, &msg, sizeof(msg), 0);
+  if (sent == -1) {
+    dbg_report("Failed to send command: %s\n", strerror(errno));
+    close(sock);
+    return -1;
+  }
+
+  dbg_report("Successfully sent command %u to master\n", cmd);
+  close(sock);
+  return 0;
 }
 
 
@@ -668,7 +717,33 @@ int __stdcall NPCLIENT_NP_StartCursor(void)
 int __stdcall NPCLIENT_NP_StartDataTransmission(void)
 {
   dbg_report("StartDataTransmission request\n");
-  linuxtrack_wakeup();
+  
+  // First check if master is running by trying to connect
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock == -1) {
+    dbg_report("Failed to create socket for master check: %s\n", strerror(errno));
+    return 0;
+  }
+  
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+  
+  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    dbg_report("LinuxTrack master is not running. Please start the LinuxTrack GUI first.\n");
+    close(sock);
+    return 0;
+  }
+  close(sock);
+  
+  // Master is running, try to send CMD_WAKEUP
+  if (send_command_to_master(3, 0) == 0) {
+    dbg_report("Successfully sent CMD_WAKEUP to master\n");
+  } else {
+    dbg_report("Failed to send CMD_WAKEUP to master, device may need manual start\n");
+    // Don't fall back to direct call as it won't work in Wine
+  }
   return 0;
 }
 /******************************************************************
@@ -690,7 +765,33 @@ int __stdcall NPCLIENT_NP_StopCursor(void)
 int __stdcall NPCLIENT_NP_StopDataTransmission(void)
 {
   dbg_report("StopDataTransmission request\n");
-  linuxtrack_suspend();
+  
+  // First check if master is running by trying to connect
+  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock == -1) {
+    dbg_report("Failed to create socket for master check: %s\n", strerror(errno));
+    return 0;
+  }
+  
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+  
+  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
+    dbg_report("LinuxTrack master is not running.\n");
+    close(sock);
+    return 0;
+  }
+  close(sock);
+  
+  // Master is running, try to send CMD_PAUSE
+  if (send_command_to_master(2, 0) == 0) {
+    dbg_report("Successfully sent CMD_PAUSE to master\n");
+  } else {
+    dbg_report("Failed to send CMD_PAUSE to master\n");
+    // Don't fall back to direct call as it won't work in Wine
+  }
   return 0;
 }
 /******************************************************************

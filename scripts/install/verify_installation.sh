@@ -395,7 +395,7 @@ provide_troubleshooting() {
         echo ""
         
         echo "• Permission issues:"
-        echo "  → Add user to plugdev group: sudo usermod -a -G plugdev \$USER"
+        echo "  → Add user to required groups: sudo usermod -a -G plugdev,input \$USER"
         echo "  → Log out and log back in for group changes to take effect"
         echo ""
         

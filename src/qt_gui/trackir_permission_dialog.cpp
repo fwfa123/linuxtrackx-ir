@@ -139,7 +139,7 @@ void TrackIRPermissionDialog::onHelpClicked()
            "<pre>sudo cp /path/to/linuxtrack/src/99-TIR.rules /lib/udev/rules.d/\n"
            "sudo udevadm control --reload-rules</pre>"
            "<p><b>2. Add user to plugdev group:</b></p>"
-           "<pre>sudo usermod -a -G plugdev $USER</pre>"
+           "<pre>sudo usermod -a -G plugdev,input $USER</pre>"
            "<p><b>3. Log out and log back in</b></p>"
            "<p><b>4. Test TrackIR access:</b></p>"
            "<pre>lsusb | grep 131d</pre>"
@@ -257,7 +257,7 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "fi\n"
         "\n"
         "# Add user to plugdev group\n"
-        "usermod -a -G plugdev \"%1\"\n"
+        "usermod -a -G plugdev,input \"%1\"\n"
         "\n"
         "# Create uinput group if it doesn't exist\n"
         "if ! getent group uinput > /dev/null 2>&1; then\n"
@@ -341,9 +341,9 @@ bool TrackIRPermissionDialog::addUserToGroups()
         return false;
     }
     
-    // Add user to plugdev group
+    // Add user to plugdev and input groups
     QStringList arguments;
-    arguments << QString::fromUtf8("usermod") << QString::fromUtf8("-a") << QString::fromUtf8("-G") << QString::fromUtf8("plugdev") << currentUser;
+    arguments << QString::fromUtf8("usermod") << QString::fromUtf8("-a") << QString::fromUtf8("-G") << QString::fromUtf8("plugdev,input") << currentUser;
     
     process.start(QString::fromUtf8("pkexec"), arguments);
     if (!process.waitForFinished(30000)) {
@@ -356,7 +356,7 @@ bool TrackIRPermissionDialog::addUserToGroups()
     }
     
     if (process.exitCode() != 0) {
-        qDebug() << "Failed to add user to plugdev group:" << process.errorString();
+        qDebug() << "Failed to add user to plugdev and input groups:" << process.errorString();
         return false;
     }
     

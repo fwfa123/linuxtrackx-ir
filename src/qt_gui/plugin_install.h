@@ -32,7 +32,7 @@ class PluginInstall : public QObject
   void installLutrisWineBridge();
   void installSteamProtonBridge();
  private:
-  enum state{TIR_FW, MFC, LTR_W, DONE, TIR_FW_ONLY, MFC_ONLY} state;
+  enum state{TIR_FW, MFC, LTR_W, DONE, TIR_FW_ONLY, MFC_ONLY, TIR_MFC_ONLY} state;
   const Ui::LinuxtrackMainForm &gui;
   void Connect();
   WineLauncher *inst;
@@ -50,6 +50,7 @@ class PluginInstall : public QObject
   const QString tirViews;
   LutrisIntegration *lutrisIntegration;
   SteamIntegration *steamIntegration;
+  bool isTirMfcOnlyInstallation;  // Flag to track TIR/MFC140 only installation
 };
 
 
