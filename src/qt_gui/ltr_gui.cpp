@@ -632,9 +632,9 @@ void LinuxtrackGui::loadDockingState()
 // Gaming tab slot implementations
 void LinuxtrackGui::on_InstallTirMfcButton_pressed()
 {
-    // Call the new TIR/MFC140 installation method
+    // Call the new TIR/MFC42 installation method
     if (pi) {
-        pi->installTirFirmwareAndMfc140();
+        pi->installTirFirmwareAndMfc42();
     }
 }
 

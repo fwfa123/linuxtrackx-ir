@@ -1,0 +1,13 @@
+# Visual C++ 6.0 Redistributable sources for MFC42
+# These are the official Microsoft Visual C++ 6.0 Redistributables
+# that contain mfc42u.dll (MFC libraries for Visual C++ 6.0)
+
+# Microsoft Visual C++ 6.0 Redistributable
+https://download.microsoft.com/download/vc60pro/redist/6.0.8447.0/Win98Me/EN-US/vcredist.exe
+
+# Alternative download locations (if Microsoft servers are unavailable)
+https://web.archive.org/web/*/https://download.microsoft.com/download/vc60pro/redist/6.0.8447.0/Win98Me/EN-US/vcredist.exe
+
+# Winetricks installation method (preferred)
+# winetricks mfc42
+# winetricks vcrun6 
