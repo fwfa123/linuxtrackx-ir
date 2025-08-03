@@ -122,7 +122,7 @@
        <item>
         <widget class="QPushButton" name="InstallTirMfcButton">
          <property name="text">
-          <string>Install Linuxtrack-Wine support (TIR Firmware + MFC140)</string>
+          <string>Install Linuxtrack-Wine support (TIR Firmware + MFC42)</string>
          </property>
         </widget>
        </item>

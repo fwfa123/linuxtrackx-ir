@@ -303,9 +303,11 @@ LinuxTrack now uses MFC42 libraries installed via winetricks for optimal TrackIR
 
 - **✅ TrackIR Compatibility** - MFC42 works correctly with TrackIR applications
 - **✅ Winetricks Integration** - Uses `winetricks mfc42` for reliable installation
+- **✅ Enhanced Debugging** - Comprehensive logging and fallback mechanisms
 - **✅ User-Friendly Process** - Clear progress updates and user confirmation
-- **✅ Multiple Fallback Options** - Alternative installation methods available
+- **✅ Multiple Fallback Options** - Automatic fallback to `winetricks vcrun6` if needed
 - **✅ Cross-Distribution Support** - Works across different Linux distributions
+- **✅ 32-bit Wine Prefix** - Forces 32-bit wine prefix for optimal MFC42 compatibility
 
 ## 🖥️ Display Server Compatibility
 
@@ -343,7 +345,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install wine-devel` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
-| MFC42 installation fails | Use the built-in MFC42 installer in the GUI, or manually run `winetricks mfc42` |
+| MFC42 installation fails | Use the built-in MFC42 installer in the GUI, or manually run `winetricks mfc42`. The enhanced debugging will show detailed output and automatically try `winetricks vcrun6` as fallback |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
@@ -466,12 +468,31 @@ This script will:
 - Clean up build files automatically
 ```
 
+### **Enhanced MFC42 Debugging** 🔍
+The latest version includes comprehensive debugging for MFC42 winetricks installation:
+
+- **Winetricks Version Check** - Verifies winetricks functionality before installation
+- **Environment Setup** - Forces 32-bit wine prefix (`WINEARCH=win32`) for optimal compatibility
+- **Comprehensive Output Capture** - Shows detailed winetricks output for troubleshooting
+- **Automatic Fallback** - If `winetricks mfc42` fails, automatically tries `winetricks vcrun6`
+- **File System Inspection** - Uses `find` and `ls` commands to verify installed files
+- **Progress Updates** - Real-time feedback during long-running installations
+
+**Debugging Output Includes:**
+- Winetricks version and functionality test
+- Wine prefix creation and environment setup
+- Complete winetricks command output
+- File system inspection of installed DLLs
+- Fallback installation attempts
+- Detailed error reporting
+
 ### **Getting Help**
 1. **Try AppImage first** - Easiest installation method
 2. **Check display server** - Verify X11/Wayland compatibility with `echo $XDG_SESSION_TYPE`
 3. **Verify installation** - Run `ltr_gui` to test basic functionality
 4. **Check logs** - Look for error messages in terminal output
 5. **Distribution guides** - See the `docs/` directory for detailed guides
+6. **MFC42 debugging** - Use the enhanced debugging output to troubleshoot winetricks installation
 
 ## 📖 Documentation
 

@@ -782,6 +782,18 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
     return false;
   }
   
+  // Test winetricks functionality
+  progress(QString::fromUtf8("Testing winetricks functionality..."));
+  QProcess testWinetricks;
+  testWinetricks.start(QStringLiteral("winetricks"), QStringList() << QStringLiteral("--version"));
+  testWinetricks.waitForFinished(5000);
+  if(testWinetricks.exitCode() == 0) {
+    QString version = QString::fromUtf8(testWinetricks.readAllStandardOutput());
+    progress(QString::fromUtf8("Winetricks version: %1").arg(version.trimmed()));
+  } else {
+    progress(QString::fromUtf8("Warning: Could not get winetricks version"));
+  }
+  
   // Create a temporary wine prefix for installation
   progress(QString::fromUtf8("Creating temporary Wine prefix..."));
   QString tempPrefix = QDir::tempPath() + QString::fromUtf8("/linuxtrack_mfc42_winetricks_XXXXXX");
@@ -805,6 +817,15 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   progress(QString::fromUtf8("Starting winetricks mfc42 installation..."));
   progress(QString::fromUtf8("This process may take 5-10 minutes. The system may appear to hang - this is normal."));
   
+  // Set up environment for winetricks
+  QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+  env.insert(QStringLiteral("WINEPREFIX"), tempPrefix);
+  env.insert(QStringLiteral("WINEARCH"), QStringLiteral("win32")); // Force 32-bit prefix for MFC42
+  winetricks.setProcessEnvironment(env);
+  
+  progress(QString::fromUtf8("Using wine prefix: %1").arg(tempPrefix));
+  progress(QString::fromUtf8("Wine architecture: win32"));
+  
   winetricks.setWorkingDirectory(tempPrefix);
   winetricks.start(QStringLiteral("winetricks"), args);
   
@@ -825,51 +846,182 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   
   progressTimer.stop();
   
+  // Always capture winetricks output for debugging
+  QString output = QString::fromUtf8(winetricks.readAllStandardOutput());
+  progress(QString::fromUtf8("Winetricks output:"));
+  progress(output);
+  
   if(winetricks.exitCode() != 0) {
-    QString output = QString::fromUtf8(winetricks.readAllStandardOutput());
     progress(QString::fromUtf8("Winetricks installation failed with exit code: %1").arg(winetricks.exitCode()));
-    progress(QString::fromUtf8("Output: %1").arg(output));
     return false;
   }
   
   progress(QString::fromUtf8("Winetricks installation completed successfully"));
-  progress(QString::fromUtf8("Searching for mfc42u.dll in Wine prefix..."));
+  progress(QString::fromUtf8("Searching for MFC42 libraries in Wine prefix..."));
   
-  // Look for mfc42u.dll in the wine prefix
+  // First, let's see what files winetricks actually installed
+  progress(QString::fromUtf8("Checking what files were installed by winetricks..."));
+  
+  // Check for all DLL files in the wine prefix
+  QProcess lsProcess;
+  lsProcess.start(QStringLiteral("find"), QStringList() << tempPrefix << QStringLiteral("-name") << QStringLiteral("*.dll") << QStringLiteral("-type") << QStringLiteral("f"));
+  lsProcess.waitForFinished(10000);
+  QString allDlls = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("All DLL files found in wine prefix:"));
+  progress(allDlls);
+  
+  // Check specifically for MFC files
+  lsProcess.start(QStringLiteral("find"), QStringList() << tempPrefix << QStringLiteral("-name") << QStringLiteral("*mfc*") << QStringLiteral("-type") << QStringLiteral("f"));
+  lsProcess.waitForFinished(10000);
+  QString findOutput = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("MFC files found by winetricks:"));
+  progress(findOutput);
+  
+  // Check for Visual C++ runtime files
+  lsProcess.start(QStringLiteral("find"), QStringList() << tempPrefix << QStringLiteral("-name") << QStringLiteral("*vc*") << QStringLiteral("-type") << QStringLiteral("f"));
+  lsProcess.waitForFinished(10000);
+  QString vcFiles = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("Visual C++ files found by winetricks:"));
+  progress(vcFiles);
+  
+  // Check the wine prefix structure
+  lsProcess.start(QStringLiteral("ls"), QStringList() << QStringLiteral("-la") << tempPrefix);
+  lsProcess.waitForFinished(10000);
+  QString prefixStructure = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("Wine prefix structure:"));
+  progress(prefixStructure);
+  
+  if(QDir(tempPrefix + QString::fromUtf8("/drive_c")).exists()) {
+    lsProcess.start(QStringLiteral("ls"), QStringList() << QStringLiteral("-la") << tempPrefix + QString::fromUtf8("/drive_c"));
+    lsProcess.waitForFinished(10000);
+    QString driveCStructure = QString::fromUtf8(lsProcess.readAllStandardOutput());
+    progress(QString::fromUtf8("drive_c structure:"));
+    progress(driveCStructure);
+  }
+  
+  // Look for mfc42u.dll in the wine prefix with comprehensive search paths
   QStringList searchPaths;
   searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
   searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42.dll");
   searchPaths << tempPrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/mfc42.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+  searchPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
   
   for(const QString& searchPath : searchPaths) {
-    if(QFile::exists(searchPath)) {
-      progress(QString::fromUtf8("Found mfc42u.dll at: %1").arg(searchPath));
-      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-      if(QFile::copy(searchPath, destPath)) {
-        progress(QString::fromUtf8("Mfc42u.dll copied successfully from winetricks installation"));
-        return true;
-      } else {
-        progress(QString::fromUtf8("Failed to copy mfc42u.dll to firmware directory"));
-      }
-    }
-  }
-  
-  progress(QString::fromUtf8("mfc42u.dll not found after winetricks installation"));
-  progress(QString::fromUtf8("Checking alternative locations..."));
-  
-  // Try additional search paths
-  QStringList additionalPaths;
-  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42.dll");
-  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42.dll");
-  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
-  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
-  
-  for(const QString& searchPath : additionalPaths) {
     if(QFile::exists(searchPath)) {
       progress(QString::fromUtf8("Found MFC42 library at: %1").arg(searchPath));
       destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
       if(QFile::copy(searchPath, destPath)) {
         progress(QString::fromUtf8("MFC42 library copied successfully from winetricks installation"));
+        return true;
+      } else {
+        progress(QString::fromUtf8("Failed to copy MFC42 library to firmware directory"));
+      }
+    }
+  }
+  
+  progress(QString::fromUtf8("MFC42 libraries not found in standard locations"));
+  progress(QString::fromUtf8("Checking alternative locations and file patterns..."));
+  
+  // Try additional search paths and file patterns
+  QStringList additionalPaths;
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc*.dll");
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc*.dll");
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42*.dll");
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42*.dll");
+  
+  for(const QString& searchPath : additionalPaths) {
+    QDir dir(QFileInfo(searchPath).absolutePath());
+    QString pattern = QFileInfo(searchPath).fileName();
+    QStringList files = dir.entryList(QStringList() << pattern, QDir::Files);
+    for(const QString& file : files) {
+      QString fullPath = dir.absoluteFilePath(file);
+      progress(QString::fromUtf8("Found MFC library: %1").arg(fullPath));
+      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+      if(QFile::copy(fullPath, destPath)) {
+        progress(QString::fromUtf8("MFC library copied successfully from winetricks installation"));
+        return true;
+      }
+    }
+  }
+  
+  progress(QString::fromUtf8("No MFC42 libraries found after winetricks mfc42 installation"));
+  progress(QString::fromUtf8("Trying winetricks vcrun6 as fallback..."));
+  
+  // Try winetricks vcrun6 as a fallback
+  args.clear();
+  args << QStringLiteral("vcrun6");
+  
+  progress(QString::fromUtf8("Starting winetricks vcrun6 installation..."));
+  winetricks.start(QStringLiteral("winetricks"), args);
+  
+  if(!winetricks.waitForFinished(300000)) { // 5 minutes timeout
+    progress(QString::fromUtf8("Winetricks vcrun6 installation timed out after 5 minutes"));
+    return false;
+  }
+  
+  // Always capture winetricks vcrun6 output for debugging
+  QString output2 = QString::fromUtf8(winetricks.readAllStandardOutput());
+  progress(QString::fromUtf8("Winetricks vcrun6 output:"));
+  progress(output2);
+  
+  if(winetricks.exitCode() != 0) {
+    progress(QString::fromUtf8("Winetricks vcrun6 installation failed with exit code: %1").arg(winetricks.exitCode()));
+    return false;
+  }
+  
+  progress(QString::fromUtf8("Winetricks vcrun6 installation completed successfully"));
+  progress(QString::fromUtf8("Searching for MFC42 libraries after vcrun6 installation..."));
+  
+  // Check again for MFC42 libraries after vcrun6 installation
+  lsProcess.start(QStringLiteral("find"), QStringList() << tempPrefix << QStringLiteral("-name") << QStringLiteral("*mfc*") << QStringLiteral("-type") << QStringLiteral("f"));
+  lsProcess.waitForFinished(10000);
+  QString findOutput2 = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("MFC files found after vcrun6:"));
+  progress(findOutput2);
+  
+  // Check for all DLL files after vcrun6
+  lsProcess.start(QStringLiteral("find"), QStringList() << tempPrefix << QStringLiteral("-name") << QStringLiteral("*.dll") << QStringLiteral("-type") << QStringLiteral("f"));
+  lsProcess.waitForFinished(10000);
+  QString allDlls2 = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("All DLL files found after vcrun6:"));
+  progress(allDlls2);
+  
+  // Check for Visual C++ runtime files after vcrun6
+  lsProcess.start(QStringLiteral("find"), QStringList() << tempPrefix << QStringLiteral("-name") << QStringLiteral("*vc*") << QStringLiteral("-type") << QStringLiteral("f"));
+  lsProcess.waitForFinished(10000);
+  QString vcFiles2 = QString::fromUtf8(lsProcess.readAllStandardOutput());
+  progress(QString::fromUtf8("Visual C++ files found after vcrun6:"));
+  progress(vcFiles2);
+  
+  // Search again with the same comprehensive paths
+  for(const QString& searchPath : searchPaths) {
+    if(QFile::exists(searchPath)) {
+      progress(QString::fromUtf8("Found MFC42 library at: %1").arg(searchPath));
+      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+      if(QFile::copy(searchPath, destPath)) {
+        progress(QString::fromUtf8("MFC42 library copied successfully from winetricks vcrun6 installation"));
+        return true;
+      } else {
+        progress(QString::fromUtf8("Failed to copy MFC42 library to firmware directory"));
+      }
+    }
+  }
+  
+  // Try the additional search paths again
+  for(const QString& searchPath : additionalPaths) {
+    QDir dir(QFileInfo(searchPath).absolutePath());
+    QString pattern = QFileInfo(searchPath).fileName();
+    QStringList files = dir.entryList(QStringList() << pattern, QDir::Files);
+    for(const QString& file : files) {
+      QString fullPath = dir.absoluteFilePath(file);
+      progress(QString::fromUtf8("Found MFC library: %1").arg(fullPath));
+      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+      if(QFile::copy(fullPath, destPath)) {
+        progress(QString::fromUtf8("MFC library copied successfully from winetricks vcrun6 installation"));
         return true;
       }
     }
@@ -1038,7 +1190,7 @@ bool Mfc42uWinetricksExtractor::downloadVCRedist()
     if(downloader.waitForFinished(300000)) { // 5 minutes timeout
       if(downloader.exitCode() == 0) {
         progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-        if(extractMfc140FromInstaller(downloadPath)) {
+        if(extractMfc42FromInstaller(downloadPath)) {
           return true;
         }
       }
@@ -1049,7 +1201,7 @@ bool Mfc42uWinetricksExtractor::downloadVCRedist()
     if(downloader.waitForFinished(300000)) { // 5 minutes timeout
       if(downloader.exitCode() == 0) {
         progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-        if(extractMfc140FromInstaller(downloadPath)) {
+        if(extractMfc42FromInstaller(downloadPath)) {
           return true;
         }
       }
@@ -1387,6 +1539,14 @@ void Mfc42uWinetricksExtractor::enableButtons(bool enable)
   ui.BrowseDir->setEnabled(enable);
   ui.QuitButton->setEnabled(enable);
   ui.DownloadButton->setEnabled(enable);
+}
+
+void Mfc42uWinetricksExtractor::on_WinetricksButton_pressed()
+{
+  // This method is called when the winetricks button is pressed
+  // It should trigger the winetricks installation process
+  progress(QString::fromUtf8("Starting winetricks MFC42 installation..."));
+  tryWinetricksInstall();
 }
 
 

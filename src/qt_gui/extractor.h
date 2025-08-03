@@ -132,6 +132,7 @@ class Mfc42uWinetricksExtractor : public Extractor
   void showDownloadInstructions();
   void showWinetricksInstructions();
   bool isWinetricksAvailable();
+  void populateDownloadCombo();
   
  private slots:
   void wineFinished(bool result);

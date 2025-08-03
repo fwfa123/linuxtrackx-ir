@@ -77,16 +77,16 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
                                 WS_VISIBLE | WS_CHILD | WS_GROUP | SS_LEFT,
                                 18, 20, 170, 15, hwnd, (HMENU)IDQUIT+2, hInst, 0);
             /* SetDlgItemInt(hwndDlg, IDC_APPID, 2307, true); */
-            // Try MFC140 first (modern approach)
-            mfcHandle = LoadLibrary("mfc140u.dll");
+            // Try MFC42 first (TrackIR compatibility)
+            mfcHandle = LoadLibrary("mfc42u.dll");
             if(!mfcHandle){
-              // Fallback to MFC42 for backward compatibility
-              mfcHandle = LoadLibrary("mfc42u.dll");
+              // Fallback to MFC140 for modern applications
+              mfcHandle = LoadLibrary("mfc140u.dll");
               if(!mfcHandle){
                 /* DWORD err = GetLastError(); */
                 message_("Can't load MFC libraries needed by TIRViews.dll.\n"
-                         "Try installing Visual C++ 2015-2022 MFC libraries:\n"
-                         "winetricks vcrun2015 vcrun2017 vcrun2019 vcrun2022");
+                         "Try installing MFC42 libraries:\n"
+                         "winetricks mfc42");
                 return TRUE;
               }
             }
