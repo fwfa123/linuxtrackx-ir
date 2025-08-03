@@ -191,7 +191,7 @@ make -j$(nproc)
 sudo make install
 
 # Add user to required groups
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Step 3: Verify Installation**
@@ -233,7 +233,7 @@ make -j$(nproc)
 sudo make install
 
 # Add user to required groups
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Step 3: Verify Installation**
@@ -322,7 +322,7 @@ wine ~/.wine/drive_c/windows/system32/check_data.exe
 #### **Permission Issues**
 ```bash
 # Add user to required groups
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 
 # Log out and back in for changes to take effect
 ```

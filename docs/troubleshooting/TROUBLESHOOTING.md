@@ -97,7 +97,7 @@ sudo dnf install autoconf automake libtool  # Fedora/RHEL
 **Solutions:**
 ```bash
 # 1. Add user to required groups
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 
 # 2. Install and reload udev rules
 sudo cp /opt/linuxtrack/share/linuxtrack/99-TIR.rules /lib/udev/rules.d/

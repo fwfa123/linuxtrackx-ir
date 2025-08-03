@@ -207,7 +207,7 @@ pkg-config --modversion opencv4
 sudo make install
 
 # Add user to required groups
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 
 # Log out and log back in for group changes to take effect
 ```

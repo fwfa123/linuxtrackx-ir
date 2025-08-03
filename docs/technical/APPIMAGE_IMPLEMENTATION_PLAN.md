@@ -302,7 +302,7 @@ fi
 # Check if user is in plugdev group
 if ! groups $USER | grep -q plugdev; then
     echo "Adding user to plugdev group..."
-    sudo usermod -a -G plugdev $USER
+    sudo usermod -a -G plugdev,input $USER
     echo "Please log out and back in for changes to take effect"
 fi
 
