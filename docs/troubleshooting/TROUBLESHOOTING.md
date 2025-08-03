@@ -735,6 +735,34 @@ cd /path/to/linuxtrack/scripts/install/
 # Extract mfc42u.dll and copy to ~/.config/linuxtrack/tir_firmware/
 ```
 
+### Problem: Enhanced debugging shows empty wine prefix
+
+**Symptoms:**
+- Winetricks reports success but wine prefix is empty
+- Debug output shows "total 16" with no files in wine prefix
+- All find commands return empty results
+
+**Solutions:**
+```bash
+# 1. Check winetricks version and functionality
+winetricks --version
+
+# 2. Verify wine environment setup
+echo $WINEPREFIX
+echo $WINEARCH
+
+# 3. Try manual winetricks installation
+WINEPREFIX=/tmp/test_prefix WINEARCH=win32 winetricks mfc42
+
+# 4. Check for wine/winetricks conflicts
+which wine
+which winetricks
+wine --version
+
+# 5. Try alternative wine installation
+# Some distributions have wine conflicts - try wine-stable instead of wine-staging
+```
+
 ### Problem: MFC42 libraries not found after installation
 
 **Symptoms:**
