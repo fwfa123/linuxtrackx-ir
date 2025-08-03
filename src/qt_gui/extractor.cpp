@@ -7,6 +7,7 @@
 #include <QRegExp>
 #include <QDir>
 #include <QDirIterator>
+#include <QTimer>
 #include <unistd.h>
 #include <cstdlib>
 
@@ -587,12 +588,12 @@ Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extracto
     "<div style='margin: 0; padding: 0;'>"
     "<p>To install the required MFC42 libraries, you can:</p>"
     "<div style='margin-left: 20px;'>"
-    "<p style='margin: 5px 0;'>1. <b>Use Winetricks</b>: Click 'Download' to install via winetricks mfc42</p>"
+    "<p style='margin: 5px 0;'>1. <b>Use Winetricks (Recommended)</b>: Click 'Install with Winetricks' to install via winetricks mfc42</p>"
     "<p style='margin: 5px 0;'>2. <b>Browse for installer</b>: If you already have the Visual C++ 6.0 Redistributable</p>"
     "<p style='margin: 5px 0;'>3. <b>Browse directory</b>: If you have extracted the installer to a directory</p>"
     "</div>"
-    "<p>The Visual C++ 6.0 Redistributable contains the required mfc42u.dll file.</p>"
-    "<p><b>Note:</b> Winetricks installation is the preferred method.</p>"
+    "<p><b>Important:</b> Winetricks installation may take 5-10 minutes and the system may appear to hang. This is normal.</p>"
+    "<p><b>Note:</b> Winetricks installation is the preferred method as it ensures compatibility.</p>"
     "</div>"
   ));
   
@@ -772,7 +773,8 @@ void Mfc42uWinetricksExtractor::startAutomaticInstallation()
 
 bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
 {
-  progress(QString::fromUtf8("Trying winetricks mfc42 installation..."));
+  progress(QString::fromUtf8("Starting winetricks mfc42 installation..."));
+  progress(QString::fromUtf8("This may take several minutes. Please be patient."));
   
   // Check if winetricks is available
   if(!isWinetricksAvailable()) {
@@ -781,6 +783,7 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   }
   
   // Create a temporary wine prefix for installation
+  progress(QString::fromUtf8("Creating temporary Wine prefix..."));
   QString tempPrefix = QDir::tempPath() + QString::fromUtf8("/linuxtrack_mfc42_winetricks_XXXXXX");
   QByteArray charData = tempPrefix.toUtf8();
   char *prefix = mkdtemp(charData.data());
@@ -789,6 +792,7 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
     return false;
   }
   tempPrefix = QString::fromUtf8(prefix);
+  progress(QString::fromUtf8("Created temporary prefix: %1").arg(tempPrefix));
   
   // Run winetricks mfc42
   QProcess winetricks;
@@ -798,20 +802,38 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   QStringList args;
   args << QStringLiteral("mfc42");
   
-  progress(QString::fromUtf8("Running: winetricks mfc42 in prefix: %1").arg(tempPrefix));
+  progress(QString::fromUtf8("Starting winetricks mfc42 installation..."));
+  progress(QString::fromUtf8("This process may take 5-10 minutes. The system may appear to hang - this is normal."));
   
   winetricks.setWorkingDirectory(tempPrefix);
   winetricks.start(QStringLiteral("winetricks"), args);
   
+  // Show progress updates every 30 seconds
+  QTimer progressTimer;
+  int progressCount = 0;
+  QObject::connect(&progressTimer, &QTimer::timeout, [&]() {
+    progressCount++;
+    progress(QString::fromUtf8("Winetricks installation in progress... (%1 minutes elapsed)").arg(progressCount * 0.5));
+  });
+  progressTimer.start(30000); // 30 seconds
+  
   if(!winetricks.waitForFinished(300000)) { // 5 minutes timeout
-    progress(QString::fromUtf8("Winetricks installation timed out"));
+    progressTimer.stop();
+    progress(QString::fromUtf8("Winetricks installation timed out after 5 minutes"));
     return false;
   }
   
+  progressTimer.stop();
+  
   if(winetricks.exitCode() != 0) {
-    progress(QString::fromUtf8("Winetricks installation failed: %1").arg(QString::fromUtf8(winetricks.readAllStandardOutput())));
+    QString output = QString::fromUtf8(winetricks.readAllStandardOutput());
+    progress(QString::fromUtf8("Winetricks installation failed with exit code: %1").arg(winetricks.exitCode()));
+    progress(QString::fromUtf8("Output: %1").arg(output));
     return false;
   }
+  
+  progress(QString::fromUtf8("Winetricks installation completed successfully"));
+  progress(QString::fromUtf8("Searching for mfc42u.dll in Wine prefix..."));
   
   // Look for mfc42u.dll in the wine prefix
   QStringList searchPaths;
@@ -826,17 +848,41 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
       if(QFile::copy(searchPath, destPath)) {
         progress(QString::fromUtf8("Mfc42u.dll copied successfully from winetricks installation"));
         return true;
+      } else {
+        progress(QString::fromUtf8("Failed to copy mfc42u.dll to firmware directory"));
       }
     }
   }
   
   progress(QString::fromUtf8("mfc42u.dll not found after winetricks installation"));
+  progress(QString::fromUtf8("Checking alternative locations..."));
+  
+  // Try additional search paths
+  QStringList additionalPaths;
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42.dll");
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42.dll");
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/system32/mfc42u.dll");
+  additionalPaths << tempPrefix + QString::fromUtf8("/drive_c/windows/syswow64/mfc42u.dll");
+  
+  for(const QString& searchPath : additionalPaths) {
+    if(QFile::exists(searchPath)) {
+      progress(QString::fromUtf8("Found MFC42 library at: %1").arg(searchPath));
+      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
+      if(QFile::copy(searchPath, destPath)) {
+        progress(QString::fromUtf8("MFC42 library copied successfully from winetricks installation"));
+        return true;
+      }
+    }
+  }
+  
+  progress(QString::fromUtf8("No MFC42 libraries found after winetricks installation"));
   return false;
 }
 
 bool Mfc42uWinetricksExtractor::tryAlternativeScript()
 {
   progress(QString::fromUtf8("Trying alternative MFC42 installation script..."));
+  progress(QString::fromUtf8("This may take several minutes. Please be patient."));
   
   // Path to the existing alternative installation script
   QString scriptPath = PREF.getDataPath(QString::fromUtf8("../../scripts/install/mfc42_alternative_installers.sh"));
@@ -844,6 +890,8 @@ bool Mfc42uWinetricksExtractor::tryAlternativeScript()
     progress(QString::fromUtf8("Alternative installation script not found: %1").arg(scriptPath));
     return false;
   }
+  
+  progress(QString::fromUtf8("Found alternative installation script: %1").arg(scriptPath));
   
   // Make script executable
   QFile scriptFile(scriptPath);
@@ -854,19 +902,37 @@ bool Mfc42uWinetricksExtractor::tryAlternativeScript()
   script.setProcessEnvironment(QProcessEnvironment::systemEnvironment());
   script.setProcessChannelMode(QProcess::MergedChannels);
   
-  progress(QString::fromUtf8("Running alternative installation script: %1").arg(scriptPath));
+  progress(QString::fromUtf8("Starting alternative installation script..."));
+  progress(QString::fromUtf8("This process may take 5-10 minutes. The system may appear to hang - this is normal."));
   
   script.start(scriptPath, QStringList() << QStringLiteral("install"));
   
+  // Show progress updates every 30 seconds
+  QTimer progressTimer;
+  int progressCount = 0;
+  QObject::connect(&progressTimer, &QTimer::timeout, [&]() {
+    progressCount++;
+    progress(QString::fromUtf8("Alternative installation in progress... (%1 minutes elapsed)").arg(progressCount * 0.5));
+  });
+  progressTimer.start(30000); // 30 seconds
+  
   if(!script.waitForFinished(300000)) { // 5 minutes timeout
-    progress(QString::fromUtf8("Alternative installation script timed out"));
+    progressTimer.stop();
+    progress(QString::fromUtf8("Alternative installation script timed out after 5 minutes"));
     return false;
   }
   
+  progressTimer.stop();
+  
   if(script.exitCode() != 0) {
-    progress(QString::fromUtf8("Alternative installation script failed: %1").arg(QString::fromUtf8(script.readAllStandardOutput())));
+    QString output = QString::fromUtf8(script.readAllStandardOutput());
+    progress(QString::fromUtf8("Alternative installation script failed with exit code: %1").arg(script.exitCode()));
+    progress(QString::fromUtf8("Output: %1").arg(output));
     return false;
   }
+  
+  progress(QString::fromUtf8("Alternative installation script completed successfully"));
+  progress(QString::fromUtf8("Checking if MFC42 libraries were installed..."));
   
   // Check if mfc42u.dll was installed
   QString destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
@@ -876,6 +942,7 @@ bool Mfc42uWinetricksExtractor::tryAlternativeScript()
   }
   
   progress(QString::fromUtf8("MFC42 installation failed via alternative script"));
+  progress(QString::fromUtf8("No mfc42u.dll found in firmware directory"));
   return false;
 }
 
