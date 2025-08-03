@@ -15,6 +15,7 @@
 
 PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):QObject(parent),
   state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc140(NULL), lutrisIntegration(NULL), steamIntegration(NULL),
+  isTirMfcOnlyInstallation(false),
   poem1(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem1.txt")),
   poem2(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem2.txt")),
   gameData(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/gamedata.txt")),
@@ -261,12 +262,19 @@ void PluginInstall::finished(bool ok)
   switch(state){
     case TIR_FW:
       if(ok) {
-        state = MFC;
+        if (isTirMfcOnlyInstallation) {
+          // For TIR/MFC140 only installation, go to TIR_MFC_ONLY state
+          state = TIR_MFC_ONLY;
+        } else {
+          // For full installation, go to MFC state
+          state = MFC;
+        }
         mfc140uInstall();
       } else {
         // TIR firmware extraction failed - don't proceed
         state = DONE;
         enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
       }
       break;
     case MFC:
@@ -278,6 +286,22 @@ void PluginInstall::finished(bool ok)
         // MFC140 extraction failed - don't proceed
         state = DONE;
         enableButtons(true);
+      }
+      break;
+    case TIR_MFC_ONLY:
+      if(ok) {
+        // MFC140 installation successful - show completion message and stop
+        QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Complete"),
+          QString::fromUtf8("TIR Firmware and MFC140 libraries have been successfully installed.\n\n") +
+          QString::fromUtf8("You can now use the other buttons to install the wine bridge to specific platforms."));
+        state = DONE;
+        enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
+      } else {
+        // MFC140 extraction failed - don't proceed
+        state = DONE;
+        enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
       }
       break;
     case LTR_W:
@@ -319,10 +343,14 @@ QWidget* PluginInstall::getParentWidget()
 // New method for TIR/MFC140 installation only
 void PluginInstall::installTirFirmwareAndMfc140()
 {
+  // Set flag to indicate this is TIR/MFC140 only installation
+  isTirMfcOnlyInstallation = true;
+  
   // Check if all required firmware files already exist
   if(isTirFirmwareInstalled() && isMfc140uInstalled()){
     QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
       QString::fromUtf8("TIR Firmware and MFC140 libraries are already installed."));
+    isTirMfcOnlyInstallation = false;  // Reset flag
     return;
   }
   
@@ -332,12 +360,13 @@ void PluginInstall::installTirFirmwareAndMfc140()
     tirFirmwareInstall();
   } else if(!isMfc140uInstalled()){
     // Install MFC140 (modern approach only)
-    state = MFC;
+    state = TIR_MFC_ONLY;  // Use new state to prevent wine bridge installation
     mfc140uInstall();
   } else {
     // Both already installed
     QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
       QString::fromUtf8("TIR Firmware and MFC140 libraries are already installed."));
+    isTirMfcOnlyInstallation = false;  // Reset flag
   }
 }
 

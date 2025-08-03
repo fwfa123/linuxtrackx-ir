@@ -57,7 +57,7 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Fedora / RHEL / CentOS**
@@ -73,59 +73,87 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 #### **Arch Linux / Manjaro**
+
+**⚠️ IMPORTANT: Arch Linux users may encounter 32-bit library issues during build. See the troubleshooting section below for the complete solution.**
+
+#### **Method 1: Automated Build Script (Recommended)**
 ```bash
-# Method 1: Automated build script (Recommended)
 ./scripts/build_arch_linux.sh
+```
 
-# Method 2: Optimized Wine Installation (Recommended for Wine compatibility)
-# This method provides the best Wine support with optimized builds
+#### **Method 2: Manual Build with 32-bit Library Fix**
+This method addresses the common 32-bit library issues on Arch Linux:
 
-# Step 1: Clean up any existing Wine installations
+**Step 1: Install Dependencies**
+```bash
+# Install build dependencies
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils multilib-devel
+yay -S nsis cwiid liblo-ipv6
+```
+
+**Step 2: Build Missing 32-bit Libraries (CRITICAL)**
+```bash
+# Run the automated script to build missing 32-bit libraries
+./scripts/build_32bit_libs.sh
+```
+
+**Step 3: Build LinuxTrack**
+```bash
+# Clone and configure
+git clone <repository-url>
+cd linuxtrackx-ir
+autoreconf -fiv
+
+# Configure with explicit 64-bit flags to prevent 32-bit compilation issues
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+
+# Build with parallel compilation
+make -j$(nproc)
+
+# Install
+sudo make install
+sudo usermod -a -G plugdev,input $USER
+```
+
+#### **Method 3: Optimized Wine Installation (Advanced)**
+For users who need Wine bridge compatibility:
+
+```bash
+# Clean up existing Wine installations
 sudo pacman -R wine-staging wine-gecko wine-mono winetricks 2>/dev/null || true
 sudo pacman -Rns $(pacman -Qtdq) 2>/dev/null || true
 
-# Step 2: Install optimized Wine packages
+# Install optimized Wine packages
 cd /tmp
 git clone https://aur.archlinux.org/wine-stable.git
 cd wine-stable
-# Apply optimizations for faster builds (see optimization details below)
 makepkg -sri
 
-# Step 3: Install Wine Mono (.NET Framework compatibility)
+# Install Wine Mono and Gecko
 cd /tmp
 git clone https://aur.archlinux.org/wine-stable-mono.git
 cd wine-stable-mono
 makepkg -sri
-
-# Step 4: Install Wine Gecko (web browser compatibility)
 sudo pacman -S wine-gecko
 
-# Step 5: Install LinuxTrack dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
-yay -S nsis cwiid liblo-ipv6
-
-# Step 6: Install X-Plane SDK (optional, for plugin development)
-sudo mkdir -p /opt/xplane-sdk
-curl -L -o /tmp/xplane-sdk.zip "https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
-sudo unzip /tmp/xplane-sdk.zip -d /opt/xplane-sdk
-
-# Step 7: Build LinuxTrack with Wine support
-git clone <repository-url>
+# Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
-autoreconf -fiv
-./configure --prefix=/opt --enable-ltr-32lib-on-x64 --with-wine-libs="-L/usr/lib32/wine/i386-unix" --with-xplane-sdk="/opt/xplane-sdk/CHeaders"
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev $USER
+```
 
-# Method 3: Prebuilt installation (no development tools)
+#### **Method 4: Prebuilt Installation**
+```bash
 ./scripts/install/install_arch_prebuilt.sh
+```
 
-# Testing individual features
+#### **Testing Features**
+```bash
 ./scripts/test_wiimote_support.sh    # Test Wiimote support
 ./scripts/test_osc_support.sh        # Test OSC support
 ./scripts/test_xplane_sdk.sh         # Test X-Plane SDK support
@@ -140,7 +168,14 @@ The optimized Wine installation includes:
 - **Complete Wine suite**: wine-stable, wine-mono, wine-gecko
 - **Conflict resolution** to ensure clean installation
 
-*This optimization approach was developed through collaborative community effort, building on the work of Arch Linux users and contributors from [GitHub Issue #206](https://github.com/uglyDwarf/linuxtrack/issues/206).*
+**🔧 32-bit Library Solution:**
+The 32-bit library build system was developed to solve the common Arch Linux build issues:
+- **Automated script** for building missing 32-bit libraries
+- **Proper compiler flags** to prevent 32-bit/64-bit conflicts
+- **Parallel compilation** for fast builds
+- **Clean installation** with correct symlinks
+
+*This solution was developed through collaborative community effort, addressing the issues documented in [GitHub Issue #206](https://github.com/uglyDwarf/linuxtrack/issues/206) and providing a complete, repeatable solution for Arch Linux users.*
 
 ### **Option 3: Build AppImage (Advanced)**
 
@@ -310,13 +345,42 @@ QT_QPA_PLATFORM=xcb ltr_gui
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | MFC140 installation fails | Use the built-in MFC140 installer in the GUI, or manually download Visual C++ 2015-2022 Redistributable |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied on device | Add user to plugdev group: `sudo usermod -a -G plugdev $USER` |
+| Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
 | Firmware extraction fails | Run `./scripts/wine_check.sh` to diagnose Wine issues |
 
-### **Arch Linux Wine Troubleshooting**
+### **Arch Linux Troubleshooting**
 
-**Common Arch Linux Wine Issues:**
+#### **32-bit Library Issues (Most Common Problem)**
+
+**Problem:** Build fails with errors like:
+```
+/usr/bin/ld: cannot find -lltr: No such file or directory
+/usr/bin/ld: .libs/libltr_la-cal.o: file class ELFCLASS32 incompatible with ELFCLASS64
+```
+
+**Root Cause:** LinuxTrack requires 32-bit versions of some libraries for Wine bridge compatibility, but these are not available in the official Arch repositories:
+- `lib32-mxml` (Mini-XML library)
+- `lib32-liblo` (Open Sound Control library)
+
+**Solution:** Use the automated 32-bit library build script:
+```bash
+# Run the automated script to build and install missing 32-bit libraries
+./scripts/build_32bit_libs.sh
+
+# Then build LinuxTrack with explicit 64-bit flags
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+make -j$(nproc)
+```
+
+**What the script does:**
+- Downloads source code for both missing libraries
+- Builds 32-bit versions with proper compiler flags
+- Installs to `/usr/lib32/` with correct symlinks
+- Uses parallel compilation for fast builds
+- Cleans up build files automatically
+
+#### **Common Arch Linux Wine Issues:**
 
 | Problem | Solution |
 |---------|----------|
@@ -326,25 +390,80 @@ QT_QPA_PLATFORM=xcb ltr_gui
 | Missing Wine dependencies | Install complete suite: `wine-stable`, `wine-stable-mono`, `wine-gecko` |
 | Wine bridge not working | Ensure wine-stable is installed, not wine-staging |
 | Orphaned packages after Wine removal | Clean up: `sudo pacman -Rns $(pacman -Qtdq)` |
+| **Missing 32-bit libraries (liblo, mxml)** | **Use the automated build script: `./scripts/build_32bit_libs.sh`** |
+| **32-bit/64-bit compilation conflicts** | **Use explicit 64-bit flags: `CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"`** |
+| **Qt5 Makefile not generated** | **Manually generate: `cd src/qt_gui && /usr/bin/qmake-qt5 -spec linux-g++ "LIBDIR=/usr/local/lib/linuxtrack" ltr_gui.pro`** |
 
-**Optimized Wine Installation for Arch Linux:**
+#### **Build System Issues:**
+
+**Problem:** Configure script sets 32-bit flags even when disabled
+**Solution:** Use explicit 64-bit flags during configure:
 ```bash
-# Clean existing Wine installations
-sudo pacman -R wine-staging wine-gecko wine-mono winetricks 2>/dev/null || true
-sudo pacman -Rns $(pacman -Qtdq) 2>/dev/null || true
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+```
 
-# Install optimized Wine packages
-cd /tmp
-git clone https://aur.archlinux.org/wine-stable.git
-cd wine-stable
-makepkg -sri
+**Problem:** Qt5 Makefile not generated automatically
+**Solution:** Manually generate the Makefile:
+```bash
+cd src/qt_gui
+/usr/bin/qmake-qt5 -spec linux-g++ "LIBDIR=/usr/local/lib/linuxtrack" ltr_gui.pro
+```
 
-# Install Wine Mono and Gecko
-cd /tmp
-git clone https://aur.archlinux.org/wine-stable-mono.git
-cd wine-stable-mono
-makepkg -sri
-sudo pacman -S wine-gecko
+#### **Verification Steps:**
+
+After building, verify the installation:
+```bash
+# Check if 32-bit libraries are installed
+ls -la /usr/lib32/libmxml* /usr/lib32/liblo*
+
+# Check if LinuxTrack binaries are built
+ls -la src/qt_gui/ltr_gui
+ls -la src/mickey/mickey
+
+# Test Wine bridge components
+ls -la src/wine_bridge/client/NPClient*.so
+ls -la src/wine_bridge/client/FreeTrackClient*.so
+```
+
+#### **Automated Scripts for Arch Linux**
+
+**`scripts/build_32bit_libs.sh`** - Automated 32-bit library builder
+- **Purpose:** Builds missing 32-bit libraries (`lib32-mxml`, `lib32-liblo`) for Arch Linux
+- **Usage:** `./scripts/build_32bit_libs.sh`
+- **Features:**
+  - Downloads latest source code for both libraries
+  - Uses proper 32-bit compiler flags (`-m32`)
+  - Installs to correct locations (`/usr/lib32/`)
+  - Creates necessary symlinks
+  - Uses parallel compilation for speed
+  - Cleans up build files automatically
+
+**`scripts/lib32-mxml.PKGBUILD`** - PKGBUILD template for AUR
+- **Purpose:** Template for creating AUR packages for 32-bit libraries
+- **Usage:** Copy to AUR package directory and customize
+- **Features:** Follows Arch Linux 32-bit package guidelines
+
+**`docs/ARCH_LINUX_32BIT_LIBRARIES.md`** - Detailed guide
+- **Purpose:** Complete manual for building 32-bit libraries
+- **Contents:** Step-by-step instructions, troubleshooting, AUR package creation
+
+#### **Missing 32-bit Libraries Solution:**
+If you encounter "skipping incompatible" errors for `liblo` or `mxml`, these 32-bit libraries are not available in the official repos or AUR. Use the automated build script:
+
+```bash
+# Build missing 32-bit libraries
+./scripts/build_32bit_libs.sh
+
+# Then try building LinuxTrack again
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
+make -j$(nproc)
+```
+
+This script will:
+- Download and build 32-bit versions of `mxml` and `liblo`
+- Install them to `/usr/lib32/`
+- Create necessary symlinks
+- Clean up build files automatically
 ```
 
 ### **Getting Help**

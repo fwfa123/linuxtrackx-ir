@@ -85,7 +85,7 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 ```
 
 ### Build Options

@@ -428,7 +428,7 @@ install_linuxtrack() {
     sudo make install
     
     # Add user to required group
-    sudo usermod -a -G plugdev $USER
+    sudo usermod -a -G plugdev,input $USER
     
     print_status "LinuxTrack installed successfully"
 }

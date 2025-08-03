@@ -122,7 +122,7 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 
 # Verify user is in plugdev group
-groups $USER | grep plugdev || echo "User not in plugdev group - run: sudo usermod -a -G plugdev $USER"
+groups $USER | grep plugdev || echo "User not in plugdev group - run: sudo usermod -a -G plugdev,input $USER"
 ```
 
 ### Step 7: Test the Installation

@@ -15,6 +15,7 @@
 #include <assert.h>
 #include <unistd.h>
 #include <poll.h>
+#include <ctype.h>
 
 #include <utils.h>
 #include <cal.h>
@@ -274,6 +275,64 @@ static bool arrayBigEnough(void ***ptr, size_t *max_size, size_t *current, size_
 
 
 
+static bool isJoystickDevice(const char *name)
+{
+  // Convert to lowercase for case-insensitive matching
+  char lowerName[NAME_LENGTH];
+  strncpy(lowerName, name, NAME_LENGTH - 1);
+  lowerName[NAME_LENGTH - 1] = '\0';
+  for(int i = 0; lowerName[i]; i++) {
+    lowerName[i] = tolower(lowerName[i]);
+  }
+  
+  // Check for common non-joystick devices to exclude FIRST (more restrictive)
+  const char *excludeKeywords[] = {
+    "keyboard", "mouse", "touchpad", "touch", "audio", "speaker", "headphone", "microphone",
+    "camera", "webcam", "video", "bluetooth", "wifi", "ethernet", "usb", "hub", "card",
+    "reader", "scanner", "printer", "monitor", "display", "screen", "lcd", "led",
+    "button", "power", "volume", "mute", "play", "pause", "stop", "next", "prev",
+    "hdmi", "dp", "vga", "dvi", "audio", "spdif", "optical", "coax", "line",
+    "phone", "tablet", "laptop", "desktop", "server", "router", "modem", "switch",
+    "abyssus", "deathadder", "viper", "basilisk", "mamba", "lancehead", "diamondback",
+    "naga", "imperator", "taipan", "ouroboros", "adder", "copperhead", "krait",
+    "g502", "g402", "g602", "g700", "g900", "g903", "g pro", "g305", "g403",
+    "mx master", "mx anywhere", "mx ergo", "m705", "m510", "m525", "m325",
+    "k400", "k600", "k780", "mk520", "mk550", "mk710", "mk850"
+  };
+  
+  const int numExcludeKeywords = sizeof(excludeKeywords) / sizeof(excludeKeywords[0]);
+  
+  for(int i = 0; i < numExcludeKeywords; i++) {
+    if(strstr(lowerName, excludeKeywords[i]) != NULL) {
+      return false;
+    }
+  }
+  
+  // Keywords that indicate joystick/game controller devices
+  const char *joystickKeywords[] = {
+    "joystick", "gamepad", "controller", "game", "xbox", "playstation", "ps3", "ps4", "ps5",
+    "nintendo", "wiimote", "wii", "switch", "pro", "dualshock", "dualsense", "logitech",
+    "thrustmaster", "saitek", "hori", "madcatz", "8bitdo", "retro", "arcade", "fight",
+    "flight", "stick", "rudder", "throttle", "pedals", "wheel", "racing", "sim",
+    "hotas", "warthog", "x52", "x56", "t16000", "vkb", "virpil", "tm", "ch", "tm16000",
+    "f310", "f510", "f710", "g29", "g27", "g25", "dfgt", "dfp", "g920", "g923",
+    "t150", "t300", "t500", "tx", "t248", "t818", "ts-xw", "ts-pc", "t-lcm",
+    "xbox 360", "xbox one", "xbox series", "dualshock 3", "dualshock 4", "dualsense",
+    "joy-con", "pro controller", "gamecube", "n64", "snes", "nes", "classic"
+  };
+  
+  const int numKeywords = sizeof(joystickKeywords) / sizeof(joystickKeywords[0]);
+  
+  for(int i = 0; i < numKeywords; i++) {
+    if(strstr(lowerName, joystickKeywords[i]) != NULL) {
+      return true;
+    }
+  }
+  
+  // For JS interface, assume it's a joystick (JS devices are typically joysticks)
+  return true;
+}
+
 static bool storeJoyNames(ifc_type_t ifc, int fd, void *param)
 {
   joystickNames_t *jsNames = (joystickNames_t *)param;
@@ -293,6 +352,11 @@ static bool storeJoyNames(ifc_type_t ifc, int fd, void *param)
         return false;
       }
       break;
+  }
+
+  // Filter out non-joystick devices
+  if(!isJoystickDevice(name)) {
+    return false;
   }
 
   if(!arrayBigEnough((void ***)&(jsNames->nameList), &(jsNames->nameListSize), &(jsNames->namesFound), sizeof(char *))){

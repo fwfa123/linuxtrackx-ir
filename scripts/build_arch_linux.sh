@@ -350,7 +350,7 @@ install_project() {
     sudo make install
     
     # Add user to plugdev group
-    sudo usermod -a -G plugdev $USER
+    sudo usermod -a -G plugdev,input $USER
     
     print_success "Installation completed successfully"
 }

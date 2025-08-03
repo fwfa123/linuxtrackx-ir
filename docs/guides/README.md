@@ -159,7 +159,7 @@ export XDG_SESSION_TYPE=x11
 cd src/qt_gui && qmake-qt5 ltr_gui.pro && make -j$(nproc)
 
 # Fix permissions
-sudo usermod -a -G plugdev $USER
+sudo usermod -a -G plugdev,input $USER
 
 # Reinstall udev rules
 sudo cp 99-TIR.rules /lib/udev/rules.d/
