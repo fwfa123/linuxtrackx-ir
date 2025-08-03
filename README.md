@@ -298,14 +298,14 @@ LinuxTrack now supports building Windows compatibility components using winegcc:
 - **CPU-specific optimizations** for your hardware
 - **Complete Wine suite**: wine-stable, wine-mono, wine-gecko
 
-### **MFC140 Modernization** ✅
-LinuxTrack now uses modern Visual C++ 2015-2022 MFC libraries (MFC140) instead of legacy MFC42:
+### **MFC42 Winetricks Installation** ✅
+LinuxTrack now uses MFC42 libraries installed via winetricks for optimal TrackIR compatibility:
 
-- **✅ Eliminates Copyright Issues** - No more Microsoft MFC42 copyright concerns
-- **✅ Modern Compatibility** - Uses Visual C++ 2015-2022 redistributables
-- **✅ Simplified Installation** - Built-in download and extraction system
-- **✅ No Winetricks Required** - Automatic download and installation
-- **✅ Better Error Handling** - Clear user guidance and fallback options
+- **✅ TrackIR Compatibility** - MFC42 works correctly with TrackIR applications
+- **✅ Winetricks Integration** - Uses `winetricks mfc42` for reliable installation
+- **✅ User-Friendly Process** - Clear progress updates and user confirmation
+- **✅ Multiple Fallback Options** - Alternative installation methods available
+- **✅ Cross-Distribution Support** - Works across different Linux distributions
 
 ## 🖥️ Display Server Compatibility
 
@@ -343,7 +343,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install wine-devel` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
-| MFC140 installation fails | Use the built-in MFC140 installer in the GUI, or manually download Visual C++ 2015-2022 Redistributable |
+| MFC42 installation fails | Use the built-in MFC42 installer in the GUI, or manually run `winetricks mfc42` |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
