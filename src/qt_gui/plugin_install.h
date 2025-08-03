@@ -27,7 +27,7 @@ class PluginInstall : public QObject
   
  public:
   // New Gaming tab methods
-  void installTirFirmwareAndMfc140();
+  void installTirFirmwareAndMfc42();
   void installWineBridgeToCustomPrefix();
   void installLutrisWineBridge();
   void installSteamProtonBridge();
@@ -37,20 +37,20 @@ class PluginInstall : public QObject
   void Connect();
   WineLauncher *inst;
   TirFwExtractor *dlfw;
-  Mfc140uExtractor *dlmfc140;
+  Mfc42uWinetricksExtractor *dlmfc42;
   bool isTirFirmwareInstalled();
-  bool isMfc140uInstalled();
+  bool isMfc42uInstalled();
   void enableButtons(bool ena);
-  void mfc140uInstall();
+  void mfc42uInstall();
   QWidget* getParentWidget();
   const QString poem1;
   const QString poem2;
   const QString gameData;
-  const QString mfc140u;
+  const QString mfc42u;
   const QString tirViews;
   LutrisIntegration *lutrisIntegration;
   SteamIntegration *steamIntegration;
-  bool isTirMfcOnlyInstallation;  // Flag to track TIR/MFC140 only installation
+  bool isTirMfcOnlyInstallation;  // Flag to track TIR/MFC42 only installation
 };
 
 
