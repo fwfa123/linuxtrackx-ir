@@ -231,7 +231,7 @@ echo "1. Rebuild the AppImage:"
 echo "   ./scripts/appimage/build_appimage_phase4.sh"
 echo
 echo "2. Test the new AppImage on Arch Linux:"
-echo "   ./LinuxTrack-X-IR-0.99.21-x86_64.AppImage"
+echo "   ./LinuxTrack-X-IR-0.99.22-x86_64.AppImage"
 echo
 echo "3. The wine bridge installer should now work without the c000007b error"
 echo
