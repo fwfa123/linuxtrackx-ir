@@ -41,11 +41,6 @@ public:
     void runSelectedTester();
     bool checkTesterInPrefix(const QString &prefixPath, const QString &testerType);
     void offerWineBridgeInstallation(const QString &prefixPath);
-    
-    // Game discovery methods
-    QStringList getSteamGames();
-    QStringList getLutrisGames();
-    QStringList getCustomPrefixGames();
 
 public slots:
     void onTesterSelectionChanged();

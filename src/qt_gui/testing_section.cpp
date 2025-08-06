@@ -311,7 +311,7 @@ QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QStr
     }
     
     // Search in common Windows program directories
-    QStringList searchDirs = {QString::fromUtf8("drive_c/windows"), QString::fromUtf8("drive_c/Program Files"), QString::fromUtf8("drive_c/Program Files (x86)")};
+    QStringList searchDirs = {QString::fromUtf8("drive_c/windows"), QString::fromUtf8("drive_c/Program Files"), QString::fromUtf8("drive_c/Program Files (x86)"), QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")};
     for (const QString &searchDir : searchDirs) {
         QDir dir = prefixDir;
         dir.cd(searchDir);
@@ -320,6 +320,7 @@ QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QStr
                 QString testerPath = dir.filePath(testerName);
                 QFileInfo testerFile(testerPath);
                 if (testerFile.exists() && testerFile.isExecutable()) {
+                    qDebug() << "Found tester at:" << testerPath;
                     return testerPath;
                 }
             }
@@ -373,13 +374,19 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
     process.setProcessEnvironment(env);
     process.setWorkingDirectory(prefixPath);
     
-    // Launch tester
-    process.start(testerPath);
+    // Launch tester through Wine
+    QStringList arguments;
+    arguments << testerPath;
+    
+    qDebug() << "Launching tester with Wine:" << testerPath;
+    qDebug() << "Wine prefix:" << prefixPath;
+    
+    process.start(QString::fromUtf8("wine"), arguments);
     
     if (process.waitForStarted()) {
         qDebug() << "Tester launched successfully:" << testerPath;
         QMessageBox::information(nullptr, QString::fromUtf8("Tester Launched"), 
-                               QString::fromUtf8("Tester has been launched successfully."));
+                               QString::fromUtf8("Tester has been launched successfully through Wine."));
     } else {
         qDebug() << "Failed to launch tester:" << process.errorString();
         QMessageBox::warning(nullptr, QString::fromUtf8("Launch Failed"), 
