@@ -1,4 +1,4 @@
-# LinuxTrack X-IR v0.99.22 - MOVED GITLAB!!
+# LinuxTrack X-IR v0.99.22 - MOVED TO GITLAB!!
 https://gitlab.com/fwfa123/linuxtrackx-ir
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/fwfa123/linuxtrackx-ir)
