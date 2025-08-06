@@ -56,6 +56,10 @@ private:
     QString findTesterInPrefix(const QString &prefixPath, const QString &testerType);
     void executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform);
     void showMissingTesterDialog(const QString &prefixPath);
+    
+    // Helper methods for game identification
+    QString getCurrentGameId();
+    QString getCurrentGameSlug();
 
     QString currentPlatform;
     QString currentGame;
