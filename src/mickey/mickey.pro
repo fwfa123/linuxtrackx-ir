@@ -53,8 +53,8 @@ unix:!macx {
   LIBS += "-L../.libs" "-L$${LIBDIR}" -lm -lltr -lX11 -ldl \
            "-Wl,-rpath,$${LIBDIR}"
   
-  target.path = /usr/local/bin
-  help.path += /usr/local/share/linuxtrack/help/mickey
+  target.path = /opt/bin
+  help.path += /opt/share/linuxtrack/help/mickey
   help.files += help.qhc help.qch
   INSTALLS += target help
 }
@@ -64,7 +64,7 @@ macx {
   QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
   QMAKE_MAC_SDK=/Developer/SDKs/MacOSX10.6.sdk
   CONFIG+=x86_64
-  LIBS += -L../.libs "-L$${LIBDIR}" -L/usr/local/lib -lm -lltr
+  LIBS += -L../.libs "-L$${LIBDIR}" -L/opt/lib -lm -lltr
   help.path += mickey.app/Contents/Resources/linuxtrack/help/mickey
   help.files += help.qhc help.qch
   INSTALLS += data help

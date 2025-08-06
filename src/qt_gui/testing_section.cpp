@@ -1,0 +1,327 @@
+#include "testing_section.h"
+#include "ltr_gui.h"
+#include "plugin_install.h"
+#include "steam_integration.h"
+#include "lutris_integration.h"
+#include <QProcess>
+#include <QFileInfo>
+#include <QDir>
+#include <QStandardPaths>
+#include <QDebug>
+
+TestingSection::TestingSection(QObject *parent)
+    : QObject(parent)
+    , testingGroupBox(nullptr)
+    , testerExeRadioButton(nullptr)
+    , ftTesterRadioButton(nullptr)
+    , platformComboBox(nullptr)
+    , loadGamesButton(nullptr)
+    , gameComboBox(nullptr)
+    , runTesterButton(nullptr)
+    , currentPlatform(QString::fromUtf8(""))
+    , currentGame(QString::fromUtf8(""))
+    , currentTesterType(QString::fromUtf8("Tester.exe"))
+    , currentGames()
+{
+}
+
+TestingSection::~TestingSection()
+{
+}
+
+void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
+{
+    // Connect UI elements to member variables
+    testingGroupBox = ui.TestingGroupBox;
+    testerExeRadioButton = ui.TesterExeRadioButton;
+    ftTesterRadioButton = ui.FTTesterRadioButton;
+    platformComboBox = ui.PlatformComboBox;
+    loadGamesButton = ui.LoadGamesButton;
+    gameComboBox = ui.GameComboBox;
+    runTesterButton = ui.RunTesterButton;
+    
+    // Set initial state
+    if (gameComboBox) {
+        gameComboBox->setEnabled(false);
+    }
+    if (runTesterButton) {
+        runTesterButton->setEnabled(false);
+    }
+}
+
+void TestingSection::startTracking()
+{
+    // Start tracking immediately when testing workflow begins
+    // This will be called when user selects a tester type
+    qDebug() << "Starting tracking for testing workflow";
+    
+    // TODO: Implement tracking start logic
+    // This should use the same logic as the existing wine bridge installation
+}
+
+void TestingSection::onTesterSelectionChanged()
+{
+    if (testerExeRadioButton && testerExeRadioButton->isChecked()) {
+        currentTesterType = QString::fromUtf8("Tester.exe");
+    } else if (ftTesterRadioButton && ftTesterRadioButton->isChecked()) {
+        currentTesterType = QString::fromUtf8("FT_Tester");
+    }
+    
+    // Start tracking when tester selection changes
+    startTracking();
+    
+    qDebug() << "Tester selection changed to:" << currentTesterType;
+}
+
+void TestingSection::onPlatformSelectionChanged()
+{
+    if (platformComboBox) {
+        currentPlatform = platformComboBox->currentText();
+        qDebug() << "Platform selection changed to:" << currentPlatform;
+        
+        // Clear games list when platform changes
+        if (gameComboBox) {
+            gameComboBox->clear();
+            gameComboBox->setEnabled(false);
+        }
+        if (runTesterButton) {
+            runTesterButton->setEnabled(false);
+        }
+    }
+}
+
+void TestingSection::onLoadGamesClicked()
+{
+    if (platformComboBox) {
+        QString platform = platformComboBox->currentText();
+        loadGamesForPlatform(platform);
+    }
+}
+
+void TestingSection::loadGamesForPlatform(const QString &platform)
+{
+    currentPlatform = platform;
+    currentGames.clear();
+    
+    if (platform == QString::fromUtf8("Steam")) {
+        currentGames = getSteamGames();
+    } else if (platform == QString::fromUtf8("Lutris")) {
+        currentGames = getLutrisGames();
+    } else if (platform == QString::fromUtf8("Custom Prefix")) {
+        currentGames = getCustomPrefixGames();
+    }
+    
+    // Populate game combo box
+    if (gameComboBox) {
+        gameComboBox->clear();
+        gameComboBox->addItems(currentGames);
+        gameComboBox->setEnabled(!currentGames.isEmpty());
+    }
+    
+    qDebug() << "Loaded" << currentGames.size() << "games for platform:" << platform;
+}
+
+QStringList TestingSection::getSteamGames()
+{
+    // TODO: Implement Steam game discovery
+    // This should reuse existing Steam integration logic
+    QStringList games;
+    
+    // Placeholder implementation
+    // In real implementation, this would use SteamIntegration class
+    // to get list of available Steam games
+    
+    return games;
+}
+
+QStringList TestingSection::getLutrisGames()
+{
+    // TODO: Implement Lutris game discovery
+    // This should reuse existing Lutris integration logic
+    QStringList games;
+    
+    // Placeholder implementation
+    // In real implementation, this would use LutrisIntegration class
+    // to get list of available Lutris games
+    
+    return games;
+}
+
+QStringList TestingSection::getCustomPrefixGames()
+{
+    // TODO: Implement custom prefix game discovery
+    QStringList games;
+    
+    // Placeholder implementation
+    // In real implementation, this would allow user to browse
+    // and select custom wine prefixes
+    
+    return games;
+}
+
+void TestingSection::onRunTesterClicked()
+{
+    if (gameComboBox && !gameComboBox->currentText().isEmpty()) {
+        currentGame = gameComboBox->currentText();
+        runSelectedTester();
+    }
+}
+
+void TestingSection::runSelectedTester()
+{
+    if (currentGame.isEmpty() || currentPlatform.isEmpty()) {
+        QMessageBox::warning(nullptr, QString::fromUtf8("Missing Information"), 
+                           QString::fromUtf8("Please select both a game and platform before running tester."));
+        return;
+    }
+    
+    // Get prefix for selected game
+    QString prefixPath = getPrefixForGame(currentGame, currentPlatform);
+    if (prefixPath.isEmpty()) {
+        QMessageBox::warning(nullptr, QString::fromUtf8("Prefix Not Found"), 
+                           QString::fromUtf8("Could not find wine prefix for selected game."));
+        return;
+    }
+    
+    // Check if tester exists in prefix
+    if (!checkTesterInPrefix(prefixPath, currentTesterType)) {
+        showMissingTesterDialog(prefixPath);
+        return;
+    }
+    
+    // Find tester executable
+    QString testerPath = findTesterInPrefix(prefixPath, currentTesterType);
+    if (testerPath.isEmpty()) {
+        QMessageBox::warning(nullptr, QString::fromUtf8("Tester Not Found"), 
+                           QString::fromUtf8("Could not find tester executable in wine prefix."));
+        return;
+    }
+    
+    // Execute tester
+    executeTester(testerPath, prefixPath, currentPlatform);
+}
+
+QString TestingSection::getPrefixForGame(const QString &gameName, const QString &platform)
+{
+    // TODO: Implement prefix detection for different platforms
+    // This should reuse existing logic from wine bridge installers
+    
+    if (platform == QString::fromUtf8("Steam")) {
+        // Use Steam integration to get prefix for game
+        return QString::fromUtf8("");
+    } else if (platform == QString::fromUtf8("Lutris")) {
+        // Use Lutris integration to get prefix for game
+        return QString::fromUtf8("");
+    } else if (platform == QString::fromUtf8("Custom Prefix")) {
+        // Return user-selected custom prefix
+        return QString::fromUtf8("");
+    }
+    
+    return QString::fromUtf8("");
+}
+
+bool TestingSection::checkTesterInPrefix(const QString &prefixPath, const QString &testerType)
+{
+    QString testerPath = findTesterInPrefix(prefixPath, testerType);
+    return !testerPath.isEmpty();
+}
+
+QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QString &testerType)
+{
+    QDir prefixDir(prefixPath);
+    if (!prefixDir.exists()) {
+        return QString::fromUtf8("");
+    }
+    
+    QStringList possibleNames;
+    if (testerType == QString::fromUtf8("Tester.exe")) {
+        possibleNames << QString::fromUtf8("Tester.exe") << QString::fromUtf8("Tester64.exe");
+    } else if (testerType == QString::fromUtf8("FT_Tester")) {
+        possibleNames << QString::fromUtf8("FT_Tester.exe") << QString::fromUtf8("FreeTrackTester.exe");
+    }
+    
+    // Search in prefix root directory (where NSIS installer places testers)
+    for (const QString &testerName : possibleNames) {
+        QString testerPath = prefixDir.filePath(testerName);
+        QFileInfo testerFile(testerPath);
+        if (testerFile.exists() && testerFile.isExecutable()) {
+            return testerPath;
+        }
+    }
+    
+    // Search in common Windows program directories
+    QStringList searchDirs = {QString::fromUtf8("drive_c/windows"), QString::fromUtf8("drive_c/Program Files"), QString::fromUtf8("drive_c/Program Files (x86)")};
+    for (const QString &searchDir : searchDirs) {
+        QDir dir = prefixDir;
+        dir.cd(searchDir);
+        if (dir.exists()) {
+            for (const QString &testerName : possibleNames) {
+                QString testerPath = dir.filePath(testerName);
+                QFileInfo testerFile(testerPath);
+                if (testerFile.exists() && testerFile.isExecutable()) {
+                    return testerPath;
+                }
+            }
+        }
+    }
+    
+    return QString::fromUtf8("");
+}
+
+void TestingSection::showMissingTesterDialog(const QString &prefixPath)
+{
+    QMessageBox::StandardButton reply = QMessageBox::question(
+        nullptr, 
+        QString::fromUtf8("Tester Not Found"), 
+        QString::fromUtf8("Tester executable not found in wine prefix:\n%1\n\nWould you like to install Wine Bridge now?").arg(prefixPath),
+        QMessageBox::Yes | QMessageBox::No
+    );
+    
+    if (reply == QMessageBox::Yes) {
+        offerWineBridgeInstallation(prefixPath);
+    }
+}
+
+void TestingSection::offerWineBridgeInstallation(const QString &prefixPath)
+{
+    // TODO: Implement Wine Bridge installation
+    // This should use existing Wine Bridge installation logic
+    qDebug() << "Offering Wine Bridge installation for prefix:" << prefixPath;
+    
+    // Placeholder implementation
+    QMessageBox::information(nullptr, QString::fromUtf8("Wine Bridge Installation"), 
+                           QString::fromUtf8("Wine Bridge installation functionality will be implemented here."));
+}
+
+void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform)
+{
+    QProcess process;
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    
+    // Set up wine environment
+    env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+    
+    if (platform == QString::fromUtf8("Steam")) {
+        // Set up Steam Proton environment
+        // TODO: Add Steam-specific environment variables
+    } else if (platform == QString::fromUtf8("Lutris")) {
+        // Set up Lutris environment
+        // TODO: Add Lutris-specific environment variables
+    }
+    
+    process.setProcessEnvironment(env);
+    process.setWorkingDirectory(prefixPath);
+    
+    // Launch tester
+    process.start(testerPath);
+    
+    if (process.waitForStarted()) {
+        qDebug() << "Tester launched successfully:" << testerPath;
+        QMessageBox::information(nullptr, QString::fromUtf8("Tester Launched"), 
+                               QString::fromUtf8("Tester has been launched successfully."));
+    } else {
+        qDebug() << "Failed to launch tester:" << process.errorString();
+        QMessageBox::warning(nullptr, QString::fromUtf8("Launch Failed"), 
+                           QString::fromUtf8("Failed to launch tester: %1").arg(process.errorString()));
+    }
+} 
