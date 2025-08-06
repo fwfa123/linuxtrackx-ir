@@ -10,18 +10,18 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the Linuxtrack X-IR software.
 
-<h2>Linuxtrack X-IR v0.99.21 - Winegcc Build System Fixes (2025)</h2>
-<h3>Winegcc Integration Restored</h3>
-Restored and fixed winegcc-based Windows compatibility for better Wine integration. The build system now properly generates .exe.so and .dll.so files that work seamlessly with Wine environments.
+<h2>Linuxtrack X-IR v0.99.22 - Gaming Platform Integration & Automatic Tracking (2025)</h2>
+<h3>Complete Gaming Platform Integration</h3>
+Added comprehensive support for Steam Proton and Lutris gaming platforms. The application now provides one-click Wine Bridge installation for both Steam Proton games (with multi-library support) and Lutris games, including automatic Proton version detection for beta versions.
 
-<h3>NSIS Installer Script Fixes</h3>
-Corrected the NSIS installer script template (ltr_wine.nsi.in) to reference the proper .exe.so and .dll.so file extensions. This resolves the "no files found" errors during installer generation.
+<h3>Automatic Tracking Start Feature</h3>
+Implemented seamless tracking initiation that starts BEFORE the NSIS installer begins. Users can now test their head tracking while the installer runs, eliminating the need for manual tracking window interaction and providing immediate feedback.
 
-<h3>C++ Linking Resolution</h3>
-Fixed missing C++ standard library linking in winegcc commands by adding -lstdc++ flags. This resolves compilation errors and ensures proper C++ support in Windows components.
+<h3>Modern UI Design</h3>
+Reorganized the interface with dedicated Gaming and System tabs for better organization and improved user experience. The Gaming tab consolidates all gaming-related functionality while the System tab provides comprehensive system information.
 
-<h3>Build System Stability</h3>
-Resolved all build errors and NSIS installer issues. The build process now completes successfully from clean state with working Windows installer generation.
+<h3>Enhanced Error Handling</h3>
+Implemented professional-grade error handling with detailed debugging and logging throughout the gaming integration features, providing users with comprehensive feedback and troubleshooting information.
 
 <h2>Linuxtrack X-IR v0.99.21 - Qt5 Modernization (2025)</h2>
 <h3>Qt4 to Qt5 Migration</h3>
