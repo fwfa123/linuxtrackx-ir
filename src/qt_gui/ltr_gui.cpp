@@ -35,6 +35,7 @@
 #include "xplugin.h"
 #include "wine_warn.h"
 #include "tracker.h"
+#include "testing_section.h"
 
 // Static string constants for better performance
 static const QString APP_TITLE = QStringLiteral("Linuxtrack");
@@ -89,6 +90,8 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   lv = new LogView();
   pi = new PluginInstall(ui, this);
   ps = new ProfileSelector(this);
+  testingSection = new TestingSection(this);
+  testingSection->setupUI(ui);
   QObject::connect(&STATE, SIGNAL(stateChanged(linuxtrack_state_type)),
                    this, SLOT(trackerStateHandler(linuxtrack_state_type)));
   QObject::connect(&zipper, SIGNAL(finished(int, QProcess::ExitStatus)),
@@ -114,6 +117,14 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
   QObject::connect(ui.WinePrefixButton, SIGNAL(pressed()), this, SLOT(on_WinePrefixButton_pressed()));
   QObject::connect(ui.LaunchLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_LaunchLtrPipeButton_pressed()));
+  
+  // Connect Testing section buttons
+  QObject::connect(ui.TesterExeRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
+  QObject::connect(ui.FTTesterRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_FTTesterRadioButton_toggled(bool)));
+  QObject::connect(ui.PlatformComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_PlatformComboBox_currentTextChanged(QString)));
+  QObject::connect(ui.LoadGamesButton, SIGNAL(pressed()), this, SLOT(on_LoadGamesButton_pressed()));
+  QObject::connect(ui.GameComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_GameComboBox_currentTextChanged(QString)));
+  QObject::connect(ui.RunTesterButton, SIGNAL(pressed()), this, SLOT(on_RunTesterButton_pressed()));
   
   // Connect System information buttons
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
@@ -718,6 +729,50 @@ void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
         QString::fromUtf8("Head tracking has been automatically started.\n\n") +
         QString::fromUtf8("You can now test your head tracking!\n\n") +
         QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+}
+
+// Testing section slot implementations
+void LinuxtrackGui::on_TesterExeRadioButton_toggled(bool checked)
+{
+    if (checked && testingSection) {
+        testingSection->onTesterSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_FTTesterRadioButton_toggled(bool checked)
+{
+    if (checked && testingSection) {
+        testingSection->onTesterSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_PlatformComboBox_currentTextChanged(const QString &text)
+{
+    if (testingSection) {
+        testingSection->onPlatformSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_LoadGamesButton_pressed()
+{
+    if (testingSection) {
+        testingSection->onLoadGamesClicked();
+    }
+}
+
+void LinuxtrackGui::on_GameComboBox_currentTextChanged(const QString &text)
+{
+    // Enable Run Tester button when a game is selected
+    if (ui.RunTesterButton) {
+        ui.RunTesterButton->setEnabled(!text.isEmpty());
+    }
+}
+
+void LinuxtrackGui::on_RunTesterButton_pressed()
+{
+    if (testingSection) {
+        testingSection->onRunTesterClicked();
+    }
 }
 
 // System information functions
