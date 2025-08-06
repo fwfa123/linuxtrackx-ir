@@ -74,6 +74,7 @@ private:
     QString compatDataPath;
     QStringList libraryPaths;
     QMap<QString, QString> gameToLibraryMap; // gameId -> libraryPath
+    QString selectedPrefixLibrary; // Store which library was used for prefix lookup
     
     // Helper methods
     bool initializePaths();
