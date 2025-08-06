@@ -355,41 +355,205 @@ void TestingSection::offerWineBridgeInstallation(const QString &prefixPath)
                            QString::fromUtf8("Wine Bridge installation functionality will be implemented here."));
 }
 
-void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform)
+QString TestingSection::getCurrentGameId()
 {
-    QProcess process;
-    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    
-    // Set up wine environment
-    env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
-    
-    if (platform == QString::fromUtf8("Steam")) {
-        // Set up Steam Proton environment
-        // TODO: Add Steam-specific environment variables
-    } else if (platform == QString::fromUtf8("Lutris")) {
-        // Set up Lutris environment
-        // TODO: Add Lutris-specific environment variables
+    if (currentPlatform != QString::fromUtf8("Steam")) {
+        return QString::fromUtf8("");
     }
     
-    process.setProcessEnvironment(env);
-    process.setWorkingDirectory(prefixPath);
+    // Get the selected game name from the combo box
+    QString selectedGameName = gameComboBox->currentText();
+    if (selectedGameName.isEmpty()) {
+        return QString::fromUtf8("");
+    }
     
-    // Launch tester through Wine
-    QStringList arguments;
-    arguments << testerPath;
+    // Find the game ID by matching the game name
+    QList<SteamGame> games = steamIntegration->getSteamGames();
+    for (const SteamGame &game : games) {
+        if (game.game_name == selectedGameName) {
+            return game.game_id;
+        }
+    }
     
-    qDebug() << "Launching tester with Wine:" << testerPath;
-    qDebug() << "Wine prefix:" << prefixPath;
+    return QString::fromUtf8("");
+}
+
+QString TestingSection::getCurrentGameSlug()
+{
+    if (currentPlatform != QString::fromUtf8("Lutris")) {
+        return QString::fromUtf8("");
+    }
     
-    process.start(QString::fromUtf8("wine"), arguments);
+    // Get the selected game name from the combo box
+    QString selectedGameName = gameComboBox->currentText();
+    if (selectedGameName.isEmpty()) {
+        return QString::fromUtf8("");
+    }
     
-    if (process.waitForStarted()) {
-        qDebug() << "Tester launched successfully:" << testerPath;
-        QMessageBox::information(nullptr, QString::fromUtf8("Tester Launched"), 
-                               QString::fromUtf8("Tester has been launched successfully through Wine."));
+    // Find the game slug by matching the game name
+    QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
+    for (const LutrisGame &game : games) {
+        if (game.game_name == selectedGameName) {
+            return game.game_slug;
+        }
+    }
+    
+    return QString::fromUtf8("");
+}
+
+void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform)
+{
+    if (platform == QString::fromUtf8("Steam")) {
+        // Use existing Steam integration logic
+        QString gameId = getCurrentGameId();
+        if (!gameId.isEmpty()) {
+            // Get the Proton path using existing Steam integration
+            QString protonVersion = steamIntegration->findProtonVersion(gameId);
+            QString protonPath = steamIntegration->getProtonPath(protonVersion);
+            
+            if (!protonPath.isEmpty()) {
+                QString protonBinaryPath = protonPath + QString::fromUtf8("/proton");
+                QFileInfo protonBinary(protonBinaryPath);
+                
+                if (protonBinary.exists() && protonBinary.isExecutable()) {
+                    QProcess process;
+                    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+                    
+                    // Set up environment variables exactly like the existing Steam integration
+                    QString compatDataPath = prefixPath;
+                    compatDataPath.chop(4); // Remove "/pfx" from the end
+                    env.insert(QString::fromUtf8("STEAM_COMPAT_DATA_PATH"), compatDataPath);
+                    env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+                    env.insert(QString::fromUtf8("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamIntegration->getSteamPath());
+                    
+                    process.setProcessEnvironment(env);
+                    process.setWorkingDirectory(prefixPath);
+                    
+                    QStringList arguments;
+                    arguments << QString::fromUtf8("run") << testerPath;
+                    
+                    qDebug() << "Launching tester with Proton:" << protonBinaryPath;
+                    qDebug() << "Arguments:" << arguments;
+                    qDebug() << "Working directory:" << prefixPath;
+                    
+                    process.start(protonBinaryPath, arguments);
+                    
+                    if (process.waitForStarted(5000)) {
+                        qDebug() << "Tester launched successfully:" << testerPath;
+                        qDebug() << "Process ID:" << process.processId();
+                        QMessageBox::information(nullptr, QString::fromUtf8("Tester Launched"), 
+                                               QString::fromUtf8("Tester has been launched successfully through Steam Proton."));
+                    } else {
+                        qDebug() << "Failed to launch tester:" << process.errorString();
+                        QMessageBox::warning(nullptr, QString::fromUtf8("Launch Failed"), 
+                                           QString::fromUtf8("Failed to launch tester: %1").arg(process.errorString()));
+                    }
+                } else {
+                    qDebug() << "Proton binary not found or not executable:" << protonBinaryPath;
+                    QMessageBox::warning(nullptr, QString::fromUtf8("Proton Not Found"), 
+                                       QString::fromUtf8("Proton binary not found: %1").arg(protonBinaryPath));
+                }
+            } else {
+                qDebug() << "Proton path not found for version:" << protonVersion;
+                QMessageBox::warning(nullptr, QString::fromUtf8("Proton Not Found"), 
+                                   QString::fromUtf8("Proton installation not found for version: %1").arg(protonVersion));
+            }
+        } else {
+            qDebug() << "No game ID available for Steam platform";
+            QMessageBox::warning(nullptr, QString::fromUtf8("Game Not Selected"), 
+                               QString::fromUtf8("Please select a Steam game first."));
+        }
+    } else if (platform == QString::fromUtf8("Lutris")) {
+        // Use existing Lutris integration logic
+        QString gameSlug = getCurrentGameSlug();
+        if (!gameSlug.isEmpty()) {
+            QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
+            QString wineVersion;
+            
+            // Find the wine version for the current game
+            for (const LutrisGame &game : games) {
+                if (game.game_slug == gameSlug) {
+                    wineVersion = game.wine_version;
+                    break;
+                }
+            }
+            
+            if (!wineVersion.isEmpty()) {
+                QString homeDir = QDir::homePath();
+                QString winePath = QString::fromUtf8("%1/.local/share/lutris/runners/wine/%2/bin/wine").arg(homeDir, wineVersion);
+                QFileInfo wineBinary(winePath);
+                
+                if (wineBinary.exists() && wineBinary.isExecutable()) {
+                    QProcess process;
+                    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+                    
+                    // Set up environment variables for Lutris
+                    env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+                    env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+                    env.insert(QString::fromUtf8("WINEESYNC"), QString::fromUtf8("1"));
+                    
+                    process.setProcessEnvironment(env);
+                    process.setWorkingDirectory(prefixPath);
+                    
+                    QStringList arguments;
+                    arguments << testerPath;
+                    
+                    qDebug() << "Launching tester with Lutris Wine:" << winePath;
+                    qDebug() << "Wine version:" << wineVersion;
+                    qDebug() << "Game slug:" << gameSlug;
+                    
+                    process.start(winePath, arguments);
+                    
+                    if (process.waitForStarted(5000)) {
+                        qDebug() << "Tester launched successfully:" << testerPath;
+                        qDebug() << "Process ID:" << process.processId();
+                        QMessageBox::information(nullptr, QString::fromUtf8("Tester Launched"), 
+                                               QString::fromUtf8("Tester has been launched successfully through Lutris Wine."));
+                    } else {
+                        qDebug() << "Failed to launch tester:" << process.errorString();
+                        QMessageBox::warning(nullptr, QString::fromUtf8("Launch Failed"), 
+                                           QString::fromUtf8("Failed to launch tester: %1").arg(process.errorString()));
+                    }
+                } else {
+                    qDebug() << "Lutris wine binary not found or not executable:" << winePath;
+                    QMessageBox::warning(nullptr, QString::fromUtf8("Lutris Wine Not Found"), 
+                                       QString::fromUtf8("Lutris wine binary not found: %1").arg(winePath));
+                }
+            } else {
+                qDebug() << "Wine version not found for game:" << gameSlug;
+                QMessageBox::warning(nullptr, QString::fromUtf8("Wine Version Not Found"), 
+                                   QString::fromUtf8("Wine version not found for game: %1").arg(gameSlug));
+            }
+        } else {
+            qDebug() << "No game slug available for Lutris platform";
+            QMessageBox::warning(nullptr, QString::fromUtf8("Game Not Selected"), 
+                               QString::fromUtf8("Please select a Lutris game first."));
+        }
     } else {
-        qDebug() << "Failed to launch tester:" << process.errorString();
-        QMessageBox::warning(nullptr, QString::fromUtf8("Launch Failed"), 
-                           QString::fromUtf8("Failed to launch tester: %1").arg(process.errorString()));
+        // Use system wine for Custom Prefix
+        QProcess process;
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        
+        env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+        process.setProcessEnvironment(env);
+        process.setWorkingDirectory(prefixPath);
+        
+        QStringList arguments;
+        arguments << testerPath;
+        
+        qDebug() << "Launching tester with system Wine";
+        
+        process.start(QString::fromUtf8("wine"), arguments);
+        
+        if (process.waitForStarted(5000)) {
+            qDebug() << "Tester launched successfully:" << testerPath;
+            qDebug() << "Process ID:" << process.processId();
+            QMessageBox::information(nullptr, QString::fromUtf8("Tester Launched"), 
+                                   QString::fromUtf8("Tester has been launched successfully through system Wine."));
+        } else {
+            qDebug() << "Failed to launch tester:" << process.errorString();
+            QMessageBox::warning(nullptr, QString::fromUtf8("Launch Failed"), 
+                               QString::fromUtf8("Failed to launch tester: %1").arg(process.errorString()));
+        }
     }
 } 
