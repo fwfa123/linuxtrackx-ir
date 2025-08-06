@@ -1,5 +1,5 @@
 Name:           linuxtrack
-Version:        0.99.21
+Version:        0.99.22
 Release:        1%{?dist}
 Summary:        Head tracking software for Linux
 
@@ -190,7 +190,7 @@ if [ $1 -eq 0 ] ; then
 fi
 
 %changelog
-* Sun Jun 29 2025 LinuxTrack X-IR Project <fwfa123@users.noreply.github.com> - 0.99.21-1
+* Sun Jun 29 2025 LinuxTrack X-IR Project <fwfa123@users.noreply.github.com> - 0.99.22-1
 - Qt5 modernization release
 - Complete installation system implementation
 - Fixed installation paths to use /opt/linuxtrack

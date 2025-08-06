@@ -1,10 +1,12 @@
-# LinuxTrack X-IR v0.99.21 - Modern Head Tracking for Linux
+# LinuxTrack X-IR v0.99.22 - Modern Head Tracking for Linux
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
 
-**LinuxTrack X-IR** is a modern fork of the original LinuxTrack project, bringing head tracking to Linux and Windows with updated build systems, Qt5 support, and Wine compatibility. Track your head movement using TrackIR devices, webcams, or specialized hardware and translate that into game input.
+> **Note**: This version (0.99.22) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+
+LinuxTrack X-IR is a modern fork of the original LinuxTrack project, providing enhanced head tracking support for Linux systems with TrackIR devices.
 
 ### Why the **X** in the name?  I am concentrating on TrackIR support and I do not 
 have a Mac and other items I am not supporting these at this time, although the code 
@@ -205,7 +207,7 @@ cd linuxtrackx-ir
 # Build and create AppImage
 ./scripts/appimage/build_appimage_phase4.sh --clean
 
-# The AppImage will be created as: LinuxTrack-X-IR-0.99.21-x86_64.AppImage
+# The AppImage will be created as: LinuxTrack-X-IR-0.99.22-x86_64.AppImage
 ```
 
 #### **AppImage Features**
@@ -379,7 +381,7 @@ make -j$(nproc)
 - Downloads source code for both missing libraries
 - Builds 32-bit versions with proper compiler flags
 - Installs to `/usr/lib32/` with correct symlinks
-- Uses parallel compilation for fast builds
+- Uses parallel compilation for speed
 - Cleans up build files automatically
 
 #### **Common Arch Linux Wine Issues:**

@@ -2,6 +2,60 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
+> **Note**: This version (0.99.22) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+
+## [0.99.22] - Gaming Platform Integration & Automatic Tracking (2025)
+
+### Major Changes
+- **Complete Gaming Platform Integration**: Comprehensive Steam Proton and Lutris support
+- **Automatic Tracking Start Feature**: Seamless tracking initiation before NSIS installer begins
+- **Modern UI Design**: Dedicated Gaming and System tabs for better organization
+- **Enhanced User Experience**: One-click Wine Bridge installation with immediate tracking feedback
+
+### Added
+- **Automatic Tracking Start Feature**: Seamless tracking initiation before NSIS installer begins
+  - Immediate tracking start for Steam Proton, Lutris, and Custom Prefix installations
+  - Enhanced user experience - users can test tracking while installer runs
+  - Eliminates manual tracking window interaction
+  - Future-ready placeholder implementations for upcoming features
+- **Complete Gaming Platform Integration**: Comprehensive Steam Proton and Lutris support
+  - **Steam Proton Integration**: Multi-library support with Proton version detection
+  - **Lutris Integration**: Complete Lutris prefix detection and Wine Bridge installation
+  - **Proton version detection**: Including beta versions like Proton 9.0 Beta
+  - **VDF parsing**: For Steam library management
+  - **NSIS installer integration**: Within Proton environment
+  - **Comprehensive error handling**: Robust error reporting and detailed logging
+- **Modern UI Design**: Dedicated Gaming and System tabs
+  - **Gaming Tab**: Consolidated all gaming-related functionality
+  - **System Tab**: Comprehensive system information display
+  - **Improved user experience**: Better organization and clearer interface
+- **Arch Linux Wine Optimization**: Comprehensive optimization of Wine installation for Arch Linux
+- **Parallel Build Support**: Optimized builds using all CPU cores with `-j$(nproc)`
+- **ccache Integration**: 70-90% faster future builds through compiler caching
+- **CPU-Specific Optimizations**: Hardware-specific compiler flags for better performance
+- **Complete Wine Suite**: wine-stable, wine-mono, wine-gecko installation approach
+- **Enhanced Documentation**: Step-by-step Arch Linux installation with troubleshooting
+- **Community Attribution**: Proper credit to Arch Linux community and GitHub Issue #206 contributors
+
+### Changed
+- **User Workflow**: Eliminated manual tracking window interaction after installations
+- **Gaming Integration**: One-click Wine Bridge installation for both Lutris and Steam Proton games
+- **UI Organization**: Reorganized interface with dedicated Gaming and System tabs
+- **Error Handling**: Professional-grade error handling with detailed debugging
+- **Arch Linux Installation**: Replaced outdated wine32 approach with optimized wine-stable
+- **README Updates**: Comprehensive Arch Linux Wine troubleshooting and optimization guide
+- **Conflict Resolution**: Added guidance for wine-staging vs wine-stable conflicts
+- **Performance**: Dramatically improved Wine build times (hours → minutes)
+- **User Experience**: Clear, optimized instructions for Arch Linux users
+
+### Fixed
+- **Build Errors**: Added missing tracker.h include to resolve compilation errors
+- **Timing Issues**: Fixed tracking start timing to occur before installer begins
+- **Arch Linux Wine Conflicts**: Resolved wine-staging vs wine-stable package conflicts
+- **Missing Dependencies**: Fixed lib32-unixodbc dependency issues
+- **Build Performance**: Eliminated hours-long Wine builds through optimization
+- **Documentation**: Added comprehensive troubleshooting for Arch Linux Wine issues
+
 ## [0.99.21] - LinuxTrack X-IR Initial Release (2025)
 
 ### Major Changes
@@ -30,36 +84,6 @@ This release establishes the versioning strategy for the linuxtrackx-ir fork:
   - Fork suffix (-xir.x) clearly identifies this as the linuxtrackx-ir fork
   - Maintains semantic versioning principles
   - Acknowledges relationship to original project
-
-## [Unreleased] - Current Development
-
-### Added
-- **Arch Linux Wine Optimization**: Comprehensive optimization of Wine installation for Arch Linux
-- **Parallel Build Support**: Optimized builds using all CPU cores with `-j$(nproc)`
-- **ccache Integration**: 70-90% faster future builds through compiler caching
-- **CPU-Specific Optimizations**: Hardware-specific compiler flags for better performance
-- **Complete Wine Suite**: wine-stable, wine-mono, wine-gecko installation approach
-- **Enhanced Documentation**: Step-by-step Arch Linux installation with troubleshooting
-- **Community Attribution**: Proper credit to Arch Linux community and GitHub Issue #206 contributors
-
-### Changed
-- **Arch Linux Installation**: Replaced outdated wine32 approach with optimized wine-stable
-- **README Updates**: Comprehensive Arch Linux Wine troubleshooting and optimization guide
-- **Conflict Resolution**: Added guidance for wine-staging vs wine-stable conflicts
-- **Performance**: Dramatically improved Wine build times (hours → minutes)
-- **User Experience**: Clear, optimized instructions for Arch Linux users
-
-### Fixed
-- **Arch Linux Wine Conflicts**: Resolved wine-staging vs wine-stable package conflicts
-- **Missing Dependencies**: Fixed lib32-unixodbc dependency issues
-- **Build Performance**: Eliminated hours-long Wine builds through optimization
-- **Documentation**: Added comprehensive troubleshooting for Arch Linux Wine issues
-
-### Acknowledgments
-- **Arch Linux Community**: Foundation for Wine optimization techniques
-- **GitHub Issue #206 Contributors**: [uglyDwarf/linuxtrack#206](https://github.com/uglyDwarf/linuxtrack/issues/206) - Community members who contributed to solving Wine compatibility issues
-- **AUR Package Maintainers**: Maintainers of wine-stable and wine-stable-mono packages
-- **Arch Linux Wine Users**: Community members who tested and validated optimization approaches
 
 ## [2024] - Winegcc Build System Fixes
 
@@ -150,7 +174,11 @@ This release establishes the versioning strategy for the linuxtrackx-ir fork:
 | **Distribution Support** | Legacy Linux | Modern Linux distributions |
 | **Development Status** | Abandoned | Active |
 | **Documentation** | Basic | Comprehensive guides |
-| **Version Number** | 0.99.20 | 0.99.21 |
+| **Version Number** | 0.99.20 | 0.99.22 |
+| **Gaming Integration** | None | Steam Proton + Lutris support |
+| **Automatic Tracking** | Manual | Automatic start before installers |
+| **UI Modernization** | Basic Qt4 | Modern Gaming + System tabs |
+| **Error Handling** | Basic | Comprehensive with detailed logging |
 
 ## Migration Notes
 
