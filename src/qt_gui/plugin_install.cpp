@@ -8,6 +8,7 @@
 #include <zlib.h>
 #include "extractor.h"
 #include "utils.h"
+#include "tracker.h"
 
 #ifdef HAVE_CONFIG_H
   #include "../../config.h"
@@ -180,6 +181,16 @@ void PluginInstall::installLinuxtrackWine()
   // Use the wine directory location
   QString installerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
 
+  // Start tracking BEFORE the installer begins
+  // This allows users to test their head tracking while the installer is running
+  static QString sec(QString::fromUtf8("Default"));
+  TRACKER.start(sec);
+  
+  QMessageBox::information(parentWidget, QString::fromUtf8("Tracking Started"),
+    QString::fromUtf8("Head tracking has been automatically started.\n\n") +
+    QString::fromUtf8("You can now test your head tracking while the installer runs!\n\n") +
+    QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+
   inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
   inst->run(installerPath);
 #else
@@ -348,6 +359,13 @@ void PluginInstall::finished(bool ok)
     case TIR_FW_ONLY:
     case MFC_ONLY:
     default:
+      if (ok && state == LTR_W) {
+        // Wine bridge installation was successful
+        QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Complete"),
+          QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed!\n\n") +
+          QString::fromUtf8("You can now test your head tracking in your games!\n\n") +
+          QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+      }
       state = DONE;
       enableButtons(true);
       break;
@@ -493,6 +511,16 @@ void PluginInstall::installLutrisWineBridge()
     QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
     QString::fromUtf8("Click OK to start the installation."));
   
+  // Start tracking BEFORE the installer begins
+  // This allows users to test their head tracking while the installer is running
+  static QString sec(QString::fromUtf8("Default"));
+  TRACKER.start(sec);
+  
+  QMessageBox::information(getParentWidget(), QString::fromUtf8("Tracking Started"),
+    QString::fromUtf8("Head tracking has been automatically started.\n\n") +
+    QString::fromUtf8("You can now test your head tracking while the installer runs!\n\n") +
+    QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+  
   // Install to the selected game
   bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
   
@@ -593,6 +621,16 @@ void PluginInstall::installSteamProtonBridge()
     QString::fromUtf8("The NSIS installer will open in a new window.\n") +
     QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
     QString::fromUtf8("Click OK to start the installation."));
+  
+  // Start tracking BEFORE the installer begins
+  // This allows users to test their head tracking while the installer is running
+  static QString sec(QString::fromUtf8("Default"));
+  TRACKER.start(sec);
+  
+  QMessageBox::information(getParentWidget(), QString::fromUtf8("Tracking Started"),
+    QString::fromUtf8("Head tracking has been automatically started.\n\n") +
+    QString::fromUtf8("You can now test your head tracking while the installer runs!\n\n") +
+    QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
   
   // Install to the selected game
   bool success = steamIntegration->installToSteamGame(selectedGameId);

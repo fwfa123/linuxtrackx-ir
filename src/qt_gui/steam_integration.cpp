@@ -252,6 +252,7 @@ QString SteamIntegration::findProtonPrefix(const QString &gameId)
     // Search ALL Steam libraries for the Proton prefix (like Protontricks does)
     // The game and its Proton prefix can be in different libraries
     QStringList candidates;
+    QStringList candidateLibraries;
     
     for (const QString& libraryPath : libraryPaths) {
         // compatdata is inside steamapps directory, not at library root
@@ -269,6 +270,7 @@ QString SteamIntegration::findProtonPrefix(const QString &gameId)
             ltr_int_log_message("SteamIntegration::findProtonPrefix() - Found prefix in library: %s\n", 
                 libraryPath.toUtf8().constData());
             candidates.append(prefixPath);
+            candidateLibraries.append(libraryPath);
         }
     }
     
@@ -278,10 +280,30 @@ QString SteamIntegration::findProtonPrefix(const QString &gameId)
         return QString();
     }
     
-    // If multiple candidates found, return the first one (could be enhanced with modification time)
-    ltr_int_log_message("SteamIntegration::findProtonPrefix() - Found %d prefix candidates, using: %s\n", 
-        candidates.size(), candidates.first().toUtf8().constData());
-    return candidates.first();
+    // If multiple candidates found, prefer the one where the game manifest exists
+    QString selectedPrefix = candidates.first();
+    QString selectedLibrary = candidateLibraries.first();
+    
+    // Check if we can find the game manifest in any of the candidate libraries
+    for (int i = 0; i < candidates.size(); ++i) {
+        QString libraryPath = candidateLibraries[i];
+        QString manifestPath = libraryPath + QStringLiteral("appmanifest_") + gameId + QStringLiteral(".acf");
+        if (QFile::exists(manifestPath)) {
+            selectedPrefix = candidates[i];
+            selectedLibrary = candidateLibraries[i];
+            ltr_int_log_message("SteamIntegration::findProtonPrefix() - Found game manifest in library: %s\n", 
+                libraryPath.toUtf8().constData());
+            break;
+        }
+    }
+    
+    ltr_int_log_message("SteamIntegration::findProtonPrefix() - Found %d prefix candidates, using: %s (library: %s)\n", 
+        candidates.size(), selectedPrefix.toUtf8().constData(), selectedLibrary.toUtf8().constData());
+    
+    // Store the selected library for use in findProtonVersion
+    selectedPrefixLibrary = selectedLibrary;
+    
+    return selectedPrefix;
 }
 
 QString SteamIntegration::findProtonPrefixInLibrary(const QString &gameId, const QString &libraryPath)
@@ -454,19 +476,71 @@ QStringList SteamIntegration::getAvailableGames()
 
 bool SteamIntegration::installToSteamGame(const QString &gameId)
 {
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Starting installation for game: %s\n", 
+        gameId.toUtf8().constData());
+    
     // Find the Proton prefix
     QString prefixPath = findProtonPrefix(gameId);
     if (prefixPath.isEmpty()) {
-        setLastError(QStringLiteral("No Proton prefix found for game: ") + gameId);
+        QString errorMsg = QStringLiteral("No Proton prefix found for game: ") + gameId;
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
         return false;
     }
     
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Found Proton prefix: %s\n", 
+        prefixPath.toUtf8().constData());
+    
     // Get Proton version
     QString protonVersion = findProtonVersion(gameId);
-    QString protonPath = getProtonPath(protonVersion);
+    if (protonVersion.isEmpty()) {
+        QString errorMsg = QStringLiteral("Could not determine Proton version for game: ") + gameId;
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
+        return false;
+    }
     
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Determined Proton version: %s\n", 
+        protonVersion.toUtf8().constData());
+    
+    QString protonPath = getProtonPath(protonVersion);
     if (protonPath.isEmpty()) {
-        setLastError(QStringLiteral("Could not find Proton installation for version: ") + protonVersion);
+        QString errorMsg = QStringLiteral("Could not find Proton installation for version: ") + protonVersion;
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
+        return false;
+    }
+    
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Found Proton installation: %s\n", 
+        protonPath.toUtf8().constData());
+    
+    // Validate that the Proton binary exists
+    QString protonBinaryPath = protonPath + QStringLiteral("/proton");
+    QFileInfo protonBinary(protonBinaryPath);
+    
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Validating Proton binary: %s\n", 
+        protonBinaryPath.toUtf8().constData());
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Binary exists: %s\n", 
+        protonBinary.exists() ? "YES" : "NO");
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Binary executable: %s\n", 
+        protonBinary.isExecutable() ? "YES" : "NO");
+    
+    if (!protonBinary.exists()) {
+        QString errorMsg = QStringLiteral("Proton binary not found: ") + protonBinaryPath;
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
+        return false;
+    }
+    
+    if (!protonBinary.isExecutable()) {
+        QString errorMsg = QStringLiteral("Proton binary not executable: ") + protonBinaryPath;
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
         return false;
     }
     
@@ -476,8 +550,22 @@ bool SteamIntegration::installToSteamGame(const QString &gameId)
     env.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), getCompatDataPath() + gameId);
     env.insert(QStringLiteral("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamPath);
     
+    ltr_int_log_message("SteamIntegration::installToSteamGame() - Environment variables set:\n");
+    ltr_int_log_message("  WINEPREFIX: %s\n", prefixPath.toUtf8().constData());
+    ltr_int_log_message("  STEAM_COMPAT_DATA_PATH: %s\n", (getCompatDataPath() + gameId).toUtf8().constData());
+    ltr_int_log_message("  STEAM_COMPAT_CLIENT_INSTALL_PATH: %s\n", steamPath.toUtf8().constData());
+    
     // Launch NSIS installer with Proton
-    return runWineBridgeInstallerWithProton(prefixPath, protonPath, env);
+    bool result = runWineBridgeInstallerWithProton(prefixPath, protonPath, env);
+    
+    if (result) {
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - Installation completed successfully\n");
+    } else {
+        ltr_int_log_message("SteamIntegration::installToSteamGame() - Installation failed: %s\n", 
+            getLastError().toUtf8().constData());
+    }
+    
+    return result;
 }
 
 QString SteamIntegration::findProtonVersion(const QString &gameId)
@@ -491,9 +579,22 @@ QString SteamIntegration::findProtonVersion(const QString &gameId)
     }
     
     // Read the config_info file to get the Proton version
-    QString configInfoPath = prefixPath;
-    configInfoPath.remove(QStringLiteral("/pfx"));
-    configInfoPath += QStringLiteral("/config_info");
+    // Use the same library path where we found the prefix
+    QString configInfoPath;
+    if (!selectedPrefixLibrary.isEmpty()) {
+        // Use the library where we found the prefix
+        configInfoPath = selectedPrefixLibrary + QStringLiteral("compatdata/") + gameId + QStringLiteral("/config_info");
+        ltr_int_log_message("SteamIntegration::findProtonVersion() - Using selected library for config_info: %s\n", 
+            selectedPrefixLibrary.toUtf8().constData());
+    } else {
+        // Fallback: construct from prefix path
+        configInfoPath = prefixPath;
+        configInfoPath.remove(QStringLiteral("/pfx"));
+        configInfoPath += QStringLiteral("/config_info");
+    }
+    
+    ltr_int_log_message("SteamIntegration::findProtonVersion() - Looking for config_info at: %s\n", 
+        configInfoPath.toUtf8().constData());
     
     QFile configFile(configInfoPath);
     if (!configFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
@@ -502,98 +603,185 @@ QString SteamIntegration::findProtonVersion(const QString &gameId)
         return QString();
     }
     
-    QTextStream in(&configFile);
-    QString line = in.readLine(); // First line contains the version
+    QStringList lines = QString::fromUtf8(configFile.readAll()).split(QStringLiteral("\n"));
     configFile.close();
     
-    if (line.isEmpty()) {
+    ltr_int_log_message("SteamIntegration::findProtonVersion() - Config file contains %d lines:\n", lines.size());
+    for (int i = 0; i < lines.size(); ++i) {
+        ltr_int_log_message("SteamIntegration::findProtonVersion() - Line %d: '%s'\n", 
+            i, lines[i].toUtf8().constData());
+    }
+    
+    if (lines.isEmpty()) {
+        ltr_int_log_message("SteamIntegration::findProtonVersion() - Empty config_info file\n");
+        return QString();
+    }
+    
+    QString versionLine = lines[0].trimmed();
+    if (versionLine.isEmpty()) {
         ltr_int_log_message("SteamIntegration::findProtonVersion() - Empty version in config_info\n");
         return QString();
     }
     
-    // Parse the version to determine the Proton installation name
-    // Version format: "10.0-200" -> "Proton - Experimental"
-    // Version format: "8.0-5" -> "Proton 8.0"
-    QString protonName;
     ltr_int_log_message("SteamIntegration::findProtonVersion() - Raw version line: '%s'\n", 
-        line.toUtf8().constData());
+        versionLine.toUtf8().constData());
     
-    if (line.startsWith(QStringLiteral("10.0-"))) {
-        protonName = QStringLiteral("Proton - Experimental");
-        ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton - Experimental\n");
-    } else if (line.startsWith(QStringLiteral("9.0-"))) {
-        // Check if Proton 9.0 (Beta) exists, otherwise fall back to path extraction
+    // First, try to extract the actual Proton name from the second line (if available)
+    QString protonName;
+    if (lines.size() > 1) {
+        QString protonPathLine = lines[1].trimmed();
+        ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton path line: '%s'\n", 
+            protonPathLine.toUtf8().constData());
+        
+        // Extract the Proton name from the path
+        // Example: /media/Fast/Steam_Linux/steamapps/common/Proton - Experimental/files/
+        QRegularExpression regex(QStringLiteral(".*/common/([^/]+)/files/"));
+        QRegularExpressionMatch match = regex.match(protonPathLine);
+        if (match.hasMatch()) {
+            protonName = match.captured(1);
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Extracted Proton name from path: %s\n", 
+                protonName.toUtf8().constData());
+            
+            // Validate that this Proton installation actually exists
+            // Use the library path where we found the config_info
+            QString libraryRoot = configInfoPath;
+            libraryRoot.remove(QStringLiteral("/compatdata/") + gameId + QStringLiteral("/config_info"));
+            QString protonPath = libraryRoot + QStringLiteral("common/") + protonName;
+            
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Checking Proton path: %s\n", 
+                protonPath.toUtf8().constData());
+            
+            if (QDir(protonPath).exists()) {
+                QString protonBinaryPath = protonPath + QStringLiteral("/proton");
+                QFileInfo protonBinary(protonBinaryPath);
+                
+                if (protonBinary.exists() && protonBinary.isExecutable()) {
+                    ltr_int_log_message("SteamIntegration::findProtonVersion() - Validated Proton installation: %s\n", 
+                        protonName.toUtf8().constData());
+                    return protonName;
+                } else {
+                    ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton binary not found or not executable: %s\n", 
+                        protonBinaryPath.toUtf8().constData());
+                }
+            } else {
+                ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton directory does not exist: %s\n", 
+                    protonPath.toUtf8().constData());
+            }
+        }
+    }
+    
+    // Fallback: try to map Steam's internal version names to actual Proton installation names
+    ltr_int_log_message("SteamIntegration::findProtonVersion() - Attempting version mapping for: %s\n", 
+        versionLine.toUtf8().constData());
+    
+    QString mappedProtonName;
+    if (versionLine.startsWith(QStringLiteral("10.0-"))) {
+        mappedProtonName = QStringLiteral("Proton - Experimental");
+    } else if (versionLine.startsWith(QStringLiteral("9.0-"))) {
+        // Check if Proton 9.0 (Beta) exists, otherwise fall back to Proton 9.0
         bool foundBeta = false;
         for (const QString& libraryPath : libraryPaths) {
             QString libraryRoot = libraryPath;
             libraryRoot.remove(QStringLiteral("/steamapps/"));
             QString betaPath = libraryRoot + QStringLiteral("/steamapps/common/Proton 9.0 (Beta)");
             if (QDir(betaPath).exists()) {
-                protonName = QStringLiteral("Proton 9.0 (Beta)");
-                foundBeta = true;
-                ltr_int_log_message("SteamIntegration::findProtonVersion() - Found Proton 9.0 (Beta)\n");
-                break;
+                QString protonBinaryPath = betaPath + QStringLiteral("/proton");
+                QFileInfo protonBinary(protonBinaryPath);
+                if (protonBinary.exists() && protonBinary.isExecutable()) {
+                    mappedProtonName = QStringLiteral("Proton 9.0 (Beta)");
+                    foundBeta = true;
+                    ltr_int_log_message("SteamIntegration::findProtonVersion() - Found Proton 9.0 (Beta)\n");
+                    break;
+                }
             }
         }
         if (!foundBeta) {
-            protonName = QStringLiteral("Proton 9.0");
-            ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton 9.0 (Beta not found)\n");
+            mappedProtonName = QStringLiteral("Proton 9.0");
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Using Proton 9.0 (Beta not found)\n");
         }
-    } else if (line.startsWith(QStringLiteral("8.0-"))) {
-        protonName = QStringLiteral("Proton 8.0");
-        ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton 8.0\n");
-    } else if (line.startsWith(QStringLiteral("7.0-"))) {
-        protonName = QStringLiteral("Proton 7.0");
-        ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton 7.0\n");
+    } else if (versionLine.startsWith(QStringLiteral("8.0-"))) {
+        mappedProtonName = QStringLiteral("Proton 8.0");
+    } else if (versionLine.startsWith(QStringLiteral("7.0-"))) {
+        mappedProtonName = QStringLiteral("Proton 7.0");
     } else {
-        ltr_int_log_message("SteamIntegration::findProtonVersion() - Version not recognized, trying path extraction\n");
-        // Try to find the actual Proton installation by checking the config_info
-        // The second line contains the Proton files path
-        configFile.open(QIODevice::ReadOnly | QIODevice::Text);
-        QStringList lines = QString::fromUtf8(configFile.readAll()).split(QStringLiteral("\n"));
-        configFile.close();
-        
-        if (lines.size() > 1) {
-            QString protonPath = lines[1];
-            ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton path from config: %s\n", 
-                protonPath.toUtf8().constData());
-            // Extract the Proton name from the path
-            // Example: /media/Fast/Steam_Linux/steamapps/common/Proton - Experimental/files/
-            QRegularExpression regex(QStringLiteral(".*/common/([^/]+)/files/"));
-            QRegularExpressionMatch match = regex.match(protonPath);
-            if (match.hasMatch()) {
-                protonName = match.captured(1);
-                ltr_int_log_message("SteamIntegration::findProtonVersion() - Extracted Proton name: %s\n", 
-                    protonName.toUtf8().constData());
-            } else {
-                ltr_int_log_message("SteamIntegration::findProtonVersion() - Failed to extract Proton name from path\n");
-            }
-        } else {
-            ltr_int_log_message("SteamIntegration::findProtonVersion() - No second line in config_info\n");
-        }
+        ltr_int_log_message("SteamIntegration::findProtonVersion() - Version not recognized: %s\n", 
+            versionLine.toUtf8().constData());
+        return QString();
     }
     
-    ltr_int_log_message("SteamIntegration::findProtonVersion() - Game %s uses %s (version %s)\n", 
-        gameId.toUtf8().constData(), protonName.toUtf8().constData(), line.toUtf8().constData());
-    
-    return protonName;
+    ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped version %s to Proton installation: %s\n", 
+        versionLine.toUtf8().constData(), mappedProtonName.toUtf8().constData());
+    return mappedProtonName;
 }
 
 QString SteamIntegration::getProtonPath(const QString &protonVersion)
 {
-    // Search all Steam libraries for the Proton installation
+    // Try to find Proton installations in the standard Steam locations
+    ltr_int_log_message("SteamIntegration::getProtonPath() - Looking for Proton: %s\n", 
+        protonVersion.toUtf8().constData());
+    
+    // First, let's list all available Proton installations for debugging
+    ltr_int_log_message("SteamIntegration::getProtonPath() - Scanning for all Proton installations:\n");
+    for (const QString& libraryPath : libraryPaths) {
+        QString libraryRoot = libraryPath;
+        libraryRoot.remove(QStringLiteral("/steamapps/"));
+        QString commonPath = libraryRoot + QStringLiteral("/steamapps/common/");
+        
+        ltr_int_log_message("SteamIntegration::getProtonPath() - Checking common directory: %s\n", 
+            commonPath.toUtf8().constData());
+        
+        QDir commonDir(commonPath);
+        if (commonDir.exists()) {
+            QFileInfoList entries = commonDir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+            for (const QFileInfo& entry : entries) {
+                QString dirName = entry.fileName();
+                if (dirName.startsWith(QStringLiteral("Proton"))) {
+                    QString protonBinaryPath = entry.absoluteFilePath() + QStringLiteral("/proton");
+                    QFileInfo protonBinary(protonBinaryPath);
+                    
+                    ltr_int_log_message("SteamIntegration::getProtonPath() - Found Proton: %s (executable: %s)\n", 
+                        dirName.toUtf8().constData(), 
+                        protonBinary.exists() && protonBinary.isExecutable() ? "YES" : "NO");
+                }
+            }
+        }
+    }
+    
+    // Now try to find the specific version
     for (const QString& libraryPath : libraryPaths) {
         QString libraryRoot = libraryPath;
         libraryRoot.remove(QStringLiteral("/steamapps/"));
         QString protonPath = libraryRoot + QStringLiteral("/steamapps/common/") + protonVersion;
         
-        ltr_int_log_message("SteamIntegration::getProtonPath() - Checking: %s\n", 
+        ltr_int_log_message("SteamIntegration::getProtonPath() - Checking path: %s\n", 
             protonPath.toUtf8().constData());
         
         if (QDir(protonPath).exists()) {
-            ltr_int_log_message("SteamIntegration::getProtonPath() - Found Proton at: %s\n", 
-                protonPath.toUtf8().constData());
-            return protonPath;
+            QString protonBinaryPath = protonPath + QStringLiteral("/proton");
+            QFileInfo protonBinary(protonBinaryPath);
+            
+            if (protonBinary.exists() && protonBinary.isExecutable()) {
+                ltr_int_log_message("SteamIntegration::getProtonPath() - Found Proton at: %s\n", 
+                    protonPath.toUtf8().constData());
+                return protonPath;
+            } else {
+                ltr_int_log_message("SteamIntegration::getProtonPath() - Directory exists but no executable proton binary: %s\n", 
+                    protonBinaryPath.toUtf8().constData());
+            }
+        }
+    }
+    
+    // Try the default Steam installation as fallback
+    QString defaultSteamPath = QStringLiteral("/home/mario/.steam/steam/steamapps/common/") + protonVersion;
+    QDir defaultSteamDir(defaultSteamPath);
+    if (defaultSteamDir.exists()) {
+        QString protonBinaryPath = defaultSteamPath + QStringLiteral("/proton");
+        QFileInfo protonBinary(protonBinaryPath);
+        
+        if (protonBinary.exists() && protonBinary.isExecutable()) {
+            ltr_int_log_message("SteamIntegration::getProtonPath() - Found Proton in default Steam location: %s\n", 
+                defaultSteamPath.toUtf8().constData());
+            return defaultSteamPath;
         }
     }
     
@@ -617,6 +805,34 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
     QString installerPath = getWineBridgeInstallerPath();
     if (installerPath.isEmpty()) {
         setLastError(QStringLiteral("Could not find wine bridge installer"));
+        return false;
+    }
+    
+    // Validate that the Proton binary exists and is executable
+    QString protonBinaryPath = protonPath + QStringLiteral("/proton");
+    QFileInfo protonBinary(protonBinaryPath);
+    
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Validating Proton binary: %s\n", 
+        protonBinaryPath.toUtf8().constData());
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Binary exists: %s\n", 
+        protonBinary.exists() ? "YES" : "NO");
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Binary executable: %s\n", 
+        protonBinary.isExecutable() ? "YES" : "NO");
+    
+    if (!protonBinary.exists()) {
+        setLastError(QStringLiteral("Proton binary not found: ") + protonBinaryPath);
+        return false;
+    }
+    
+    if (!protonBinary.isExecutable()) {
+        setLastError(QStringLiteral("Proton binary not executable: ") + protonBinaryPath);
+        return false;
+    }
+    
+    // Validate working directory
+    QDir workingDir(prefixPath);
+    if (!workingDir.exists()) {
+        setLastError(QStringLiteral("Working directory does not exist: ") + prefixPath);
         return false;
     }
     
@@ -646,30 +862,54 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
         compatDataPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - WINEPREFIX: %s\n", 
         prefixPath.toUtf8().constData());
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Executing: %s run %s\n", 
+        protonBinaryPath.toUtf8().constData(), installerPath.toUtf8().constData());
     
-    process.start(protonPath + QStringLiteral("/proton"), arguments);
+    // Start the Proton process
+    process.start(protonBinaryPath, QStringList() << QStringLiteral("run") << installerPath);
     
     if (!process.waitForStarted()) {
-        setLastError(QStringLiteral("Failed to start Proton process: ") + process.errorString());
+        QString errorMsg = QStringLiteral("Failed to start Proton process: ") + process.errorString();
+        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
         return false;
     }
     
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton process started successfully\n");
     
-    // Wait for the process to finish (with timeout)
-    if (!process.waitForFinished(30000)) { // 30 second timeout
-        setLastError(QStringLiteral("Proton process timed out after 30 seconds"));
+    // Wait for completion with a longer timeout (120 seconds instead of 30)
+    // Proton initialization and NSIS installer can take time, especially on first run
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Waiting for Proton process to complete (timeout: 120 seconds)...\n");
+    
+    if (!process.waitForFinished(120000)) { // 120 seconds
         process.kill();
+        QString errorMsg = QStringLiteral("Proton process timed out after 120 seconds");
+        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - %s\n", 
+            errorMsg.toUtf8().constData());
+        setLastError(errorMsg);
         return false;
     }
+    
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton process completed\n");
     
     int exitCode = process.exitCode();
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton process finished with exit code: %d\n", exitCode);
     
     if (exitCode != 0) {
         QString errorOutput = QString::fromUtf8(process.readAllStandardError());
-        setLastError(QStringLiteral("Proton process failed with exit code ") + QString::number(exitCode) + 
-                    QStringLiteral(": ") + errorOutput);
+        QString standardOutput = QString::fromUtf8(process.readAllStandardOutput());
+        
+        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Standard output: %s\n", 
+            standardOutput.toUtf8().constData());
+        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Error output: %s\n", 
+            errorOutput.toUtf8().constData());
+        
+        QString errorMsg = QStringLiteral("Proton process failed with exit code ") + QString::number(exitCode);
+        if (!errorOutput.isEmpty()) {
+            errorMsg += QStringLiteral(": ") + errorOutput;
+        }
+        setLastError(errorMsg);
         return false;
     }
     
