@@ -1,4 +1,5 @@
-# LinuxTrack X-IR v0.99.22 - Modern Head Tracking for Linux
+# LinuxTrack X-IR v0.99.22 - MOVED GITLAB!!
+https://gitlab.com/fwfa123/linuxtrackx-ir
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
