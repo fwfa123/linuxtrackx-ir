@@ -12,6 +12,8 @@
 #include <QMessageBox>
 #include <QStringList>
 #include "ltr_gui.h"
+#include "steam_integration.h"
+#include "lutris_integration.h"
 
 class TestingSection : public QObject
 {
@@ -39,6 +41,11 @@ public:
     void runSelectedTester();
     bool checkTesterInPrefix(const QString &prefixPath, const QString &testerType);
     void offerWineBridgeInstallation(const QString &prefixPath);
+    
+    // Game discovery methods
+    QStringList getSteamGames();
+    QStringList getLutrisGames();
+    QStringList getCustomPrefixGames();
 
 public slots:
     void onTesterSelectionChanged();
@@ -59,6 +66,10 @@ private:
     QString currentGame;
     QString currentTesterType;
     QStringList currentGames;
+    
+    // Integration objects
+    SteamIntegration *steamIntegration;
+    LutrisIntegration *lutrisIntegration;
 };
 
 #endif // TESTING_SECTION_H 

@@ -22,6 +22,8 @@ TestingSection::TestingSection(QObject *parent)
     , currentGame(QString::fromUtf8(""))
     , currentTesterType(QString::fromUtf8("Tester.exe"))
     , currentGames()
+    , steamIntegration(nullptr)
+    , lutrisIntegration(nullptr)
 {
 }
 
@@ -39,6 +41,10 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
     loadGamesButton = ui.LoadGamesButton;
     gameComboBox = ui.GameComboBox;
     runTesterButton = ui.RunTesterButton;
+    
+    // Initialize integration objects
+    steamIntegration = new SteamIntegration(this);
+    lutrisIntegration = new LutrisIntegration(this);
     
     // Set initial state
     if (gameComboBox) {
@@ -123,27 +129,53 @@ void TestingSection::loadGamesForPlatform(const QString &platform)
 
 QStringList TestingSection::getSteamGames()
 {
-    // TODO: Implement Steam game discovery
-    // This should reuse existing Steam integration logic
     QStringList games;
     
-    // Placeholder implementation
-    // In real implementation, this would use SteamIntegration class
-    // to get list of available Steam games
+    if (!steamIntegration) {
+        qDebug() << "Steam integration not initialized";
+        return games;
+    }
     
+    if (!steamIntegration->isSteamInstalled()) {
+        qDebug() << "Steam not installed";
+        return games;
+    }
+    
+    // Get list of Steam games
+    QList<SteamGame> steamGames = steamIntegration->getSteamGames();
+    
+    for (const SteamGame &game : steamGames) {
+        if (game.is_installed) {
+            games << game.game_name;
+        }
+    }
+    
+    qDebug() << "Found" << games.size() << "Steam games";
     return games;
 }
 
 QStringList TestingSection::getLutrisGames()
 {
-    // TODO: Implement Lutris game discovery
-    // This should reuse existing Lutris integration logic
     QStringList games;
     
-    // Placeholder implementation
-    // In real implementation, this would use LutrisIntegration class
-    // to get list of available Lutris games
+    if (!lutrisIntegration) {
+        qDebug() << "Lutris integration not initialized";
+        return games;
+    }
     
+    if (!lutrisIntegration->isLutrisInstalled()) {
+        qDebug() << "Lutris not installed";
+        return games;
+    }
+    
+    // Get list of Lutris games
+    QList<LutrisGame> lutrisGames = lutrisIntegration->getLutrisGames();
+    
+    for (const LutrisGame &game : lutrisGames) {
+        games << game.game_name;
+    }
+    
+    qDebug() << "Found" << games.size() << "Lutris games";
     return games;
 }
 
@@ -203,17 +235,46 @@ void TestingSection::runSelectedTester()
 
 QString TestingSection::getPrefixForGame(const QString &gameName, const QString &platform)
 {
-    // TODO: Implement prefix detection for different platforms
-    // This should reuse existing logic from wine bridge installers
-    
     if (platform == QString::fromUtf8("Steam")) {
-        // Use Steam integration to get prefix for game
+        if (!steamIntegration) {
+            qDebug() << "Steam integration not initialized";
+            return QString::fromUtf8("");
+        }
+        
+        // Find the Steam game by name and get its prefix
+        QList<SteamGame> steamGames = steamIntegration->getSteamGames();
+        for (const SteamGame &game : steamGames) {
+            if (game.game_name == gameName && game.is_installed) {
+                QString prefixPath = steamIntegration->findProtonPrefix(game.game_id);
+                qDebug() << "Found Steam prefix for" << gameName << ":" << prefixPath;
+                return prefixPath;
+            }
+        }
+        
+        qDebug() << "Steam game not found:" << gameName;
         return QString::fromUtf8("");
+        
     } else if (platform == QString::fromUtf8("Lutris")) {
-        // Use Lutris integration to get prefix for game
+        if (!lutrisIntegration) {
+            qDebug() << "Lutris integration not initialized";
+            return QString::fromUtf8("");
+        }
+        
+        // Find the Lutris game by name and get its prefix
+        QList<LutrisGame> lutrisGames = lutrisIntegration->getLutrisGames();
+        for (const LutrisGame &game : lutrisGames) {
+            if (game.game_name == gameName) {
+                qDebug() << "Found Lutris prefix for" << gameName << ":" << game.wine_prefix;
+                return game.wine_prefix;
+            }
+        }
+        
+        qDebug() << "Lutris game not found:" << gameName;
         return QString::fromUtf8("");
+        
     } else if (platform == QString::fromUtf8("Custom Prefix")) {
-        // Return user-selected custom prefix
+        // TODO: Implement custom prefix selection
+        // For now, return empty string
         return QString::fromUtf8("");
     }
     
