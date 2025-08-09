@@ -125,10 +125,10 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 
 ## Action Items Checklist
 - [ ] Add `QT += sql` to `ltr_gui.pro.in`.
-- [ ] TestingSection: do not require `isExecutable()` for `.exe`.
-- [ ] TestingSection: search `Program Files/Program Files (x86)/Linuxtrack` inside the prefix for testers (and honor custom InstallDir if needed).
-- [ ] TestingSection: implement `startTracking()` using existing tracking start logic.
-- [ ] TestingSection: implement `offerWineBridgeInstallation()` and delegate to `PluginInstall`.
+- [x] TestingSection: do not require `isExecutable()` for `.exe`.
+- [x] TestingSection: search `Program Files/Program Files (x86)/Linuxtrack` inside the prefix for testers (and honor custom InstallDir if needed).
+- [x] TestingSection: implement `startTracking()` using existing tracking start logic.
+- [x] TestingSection: implement `offerWineBridgeInstallation()` and delegate to `PluginInstall`.
 - [ ] TestingSection: implement Custom Prefix selection (directory chooser + validation).
 - [ ] Lutris launch: avoid forcing `WINEARCH=win64` blindly.
 - [ ] SteamIntegration: remove `~` fallback; centralize installer path lookup.
