@@ -125,6 +125,14 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.LoadGamesButton, SIGNAL(pressed()), this, SLOT(on_LoadGamesButton_pressed()));
   QObject::connect(ui.GameComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_GameComboBox_currentTextChanged(QString)));
   QObject::connect(ui.RunTesterButton, SIGNAL(pressed()), this, SLOT(on_RunTesterButton_pressed()));
+
+  // Ensure the tracking window UI timers are active when testing workflow triggers tracking
+  connect(testingSection, SIGNAL(testingWorkflowStarted()), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
+  connect(testingSection, &TestingSection::testingWorkflowStarted, [this]() {
+    if (showWindow) {
+      showWindow->startTimersOnly();
+    }
+  });
   
   // Connect System information buttons
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
@@ -235,6 +243,11 @@ LinuxtrackGui::~LinuxtrackGui()
   if (xpInstall != nullptr) {
     // xpInstall cleanup if needed
   }
+}
+
+PluginInstall* LinuxtrackGui::getPluginInstall() const
+{
+  return pi;
 }
 
 void LinuxtrackGui::closeEvent(QCloseEvent *event)
@@ -356,6 +369,10 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
       break;
     case 3:
       HelpViewer::ChangePage(QStringLiteral("misc.htm"));
+      // Gaming tab selected: ensure tracking is started for testing workflow
+      if (testingSection) {
+        testingSection->startTracking();
+      }
       break;
     default:
       break;
@@ -646,6 +663,7 @@ void LinuxtrackGui::on_InstallTirMfcButton_pressed()
 {
     // Call the new TIR/MFC42 installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installTirFirmwareAndMfc42();
     }
 }
@@ -654,6 +672,7 @@ void LinuxtrackGui::on_SteamProtonButton_pressed()
 {
     // Call the Steam Proton wine bridge installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installSteamProtonBridge();
     }
 }
@@ -662,6 +681,7 @@ void LinuxtrackGui::on_LutrisButton_pressed()
 {
     // Call the Lutris wine bridge installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installLutrisWineBridge();
     }
 }
@@ -674,6 +694,7 @@ void LinuxtrackGui::on_OtherPlatformButton_pressed()
     
     // Start tracking automatically for future implementation
     static QString sec(QString::fromUtf8("Default"));
+    if (showWindow) { showWindow->startTimersOnly(); }
     TRACKER.start(sec);
     
     QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
@@ -686,6 +707,7 @@ void LinuxtrackGui::on_CustomPrefixButton_pressed()
 {
     // Call the wine bridge installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installWineBridgeToCustomPrefix();
     }
 }
@@ -707,6 +729,7 @@ void LinuxtrackGui::on_WinePrefixButton_pressed()
     
     // Start tracking automatically for future implementation
     static QString sec(QString::fromUtf8("Default"));
+    if (showWindow) { showWindow->startTimersOnly(); }
     TRACKER.start(sec);
     
     QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
@@ -723,6 +746,7 @@ void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
     
     // Start tracking automatically for future implementation
     static QString sec(QString::fromUtf8("Default"));
+    if (showWindow) { showWindow->startTimersOnly(); }
     TRACKER.start(sec);
     
     QMessageBox::information(this, QString::fromUtf8("Tracking Started"),

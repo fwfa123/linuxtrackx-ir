@@ -3,6 +3,9 @@
 #include "plugin_install.h"
 #include "steam_integration.h"
 #include "lutris_integration.h"
+#include "tracker.h"
+#include "ltr_state.h"
+#include <linuxtrack.h>
 #include <QProcess>
 #include <QFileInfo>
 #include <QDir>
@@ -54,6 +57,17 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
     if (runTesterButton) {
         runTesterButton->setEnabled(false);
     }
+
+    // Listen to tracker state changes to reset guard when tracking stops
+    QObject::connect(&STATE, SIGNAL(stateChanged(linuxtrack_state_type)),
+                     this, SLOT(onTrackerStateChanged(linuxtrack_state_type)));
+}
+
+void TestingSection::onTrackerStateChanged(linuxtrack_state_type current_state)
+{
+    if (current_state == STOPPED) {
+        trackingStarted = false;
+    }
 }
 
 void TestingSection::startTracking()
@@ -68,6 +82,14 @@ void TestingSection::startTracking()
     static QString sec(QString::fromUtf8("Default"));
     TRACKER.start(sec);
     trackingStarted = true;
+
+    // Inform the user once that tracking has been automatically started for testing.
+    QMessageBox::information(nullptr, QString::fromUtf8("Tracking Started"),
+                             QString::fromUtf8("Head tracking has been automatically started for testing.\n\n"
+                                               "Use the tracking window to pause, recenter, or stop tracking as needed."));
+
+    // Notify GUI to sync tracking window UI timers
+    emit testingWorkflowStarted();
 }
 
 void TestingSection::onTesterSelectionChanged()
@@ -98,12 +120,17 @@ void TestingSection::onPlatformSelectionChanged()
         if (runTesterButton) {
             runTesterButton->setEnabled(false);
         }
+
+        // Begin testing workflow: ensure tracking is started
+        startTracking();
     }
 }
 
 void TestingSection::onLoadGamesClicked()
 {
     if (platformComboBox) {
+        // Beginning testing workflow via Load Games should start tracking
+        startTracking();
         QString platform = platformComboBox->currentText();
         loadGamesForPlatform(platform);
     }
@@ -198,6 +225,8 @@ QStringList TestingSection::getCustomPrefixGames()
 
 void TestingSection::onRunTesterClicked()
 {
+    // Ensure tracking is running before launching testers
+    startTracking();
     if (gameComboBox && !gameComboBox->currentText().isEmpty()) {
         currentGame = gameComboBox->currentText();
         runSelectedTester();
@@ -354,13 +383,30 @@ void TestingSection::showMissingTesterDialog(const QString &prefixPath)
 
 void TestingSection::offerWineBridgeInstallation(const QString &prefixPath)
 {
-    // TODO: Implement Wine Bridge installation
-    // This should use existing Wine Bridge installation logic
-    qDebug() << "Offering Wine Bridge installation for prefix:" << prefixPath;
-    
-    // Placeholder implementation
-    QMessageBox::information(nullptr, QString::fromUtf8("Wine Bridge Installation"), 
-                           QString::fromUtf8("Wine Bridge installation functionality will be implemented here."));
+    Q_UNUSED(prefixPath);
+    qDebug() << "Offering Wine Bridge installation for platform:" << currentPlatform;
+
+    // Acquire PluginInstall from the main GUI and delegate
+    LinuxtrackGui *mainGui = qobject_cast<LinuxtrackGui*>(parent());
+    if (!mainGui) {
+        qDebug() << "TestingSection: unable to access main GUI for installation delegation";
+        return;
+    }
+    PluginInstall *pluginInstall = mainGui->getPluginInstall();
+    if (!pluginInstall) {
+        qDebug() << "TestingSection: PluginInstall not available";
+        return;
+    }
+
+    if (currentPlatform == QString::fromUtf8("Steam")) {
+        pluginInstall->installSteamProtonBridge();
+    } else if (currentPlatform == QString::fromUtf8("Lutris")) {
+        pluginInstall->installLutrisWineBridge();
+    } else if (currentPlatform == QString::fromUtf8("Custom Prefix")) {
+        pluginInstall->installWineBridgeToCustomPrefix();
+    } else {
+        qDebug() << "TestingSection: Unknown platform for installation:" << currentPlatform;
+    }
 }
 
 QString TestingSection::getCurrentGameId()
