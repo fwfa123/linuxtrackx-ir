@@ -69,6 +69,9 @@ private:
     // Integration objects
     SteamIntegration *steamIntegration;
     LutrisIntegration *lutrisIntegration;
+
+    // Guard to avoid repeated tracking starts
+    bool trackingStarted;
 };
 
 #endif // TESTING_SECTION_H 

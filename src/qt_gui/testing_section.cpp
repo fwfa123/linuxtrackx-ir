@@ -24,6 +24,7 @@ TestingSection::TestingSection(QObject *parent)
     , currentGames()
     , steamIntegration(nullptr)
     , lutrisIntegration(nullptr)
+    , trackingStarted(false)
 {
 }
 
@@ -57,12 +58,16 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
 
 void TestingSection::startTracking()
 {
-    // Start tracking immediately when testing workflow begins
-    // This will be called when user selects a tester type
+    // Start tracking immediately when testing workflow begins (once)
+    if (trackingStarted) {
+        return;
+    }
     qDebug() << "Starting tracking for testing workflow";
-    
-    // TODO: Implement tracking start logic
-    // This should use the same logic as the existing wine bridge installation
+
+    // Reuse existing start logic used elsewhere in the GUI
+    static QString sec(QString::fromUtf8("Default"));
+    TRACKER.start(sec);
+    trackingStarted = true;
 }
 
 void TestingSection::onTesterSelectionChanged()
