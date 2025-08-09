@@ -771,20 +771,6 @@ QString SteamIntegration::getProtonPath(const QString &protonVersion)
         }
     }
     
-    // Try the default Steam installation as fallback
-    QString defaultSteamPath = QStringLiteral("/home/mario/.steam/steam/steamapps/common/") + protonVersion;
-    QDir defaultSteamDir(defaultSteamPath);
-    if (defaultSteamDir.exists()) {
-        QString protonBinaryPath = defaultSteamPath + QStringLiteral("/proton");
-        QFileInfo protonBinary(protonBinaryPath);
-        
-        if (protonBinary.exists() && protonBinary.isExecutable()) {
-            ltr_int_log_message("SteamIntegration::getProtonPath() - Found Proton in default Steam location: %s\n", 
-                defaultSteamPath.toUtf8().constData());
-            return defaultSteamPath;
-        }
-    }
-    
     ltr_int_log_message("SteamIntegration::getProtonPath() - Proton %s not found in any library\n", 
         protonVersion.toUtf8().constData());
     return QString();
