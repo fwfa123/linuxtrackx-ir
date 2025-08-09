@@ -301,11 +301,13 @@ QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QStr
         possibleNames << QString::fromUtf8("FT_Tester.exe") << QString::fromUtf8("FreeTrackTester.exe");
     }
     
-    // Search in prefix root directory (where NSIS installer places testers)
+    // Search in prefix root directory (where NSIS installer may place testers)
     for (const QString &testerName : possibleNames) {
         QString testerPath = prefixDir.filePath(testerName);
         QFileInfo testerFile(testerPath);
-        if (testerFile.exists() && testerFile.isExecutable()) {
+        // In Wine prefixes, Windows executables typically lack the Linux executable bit.
+        // Treat existence of the file as sufficient.
+        if (testerFile.exists() && testerFile.isFile()) {
             return testerPath;
         }
     }
@@ -319,7 +321,8 @@ QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QStr
             for (const QString &testerName : possibleNames) {
                 QString testerPath = dir.filePath(testerName);
                 QFileInfo testerFile(testerPath);
-                if (testerFile.exists() && testerFile.isExecutable()) {
+                // Do not require the executable bit for .exe files in Wine prefixes
+                if (testerFile.exists() && testerFile.isFile()) {
                     qDebug() << "Found tester at:" << testerPath;
                     return testerPath;
                 }

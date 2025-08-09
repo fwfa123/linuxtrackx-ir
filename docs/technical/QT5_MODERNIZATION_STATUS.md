@@ -63,7 +63,7 @@ Now you can test:
 - **Qt5 GUI**: `src/qt_gui/ltr_gui_qt5_debug`
 - **Launch Script**: `./run_qt5_gui.sh`
 - **Libraries**: `lib/linuxtrack/*.so.0`
-- **Config**: `/home/mario/.config/linuxtrack/linuxtrack1.conf`
+- **Config**: `~/.config/linuxtrack/linuxtrack1.conf`
 - **Logs**: Check GUI log viewer or system logs
 
 ## ⚠️ Wayland Compatibility Notice

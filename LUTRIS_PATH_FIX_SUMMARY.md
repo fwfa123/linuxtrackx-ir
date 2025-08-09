@@ -4,10 +4,10 @@
 
 When testing the AppImage, users reported seeing hardcoded paths in error messages like:
 ```
-Lutris database not found at: /home/mario/.local/share/lutris/pga.db
+Lutris database not found at: ~/.local/share/lutris/pga.db
 ```
 
-This indicated that the AppImage build process was somehow capturing and hardcoding the build user's path (`/home/mario`) instead of using the runtime user's home directory.
+This indicated that the AppImage build process was somehow capturing and hardcoding the build user's path (`~`) instead of using the runtime user's home directory.
 
 ## Root Cause Analysis
 
@@ -95,7 +95,7 @@ After rebuilding, test the AppImage:
 1. Run the AppImage on a different user account
 2. Try the Lutris install button in the Gaming tab
 3. Verify that error messages show the correct user's home directory
-4. Check that no hardcoded `/home/mario` paths appear
+4. Check that no hardcoded `~` paths appear
 
 ## Future Prevention
 

@@ -86,7 +86,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
    - Steam integration logs are very verbose. Consider gating with an env var or debug flag to reduce noise in normal runs.
 
 3. U3 – Platform defaults and HOME fallbacks
-   - Steam/Lutris integrations try to correct hardcoded paths; one Steam fallback uses `/home/mario/...` (see S1).
+   - Steam/Lutris integrations try to correct hardcoded paths; one Steam fallback uses `~/...` (see S1).
    - Fix: Remove user-specific fallbacks and rely on environment + probing.
 
 ### Documentation/Plan
@@ -95,7 +95,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 
 ### Security
 - S1 – Avoid user-specific hardcoded paths
-  - `SteamIntegration::getProtonPath()` has a default fallback to `/home/mario/...`; this should be removed.
+  - `SteamIntegration::getProtonPath()` has a default fallback to `~/...`; this should be removed.
 
 - S2 – Centralize installer path detection
   - Hardcoded strings risk drift across packaging.
@@ -114,7 +114,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
   - Add `QT += sql` to `src/qt_gui/ltr_gui.pro.in`.
 
 - Steam/Lutris integrations
-  - Remove `/home/mario/...` fallback.
+  - Remove `~/...` fallback.
   - Share a single helper for Wine installer path lookup; probe both `/usr/local/share/linuxtrack/wine/linuxtrack-wine.exe` and `/usr/share/linuxtrack/wine/linuxtrack-wine.exe` (and the AppImage bundle path if applicable).
   - Consider consolidating verbose logs under a debug flag.
 
@@ -131,7 +131,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 - [ ] TestingSection: implement `offerWineBridgeInstallation()` and delegate to `PluginInstall`.
 - [ ] TestingSection: implement Custom Prefix selection (directory chooser + validation).
 - [ ] Lutris launch: avoid forcing `WINEARCH=win64` blindly.
-- [ ] SteamIntegration: remove `/home/mario` fallback; centralize installer path lookup.
+- [ ] SteamIntegration: remove `~` fallback; centralize installer path lookup.
 - [ ] LutrisIntegration: use centralized installer path helper; unify with SteamIntegration.
 - [ ] Optionally extract a `TesterLauncher` helper to match the plan and reduce responsibility in `TestingSection`.
 

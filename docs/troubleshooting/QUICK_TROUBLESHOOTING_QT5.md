@@ -58,7 +58,7 @@ lsusb | grep "131d:0159"
 **Quick Fix:**
 ```bash
 # Check/fix config file
-nano /home/mario/.config/linuxtrack/linuxtrack1.conf
+nano ~/.config/linuxtrack/linuxtrack1.conf
 
 # Ensure Prefix is set to:
 Prefix = "/mnt/Local_Git/git-repos/linuxtrack-clean-june14"
@@ -118,7 +118,7 @@ make clean && make -j$(nproc)
 sudo cp src/.libs/*.so* /usr/local/lib/linuxtrack/
 
 # 3. Reset config (backup first!)
-cp /home/mario/.config/linuxtrack/linuxtrack1.conf /home/mario/.config/linuxtrack/linuxtrack1.conf.backup
+cp ~/.config/linuxtrack/linuxtrack1.conf ~/.config/linuxtrack/linuxtrack1.conf.backup
 
 # 4. Use launch script
 ./run_qt5_gui.sh
