@@ -131,8 +131,8 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 - [x] TestingSection: implement `offerWineBridgeInstallation()` and delegate to `PluginInstall`.
 - [ ] TestingSection: implement Custom Prefix selection (directory chooser + validation).
 - [x] Lutris launch: avoid forcing `WINEARCH=win64` blindly.
-- [ ] SteamIntegration: remove `~` fallback; centralize installer path lookup.
-- [ ] LutrisIntegration: use centralized installer path helper; unify with SteamIntegration.
+- [x] SteamIntegration: remove `~` fallback; centralize installer path lookup.
+- [x] LutrisIntegration: use centralized installer path helper; unify with SteamIntegration.
 - [ ] Optionally extract a `TesterLauncher` helper to match the plan and reduce responsibility in `TestingSection`.
 
 ---
