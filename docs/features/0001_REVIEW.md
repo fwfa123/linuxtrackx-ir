@@ -45,10 +45,10 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
    - Impact: Users get “Tester Not Found” even when present.
    - Fix: Treat existence as sufficient; don’t require `isExecutable()` for `.exe`.
 
-2. T2 – Search paths miss common vendor directories
-   - `findTesterInPrefix()` checks a few locations but omits typical vendor directories like `drive_c/Program Files/NaturalPoint/TrackIR5` or similar. The plan mentions NSIS installer locations.
-   - Impact: False negatives for TrackIR testers.
-   - Fix: Add vendor folders (NaturalPoint/TrackIR5 and Linuxtrack subfolders) to search list; handle 32/64-bit Program Files.
+2. T2 – Tester location specifics (Linuxtrack installers)
+   - The tester binaries (`Tester.exe`, `FreeTrackTester.exe`) are Linuxtrack-provided tools installed by the Wine Bridge NSIS installers into the prefix under `$PROGRAMFILES\Linuxtrack` (default). They are not NaturalPoint/TrackIR vendor apps.
+   - Impact: Search should prioritize `drive_c/Program Files/Linuxtrack` and `drive_c/Program Files (x86)/Linuxtrack` within the selected Wine prefix (and the user-selected InstallDir if customized), rather than NaturalPoint vendor paths.
+   - Fix: Update `findTesterInPrefix()` to probe these Linuxtrack directories first; keep a minimal fallback over common Windows dirs if needed.
 
 3. T3 – startTracking() is a TODO
    - Required by plan: tracking should start automatically at the beginning of testing workflow.
@@ -104,7 +104,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 
 ## Suggested Fixes (Conservative)
 - TestingSection
-  - Change tester detection to check existence only; add NaturalPoint/TrackIR paths and Linuxtrack subpaths.
+  - Change tester detection to check existence only; prioritize `drive_c/Program Files/Linuxtrack` and `drive_c/Program Files (x86)/Linuxtrack` within the Wine prefix (and consider user-customized InstallDir if needed), with minimal generic fallbacks.
   - Implement `startTracking()` by reusing existing `TRACKER.start("Default")` invocation used elsewhere in GUI.
   - Implement `offerWineBridgeInstallation()` to call into `PluginInstall` depending on `currentPlatform`.
   - For Lutris launch, set `WINEARCH` based on tester name or omit to let Wine decide.
@@ -126,7 +126,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 ## Action Items Checklist
 - [ ] Add `QT += sql` to `ltr_gui.pro.in`.
 - [ ] TestingSection: do not require `isExecutable()` for `.exe`.
-- [ ] TestingSection: expand search paths to include vendor dirs (NaturalPoint/TrackIR5, Linuxtrack).
+- [ ] TestingSection: search `Program Files/Program Files (x86)/Linuxtrack` inside the prefix for testers (and honor custom InstallDir if needed).
 - [ ] TestingSection: implement `startTracking()` using existing tracking start logic.
 - [ ] TestingSection: implement `offerWineBridgeInstallation()` and delegate to `PluginInstall`.
 - [ ] TestingSection: implement Custom Prefix selection (directory chooser + validation).
