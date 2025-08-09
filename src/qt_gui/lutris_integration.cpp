@@ -9,6 +9,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include "../utils.h"
+#include "installer_paths.h"
 #include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
@@ -568,35 +569,16 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
 
 bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const QString &winePath)
 {
-    // Check if linuxtrack-wine.exe exists - try multiple possible locations
-    QStringList possiblePaths;
-    possiblePaths << QString::fromUtf8("/usr/local/share/linuxtrack/wine/linuxtrack-wine.exe");
-    possiblePaths << QString::fromUtf8("/usr/share/linuxtrack/wine/linuxtrack-wine.exe");
-    possiblePaths << QString::fromUtf8("/usr/share/linuxtrack/linuxtrack-wine.exe");
-    
-    QString installerPath;
-    bool foundInstaller = false;
-    
-    for (const QString &path : possiblePaths) {
-        QFileInfo installerFile(path);
-        if (installerFile.exists()) {
-            installerPath = path;
-            foundInstaller = true;
-            debugInfo += QString::fromUtf8("Found Wine installer at: ") + installerPath + QString::fromUtf8("\n");
-            ltr_int_log_message("Found Wine installer at: %s\n", installerPath.toUtf8().constData());
-            break;
-        }
-    }
-    
-    if (!foundInstaller) {
-        lastError = QString::fromUtf8("Linuxtrack Wine installer not found. Tried paths:\n");
-        for (const QString &path : possiblePaths) {
-            lastError += QString::fromUtf8("  ") + path + QString::fromUtf8("\n");
-        }
-        debugInfo += lastError;
+    // Centralized resolution of linuxtrack-wine.exe
+    QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
+    if (installerPath.isEmpty()) {
+        lastError = QString::fromUtf8("Linuxtrack Wine installer not found in expected locations.");
+        debugInfo += lastError + QString::fromUtf8("\n");
         ltr_int_log_message("Wine installer not found in any expected location\n");
         return false;
     }
+    debugInfo += QString::fromUtf8("Found Wine installer at: ") + installerPath + QString::fromUtf8("\n");
+    ltr_int_log_message("Found Wine installer at: %s\n", installerPath.toUtf8().constData());
     
     // Add debug info about the Wine path being used
     debugInfo += QString::fromUtf8("Starting Wine installer with:\n");
