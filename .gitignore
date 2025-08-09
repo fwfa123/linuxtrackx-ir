@@ -240,3 +240,5 @@ coverage/
 *.tmp
 *.temp
 *.cache 
+# Ignore Qt Designer autosave files
+*.autosave
