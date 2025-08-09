@@ -35,7 +35,8 @@ HEADERS += ltr_gui.h ltr_show.h ltr_dev_help.h help_view.h\
            extractor.h ../game_data.h hashing.h downloading.h wine_launcher.h \
            macps3eye_prefs.h macwebcam_info.h ../ps3_prefs.h macps3eyeft_prefs.h \
            help_viewer.h ../extract.h ../digest.h trackir_permission_dialog.h \
-           lutris_integration.h steam_integration.h testing_section.h
+           lutris_integration.h steam_integration.h testing_section.h \
+           installer_paths.h
 
 FORMS += ltr_gui.ui dev_help.ui ltr.ui model_creation.ui scurve.ui scp_form.ui \
            logview.ui wii_setup.ui tir_setup.ui \
@@ -54,7 +55,8 @@ SOURCES += main.cpp ltr_gui.cpp ltr_show.cpp ltr_dev_help.cpp \
            extractor.cpp ../game_data.c hashing.cpp downloading.cpp wine_launcher.cpp \
            macps3eye_prefs.cpp macwebcam_info.cpp macps3eyeft_prefs.cpp \
            help_viewer.cpp ../extract.c ../digest.c trackir_permission_dialog.cpp \
-           lutris_integration.cpp steam_integration.cpp testing_section.cpp
+           lutris_integration.cpp steam_integration.cpp testing_section.cpp \
+           installer_paths.cpp
 
 QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'" -I /usr/local/include
 QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI  -I /usr/local/include

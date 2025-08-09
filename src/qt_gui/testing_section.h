@@ -42,11 +42,15 @@ public:
     bool checkTesterInPrefix(const QString &prefixPath, const QString &testerType);
     void offerWineBridgeInstallation(const QString &prefixPath);
 
+signals:
+    void testingWorkflowStarted();
+
 public slots:
     void onTesterSelectionChanged();
     void onPlatformSelectionChanged();
     void onLoadGamesClicked();
     void onRunTesterClicked();
+    void onTrackerStateChanged(linuxtrack_state_type current_state);
 
 private:
     QStringList getSteamGames();
