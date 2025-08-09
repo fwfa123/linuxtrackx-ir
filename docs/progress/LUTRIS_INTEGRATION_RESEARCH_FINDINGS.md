@@ -418,7 +418,7 @@ public:
 
 ### **🎯 Final Implementation Results**
 - ✅ **Wine Version Parsing**: Fixed YAML structure parsing to correctly detect `wine.version`
-- ✅ **Lutris Wine Path**: Uses correct path `/home/mario/.local/share/lutris/runners/wine/[version]/bin/wine`
+- ✅ **Lutris Wine Path**: Uses correct path `~/.local/share/lutris/runners/wine/[version]/bin/wine`
 - ✅ **Game Detection**: Successfully queries Lutris database and lists games alphabetically
 - ✅ **NSIS Installer**: Maintains interactive functionality for user installation
 - ✅ **Environment Setup**: Proper Wine environment variables for Lutris prefixes
