@@ -543,7 +543,14 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     
                     // Set up environment variables for Lutris
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
-                    env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+                    // Only force win64 when launching the 64-bit tester explicitly
+                    {
+                        QFileInfo testerInfo(testerPath);
+                        const QString testerName = testerInfo.fileName();
+                        if (testerName.compare(QString::fromUtf8("Tester64.exe"), Qt::CaseInsensitive) == 0) {
+                            env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+                        }
+                    }
                     env.insert(QString::fromUtf8("WINEESYNC"), QString::fromUtf8("1"));
                     
                     process.setProcessEnvironment(env);
