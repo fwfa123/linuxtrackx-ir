@@ -1,4 +1,5 @@
 #include "steam_integration.h"
+#include "installer_paths.h"
 #include <QDebug>
 #include <QProcess>
 // #include <QMessageBox> // Not needed for CLI test
@@ -787,8 +788,8 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
     // Set working directory to the Proton prefix root (like Wstart example)
     process.setWorkingDirectory(prefixPath);
     
-    // Get wine bridge installer path
-    QString installerPath = getWineBridgeInstallerPath();
+    // Get wine bridge installer path via centralized resolver
+    QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
     if (installerPath.isEmpty()) {
         setLastError(QStringLiteral("Could not find wine bridge installer"));
         return false;
@@ -903,12 +904,7 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
     return true;
 }
 
-QString SteamIntegration::getWineBridgeInstallerPath()
-{
-    // TODO: Implement proper wine bridge installer path detection
-    // For now, return a placeholder
-    return QStringLiteral("/usr/local/share/linuxtrack/linuxtrack-wine.exe");
-}
+// Removed: getWineBridgeInstallerPath() – now centralized in InstallerPaths
 
 QString SteamIntegration::getLastError() const
 {
