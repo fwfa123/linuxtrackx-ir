@@ -36,6 +36,8 @@ class LinuxtrackGui : public QMainWindow
  public:
   LinuxtrackGui(QWidget *parent = 0);
   ~LinuxtrackGui();
+  // Expose PluginInstall instance for TestingSection integration
+  PluginInstall* getPluginInstall() const;
  protected:
   void closeEvent(QCloseEvent *event);
  public slots:
