@@ -523,16 +523,19 @@ void PluginInstall::installLutrisWineBridge()
   
   QString selectedSlug = gameSlugs[selectedIndex];
   
-  // Do not show extra informational popup; proceed to installation directly
+  // Show information dialog about interactive installation (align with Steam flow)
+  QMessageBox::information(getParentWidget(), QString::fromUtf8("Starting Interactive Installation"),
+    QString::fromUtf8("Starting Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
+    QString::fromUtf8("The NSIS installer will open in a new window.\n") +
+    QString::fromUtf8("Please follow the installation prompts in that window."));
   
   // Install to the selected game
   bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
   
   if (success) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Started"),
-      QString::fromUtf8("Linuxtrack Wine Bridge installer has been launched for: ") + selectedGame + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("Please complete the installation in the NSIS window that opened.\n") +
-      QString::fromUtf8("You can now use Linuxtrack with this game in Lutris once the installation is complete."));
+    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Completed"),
+      QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed for: ") + selectedGame + QString::fromUtf8("\n\n") +
+      QString::fromUtf8("You can now use Linuxtrack with this game in Lutris!"));
   } else {
     QMessageBox::critical(getParentWidget(), QString::fromUtf8("Installation Failed"),
       QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
