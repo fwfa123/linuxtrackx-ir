@@ -109,14 +109,41 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.LaunchMickeyButton, SIGNAL(pressed()), this, SLOT(on_LaunchMickeyButton_pressed()));
   
   // Connect Gaming tab buttons
-  QObject::connect(ui.InstallTirMfcButton, SIGNAL(pressed()), this, SLOT(on_InstallTirMfcButton_pressed()));
+  QObject::connect(ui.FirmwareActionButton, SIGNAL(pressed()), this, SLOT(on_InstallTirMfcButton_pressed()));
+  QObject::connect(ui.MfcActionButton, SIGNAL(pressed()), this, SLOT(on_InstallTirMfcButton_pressed()));
   QObject::connect(ui.SteamProtonButton, SIGNAL(pressed()), this, SLOT(on_SteamProtonButton_pressed()));
   QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
-  QObject::connect(ui.OtherPlatformButton, SIGNAL(pressed()), this, SLOT(on_OtherPlatformButton_pressed()));
   QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
   // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
-  QObject::connect(ui.WinePrefixButton, SIGNAL(pressed()), this, SLOT(on_WinePrefixButton_pressed()));
   QObject::connect(ui.LaunchLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_LaunchLtrPipeButton_pressed()));
+
+  // Build Advanced... menu programmatically
+  {
+    QMenu *advMenu = new QMenu(this);
+    QAction *otherPlatformAction = advMenu->addAction(QStringLiteral("Other Platform"));
+    QAction *winePrefixAction = advMenu->addAction(QStringLiteral("Wine Prefix"));
+    connect(otherPlatformAction, &QAction::triggered, this, &LinuxtrackGui::on_OtherPlatformButton_pressed);
+    connect(winePrefixAction, &QAction::triggered, this, &LinuxtrackGui::on_WinePrefixButton_pressed);
+    ui.AdvancedButton->setMenu(advMenu);
+  }
+
+  // Wire prereq status changes to UI gating
+  connect(pi, &PluginInstall::prereqStatusChanged, this, [this](bool ready){
+    setGamingControlsEnabled(ready);
+    ui.FirmwareStatusLabel->setText(pi->isTirFirmwareInstalled() ? tr("Installed") : tr("Not installed"));
+    ui.MfcStatusLabel->setText(pi->isMfc42uInstalled() ? tr("Installed") : tr("Not installed"));
+  });
+
+  // Initialize prereq UI
+  refreshGamingPrereqStatus();
+
+  // Optional icons for platform buttons (will be empty if resources not present)
+  ui.SteamProtonButton->setIcon(QIcon(QStringLiteral(":/ltr/icons/steam.svg")));
+  ui.LutrisButton->setIcon(QIcon(QStringLiteral(":/ltr/icons/lutris.svg")));
+  ui.CustomPrefixButton->setIcon(QIcon(QStringLiteral(":/ltr/icons/wine.svg")));
+  ui.SteamProtonButton->setIconSize(QSize(16,16));
+  ui.LutrisButton->setIconSize(QSize(16,16));
+  ui.CustomPrefixButton->setIconSize(QSize(16,16));
   
   // Connect Testing section buttons
   QObject::connect(ui.TesterExeRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
@@ -369,10 +396,8 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
       break;
     case 3:
       HelpViewer::ChangePage(QStringLiteral("misc.htm"));
-      // Gaming tab selected: ensure tracking is started for testing workflow
-      if (testingSection) {
-        testingSection->startTracking();
-      }
+      // Gaming tab selected: refresh prereq UI; TestingSection will start tracking as the workflow begins
+      refreshGamingPrereqStatus();
       break;
     default:
       break;
@@ -665,6 +690,7 @@ void LinuxtrackGui::on_InstallTirMfcButton_pressed()
     if (pi) {
         if (showWindow) { showWindow->startTimersOnly(); }
         pi->installTirFirmwareAndMfc42();
+        refreshGamingPrereqStatus();
     }
 }
 
@@ -675,6 +701,24 @@ void LinuxtrackGui::on_SteamProtonButton_pressed()
         if (showWindow) { showWindow->startTimersOnly(); }
         pi->installSteamProtonBridge();
     }
+}
+
+void LinuxtrackGui::refreshGamingPrereqStatus()
+{
+  if (!pi) return;
+  const bool firmware = pi->isTirFirmwareInstalled();
+  const bool mfc = pi->isMfc42uInstalled();
+  ui.FirmwareStatusLabel->setText(firmware ? tr("Installed") : tr("Not installed"));
+  ui.MfcStatusLabel->setText(mfc ? tr("Installed") : tr("Not installed"));
+  setGamingControlsEnabled(firmware && mfc);
+}
+
+void LinuxtrackGui::setGamingControlsEnabled(bool enabled)
+{
+  ui.SteamProtonButton->setEnabled(enabled);
+  ui.LutrisButton->setEnabled(enabled);
+  ui.CustomPrefixButton->setEnabled(enabled);
+  ui.TestingGroupBox->setEnabled(enabled);
 }
 
 void LinuxtrackGui::on_LutrisButton_pressed()
@@ -689,8 +733,8 @@ void LinuxtrackGui::on_LutrisButton_pressed()
 void LinuxtrackGui::on_OtherPlatformButton_pressed()
 {
     // TODO: Implement other platform installation
-    QMessageBox::information(this, QString::fromUtf8("Other Platform"),
-        QString::fromUtf8("Other platform installation will be implemented in Phase 2."));
+  QMessageBox::information(this, tr("Other Platform"),
+      tr("Other platform installation will be implemented in Phase 2."));
     // Do not auto-start tracking from install buttons
 }
 
@@ -715,26 +759,26 @@ void LinuxtrackGui::on_BatchInstallButton_pressed()
 void LinuxtrackGui::on_WinePrefixButton_pressed()
 {
     // TODO: Implement direct wine prefix installation
-    QMessageBox::information(this, QString::fromUtf8("Wine Prefix"),
-        QString::fromUtf8("Direct wine prefix installation will be implemented in Phase 2."));
+  QMessageBox::information(this, tr("Wine Prefix"),
+      tr("Direct wine prefix installation will be implemented in Phase 2."));
     // Do not auto-start tracking from install buttons
 }
 
 void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
 {
     // TODO: Implement ltr_pipe launch for Antimicrox
-    QMessageBox::information(this, QString::fromUtf8("Launch ltr_pipe"),
-        QString::fromUtf8("ltr_pipe for Antimicrox will be implemented in Phase 2."));
+  QMessageBox::information(this, tr("Launch ltr_pipe"),
+      tr("ltr_pipe for Antimicrox will be implemented in Phase 2."));
     
     // Start tracking automatically for future implementation
     static QString sec(QString::fromUtf8("Default"));
     if (showWindow) { showWindow->startTimersOnly(); }
     TRACKER.start(sec);
     
-    QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
-        QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-        QString::fromUtf8("You can now test your head tracking!\n\n") +
-        QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+  QMessageBox::information(this, tr("Tracking Started"),
+      tr("Head tracking has been automatically started.\n\n") +
+      tr("You can now test your head tracking!\n\n") +
+      tr("Use the tracking window to pause, recenter, or stop tracking as needed."));
 }
 
 // Testing section slot implementations
@@ -786,8 +830,8 @@ void LinuxtrackGui::on_button_copy_system_info_pressed()
 {
     QString systemInfo = getSystemInformation();
     QApplication::clipboard()->setText(systemInfo);
-    QMessageBox::information(this, QString::fromUtf8("System Information"),
-        QString::fromUtf8("System information has been copied to clipboard."));
+  QMessageBox::information(this, tr("System Information"),
+      tr("System information has been copied to clipboard."));
 }
 
 void LinuxtrackGui::on_button_refresh_system_info_pressed()

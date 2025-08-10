@@ -74,8 +74,8 @@ void ProfileSetup::on_DetailedAxisSetup_pressed()
 
 void ProfileSetup::copyFromDefault()
 {
-  if(QMessageBox::warning(this, QString::fromUtf8("Warning:"), 
-        QString::fromUtf8("Are you sure, you want to overwrite the current profile by default values?"), 
+  if(QMessageBox::warning(this, tr("Warning:"), 
+        tr("Are you sure, you want to overwrite the current profile by default values?"), 
         QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Ok){
     return;
   }

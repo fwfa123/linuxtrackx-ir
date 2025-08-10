@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$PROJECT_ROOT"
 
 echo "Building LinuxTrack GUI with Qt5..."
@@ -36,19 +36,19 @@ echo "Cleaning previous build..."
 rm -f ltr_gui_qt5 Makefile* *.o moc_*.cpp ui_*.h qrc_*.cpp
 
 echo "Generating Makefile with $QMAKE_CMD..."
-$QMAKE_CMD ltr_gui_qt5.pro
+$QMAKE_CMD ltr_gui.pro
 
 echo "Building with make..."
 if make -j$(nproc) 2>&1 | tee "$BUILD_DIR/build.log"; then
     echo "Build completed successfully!"
     
-    if [ -f "ltr_gui_qt5" ]; then
-        echo "Executable created: $(pwd)/ltr_gui_qt5"
-        echo "Size: $(ls -lh ltr_gui_qt5 | awk '{print $5}')"
+    if [ -f "ltr_gui" ]; then
+        echo "Executable created: $(pwd)/ltr_gui"
+        echo "Size: $(ls -lh ltr_gui | awk '{print $5}')"
         
         # Test if it runs (basic check)
         echo "Testing if executable runs..."
-        if timeout 5 ./ltr_gui_qt5 --version 2>/dev/null || timeout 5 ./ltr_gui_qt5 --help 2>/dev/null; then
+        if timeout 5 ./ltr_gui --version 2>/dev/null || timeout 5 ./ltr_gui --help 2>/dev/null; then
             echo "Basic executable test passed!"
         else
             echo "Warning: Executable may have runtime issues"

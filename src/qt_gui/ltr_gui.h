@@ -65,11 +65,11 @@ class LinuxtrackGui : public QMainWindow
   void on_InstallTirMfcButton_pressed();
   void on_SteamProtonButton_pressed();
   void on_LutrisButton_pressed();
-  void on_OtherPlatformButton_pressed();
   void on_CustomPrefixButton_pressed();
   // void on_BatchInstallButton_pressed();
-  void on_WinePrefixButton_pressed();
   void on_LaunchLtrPipeButton_pressed();
+  void on_OtherPlatformButton_pressed();
+  void on_WinePrefixButton_pressed();
   
   // Testing section slots
   void on_TesterExeRadioButton_toggled(bool checked);
@@ -136,6 +136,10 @@ class LinuxtrackGui : public QMainWindow
   void saveDockingState();
   void loadDockingState();
   void updateDockingActions();
+
+  // Gaming prerequisites helpers
+  void refreshGamingPrereqStatus();
+  void setGamingControlsEnabled(bool enabled);
 };
 
 #endif

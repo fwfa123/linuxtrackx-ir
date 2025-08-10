@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .bg{fill:#222}
+      .fg{fill:#f5a623}
+      .txt{fill:#fff}
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="128" height="128" rx="20"/>
+  <path class="fg" d="M16 64c0-26.5 21.5-48 48-48s48 21.5 48 48c0 2.7-.2 5.3-.6 7.8-11.3 7.5-27 10.2-42.4 6.6-14.2-3.4-26-11.8-32.5-22.9C30.1 63.2 23.5 64 16 64z"/>
+  <circle cx="92" cy="44" r="10" fill="#fff"/>
+  <text class="txt" x="64" y="118" font-family="DejaVu Sans, Arial" font-size="14" text-anchor="middle">Lutris</text>
+</svg>
+

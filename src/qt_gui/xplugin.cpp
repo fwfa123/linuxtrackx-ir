@@ -14,7 +14,7 @@
 static QMessageBox::StandardButton warningMessage(const QString &message)
 {
   ltr_int_log_message("XPlane plugin install - %s\n", message.toUtf8().constData());
-  return QMessageBox::warning(NULL, QString::fromUtf8("Linuxtrack"),
+  return QMessageBox::warning(NULL, QObject::tr("Linuxtrack"),
                                 message, QMessageBox::Ok);
 }
 
@@ -107,8 +107,8 @@ void XPluginInstall::on_BrowseXPlane_pressed()
 #else
   if(installPlugin(sourceFile, destPath + QString::fromUtf8("/mac.xpl"))){
 #endif
-    QMessageBox::information(NULL, QString::fromUtf8("Linuxtrack"), 
-      QString::fromUtf8("XPlane plugin installed successfuly!"));
+    QMessageBox::information(NULL, QObject::tr("Linuxtrack"), 
+      QObject::tr("XPlane plugin installed successfuly!"));
   }else{
     warningMessage(QString::fromUtf8("XPlane plugin installation failed!"));
     reject();

@@ -1,3 +1,43 @@
+## Gaming Tab UX Checklist (Qt5 GUI)
+
+1) Prerequisites group
+- Open the Gaming tab. Verify `Prerequisites` shows two rows:
+  - TrackIR firmware: status label shows Installed/Not installed
+  - MFC42 libraries: status label shows Installed/Not installed
+- Click `Install/Repair` on firmware row → Firmware extractor dialog opens. After completion, status updates to Installed.
+- Click `Install/Repair` on MFC42 row → Winetricks-based MFC42 installer dialog opens. After completion, status updates to Installed.
+- When BOTH are Installed, the installer buttons and Testing group become enabled.
+
+2) Installer buttons and Advanced menu
+- Steam (Proton): click → Info dialog appears, select a game → NSIS installer launches. Completion dialog shown.
+- Lutris: click → Info dialog appears, select a game → installer launches. Completion dialog shown.
+- Custom Prefix: click → Select a Wine prefix → NSIS installer launches.
+- Advanced... menu → contains `Other Platform`, `Wine Prefix`; both actions show placeholder dialogs (Phase 2+).
+- X-Plane plugin button remains available and functional.
+
+3) Testing section workflow
+- Platform selection defaults to last used (persisted via QSettings).
+- Changing platform auto-loads games:
+  - Status label shows "Loading..." then "Loaded N games" or "No games found".
+  - Game combo becomes enabled when list is available.
+- Filter: typing in `Filter` reduces the game list case-insensitively.
+- Selecting a game enables `Run Tester`.
+- Running tester launches appropriate environment:
+  - Steam: proton run with proper env vars
+  - Lutris: Lutris wine with matching runner
+  - Custom Prefix: system wine with WINEPREFIX
+- Last selected game per platform is persisted.
+
+4) Accessibility and localization
+- Buttons and labels have accessible names.
+- Newly added texts are wrapped in tr() in code; verify they appear in translation catalogs.
+
+5) Visual polish
+- Button widths align; optional 16x16 icons appear for Steam, Lutris, and Wine if resources present.
+
+### Pass/Fail Criteria
+- Pass when all steps above behave as described on at least one supported distro (Kubuntu 25 or MX Linux) with Wine/Proton/Lutris installed.
+- File logs and any deviations in `docs/testing/KUBUNTU_25_QT5_TESTING.md` or distro-appropriate log.
 # LinuxTrack Testing Instructions
 
 ## Local Git Repository Testing
