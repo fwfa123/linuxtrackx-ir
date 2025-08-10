@@ -70,6 +70,9 @@ private:
     QString currentTesterType;
     QStringList currentGames;
     
+    // Selected custom Wine prefix path for the "Custom Prefix" platform
+    QString customPrefixPath;
+    
     // Integration objects
     SteamIntegration *steamIntegration;
     LutrisIntegration *lutrisIntegration;

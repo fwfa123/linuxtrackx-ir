@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QStandardPaths>
 #include <QDebug>
+#include <QFileDialog>
 
 TestingSection::TestingSection(QObject *parent)
     : QObject(parent)
@@ -213,13 +214,32 @@ QStringList TestingSection::getLutrisGames()
 
 QStringList TestingSection::getCustomPrefixGames()
 {
-    // TODO: Implement custom prefix game discovery
     QStringList games;
-    
-    // Placeholder implementation
-    // In real implementation, this would allow user to browse
-    // and select custom wine prefixes
-    
+    // Let user choose a Wine prefix directory and validate minimal structure
+    const QString dialogTitle = QString::fromUtf8("Select Wine Prefix");
+    const QString startDir = customPrefixPath.isEmpty() ? QDir::homePath() : customPrefixPath;
+    const QString selectedDir = QFileDialog::getExistingDirectory(nullptr, dialogTitle, startDir);
+
+    if (selectedDir.isEmpty()) {
+        // User cancelled; return empty game list
+        return games;
+    }
+
+    QDir prefixDir(selectedDir);
+    QDir checkDir(prefixDir);
+    bool isValidPrefix = checkDir.cd(QString::fromUtf8("drive_c")) && checkDir.cd(QString::fromUtf8("windows"));
+
+    if (!isValidPrefix) {
+        QMessageBox::warning(nullptr,
+                             QString::fromUtf8("Invalid Prefix"),
+                             QString::fromUtf8("The selected directory does not look like a Wine prefix (missing drive_c/windows)."));
+        return games;
+    }
+
+    customPrefixPath = QDir(selectedDir).absolutePath();
+
+    // Present a single logical entry for the chosen prefix
+    games << QString::fromUtf8("Custom Prefix");
     return games;
 }
 
@@ -307,9 +327,12 @@ QString TestingSection::getPrefixForGame(const QString &gameName, const QString 
         return QString::fromUtf8("");
         
     } else if (platform == QString::fromUtf8("Custom Prefix")) {
-        // TODO: Implement custom prefix selection
-        // For now, return empty string
-        return QString::fromUtf8("");
+        if (customPrefixPath.isEmpty()) {
+            // Try to acquire it now
+            const QStringList chosen = getCustomPrefixGames();
+            Q_UNUSED(chosen);
+        }
+        return customPrefixPath;
     }
     
     return QString::fromUtf8("");
@@ -347,7 +370,13 @@ QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QStr
     }
     
     // Search in common Windows program directories
-    QStringList searchDirs = {QString::fromUtf8("drive_c/windows"), QString::fromUtf8("drive_c/Program Files"), QString::fromUtf8("drive_c/Program Files (x86)"), QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")};
+    QStringList searchDirs = {
+        QString::fromUtf8("drive_c/windows"),
+        QString::fromUtf8("drive_c/Program Files"),
+        QString::fromUtf8("drive_c/Program Files/Linuxtrack"),
+        QString::fromUtf8("drive_c/Program Files (x86)"),
+        QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")
+    };
     for (const QString &searchDir : searchDirs) {
         QDir dir = prefixDir;
         dir.cd(searchDir);
