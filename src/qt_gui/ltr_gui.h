@@ -28,6 +28,7 @@ class DeviceSetup;
 class ProfileSelector;
 class Guardian;
 class XPluginInstall;
+class TestingSection;
 
 class LinuxtrackGui : public QMainWindow
 {
@@ -35,6 +36,8 @@ class LinuxtrackGui : public QMainWindow
  public:
   LinuxtrackGui(QWidget *parent = 0);
   ~LinuxtrackGui();
+  // Expose PluginInstall instance for TestingSection integration
+  PluginInstall* getPluginInstall() const;
  protected:
   void closeEvent(QCloseEvent *event);
  public slots:
@@ -68,6 +71,14 @@ class LinuxtrackGui : public QMainWindow
   void on_WinePrefixButton_pressed();
   void on_LaunchLtrPipeButton_pressed();
   
+  // Testing section slots
+  void on_TesterExeRadioButton_toggled(bool checked);
+  void on_FTTesterRadioButton_toggled(bool checked);
+  void on_PlatformComboBox_currentTextChanged(const QString &text);
+  void on_LoadGamesButton_pressed();
+  void on_GameComboBox_currentTextChanged(const QString &text);
+  void on_RunTesterButton_pressed();
+  
   // System information slots
   void on_button_copy_system_info_pressed();
   void on_button_refresh_system_info_pressed();
@@ -98,6 +109,7 @@ class LinuxtrackGui : public QMainWindow
   //LtrTracking *track;
   //ScpForm *sc;
   LogView *lv;
+  TestingSection *testingSection;
   PluginInstall *pi;
   ProfileSelector *ps;
   XPluginInstall *xpInstall;

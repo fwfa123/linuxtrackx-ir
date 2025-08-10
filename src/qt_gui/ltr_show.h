@@ -45,6 +45,8 @@ class LtrGuiForm : public QWidget
    ~LtrGuiForm();
    void allowCloseWindow();
    void StorePrefs(QSettings &settings);
+   // Start only the UI update timers and stopwatch (no TRACKER.start())
+   void startTimersOnly();
   public slots:
    void update();
    void updateFps();

@@ -58,7 +58,6 @@ public:
     QStringList getProtonVersions();
     bool isValidProtonPrefix(const QString &prefixPath);
     QString getProtonPath(const QString &protonVersion);
-    QString getWineBridgeInstallerPath();
     
     // Error handling
     QString getLastError() const;

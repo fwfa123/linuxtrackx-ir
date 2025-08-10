@@ -35,6 +35,7 @@
 #include "xplugin.h"
 #include "wine_warn.h"
 #include "tracker.h"
+#include "testing_section.h"
 
 // Static string constants for better performance
 static const QString APP_TITLE = QStringLiteral("Linuxtrack");
@@ -89,6 +90,8 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   lv = new LogView();
   pi = new PluginInstall(ui, this);
   ps = new ProfileSelector(this);
+  testingSection = new TestingSection(this);
+  testingSection->setupUI(ui);
   QObject::connect(&STATE, SIGNAL(stateChanged(linuxtrack_state_type)),
                    this, SLOT(trackerStateHandler(linuxtrack_state_type)));
   QObject::connect(&zipper, SIGNAL(finished(int, QProcess::ExitStatus)),
@@ -114,6 +117,22 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
   QObject::connect(ui.WinePrefixButton, SIGNAL(pressed()), this, SLOT(on_WinePrefixButton_pressed()));
   QObject::connect(ui.LaunchLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_LaunchLtrPipeButton_pressed()));
+  
+  // Connect Testing section buttons
+  QObject::connect(ui.TesterExeRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
+  QObject::connect(ui.FTTesterRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_FTTesterRadioButton_toggled(bool)));
+  QObject::connect(ui.PlatformComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_PlatformComboBox_currentTextChanged(QString)));
+  QObject::connect(ui.LoadGamesButton, SIGNAL(pressed()), this, SLOT(on_LoadGamesButton_pressed()));
+  QObject::connect(ui.GameComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_GameComboBox_currentTextChanged(QString)));
+  QObject::connect(ui.RunTesterButton, SIGNAL(pressed()), this, SLOT(on_RunTesterButton_pressed()));
+
+  // Ensure the tracking window UI timers are active when testing workflow triggers tracking
+  connect(testingSection, SIGNAL(testingWorkflowStarted()), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
+  connect(testingSection, &TestingSection::testingWorkflowStarted, [this]() {
+    if (showWindow) {
+      showWindow->startTimersOnly();
+    }
+  });
   
   // Connect System information buttons
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
@@ -224,6 +243,11 @@ LinuxtrackGui::~LinuxtrackGui()
   if (xpInstall != nullptr) {
     // xpInstall cleanup if needed
   }
+}
+
+PluginInstall* LinuxtrackGui::getPluginInstall() const
+{
+  return pi;
 }
 
 void LinuxtrackGui::closeEvent(QCloseEvent *event)
@@ -345,6 +369,10 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
       break;
     case 3:
       HelpViewer::ChangePage(QStringLiteral("misc.htm"));
+      // Gaming tab selected: ensure tracking is started for testing workflow
+      if (testingSection) {
+        testingSection->startTracking();
+      }
       break;
     default:
       break;
@@ -635,6 +663,7 @@ void LinuxtrackGui::on_InstallTirMfcButton_pressed()
 {
     // Call the new TIR/MFC42 installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installTirFirmwareAndMfc42();
     }
 }
@@ -643,6 +672,7 @@ void LinuxtrackGui::on_SteamProtonButton_pressed()
 {
     // Call the Steam Proton wine bridge installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installSteamProtonBridge();
     }
 }
@@ -651,6 +681,7 @@ void LinuxtrackGui::on_LutrisButton_pressed()
 {
     // Call the Lutris wine bridge installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installLutrisWineBridge();
     }
 }
@@ -660,21 +691,14 @@ void LinuxtrackGui::on_OtherPlatformButton_pressed()
     // TODO: Implement other platform installation
     QMessageBox::information(this, QString::fromUtf8("Other Platform"),
         QString::fromUtf8("Other platform installation will be implemented in Phase 2."));
-    
-    // Start tracking automatically for future implementation
-    static QString sec(QString::fromUtf8("Default"));
-    TRACKER.start(sec);
-    
-    QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
-        QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-        QString::fromUtf8("You can now test your head tracking!\n\n") +
-        QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+    // Do not auto-start tracking from install buttons
 }
 
 void LinuxtrackGui::on_CustomPrefixButton_pressed()
 {
     // Call the wine bridge installation method
     if (pi) {
+        if (showWindow) { showWindow->startTimersOnly(); }
         pi->installWineBridgeToCustomPrefix();
     }
 }
@@ -693,15 +717,7 @@ void LinuxtrackGui::on_WinePrefixButton_pressed()
     // TODO: Implement direct wine prefix installation
     QMessageBox::information(this, QString::fromUtf8("Wine Prefix"),
         QString::fromUtf8("Direct wine prefix installation will be implemented in Phase 2."));
-    
-    // Start tracking automatically for future implementation
-    static QString sec(QString::fromUtf8("Default"));
-    TRACKER.start(sec);
-    
-    QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
-        QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-        QString::fromUtf8("You can now test your head tracking!\n\n") +
-        QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+    // Do not auto-start tracking from install buttons
 }
 
 void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
@@ -712,12 +728,57 @@ void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
     
     // Start tracking automatically for future implementation
     static QString sec(QString::fromUtf8("Default"));
+    if (showWindow) { showWindow->startTimersOnly(); }
     TRACKER.start(sec);
     
     QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
         QString::fromUtf8("Head tracking has been automatically started.\n\n") +
         QString::fromUtf8("You can now test your head tracking!\n\n") +
         QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+}
+
+// Testing section slot implementations
+void LinuxtrackGui::on_TesterExeRadioButton_toggled(bool checked)
+{
+    if (checked && testingSection) {
+        testingSection->onTesterSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_FTTesterRadioButton_toggled(bool checked)
+{
+    if (checked && testingSection) {
+        testingSection->onTesterSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_PlatformComboBox_currentTextChanged(const QString &text)
+{
+    if (testingSection) {
+        testingSection->onPlatformSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_LoadGamesButton_pressed()
+{
+    if (testingSection) {
+        testingSection->onLoadGamesClicked();
+    }
+}
+
+void LinuxtrackGui::on_GameComboBox_currentTextChanged(const QString &text)
+{
+    // Enable Run Tester button when a game is selected
+    if (ui.RunTesterButton) {
+        ui.RunTesterButton->setEnabled(!text.isEmpty());
+    }
+}
+
+void LinuxtrackGui::on_RunTesterButton_pressed()
+{
+    if (testingSection) {
+        testingSection->onRunTesterClicked();
+    }
 }
 
 // System information functions
