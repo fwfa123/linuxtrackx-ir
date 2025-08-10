@@ -11,6 +11,9 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QStringList>
+#include <QProgressBar>
+#include <QtConcurrent>
+#include <QFutureWatcher>
 #include "ltr_gui.h"
 #include "steam_integration.h"
 #include "lutris_integration.h"
@@ -34,6 +37,9 @@ public:
     QPushButton *loadGamesButton;
     QComboBox *gameComboBox;
     QPushButton *runTesterButton;
+    QLabel *testingStatusLabel;
+    QLineEdit *gameFilterEdit;
+    QProgressBar *testingProgressBar;
 
     // Testing functionality
     void startTracking();
@@ -51,6 +57,12 @@ public slots:
     void onLoadGamesClicked();
     void onRunTesterClicked();
     void onTrackerStateChanged(linuxtrack_state_type current_state);
+    void onGameSelectionChanged();
+    void onFilterTextChanged(const QString &text);
+    
+    // Platform helpers (avoid string-based logic tied to translations)
+    QString getCurrentPlatformKey() const;
+    static QString platformLabelToKey(const QString &label);
 
 private:
     QStringList getSteamGames();
@@ -79,6 +91,9 @@ private:
 
     // Guard to avoid repeated tracking starts
     bool trackingStarted;
+
+    // Async loading support
+    QFutureWatcher<QStringList> gamesLoadWatcher;
 };
 
 #endif // TESTING_SECTION_H 

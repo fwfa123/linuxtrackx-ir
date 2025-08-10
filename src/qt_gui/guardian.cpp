@@ -26,24 +26,24 @@ void Guardian::checkDeviceNModel()
   if((devType == WEBCAM_FT) || (devType == MACWEBCAM_FT) || (devType == MACPS3EYE_FT)){
     //face tracker needs face model
     if(mdlType != MDL_FACE){
-      QMessageBox::warning(parentWidget, QString::fromUtf8("Linuxtrack"),
-                           devDesc + QString::fromUtf8(" requires Face type Model!"), QMessageBox::Ok);
+      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
+                           QObject::tr("%1 requires Face type Model!").arg(devDesc), QMessageBox::Ok);
     }
   }else if(devType == JOYSTICK){
     //face tracker needs face model
     if(mdlType != MDL_ABSOLUTE){
-      QMessageBox::warning(parentWidget, QString::fromUtf8("Linuxtrack"),
-                           devDesc + QString::fromUtf8(" requires Absolute type Model!"), QMessageBox::Ok);
+      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
+                           QObject::tr("%1 requires Absolute type Model!").arg(devDesc), QMessageBox::Ok);
     }
   }else{
     //ordinary tracker needs other than face model
     if(mdlType == MDL_FACE){
-      QMessageBox::warning(parentWidget, QString::fromUtf8("Linuxtrack"),
-                           devDesc + QString::fromUtf8(" won't work correctly with Face type Model!"), 
+      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
+                           QObject::tr("%1 won't work correctly with Face type Model!").arg(devDesc), 
                            QMessageBox::Ok);
     }else if(mdlType == MDL_ABSOLUTE){
-      QMessageBox::warning(parentWidget, QString::fromUtf8("Linuxtrack"),
-                           devDesc + QString::fromUtf8(" won't work correctly with Absolute type Model!"), 
+      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
+                           QObject::tr("%1 won't work correctly with Absolute type Model!").arg(devDesc), 
                            QMessageBox::Ok);
     }
   }

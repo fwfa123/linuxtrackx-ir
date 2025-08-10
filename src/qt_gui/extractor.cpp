@@ -359,8 +359,8 @@ void TirFwExtractor::wineFinished(bool result)
   if(!wineInitialized){
     wineInitialized = true;
     if(!result){
-      QMessageBox::warning(this, QString::fromUtf8("Error running Wine"),
-        QString::fromUtf8("There was an error initializing\n"
+      QMessageBox::warning(this, tr("Error running Wine"),
+        tr("There was an error initializing\n"
         "the wine prefix; will try to install the firmware\n"
         "just in case..."
         "Please see the log for more details.\n\n")
@@ -372,8 +372,8 @@ void TirFwExtractor::wineFinished(bool result)
     et->start(targets, winePrefix, destPath);
   }else{
     if(!result){
-      QMessageBox::warning(this, QString::fromUtf8("Error running Wine"),
-        QString::fromUtf8("There was an error when extracting\n"
+      QMessageBox::warning(this, tr("Error running Wine"),
+        tr("There was an error when extracting\n"
         "the firmware, will try the analysis\n"
         "just in case..."
         "Please see the log for more details.\n\n")
@@ -401,8 +401,8 @@ void TirFwExtractor::wineFinished(bool result)
 void TirFwExtractor::commenceExtraction(QString file)
 {
 #ifndef DARWIN
-  QMessageBox::information(this, QString::fromUtf8("Instructions"),
-  QString::fromUtf8("NP's TrackIR installer might pop up now.\n\n"
+  QMessageBox::information(this, tr("Instructions"),
+  tr("NP's TrackIR installer might pop up now.\n\n"
   "If it does, install it with all components to the default location, so the firmware and other necessary "
   "elements can be extracted.\n\n"
   "The software will be installed to the wine sandbox, that will be deleted afterwards, so "
@@ -534,8 +534,8 @@ void TirFwExtractor::threadFinished()
   if(everything){
     linkResult(destPath);
   }else{
-    QMessageBox::warning(this, QString::fromUtf8("Firmware extraction unsuccessfull"),
-      QString::fromUtf8("Some of the files needed to fully utilize TrackIR were not "
+    QMessageBox::warning(this, tr("Firmware extraction unsuccessfull"),
+      tr("Some of the files needed to fully utilize TrackIR were not "
       "found! Please see the log for more details.")
     );
   }
@@ -658,13 +658,13 @@ void Mfc42uWinetricksExtractor::wineFinished(bool result)
     }
     
     if(found) {
-      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-        QString::fromUtf8("MFC42 libraries were successfully installed."));
+      QMessageBox::information(this, tr("Installation Successful"),
+        tr("MFC42 libraries were successfully installed."));
       emit finished(true);
       hide();
     } else {
-      QMessageBox::warning(this, QString::fromUtf8("Installation Failed"),
-        QString::fromUtf8("MFC42 installation failed. Please try using winetricks mfc42 or downloading the installer manually."));
+      QMessageBox::warning(this, tr("Installation Failed"),
+        tr("MFC42 installation failed. Please try using winetricks mfc42 or downloading the installer manually."));
       emit finished(false);
     }
     return;
@@ -686,17 +686,17 @@ void Mfc42uWinetricksExtractor::wineFinished(bool result)
         destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
         QString srcPath = winePrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
         if(!QFile::copy(srcPath, destPath)){
-          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc42u.dll"),
-            QString::fromUtf8("There was an error extracting mfc42u.dll.\n"
+          QMessageBox::warning(this, tr("Error extracting mfc42u.dll"),
+            tr("There was an error extracting mfc42u.dll.\n"
             "Please see the help to learn other ways\n"
-  	  "ways of obtaining this file.\n\n")
+      	  "ways of obtaining this file.\n\n")
           );
           enableButtons(true);
           emit finished(false);
         }else{
           progress(QString::fromUtf8("Mfc42u.dll extracted successfully"));
-          QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-            QString::fromUtf8("MFC42 libraries were successfully installed."));
+          QMessageBox::information(this, tr("Installation Successful"),
+            tr("MFC42 libraries were successfully installed."));
           enableButtons(true);
           emit finished(true);
           hide();

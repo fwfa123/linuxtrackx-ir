@@ -12,7 +12,7 @@ INCLUDEPATH += .
 INCLUDEPATH += ./..
 RESOURCES = ltr_rc.qrc
 #QT          += opengl network webkit
-QT          += opengl network help
+QT          += opengl network help concurrent
 
 contains(QT_VERSION, ^5.*){
 #       QT += webkitwidgets widgets
@@ -86,6 +86,12 @@ unix:!macx {
   target.path = /usr/local/bin
   INSTALLS += target data help
 }
+
+# Translations
+TRANSLATIONS += \
+  translations/ltr_gui_en.ts \
+  translations/ltr_gui_cs.ts \
+  translations/ltr_gui_de.ts
 
 macx {
   HEADERS += macwebcam_prefs.h macwebcamft_prefs.h macwebcam_info.h
