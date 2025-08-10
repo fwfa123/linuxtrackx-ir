@@ -3,11 +3,13 @@
 #include <iostream>
 #include <QProcess>
 #include <QFileDialog>
+#include <QDir>
 #include <QMessageBox>
 #include <QInputDialog>
 #include <zlib.h>
 #include "extractor.h"
 #include "utils.h"
+#include "installer_paths.h"
 #include "tracker.h"
 
 #ifdef HAVE_CONFIG_H
@@ -24,11 +26,11 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   tirViews(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/TIRViews.dll"))
 {
 #ifndef DARWIN
-  // Check for wine installer in the wine directory location
-  QString wineInstallerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
-  if(!QFile::exists(wineInstallerPath)){
+  // Check for wine installer in common locations and warn/disable legacy buttons if not found
+  QString wineInstallerPath = InstallerPaths::resolveWineBridgeInstallerPath();
+  if(wineInstallerPath.isEmpty()){
     enableButtons(false);
-    return;
+    // Do not return; allow Custom Prefix button flow to run and report a clear error later
   }
 #endif
   inst = new WineLauncher();
@@ -177,11 +179,36 @@ void PluginInstall::installLinuxtrackWine()
   }
   QString prefix = QFileDialog::getExistingDirectory(parentWidget, QString::fromUtf8("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
+
+  // Handle user cancellation gracefully
+  if (prefix.isEmpty()) {
+    return;
+  }
+
+  // Validate the selected directory exists
+  QDir chosenPrefix(prefix);
+  if (!chosenPrefix.exists()) {
+    QMessageBox::warning(parentWidget, QString::fromUtf8("Invalid Prefix"),
+      QString::fromUtf8("The selected directory does not exist."));
+    return;
+  }
   
-  // Use the wine directory location
-  QString installerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
+  // Resolve installer via centralized resolver
+  QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
+  if (installerPath.isEmpty()) {
+    QMessageBox::critical(parentWidget, QString::fromUtf8("Installer Not Found"),
+      QString::fromUtf8("Could not find linuxtrack-wine.exe in expected locations."));
+    return;
+  }
 
   // Do not auto-start tracking here; installation should be non-intrusive
+
+  // Ensure launcher is available (should be constructed in constructor)
+  if (!inst) {
+    QMessageBox::critical(parentWidget, QString::fromUtf8("Installer Not Available"),
+      QString::fromUtf8("Wine installer launcher is not available."));
+    return;
+  }
 
   inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
   inst->run(installerPath);

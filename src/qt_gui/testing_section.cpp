@@ -12,6 +12,7 @@
 #include <QStandardPaths>
 #include <QDebug>
 #include <QFileDialog>
+#include "tester_launcher.h"
 
 TestingSection::TestingSection(QObject *parent)
     : QObject(parent)
@@ -289,43 +290,14 @@ void TestingSection::runSelectedTester()
 
 QString TestingSection::getPrefixForGame(const QString &gameName, const QString &platform)
 {
-    if (platform == QString::fromUtf8("Steam")) {
-        if (!steamIntegration) {
-            qDebug() << "Steam integration not initialized";
-            return QString::fromUtf8("");
+    if (platform == QString::fromUtf8("Steam") || platform == QString::fromUtf8("Lutris")) {
+        QString prefixPath = TesterLauncher::getPrefixForGame(gameName, platform, steamIntegration, lutrisIntegration);
+        if (!prefixPath.isEmpty()) {
+            qDebug() << "Found" << platform << "prefix for" << gameName << ":" << prefixPath;
+            return prefixPath;
         }
-        
-        // Find the Steam game by name and get its prefix
-        QList<SteamGame> steamGames = steamIntegration->getSteamGames();
-        for (const SteamGame &game : steamGames) {
-            if (game.game_name == gameName && game.is_installed) {
-                QString prefixPath = steamIntegration->findProtonPrefix(game.game_id);
-                qDebug() << "Found Steam prefix for" << gameName << ":" << prefixPath;
-                return prefixPath;
-            }
-        }
-        
-        qDebug() << "Steam game not found:" << gameName;
+        qDebug() << platform << "game not found:" << gameName;
         return QString::fromUtf8("");
-        
-    } else if (platform == QString::fromUtf8("Lutris")) {
-        if (!lutrisIntegration) {
-            qDebug() << "Lutris integration not initialized";
-            return QString::fromUtf8("");
-        }
-        
-        // Find the Lutris game by name and get its prefix
-        QList<LutrisGame> lutrisGames = lutrisIntegration->getLutrisGames();
-        for (const LutrisGame &game : lutrisGames) {
-            if (game.game_name == gameName) {
-                qDebug() << "Found Lutris prefix for" << gameName << ":" << game.wine_prefix;
-                return game.wine_prefix;
-            }
-        }
-        
-        qDebug() << "Lutris game not found:" << gameName;
-        return QString::fromUtf8("");
-        
     } else if (platform == QString::fromUtf8("Custom Prefix")) {
         if (customPrefixPath.isEmpty()) {
             // Try to acquire it now
@@ -346,54 +318,7 @@ bool TestingSection::checkTesterInPrefix(const QString &prefixPath, const QStrin
 
 QString TestingSection::findTesterInPrefix(const QString &prefixPath, const QString &testerType)
 {
-    QDir prefixDir(prefixPath);
-    if (!prefixDir.exists()) {
-        return QString::fromUtf8("");
-    }
-    
-    QStringList possibleNames;
-    if (testerType == QString::fromUtf8("Tester.exe")) {
-        possibleNames << QString::fromUtf8("Tester.exe") << QString::fromUtf8("Tester64.exe");
-    } else if (testerType == QString::fromUtf8("FT_Tester")) {
-        possibleNames << QString::fromUtf8("FT_Tester.exe") << QString::fromUtf8("FreeTrackTester.exe");
-    }
-    
-    // Search in prefix root directory (where NSIS installer may place testers)
-    for (const QString &testerName : possibleNames) {
-        QString testerPath = prefixDir.filePath(testerName);
-        QFileInfo testerFile(testerPath);
-        // In Wine prefixes, Windows executables typically lack the Linux executable bit.
-        // Treat existence of the file as sufficient.
-        if (testerFile.exists() && testerFile.isFile()) {
-            return testerPath;
-        }
-    }
-    
-    // Search in common Windows program directories
-    QStringList searchDirs = {
-        QString::fromUtf8("drive_c/windows"),
-        QString::fromUtf8("drive_c/Program Files"),
-        QString::fromUtf8("drive_c/Program Files/Linuxtrack"),
-        QString::fromUtf8("drive_c/Program Files (x86)"),
-        QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")
-    };
-    for (const QString &searchDir : searchDirs) {
-        QDir dir = prefixDir;
-        dir.cd(searchDir);
-        if (dir.exists()) {
-            for (const QString &testerName : possibleNames) {
-                QString testerPath = dir.filePath(testerName);
-                QFileInfo testerFile(testerPath);
-                // Do not require the executable bit for .exe files in Wine prefixes
-                if (testerFile.exists() && testerFile.isFile()) {
-                    qDebug() << "Found tester at:" << testerPath;
-                    return testerPath;
-                }
-            }
-        }
-    }
-    
-    return QString::fromUtf8("");
+    return TesterLauncher::findTesterInPrefix(prefixPath, testerType);
 }
 
 void TestingSection::showMissingTesterDialog(const QString &prefixPath)
