@@ -16,7 +16,7 @@ QT          += opengl network help
 
 contains(QT_VERSION, ^5.*){
 #       QT += webkitwidgets widgets
-       QT += widgets
+       QT += widgets sql
 }
 
 

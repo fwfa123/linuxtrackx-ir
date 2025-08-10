@@ -691,16 +691,7 @@ void LinuxtrackGui::on_OtherPlatformButton_pressed()
     // TODO: Implement other platform installation
     QMessageBox::information(this, QString::fromUtf8("Other Platform"),
         QString::fromUtf8("Other platform installation will be implemented in Phase 2."));
-    
-    // Start tracking automatically for future implementation
-    static QString sec(QString::fromUtf8("Default"));
-    if (showWindow) { showWindow->startTimersOnly(); }
-    TRACKER.start(sec);
-    
-    QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
-        QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-        QString::fromUtf8("You can now test your head tracking!\n\n") +
-        QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+    // Do not auto-start tracking from install buttons
 }
 
 void LinuxtrackGui::on_CustomPrefixButton_pressed()
@@ -726,16 +717,7 @@ void LinuxtrackGui::on_WinePrefixButton_pressed()
     // TODO: Implement direct wine prefix installation
     QMessageBox::information(this, QString::fromUtf8("Wine Prefix"),
         QString::fromUtf8("Direct wine prefix installation will be implemented in Phase 2."));
-    
-    // Start tracking automatically for future implementation
-    static QString sec(QString::fromUtf8("Default"));
-    if (showWindow) { showWindow->startTimersOnly(); }
-    TRACKER.start(sec);
-    
-    QMessageBox::information(this, QString::fromUtf8("Tracking Started"),
-        QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-        QString::fromUtf8("You can now test your head tracking!\n\n") +
-        QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+    // Do not auto-start tracking from install buttons
 }
 
 void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()

@@ -181,15 +181,7 @@ void PluginInstall::installLinuxtrackWine()
   // Use the wine directory location
   QString installerPath = PREF.getDataPath(QString::fromUtf8("wine/linuxtrack-wine.exe"));
 
-  // Start tracking BEFORE the installer begins
-  // This allows users to test their head tracking while the installer is running
-  static QString sec(QString::fromUtf8("Default"));
-  TRACKER.start(sec);
-  
-  QMessageBox::information(parentWidget, QString::fromUtf8("Tracking Started"),
-    QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-    QString::fromUtf8("You can now test your head tracking while the installer runs!\n\n") +
-    QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+  // Do not auto-start tracking here; installation should be non-intrusive
 
   inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
   inst->run(installerPath);
@@ -511,15 +503,7 @@ void PluginInstall::installLutrisWineBridge()
     QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
     QString::fromUtf8("Click OK to start the installation."));
   
-  // Start tracking BEFORE the installer begins
-  // This allows users to test their head tracking while the installer is running
-  static QString sec(QString::fromUtf8("Default"));
-  TRACKER.start(sec);
-  
-  QMessageBox::information(getParentWidget(), QString::fromUtf8("Tracking Started"),
-    QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-    QString::fromUtf8("You can now test your head tracking while the installer runs!\n\n") +
-    QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+  // Do not auto-start tracking here; installation should be non-intrusive
   
   // Install to the selected game
   bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
@@ -622,15 +606,7 @@ void PluginInstall::installSteamProtonBridge()
     QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
     QString::fromUtf8("Click OK to start the installation."));
   
-  // Start tracking BEFORE the installer begins
-  // This allows users to test their head tracking while the installer is running
-  static QString sec(QString::fromUtf8("Default"));
-  TRACKER.start(sec);
-  
-  QMessageBox::information(getParentWidget(), QString::fromUtf8("Tracking Started"),
-    QString::fromUtf8("Head tracking has been automatically started.\n\n") +
-    QString::fromUtf8("You can now test your head tracking while the installer runs!\n\n") +
-    QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+  // Do not auto-start tracking here; installation should be non-intrusive
   
   // Install to the selected game
   bool success = steamIntegration->installToSteamGame(selectedGameId);

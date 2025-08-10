@@ -133,6 +133,7 @@ The Testing Section feature is largely scaffolded and integrated into the Gaming
 - [x] Lutris launch: avoid forcing `WINEARCH=win64` blindly.
 - [x] SteamIntegration: remove `~` fallback; centralize installer path lookup.
 - [x] LutrisIntegration: use centralized installer path helper; unify with SteamIntegration.
+- [x] Installation buttons: remove automatic `TRACKER.start()` and tester auto-launch from gridLayout_3 flows; installation is non-intrusive now.
 - [ ] Optionally extract a `TesterLauncher` helper to match the plan and reduce responsibility in `TestingSection`.
 
 ---
