@@ -668,7 +668,7 @@ Ztranslation-inverted = No
 [Sun 2025-06-29 10:17:19 EDT] ================================================
 [Sun 2025-06-29 10:17:19 EDT] Preferences read OK!
 [Sun 2025-06-29 10:17:19 EDT] Opening logfile viewer.
-[Sun 2025-06-29 10:17:19 EDT] Going to create lock '/home/mario/.config/linuxtrack/ltr_server.lock' => 20!
+[Sun 2025-06-29 10:17:19 EDT] Going to create lock '~/.config/linuxtrack/ltr_server.lock' => 20!
 [Sun 2025-06-29 10:17:19 EDT] Lock 20 success!
 [Sun 2025-06-29 10:17:19 EDT] Passing the lock to protect fifo (pid 16720)!
 [Sun 2025-06-29 10:17:19 EDT] Initializing axes for profile 'Default'!

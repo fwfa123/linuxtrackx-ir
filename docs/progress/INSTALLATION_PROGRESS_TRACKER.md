@@ -89,7 +89,7 @@ if (inWineSection && indent > wineIndent) {
 
 #### **🎯 Test Results:**
 - ✅ Correctly detects Wine versions like `lutris-GE-Proton8-15-x86_64`
-- ✅ Constructs proper Wine path: `/home/mario/.local/share/lutris/runners/wine/[version]/bin/wine`
+- ✅ Constructs proper Wine path: `~/.local/share/lutris/runners/wine/[version]/bin/wine`
 - ✅ Uses Lutris-specific Wine instead of system Wine
 - ✅ NSIS installer remains interactive
 - ✅ Game detection and alphabetical listing working

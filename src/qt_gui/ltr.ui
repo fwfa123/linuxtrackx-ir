@@ -127,6 +127,19 @@
         </widget>
        </item>
        <item>
+        <spacer name="verticalSpacer_6">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <layout class="QGridLayout" name="gridLayout_3">
          <item row="0" column="0">
           <widget class="QPushButton" name="SteamProtonButton">
@@ -184,6 +197,121 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="TestingGroupBox">
+         <property name="title">
+          <string>Testing</string>
+         </property>
+         <layout class="QVBoxLayout" name="testingLayout">
+          <item>
+           <layout class="QHBoxLayout" name="testerSelectionLayout">
+            <item>
+             <widget class="QLabel" name="TesterLabel">
+              <property name="text">
+               <string>Tester:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="TesterExeRadioButton">
+              <property name="text">
+               <string>Tester.exe (TrackIR)</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="FTTesterRadioButton">
+              <property name="text">
+               <string>FT_Tester (FreeTrack)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="platformSelectionLayout">
+            <item>
+             <widget class="QLabel" name="PlatformLabel">
+              <property name="text">
+               <string>Platform:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="PlatformComboBox">
+              <item>
+               <property name="text">
+                <string>Steam</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Lutris</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Custom Prefix</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="LoadGamesButton">
+              <property name="text">
+               <string>Load Games</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="gameSelectionLayout">
+            <item>
+             <widget class="QLabel" name="GameLabel">
+              <property name="text">
+               <string>Game:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="GameComboBox">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="RunTesterButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Run Tester</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer name="verticalSpacer_5">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
         <layout class="QHBoxLayout" name="horizontalLayout_3">

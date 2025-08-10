@@ -2,7 +2,7 @@
 
 ## File Information
 - **File**: TIRViews.dll
-- **Location**: /home/mario/.config/linuxtrack/tir_firmware/TIRViews.dll
+- **Location**: ~/.config/linuxtrack/tir_firmware/TIRViews.dll
 - **Size**: 122,016 bytes (119 KB)
 - **Type**: PE32 executable (DLL) (GUI) Intel 80386, for MS Windows
 - **Architecture**: 32-bit Windows DLL

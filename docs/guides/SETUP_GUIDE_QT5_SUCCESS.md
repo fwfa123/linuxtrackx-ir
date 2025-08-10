@@ -84,7 +84,7 @@ ls -la /usr/local/lib/linuxtrack/libltusb1.so*
 ### Phase 3: Configuration Management
 
 #### 3.1 Fix Configuration File Path Issues
-The configuration file at `/home/mario/.config/linuxtrack/linuxtrack1.conf` needed the **Prefix** corrected:
+The configuration file at `~/.config/linuxtrack/linuxtrack1.conf` needed the **Prefix** corrected:
 
 ```ini
 [Global]
@@ -263,7 +263,7 @@ libltusb1.so.0   -> 38KB  (USB interface) ← **KEY COMPONENT**
 ## 📝 Files Created/Modified
 
 - `run_qt5_gui.sh` - Enhanced launch script
-- `/home/mario/.config/linuxtrack/linuxtrack1.conf` - Fixed Prefix path
+- `~/.config/linuxtrack/linuxtrack1.conf` - Fixed Prefix path
 - `/usr/local/lib/linuxtrack/` - System library installation
 - `src/qt_gui/ltr_gui_qt5_debug` - Qt5 modernized executable
 

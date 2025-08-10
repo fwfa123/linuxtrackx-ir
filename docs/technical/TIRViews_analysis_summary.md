@@ -5,7 +5,7 @@ Successfully analyzed the Windows TrackIR5 TIRViews.dll file and identified all 
 
 ## File Details
 - **File**: TIRViews.dll
-- **Location**: /home/mario/.config/linuxtrack/tir_firmware/TIRViews.dll
+- **Location**: ~/.config/linuxtrack/tir_firmware/TIRViews.dll
 - **Size**: 122,016 bytes (119 KB)
 - **Type**: PE32 executable (DLL) (GUI) Intel 80386, for MS Windows
 - **Architecture**: 32-bit Windows DLL
@@ -15,27 +15,27 @@ Successfully analyzed the Windows TrackIR5 TIRViews.dll file and identified all 
 ### ✅ Available Dependencies (5/6)
 1. **msvcrt.dll** - Microsoft Visual C++ Runtime
    - Status: ✅ Found in Wine
-   - Location: /home/mario/.wine/drive_c/windows/system32/msvcrt.dll
+   - Location: ~/.wine/drive_c/windows/system32/msvcrt.dll
    - Functions: 18 functions (memory, strings, exceptions, etc.)
 
 2. **msvcp60.dll** - Microsoft Visual C++ Standard Library
    - Status: ✅ Found in Wine
-   - Location: /home/mario/.wine/drive_c/windows/system32/msvcp60.dll
+   - Location: ~/.wine/drive_c/windows/system32/msvcp60.dll
    - Functions: 4 C++ standard library functions
 
 3. **kernel32.dll** - Windows Kernel API
    - Status: ✅ Found in Wine
-   - Location: /home/mario/.wine/drive_c/windows/system32/kernel32.dll
+   - Location: ~/.wine/drive_c/windows/system32/kernel32.dll
    - Functions: 35+ system functions (process, memory, file operations)
 
 4. **user32.dll** - Windows User Interface API
    - Status: ✅ Found in Wine
-   - Location: /home/mario/.wine/drive_c/windows/system32/user32.dll
+   - Location: ~/.wine/drive_c/windows/system32/user32.dll
    - Functions: 5 GUI functions (window management)
 
 5. **advapi32.dll** - Windows Advanced API
    - Status: ✅ Found in Wine
-   - Location: /home/mario/.wine/drive_c/windows/system32/advapi32.dll
+   - Location: ~/.wine/drive_c/windows/system32/advapi32.dll
    - Functions: 5 registry functions
 
 ### ❌ Missing Dependencies (1/6)

@@ -59,7 +59,7 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev,input $USER
+
 ```
 
 #### **Fedora / RHEL / CentOS**
@@ -75,7 +75,7 @@ autoreconf -fiv
 ./configure --prefix=/usr/local
 make -j$(nproc)
 sudo make install
-sudo usermod -a -G plugdev,input $USER
+
 ```
 
 #### **Arch Linux / Manjaro**
@@ -118,7 +118,7 @@ make -j$(nproc)
 
 # Install
 sudo make install
-sudo usermod -a -G plugdev,input $USER
+
 ```
 
 #### **Method 3: Optimized Wine Installation (Advanced)**

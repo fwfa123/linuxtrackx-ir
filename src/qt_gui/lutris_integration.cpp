@@ -9,9 +9,11 @@
 #include <QDir>
 #include <QFileInfo>
 #include "../utils.h"
+#include "installer_paths.h"
 #include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QProcessEnvironment>
 
 LutrisIntegration::LutrisIntegration(QObject *parent)
     : QObject(parent)
@@ -568,62 +570,75 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
 
 bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const QString &winePath)
 {
-    // Check if linuxtrack-wine.exe exists - try multiple possible locations
-    QStringList possiblePaths;
-    possiblePaths << QString::fromUtf8("/usr/local/share/linuxtrack/wine/linuxtrack-wine.exe");
-    possiblePaths << QString::fromUtf8("/usr/share/linuxtrack/wine/linuxtrack-wine.exe");
-    possiblePaths << QString::fromUtf8("/usr/share/linuxtrack/linuxtrack-wine.exe");
-    
-    QString installerPath;
-    bool foundInstaller = false;
-    
-    for (const QString &path : possiblePaths) {
-        QFileInfo installerFile(path);
-        if (installerFile.exists()) {
-            installerPath = path;
-            foundInstaller = true;
-            debugInfo += QString::fromUtf8("Found Wine installer at: ") + installerPath + QString::fromUtf8("\n");
-            ltr_int_log_message("Found Wine installer at: %s\n", installerPath.toUtf8().constData());
-            break;
-        }
-    }
-    
-    if (!foundInstaller) {
-        lastError = QString::fromUtf8("Linuxtrack Wine installer not found. Tried paths:\n");
-        for (const QString &path : possiblePaths) {
-            lastError += QString::fromUtf8("  ") + path + QString::fromUtf8("\n");
-        }
-        debugInfo += lastError;
+    // Centralized resolution of linuxtrack-wine.exe
+    QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
+    if (installerPath.isEmpty()) {
+        lastError = QString::fromUtf8("Linuxtrack Wine installer not found in expected locations.");
+        debugInfo += lastError + QString::fromUtf8("\n");
         ltr_int_log_message("Wine installer not found in any expected location\n");
         return false;
     }
-    
-    // Add debug info about the Wine path being used
+    debugInfo += QString::fromUtf8("Found Wine installer at: ") + installerPath + QString::fromUtf8("\n");
+    ltr_int_log_message("Found Wine installer at: %s\n", installerPath.toUtf8().constData());
+
+    // Prepare environment
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+
+    // Log what we're about to do
     debugInfo += QString::fromUtf8("Starting Wine installer with:\n");
     debugInfo += QString::fromUtf8("  Wine executable: ") + winePath + QString::fromUtf8("\n");
     debugInfo += QString::fromUtf8("  Installer path: ") + installerPath + QString::fromUtf8("\n");
     debugInfo += QString::fromUtf8("  Working directory: ") + prefixPath + QString::fromUtf8("\n");
-    
+
     ltr_int_log_message("Starting Wine installer with:\n");
     ltr_int_log_message("  Wine executable: %s\n", winePath.toUtf8().constData());
     ltr_int_log_message("  Installer path: %s\n", installerPath.toUtf8().constData());
     ltr_int_log_message("  Working directory: %s\n", prefixPath.toUtf8().constData());
-    
-    // Add user feedback about the installation process
-    QMessageBox::information(nullptr, QString::fromUtf8("Wine Bridge Installation"),
-        QString::fromUtf8("Wine bridge installer will now start.\n\n"
-                          "This is an interactive installer that will:\n"
-                          "• Show installation options\n"
-                          "• Allow you to choose installation directory\n"
-                          "• Install the necessary components\n"
-                          "• Create symlinks for TrackIR support\n\n"
-                          "Please follow the installer prompts to complete the installation."));
-    
-    // Use QDesktopServices to launch the installer with proper display handling
-    QDesktopServices::openUrl(QUrl::fromLocalFile(installerPath));
-    
-    ltr_int_log_message("Launched Wine installer via QDesktopServices\n");
-    debugInfo += QString::fromUtf8("Launched Wine installer via QDesktopServices\n");
-    
+    ltr_int_log_message("  WINEPREFIX: %s\n", prefixPath.toUtf8().constData());
+
+    // Launch via QProcess so we can observe completion (align with Steam flow)
+    QProcess process;
+    process.setProcessEnvironment(env);
+    process.setWorkingDirectory(prefixPath);
+
+    QStringList arguments;
+    arguments << installerPath;
+
+    process.start(winePath, arguments);
+    if (!process.waitForStarted()) {
+        QString errorMsg = QString::fromUtf8("Failed to start Wine process: ") + process.errorString();
+        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - %s\n", errorMsg.toUtf8().constData());
+        lastError = errorMsg;
+        return false;
+    }
+
+    ltr_int_log_message("Wine process started successfully\n");
+
+    // Wait for completion (120s like Proton path). NSIS is interactive; user should complete within this window.
+    if (!process.waitForFinished(120000)) { // 120 seconds
+        process.kill();
+        QString errorMsg = QString::fromUtf8("Wine process timed out after 120 seconds");
+        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - %s\n", errorMsg.toUtf8().constData());
+        lastError = errorMsg;
+        return false;
+    }
+
+    int exitCode = process.exitCode();
+    ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Process finished with exit code: %d\n", exitCode);
+
+    if (exitCode != 0) {
+        QString errorOutput = QString::fromUtf8(process.readAllStandardError());
+        QString standardOutput = QString::fromUtf8(process.readAllStandardOutput());
+        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Standard output: %s\n", standardOutput.toUtf8().constData());
+        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Error output: %s\n", errorOutput.toUtf8().constData());
+        lastError = QString::fromUtf8("Wine process failed with exit code ") + QString::number(exitCode);
+        if (!errorOutput.isEmpty()) {
+            lastError += QString::fromUtf8(": ") + errorOutput;
+        }
+        return false;
+    }
+
+    ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Wine Bridge installer completed successfully\n");
     return true;
-} 
+}

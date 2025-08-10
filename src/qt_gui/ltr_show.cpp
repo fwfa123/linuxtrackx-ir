@@ -134,6 +134,13 @@ void LtrGuiForm::on_startButton_pressed()
   TRACKER.start(sec);
 }
 
+void LtrGuiForm::startTimersOnly()
+{
+  timer->start(50);
+  fpsTimer->start(250);
+  stopwatch->start();
+}
+
 void LtrGuiForm::on_recenterButton_pressed()
 {
   TRACKER.recenter();

@@ -1856,7 +1856,7 @@ Ztranslation-inverted = No
 
 [Sun 2025-06-29 08:37:56 EDT] ================================================
 [Sun 2025-06-29 08:37:56 EDT] Opening logfile viewer.
-[Sun 2025-06-29 08:37:56 EDT] Going to create lock '/home/mario/.config/linuxtrack/ltr_server.lock' => 20!
+[Sun 2025-06-29 08:37:56 EDT] Going to create lock '~/.config/linuxtrack/ltr_server.lock' => 20!
 [Sun 2025-06-29 08:37:56 EDT] Lock 20 success!
 [Sun 2025-06-29 08:37:56 EDT] Passing the lock to protect fifo (pid 25173)!
 [Sun 2025-06-29 08:37:56 EDT] Initializing axes for profile 'Default'!
@@ -2293,7 +2293,7 @@ Ztranslation-inverted = No
 [Sun 2025-06-29 08:45:03 EDT] Master closing socket 39
 [Sun 2025-06-29 08:45:03 EDT] Closing semaphore 20 (pid 25173)!
 
-[Sun 2025-06-29 08:45:05 EDT] Going to create lock '/home/mario/.config/linuxtrack/ltr_server.lock' => 21!
+[Sun 2025-06-29 08:45:05 EDT] Going to create lock '~/.config/linuxtrack/ltr_server.lock' => 21!
 [Sun 2025-06-29 08:45:05 EDT] Lock 21 success!
 [Sun 2025-06-29 08:45:05 EDT] Passing the lock to protect fifo (pid 25173)!
 [Sun 2025-06-29 08:45:05 EDT] Socket created!
@@ -2485,7 +2485,7 @@ Logfile
 [Sun 2025-06-29 08:56:07 EDT] Launching wine command: 'wine --version'
 [Sun 2025-06-29 08:56:07 EDT] Looking for existing spec.txt...[Sun 2025-06-29 08:56:07 EDT] Found '/opt/linuxtrack/bin/../share/linuxtrack/spec.txt'.[Sun 2025-06-29 08:56:07 EDT] spec.txt found and read.[Sun 2025-06-29 08:56:07 EDT] Looking for existing sources.txt...[Sun 2025-06-29 08:56:07 EDT] Found '/opt/linuxtrack/bin/../share/linuxtrack/sources.txt'.[Sun 2025-06-29 08:56:07 EDT] sources.txt found and read.
 [Sun 2025-06-29 08:57:37 EDT] Found blob. Commencing extraction.
-[Sun 2025-06-29 09:01:09 EDT] Initializing wine and running installer /home/mario/Downloads/TrackIR_5.5.3.exe[Sun 2025-06-29 09:01:09 EDT]     WINEARCH='win32'
+[Sun 2025-06-29 09:01:09 EDT] Initializing wine and running installer ~/Downloads/TrackIR_5.5.3.exe[Sun 2025-06-29 09:01:09 EDT]     WINEARCH='win32'
 [Sun 2025-06-29 09:01:09 EDT] Launching wine command: 'wine regedit" "/opt/linuxtrack/bin/../share/linuxtrack/win7.reg'
 
 [Sun 2025-06-29 09:01:14 EDT] Wine finished with exitcode 53 (Normal exit).[Sun 2025-06-29 09:01:14 EDT] 004c:err:ole:StdMarshalImpl_MarshalInterface Failed to create ifstub, hr 0x80004002
