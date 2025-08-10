@@ -12,7 +12,7 @@ INCLUDEPATH += @srcdir@
 INCLUDEPATH += @srcdir@/..
 RESOURCES = ltr_rc.qrc
 #QT          += opengl network webkit
-QT          += opengl network help
+QT          += opengl network help concurrent
 
 contains(QT_VERSION, ^5.*){
 #       QT += webkitwidgets widgets
