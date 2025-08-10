@@ -24,11 +24,35 @@ static int warnMessage(const QString &message){
 PrefProxy::PrefProxy()
 {
   if(ltr_int_read_prefs(NULL, false)){
+    // Ensure the user config file actually exists; if missing, copy defaults now
+    QString targetDir = PrefProxy::getRsrcDirPath();
+    if(targetDir.endsWith(QStringLiteral("/"))){
+      targetDir.chop(1);
+    }
+    QString targetCfg = targetDir + QStringLiteral("/linuxtrack1.conf");
+    if(!QFileInfo::exists(targetCfg)){
+      if(makeRsrcDir() && copyDefaultPrefs()){
+        ltr_int_new_prefs();
+        ltr_int_read_prefs(NULL, true);
+      }
+    }
     checkPrefix(true);
     return;
   }
   ltr_int_log_message("Pref file not found, trying linuxtrack.conf\n");
   if(ltr_int_read_prefs("linuxtrack.conf", false)){
+    // Ensure the user config file exists even if legacy name was read
+    QString targetDir = PrefProxy::getRsrcDirPath();
+    if(targetDir.endsWith(QStringLiteral("/"))){
+      targetDir.chop(1);
+    }
+    QString targetCfg = targetDir + QStringLiteral("/linuxtrack1.conf");
+    if(!QFileInfo::exists(targetCfg)){
+      if(makeRsrcDir() && copyDefaultPrefs()){
+        ltr_int_new_prefs();
+        ltr_int_read_prefs(NULL, true);
+      }
+    }
     ltr_int_prefs_changed();
     checkPrefix(true);
     return;

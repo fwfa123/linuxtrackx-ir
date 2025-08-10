@@ -16,10 +16,14 @@ bin_PROGRAMS = \
   ltr_extractor \
   ltr_recenter
 
-# Core libraries installed under $(libdir)/linuxtrack
+# Core and driver libraries installed under $(libdir)/linuxtrack
 pkglib_LTLIBRARIES = \
   liblinuxtrack.la \
-  libltr.la
+  libltr.la \
+  libwc.la \
+  libtir.la \
+  libjoy.la \
+  libltusb1.la
 
 # liblinuxtrack: small public shim used by client utilities
 liblinuxtrack_la_SOURCES = \
@@ -54,6 +58,35 @@ libltr_la_SOURCES = \
   ps3_prefs.c ps3_prefs.h
 libltr_la_LIBADD = -lm -lpthread -ldl
 libltr_la_LDFLAGS = -export-symbols-regex '^ltr_int'
+
+# libwc: V4L2 webcam/face-tracking driver
+libwc_la_SOURCES = \
+  webcam_driver.c \
+  runloop.c
+libwc_la_LIBADD = libltr.la -lv4l2
+libwc_la_LDFLAGS = -export-symbols "${srcdir}/webcam_driver.sym"
+
+# libtir: TrackIR USB driver
+libtir_la_SOURCES = \
+  tir_hw.c \
+  tir_img.c \
+  tir_driver.c \
+  runloop.c
+libtir_la_LIBADD = libltr.la -lz
+libtir_la_LDFLAGS = -export-symbols "${srcdir}/tir.sym"
+
+# libjoy: Joystick helper
+libjoy_la_SOURCES = \
+  runloop.c \
+  joy.c
+libjoy_la_LIBADD =
+libjoy_la_LDFLAGS = -export-symbols "${srcdir}/joy_driver.sym"
+
+# libltusb1: USB interface helper used by TrackIR driver
+libltusb1_la_SOURCES = \
+  libusb_ifc.c
+libltusb1_la_LIBADD = libltr.la -lusb-1.0
+libltusb1_la_LDFLAGS =
 
 # ltr_server1 daemon (link against libltr)
 ltr_server1_SOURCES = \
@@ -121,6 +154,17 @@ install-exec-local: all-local
 	$(MAKE) -C $(GUI_DIR) INSTALL_ROOT="$(DESTDIR)" install
 	$(MAKE) -C $(MICKEY_DIR) INSTALL_ROOT="$(DESTDIR)" install
 	$(MAKE) -C $(WII_DIR) INSTALL_ROOT="$(DESTDIR)" install
+
+# Data files installed under $(datadir)/linuxtrack for runtime use
+pkgdatadir = $(datadir)/linuxtrack
+dist_pkgdata_DATA = \
+  linuxtrack1.conf \
+  linuxtrack.c \
+  linuxtrack_hello_world.c \
+  linuxtrack_hello_world_adv.c \
+  99-TIR.rules \
+  99-Mickey.rules \
+  haarcascade_frontalface_alt2.xml
 
 # Uninstall qmake-built apps
 uninstall-local:
