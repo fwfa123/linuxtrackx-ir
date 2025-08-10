@@ -496,14 +496,7 @@ void PluginInstall::installLutrisWineBridge()
   
   QString selectedSlug = gameSlugs[selectedIndex];
   
-  // Show information dialog about interactive installation
-  QMessageBox::information(getParentWidget(), QString::fromUtf8("Starting Interactive Installation"),
-    QString::fromUtf8("Starting Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
-    QString::fromUtf8("The NSIS installer will open in a new window.\n") +
-    QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
-    QString::fromUtf8("Click OK to start the installation."));
-  
-  // Do not auto-start tracking here; installation should be non-intrusive
+  // Do not show extra informational popup; proceed to installation directly
   
   // Install to the selected game
   bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
