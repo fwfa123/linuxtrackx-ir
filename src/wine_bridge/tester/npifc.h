@@ -3,30 +3,16 @@
 
 
 #include <stdbool.h>
+#include "../client/NPClient_dll.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
   bool npifc_init(HWND wnd, int id);
   void npifc_close();
+  bool npifc_get_signature_and_version(tir_signature_t *sig, unsigned short *version);
 
-#pragma pack(1)
-typedef struct tir_data{
-  short status;
-  short frame;
-  unsigned int cksum;
-  float roll, pitch, yaw;
-  float tx, ty, tz;
-  float padding[9];
-} tir_data_t;
-
-typedef struct tir_signature{
-    char DllSignature[200];
-    char AppSignature[200];
-} tir_signature_t;
-#pragma pack(0)
-
-int npifc_getdata(tir_data_t *data);
+ int npifc_getdata(tir_data_t *data);
 
 typedef int __stdcall (*NP_RegisterWindowHandle_t)(HWND hwnd);
 typedef int __stdcall (*NP_UnregisterWindowHandle_t)(void);

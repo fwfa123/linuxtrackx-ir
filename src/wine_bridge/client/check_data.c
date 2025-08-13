@@ -216,12 +216,12 @@ int main()
       fflush(stdout);
     } else {
       // Show detailed error information to user only for real errors
-      char error_msg[512];
-      sprintf(error_msg, 
+      char error_msg[2048];
+      snprintf(error_msg, sizeof(error_msg), 
         "Failed to create symlink to TIRViews.dll!\n\n"
         "Error code: %d\n"
-        "Target path: %s\n"
-        "Working directory: %s\n\n"
+        "Target path: %.256s\n"
+        "Working directory: %.256s\n\n"
         "This usually means the TrackIR firmware files are not properly installed.\n"
         "Please run the TrackIR firmware extraction in the LinuxTrack GUI first.",
         errno, path1, cwd);
@@ -253,12 +253,12 @@ int main()
       fflush(stdout);
     } else {
       // Show detailed error information to user only for real errors
-      char error_msg[512];
-      sprintf(error_msg, 
+      char error_msg[2048];
+      snprintf(error_msg, sizeof(error_msg), 
         "Failed to create symlink to mfc42u.dll!\n\n"
         "Error code: %d\n"
-        "Target path: %s\n"
-        "Working directory: %s\n\n"
+        "Target path: %.256s\n"
+        "Working directory: %.256s\n\n"
         "This usually means the MFC42 library is not properly installed.\n"
         "Please install MFC42 using winetricks:\n"
         "winetricks mfc42\n"

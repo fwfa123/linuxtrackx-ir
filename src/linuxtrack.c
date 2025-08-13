@@ -321,7 +321,11 @@ char *linuxtrack_get_prefix()
   char *val, *key;
 
   if(home == NULL){
-    linuxtrack_log("Please set HOME variable!\n");
+    /* Fallback for Wine environments where HOME may be unset */
+    home = getenv("USERPROFILE");
+  }
+  if(home == NULL){
+    linuxtrack_log("Please set HOME or USERPROFILE variable!\n");
     return NULL;
   }
   fname = construct_name(home, cfg, "");
@@ -398,6 +402,20 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     free(name);
   }
   free(prefix);
+  /* Absolute fallbacks independent of prefix to support common distro layouts */
+  static const char *alt_lib_locations[] = {
+    "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",
+    "/usr/lib/linuxtrack/liblinuxtrack.so.0",
+    "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack.so.0",
+    "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",
+    NULL
+  };
+  i = 0;
+  while(alt_lib_locations[i] != NULL){
+    if((handle = linuxtrack_try_library((char*)alt_lib_locations[i++])) != NULL){
+      return handle;
+    }
+  }
   *problem = err_NOT_FOUND;
   return NULL;
 }

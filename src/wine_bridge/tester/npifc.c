@@ -5,6 +5,7 @@
 #include <windows.h>
 #include "npifc.h"
 #include "rest.h"
+#include <stdlib.h>
 
 
 tir_signature_t ts;
@@ -49,10 +50,10 @@ unsigned char table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 char *client_path()
 {
   HKEY  hkey   = 0;
-  RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\NaturalPoint\\NATURALPOINT\\NPClient Location", 0,
+  LONG open_rc = RegOpenKeyEx(HKEY_CURRENT_USER, "Software\\NaturalPoint\\NATURALPOINT\\NPClient Location", 0,
     KEY_QUERY_VALUE, &hkey);
-  if(!hkey){
-    printf("Can't open registry key\n");
+  if(open_rc != ERROR_SUCCESS){
+    printf("Can't open registry key (rc=%d)\n", (int)open_rc);
     return NULL;
   }
 
@@ -77,6 +78,20 @@ char *client_path()
 }
 
 bool initialized = false;
+
+bool npifc_get_signature_and_version(tir_signature_t *sig, unsigned short *version)
+{
+  if(NP_GetSignature == NULL || NP_QueryVersion == NULL){
+    return false;
+  }
+  if(NP_GetSignature(sig) != 0){
+    return false;
+  }
+  if(NP_QueryVersion(version) != 0){
+    return false;
+  }
+  return true;
+}
 
 bool npifc_init(HWND wnd, int id)
 {
@@ -105,8 +120,9 @@ bool npifc_init(HWND wnd, int id)
     return false;
   }
   npclient = LoadLibrary(client);
+  free(client);
   if(!npclient){
-    printf("Can't load client %s\n", client);
+    printf("Can't load NPClient library\n");
     return false;
   }
 
@@ -139,15 +155,28 @@ bool npifc_init(HWND wnd, int id)
     return false;
   }
   printf("Dll Sig:%s\nApp Sig2:%s\n", sig.DllSignature, sig.AppSignature);
-  NP_RegisterWindowHandle(wnd);
+  res = NP_RegisterWindowHandle(wnd);
+  if(res != 0){
+    printf("Couldn't register window handle! %d\n", res);
+    return false;
+  }
   if(NP_RegisterProgramProfileID(id) != 0){
     printf("Couldn't register profile id!\n");
     return false;
   }
   printf("Program profile registered!\n");
-  NP_RequestData(65535);
-  NP_StopCursor();
-  NP_StartDataTransmission();
+  res = NP_RequestData(65535);
+  if(res != 0){
+    printf("NP_RequestData failed: %d\n", res);
+  }
+  res = NP_StopCursor();
+  if(res != 0){
+    printf("NP_StopCursor failed: %d\n", res);
+  }
+  res = NP_StartDataTransmission();
+  if(res != 0){
+    printf("NP_StartDataTransmission failed: %d\n", res);
+  }
   initialized = true;
   return true;
 }
@@ -159,6 +188,24 @@ void npifc_close()
     NP_StartCursor();
     NP_UnregisterWindowHandle();
   }
+  if(npclient){
+    FreeLibrary(npclient);
+    npclient = NULL;
+  }
+  NP_RegisterWindowHandle = NULL;
+  NP_UnregisterWindowHandle = NULL;
+  NP_RegisterProgramProfileID = NULL;
+  NP_QueryVersion = NULL;
+  NP_RequestData = NULL;
+  NP_GetSignature = NULL;
+  NP_GetData = NULL;
+  NP_GetParameter = NULL;
+  NP_SetParameter = NULL;
+  NP_StartCursor = NULL;
+  NP_StopCursor = NULL;
+  NP_ReCenter = NULL;
+  NP_StartDataTransmission = NULL;
+  NP_StopDataTransmission = NULL;
   initialized = false;
 }
 
@@ -294,9 +341,14 @@ int decode_frame(tir_data_t *td)
 int npifc_getdata(tir_data_t *data)
 {
   int res = NP_GetData(data);
-  if(crypted){
-    decode_frame(data);
+  if(res != 0){
+    return res;
   }
-  return res;
+  if(crypted){
+    if(decode_frame(data) != 0){
+      return -1;
+    }
+  }
+  return 0;
 }
 
