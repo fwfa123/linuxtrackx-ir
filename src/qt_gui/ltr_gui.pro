@@ -87,12 +87,6 @@ unix:!macx {
   INSTALLS += target data help
 }
 
-# Translations
-TRANSLATIONS += \
-  translations/ltr_gui_en.ts \
-  translations/ltr_gui_cs.ts \
-  translations/ltr_gui_de.ts
-
 macx {
   HEADERS += macwebcam_prefs.h macwebcamft_prefs.h macwebcam_info.h
   FORMS += m_wc_setup.ui m_wcft_setup.ui

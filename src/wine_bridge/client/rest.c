@@ -278,7 +278,7 @@ bool runFile(const char *file)
 printf("Going to run this: %s\n", q_exe);
   bool res = CreateProcess(NULL, q_exe, NULL, NULL, false, NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi);
   if(!res){
-    printf("Failed! (%d)\n", GetLastError());
+    printf("Failed! (%ld)\n", (long)GetLastError());
   }
   CloseHandle(pi.hProcess);
   CloseHandle(pi.hThread);

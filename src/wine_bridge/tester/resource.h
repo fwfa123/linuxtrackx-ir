@@ -20,4 +20,7 @@
 #define IDC_Z3                                  1028
 #define IDC_S                                   1029
 #define IDC_F                                   1030
+#define IDC_DLLSIG                              1031
+#define IDC_APPSIG                              1032
+#define IDC_VER                                 1033
 

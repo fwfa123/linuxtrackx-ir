@@ -16,21 +16,25 @@ VOID CALLBACK TimerProcedure(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTim
   (void) idEvent;
   (void) dwTime;
   tir_data_t td;
-  npifc_getdata(&td);
-  SetDlgItemInt(hwnd, IDC_PITCH, td.pitch, true);
-  SetDlgItemInt(hwnd, IDC_ROLL, td.roll, true);
-  SetDlgItemInt(hwnd, IDC_YAW, td.yaw, true);
+  int res = npifc_getdata(&td);
+  if(res != 0){
+    return;
+  }
+  char buf[64];
+  snprintf(buf, sizeof(buf), "%.2f", td.pitch); SetDlgItemText(hwnd, IDC_PITCH, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.roll);  SetDlgItemText(hwnd, IDC_ROLL,  buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.yaw);   SetDlgItemText(hwnd, IDC_YAW,   buf);
 
-  SetDlgItemInt(hwnd, IDC_X1, td.tx, true);
-  SetDlgItemInt(hwnd, IDC_Y1, td.ty, true);
-  SetDlgItemInt(hwnd, IDC_Z1, td.tz, true);
+  snprintf(buf, sizeof(buf), "%.2f", td.tx);    SetDlgItemText(hwnd, IDC_X1, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.ty);    SetDlgItemText(hwnd, IDC_Y1, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.tz);    SetDlgItemText(hwnd, IDC_Z1, buf);
 
-  SetDlgItemInt(hwnd, IDC_X2, td.padding[0], true);
-  SetDlgItemInt(hwnd, IDC_Y2, td.padding[1], true);
-  SetDlgItemInt(hwnd, IDC_Z2, td.padding[2], true);
-  SetDlgItemInt(hwnd, IDC_X3, td.padding[3], true);
-  SetDlgItemInt(hwnd, IDC_Y3, td.padding[4], true);
-  SetDlgItemInt(hwnd, IDC_Z3, td.padding[5], true);
+  snprintf(buf, sizeof(buf), "%.2f", td.padding[0]); SetDlgItemText(hwnd, IDC_X2, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.padding[1]); SetDlgItemText(hwnd, IDC_Y2, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.padding[2]); SetDlgItemText(hwnd, IDC_Z2, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.padding[3]); SetDlgItemText(hwnd, IDC_X3, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.padding[4]); SetDlgItemText(hwnd, IDC_Y3, buf);
+  snprintf(buf, sizeof(buf), "%.2f", td.padding[5]); SetDlgItemText(hwnd, IDC_Z3, buf);
   SetDlgItemInt(hwnd, IDC_S, td.status, true);
   SetDlgItemInt(hwnd, IDC_F, td.frame, true);
 }
@@ -42,9 +46,24 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         case WM_INITDIALOG:
             SetDlgItemInt(hwndDlg, IDC_APPID, 2307, true);
+            // Try to show NPClient signature/version if available
+            {
+              tir_signature_t sig;
+              unsigned short ver = 0;
+              if(npifc_get_signature_and_version(&sig, &ver)){
+                SetDlgItemText(hwndDlg, IDC_DLLSIG, sig.DllSignature);
+                SetDlgItemText(hwndDlg, IDC_APPSIG, sig.AppSignature);
+                SetDlgItemInt(hwndDlg, IDC_VER, ver, FALSE);
+              }
+            }
             return TRUE;
 
         case WM_CLOSE:
+            if(timer != 0){
+              KillTimer(hwndDlg, timer);
+              timer = 0;
+            }
+            npifc_close();
             EndDialog(hwndDlg, 0);
             return TRUE;
 
@@ -59,11 +78,12 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     EndDialog(hwndDlg, 0);
                     return TRUE;
                 case IDSTART:
-                  int ok;
-                  int num = GetDlgItemInt(hwndDlg, IDC_APPID, (BOOL*)&ok, false);
-                  if(!ok){
-                    num = 2307;
-                  }
+                  {
+                    BOOL ok = FALSE;
+                    UINT num = GetDlgItemInt(hwndDlg, IDC_APPID, &ok, FALSE);
+                    if(!ok){
+                      num = 2307;
+                    }
                   game_desc_t gd;
                   if(timer != 0){
                     KillTimer(hwndDlg, timer);
@@ -72,12 +92,18 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                   if(game_data_get_desc(num, &gd)){
                     printf("Application ID: %d - %s\n", num, gd.name);
                     if(npifc_init(hwndDlg, num)){
-                      timer = SetTimer(hwndDlg, 0, 50, TimerProcedure);
+                      UINT_PTR t = SetTimer(hwndDlg, 0, 50, TimerProcedure);
+                      if(t == 0){
+                        printf("Failed to start timer\n");
+                      }else{
+                        timer = t;
+                      }
                     }
                   }else{
                     printf("Unknown Application ID: %d\n", num);
                   }
                   break;
+                  }
 
             }
     }
