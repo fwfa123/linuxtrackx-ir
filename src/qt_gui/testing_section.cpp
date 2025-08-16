@@ -423,22 +423,55 @@ void TestingSection::runSelectedTester()
         return;
     }
     
-    // Check if tester exists in prefix
-    if (!checkTesterInPrefix(prefixPath, currentTesterType)) {
+    // Detect wine prefix architecture
+    qDebug() << "Detecting wine prefix architecture for automatic tester selection...";
+    if (testingStatusLabel) {
+        testingStatusLabel->setText(tr("Detecting wine prefix architecture..."));
+    }
+    WineArchitecture prefixArch = detectWinePrefixArchitecture(prefixPath);
+    
+    // Select appropriate tester based on detected architecture
+    QString testerPath = selectAppropriateTester(prefixPath, prefixArch, currentTesterType);
+    if (testerPath.isEmpty()) {
         showMissingTesterDialog(prefixPath);
         return;
     }
     
-    // Find tester executable
-    QString testerPath = findTesterInPrefix(prefixPath, currentTesterType);
-    if (testerPath.isEmpty()) {
-        QMessageBox::warning(nullptr, tr("Tester Not Found"), 
-                             tr("Could not find tester executable in wine prefix."));
-        return;
+    // Validate tester compatibility
+    if (!validateTesterCompatibility(testerPath, prefixPath, prefixArch)) {
+        qDebug() << "Warning: Selected tester may not be optimal for detected architecture";
+        // Continue anyway as the tester might still work
     }
     
-    // Execute tester
-    executeTester(testerPath, prefixPath, currentPlatform);
+    // Show user which tester was selected and why
+    QString archString;
+    switch (prefixArch) {
+        case WineArchitecture::WIN32:
+            archString = tr("32-bit (win32)");
+            break;
+        case WineArchitecture::WIN64:
+            archString = tr("64-bit (win64)");
+            break;
+        case WineArchitecture::UNKNOWN:
+        default:
+            archString = tr("Unknown");
+            break;
+    }
+    
+    QFileInfo testerInfo(testerPath);
+    QString testerName = testerInfo.fileName();
+    
+    // Update status label with detection results
+    if (testingStatusLabel) {
+        testingStatusLabel->setText(tr("Architecture detected: %1, Selected tester: %2").arg(archString, testerName));
+    }
+    
+    QMessageBox::information(nullptr, tr("Architecture Detection Complete"),
+                             tr("Detected wine prefix architecture: %1\n\nSelected tester: %2\n\nProceeding with execution...")
+                             .arg(archString, testerName));
+    
+    // Execute tester with detected architecture
+    executeTester(testerPath, prefixPath, currentPlatform, prefixArch);
 }
 
 QString TestingSection::getPrefixForGame(const QString &gameName, const QString &platform)
@@ -570,7 +603,7 @@ QString TestingSection::getCurrentGameSlug()
     return QString::fromUtf8("");
 }
 
-void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform)
+void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform, WineArchitecture arch)
 {
     // Check if a valid platform is selected
     if (platform == QStringLiteral("Select Platform") || platform.isEmpty()) {
@@ -598,11 +631,23 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
                     
                     // Set up environment variables exactly like the existing Steam integration
-                    QString compatDataPath = prefixPath;
-                    compatDataPath.chop(4); // Remove "/pfx" from the end
+                    // Derive STEAM_COMPAT_DATA_PATH as the parent directory of the proton prefix (e.g., .../compatdata/<appid>)
+                    QDir compatDir(prefixPath);
+                    compatDir.cdUp();
+                    const QString compatDataPath = compatDir.absolutePath();
                     env.insert(QString::fromUtf8("STEAM_COMPAT_DATA_PATH"), compatDataPath);
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
                     env.insert(QString::fromUtf8("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamIntegration->getSteamPath());
+                    
+                    // Set WINEARCH based on detected architecture
+                    if (arch == WineArchitecture::WIN64) {
+                        env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+                        qDebug() << "Setting WINEARCH=win64 for Steam Proton execution";
+                    } else if (arch == WineArchitecture::WIN32) {
+                        env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+                        qDebug() << "Setting WINEARCH=win32 for Steam Proton execution";
+                    }
+                    // For UNKNOWN architecture, let Proton decide
                     
                     process.setProcessEnvironment(env);
                     process.setWorkingDirectory(prefixPath);
@@ -667,14 +712,17 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     
                     // Set up environment variables for Lutris
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
-                    // Only force win64 when launching the 64-bit tester explicitly
-                    {
-                        QFileInfo testerInfo(testerPath);
-                        const QString testerName = testerInfo.fileName();
-                        if (testerName.compare(QString::fromUtf8("Tester64.exe"), Qt::CaseInsensitive) == 0) {
-                            env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
-                        }
+                    
+                    // Set WINEARCH based on detected architecture instead of tester filename
+                    if (arch == WineArchitecture::WIN64) {
+                        env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+                        qDebug() << "Setting WINEARCH=win64 for Lutris execution";
+                    } else if (arch == WineArchitecture::WIN32) {
+                        env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+                        qDebug() << "Setting WINEARCH=win32 for Lutris execution";
                     }
+                    // For UNKNOWN architecture, let Lutris wine decide
+                    
                     env.insert(QString::fromUtf8("WINEESYNC"), QString::fromUtf8("1"));
                     
                     process.setProcessEnvironment(env);
@@ -720,6 +768,17 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         
         env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+        
+        // Set WINEARCH based on detected architecture
+        if (arch == WineArchitecture::WIN64) {
+            env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
+            qDebug() << "Setting WINEARCH=win64 for Custom Prefix execution";
+        } else if (arch == WineArchitecture::WIN32) {
+            env.insert(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win32"));
+            qDebug() << "Setting WINEARCH=win32 for Custom Prefix execution";
+        }
+        // For UNKNOWN architecture, let system wine decide
+        
         process.setProcessEnvironment(env);
         process.setWorkingDirectory(prefixPath);
         
@@ -741,4 +800,98 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                                  tr("Failed to launch tester: %1").arg(process.errorString()));
         }
     }
+} 
+
+// New architecture detection functions implementation
+WineArchitecture TestingSection::detectWinePrefixArchitecture(const QString &prefixPath)
+{
+    qDebug() << "Detecting wine prefix architecture for:" << prefixPath;
+    
+    // Use the centralized TesterLauncher for architecture detection
+    WineArchitecture arch = TesterLauncher::detectWinePrefixArchitecture(prefixPath);
+    
+    QString archString;
+    switch (arch) {
+        case WineArchitecture::WIN32:
+            archString = QString::fromUtf8("32-bit (win32)");
+            break;
+        case WineArchitecture::WIN64:
+            archString = QString::fromUtf8("64-bit (win64)");
+            break;
+        case WineArchitecture::UNKNOWN:
+        default:
+            archString = QString::fromUtf8("Unknown");
+            break;
+    }
+    
+    qDebug() << "Detected architecture:" << archString;
+    return arch;
+}
+
+QString TestingSection::selectAppropriateTester(const QString &prefixPath, WineArchitecture arch, const QString &preferredTester)
+{
+    qDebug() << "Selecting appropriate tester for architecture:" << (int)arch << "with preferred:" << preferredTester;
+    
+    // First, try to find a tester based on the detected architecture
+    QString appropriateTester = TesterLauncher::findAppropriateTester(prefixPath, arch);
+    
+    if (!appropriateTester.isEmpty()) {
+        qDebug() << "Found architecture-appropriate tester:" << appropriateTester;
+        return appropriateTester;
+    }
+    
+    // If no architecture-specific tester found, try to find any compatible tester
+    QStringList searchDirs = {
+        QString::fromUtf8(""),
+        QString::fromUtf8("drive_c/windows"),
+        QString::fromUtf8("drive_c/Program Files"),
+        QString::fromUtf8("drive_c/Program Files/Linuxtrack"),
+        QString::fromUtf8("drive_c/Program Files (x86)"),
+        QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")
+    };
+    
+    QDir prefixDir(prefixPath);
+    if (!prefixDir.exists()) {
+        return QString();
+    }
+    
+    // Look for any available tester
+    QStringList testerNames = {QString::fromUtf8("Tester.exe"), QString::fromUtf8("Tester64.exe")};
+    
+    for (const QString &searchDir : searchDirs) {
+        QDir searchDirObj = prefixDir;
+        if (!searchDir.isEmpty()) {
+            if (!searchDirObj.cd(searchDir)) {
+                continue;
+            }
+        }
+        
+        for (const QString &testerName : testerNames) {
+            QString testerPath = searchDirObj.filePath(testerName);
+            QFileInfo testerFile(testerPath);
+            if (testerFile.exists() && testerFile.isFile()) {
+                qDebug() << "Found fallback tester:" << testerPath;
+                return testerPath;
+            }
+        }
+    }
+    
+    qDebug() << "No tester found in prefix:" << prefixPath;
+    return QString();
+}
+
+bool TestingSection::validateTesterCompatibility(const QString &testerPath, const QString &prefixPath, WineArchitecture arch)
+{
+    qDebug() << "Validating tester compatibility:" << testerPath << "with architecture:" << (int)arch;
+    
+    // Use the centralized TesterLauncher for compatibility validation
+    bool isCompatible = TesterLauncher::isTesterCompatible(testerPath, prefixPath, arch);
+    
+    if (isCompatible) {
+        qDebug() << "Tester is compatible with prefix architecture";
+    } else {
+        qDebug() << "Tester is not compatible with prefix architecture";
+    }
+    
+    return isCompatible;
 } 

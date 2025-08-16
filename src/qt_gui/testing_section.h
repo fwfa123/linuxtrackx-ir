@@ -17,6 +17,9 @@
 #include "ltr_gui.h"
 #include "steam_integration.h"
 #include "lutris_integration.h"
+#include "tester_launcher.h"
+
+// WineArchitecture is defined in tester_launcher.h
 
 class TestingSection : public QObject
 {
@@ -70,8 +73,13 @@ private:
     QStringList getCustomPrefixGames();
     QString getPrefixForGame(const QString &gameName, const QString &platform);
     QString findTesterInPrefix(const QString &prefixPath, const QString &testerType);
-    void executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform);
+    void executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform, WineArchitecture arch);
     void showMissingTesterDialog(const QString &prefixPath);
+    
+    // New architecture detection functions
+    WineArchitecture detectWinePrefixArchitecture(const QString &prefixPath);
+    QString selectAppropriateTester(const QString &prefixPath, WineArchitecture arch, const QString &preferredTester);
+    bool validateTesterCompatibility(const QString &testerPath, const QString &prefixPath, WineArchitecture arch);
     
     // Helper methods for game identification
     QString getCurrentGameId();
