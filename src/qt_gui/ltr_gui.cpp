@@ -14,6 +14,11 @@
 #include <QClipboard>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
+#include <QRegExp>
+#include <QStandardPaths>
+#include <QThread>
+#include <QTimer>
+#include <QProcess>
 #include <iostream>
 #include "ltr_gui.h"
 #include "ltr_gui_prefs.h"
@@ -115,7 +120,13 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
   QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
   // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
-  QObject::connect(ui.LaunchLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_LaunchLtrPipeButton_pressed()));
+  
+  // Connect ltr_pipe control interface
+  QObject::connect(ui.FormatComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_FormatComboBox_currentTextChanged(QString)));
+  QObject::connect(ui.StartLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_StartLtrPipeButton_pressed()));
+  QObject::connect(ui.StopLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_StopLtrPipeButton_pressed()));
+  QObject::connect(ui.PauseLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_PauseLtrPipeButton_pressed()));
+  QObject::connect(ui.DeviceNameEdit, SIGNAL(textChanged(QString)), this, SLOT(on_DeviceNameEdit_textChanged(QString)));
 
   // Build Advanced... menu programmatically
   {
@@ -197,6 +208,9 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   gui_settings->endGroup();
   
   HelpViewer::LoadPrefs(*gui_settings);
+
+  // Initialize ltr_pipe control interface
+  initializeLtrPipeInterface();
 
   ui.LegacyPose->setChecked(ltr_int_use_alter());
   ui.LegacyRotation->setChecked(ltr_int_use_oldrot());
@@ -346,6 +360,8 @@ void LinuxtrackGui::on_SaveButton_pressed()
 void LinuxtrackGui::on_ViewLogButton_pressed()
 {
   lv->show();
+  lv->raise();
+  lv->activateWindow();
 }
 
 void LinuxtrackGui::rereadPrefs()
@@ -764,21 +780,169 @@ void LinuxtrackGui::on_WinePrefixButton_pressed()
     // Do not auto-start tracking from install buttons
 }
 
-void LinuxtrackGui::on_LaunchLtrPipeButton_pressed()
+// ltr_pipe control slot implementations
+void LinuxtrackGui::on_FormatComboBox_currentTextChanged(const QString &text)
 {
-    // TODO: Implement ltr_pipe launch for Antimicrox
-  QMessageBox::information(this, tr("Launch ltr_pipe"),
-      tr("ltr_pipe for Antimicrox will be implemented in Phase 2."));
+    // Update device name suggestions based on format
+    if (text.contains(QStringLiteral("uinput-abs"))) {
+        ui.DeviceNameEdit->setPlaceholderText(tr("Enter device name (e.g., tir1)"));
+    } else if (text.contains(QStringLiteral("FlightGear"))) {
+        ui.DeviceNameEdit->setPlaceholderText(tr("Enter device name (e.g., fg1)"));
+    } else if (text.contains(QStringLiteral("IL-2"))) {
+        ui.DeviceNameEdit->setPlaceholderText(tr("Enter device name (e.g., il2)"));
+    } else if (text.contains(QStringLiteral("Silent Wings"))) {
+        ui.DeviceNameEdit->setPlaceholderText(tr("Enter device name (e.g., sw1)"));
+    } else {
+        ui.DeviceNameEdit->setPlaceholderText(tr("Enter device name"));
+    }
     
-    // Start tracking automatically for future implementation
-    static QString sec(QString::fromUtf8("Default"));
-    if (showWindow) { showWindow->startTimersOnly(); }
-    TRACKER.start(sec);
+    // Store format selection in settings
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_pipe"));
+    settings.setValue(QStringLiteral("selected_format"), text);
+    settings.endGroup();
+}
+
+void LinuxtrackGui::on_StartLtrPipeButton_pressed()
+{
+    // Get selected format and device name
+    QString format = ui.FormatComboBox->currentText();
+    QString deviceName = ui.DeviceNameEdit->text().trimmed();
     
-  QMessageBox::information(this, tr("Tracking Started"),
-      tr("Head tracking has been automatically started.\n\n") +
-      tr("You can now test your head tracking!\n\n") +
-      tr("Use the tracking window to pause, recenter, or stop tracking as needed."));
+    if (deviceName.isEmpty()) {
+        deviceName = QStringLiteral("tir1"); // Default device name
+        ui.DeviceNameEdit->setText(deviceName);
+    }
+    
+    // Validate device name (no spaces, alphanumeric only)
+    QRegExp nameValidator(QStringLiteral("^[a-zA-Z0-9_-]+$"));
+    if (!nameValidator.exactMatch(deviceName)) {
+        QMessageBox::warning(this, tr("Invalid Device Name"),
+            tr("Device name must contain only letters, numbers, underscores, and hyphens.\n"
+               "No spaces are allowed.\n\n"
+               "Note: This name is for reference only. ltr_pipe always creates devices named 'LinuxTrack uinput-abs'."));
+        return;
+    }
+    
+    // Find ltr_pipe executable
+    QString ltrPipePath = findLtrPipeExecutable();
+    if (ltrPipePath.isEmpty()) {
+        QMessageBox::critical(this, tr("ltr_pipe Not Found"),
+            tr("Could not find ltr_pipe executable. Please ensure LinuxTrack is properly installed."));
+        return;
+    }
+    
+    // For uinput formats, preflight check: /dev/uinput must exist and be writable
+    if (format.contains(QStringLiteral("uinput-abs"))) {
+        QFileInfo uinput(QStringLiteral("/dev/uinput"));
+        if (!uinput.exists()) {
+            QMessageBox::critical(this, tr("/dev/uinput not available"),
+                tr("/dev/uinput was not found.\n\nPrerequisites per ltr_pipe docs:\n- modprobe uinput\n- correct permissions (group, mode) on /dev/uinput\n\nSee ltr_pipe manual for details."));
+            return;
+        }
+        if (!uinput.isWritable()) {
+            QMessageBox::critical(this, tr("Insufficient permissions"),
+                tr("The application does not have write access to /dev/uinput.\n\nFix by adding your user to the correct group and setting permissions as documented in ltr_pipe README."));
+            return;
+        }
+    }
+
+    // Build command line arguments based on format
+    QStringList arguments = buildLtrPipeArguments(format, deviceName);
+    
+    // Launch ltr_pipe
+    bool success = QProcess::startDetached(ltrPipePath, arguments);
+    
+    if (success) {
+        // Update UI state
+        ui.StartLtrPipeButton->setEnabled(false);
+        ui.StopLtrPipeButton->setEnabled(true);
+        ui.PauseLtrPipeButton->setEnabled(true);
+        ui.FormatComboBox->setEnabled(false);
+        ui.DeviceNameEdit->setEnabled(false);
+        if (format.contains(QStringLiteral("uinput-abs"))) {
+            ui.LtrPipeStatusLabel->setText(tr("Running - %1 (Device: LinuxTrack uinput-abs)").arg(format));
+        } else {
+            ui.LtrPipeStatusLabel->setText(tr("Running - %1").arg(format));
+        }
+        
+        // Store settings
+        QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+        settings.beginGroup(QStringLiteral("ltr_pipe"));
+        settings.setValue(QStringLiteral("device_name"), deviceName);
+        settings.setValue(QStringLiteral("last_format"), format);
+        settings.endGroup();
+        
+        // Start tracking if not already running
+        if (showWindow) { showWindow->startTimersOnly(); }
+        static QString sec(QString::fromUtf8("Default"));
+        TRACKER.start(sec);
+        
+        // Verify process actually started after a short delay
+        QTimer::singleShot(1000, this, [this, format]() {
+            QProcess checkProcess;
+            checkProcess.start(QStringLiteral("pgrep"), QStringList() << QStringLiteral("ltr_pipe"));
+            if (checkProcess.waitForFinished() && checkProcess.exitCode() != 0) {
+                // Process failed to start, reset UI
+                ui.StartLtrPipeButton->setEnabled(true);
+                ui.StopLtrPipeButton->setEnabled(false);
+                ui.PauseLtrPipeButton->setEnabled(false);
+                ui.FormatComboBox->setEnabled(true);
+                ui.DeviceNameEdit->setEnabled(true);
+                ui.LtrPipeStatusLabel->setText(tr("Launch Failed"));
+                QMessageBox::warning(this, tr("Process Not Found"),
+                    tr("ltr_pipe process could not be found running. The launch may have failed."));
+            }
+        });
+        
+    } else {
+        QMessageBox::critical(this, tr("Launch Failed"),
+            tr("Failed to launch ltr_pipe. Please check the executable and try again."));
+    }
+}
+
+void LinuxtrackGui::on_StopLtrPipeButton_pressed()
+{
+    // Stop ltr_pipe process
+    stopLtrPipeProcess();
+    
+    // Cleanup uinput devices
+    cleanupUinputDevices();
+    
+    // Update UI state
+    ui.StartLtrPipeButton->setEnabled(true);
+    ui.StopLtrPipeButton->setEnabled(false);
+    ui.PauseLtrPipeButton->setEnabled(false);
+    ui.FormatComboBox->setEnabled(true);
+    ui.DeviceNameEdit->setEnabled(true);
+    ui.LtrPipeStatusLabel->setText(tr("Stopped"));
+}
+
+void LinuxtrackGui::on_PauseLtrPipeButton_pressed()
+{
+    // Toggle pause/resume state using member variable
+    if (!ltrPipePaused) {
+        // Pause ltr_pipe
+        pauseLtrPipeProcess();
+        ui.PauseLtrPipeButton->setText(tr("Resume"));
+        ui.LtrPipeStatusLabel->setText(tr("Paused"));
+        ltrPipePaused = true;
+    } else {
+        // Resume ltr_pipe
+        resumeLtrPipeProcess();
+        ui.PauseLtrPipeButton->setText(tr("Pause"));
+        ui.LtrPipeStatusLabel->setText(tr("Running"));
+        ltrPipePaused = false;
+    }
+}
+
+void LinuxtrackGui::on_DeviceNameEdit_textChanged(const QString &text)
+{
+    // Store device name changes in settings
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_pipe"));
+    settings.setValue(QStringLiteral("device_name"), text);
+    settings.endGroup();
 }
 
 // Testing section slot implementations
@@ -796,7 +960,7 @@ void LinuxtrackGui::on_FTTesterRadioButton_toggled(bool checked)
     }
 }
 
-void LinuxtrackGui::on_PlatformComboBox_currentTextChanged(const QString &text)
+void LinuxtrackGui::on_PlatformComboBox_currentTextChanged(const QString &)
 {
     if (testingSection) {
         testingSection->onPlatformSelectionChanged();
@@ -1132,4 +1296,179 @@ QString LinuxtrackGui::getDeviceSupportInfo()
     
     info += QStringLiteral("\n");
     return info;
+}
+
+// ltr_pipe helper function implementations
+QString LinuxtrackGui::findLtrPipeExecutable()
+{
+    // Prefer dev/build-local binaries first
+    QString appDir = QCoreApplication::applicationDirPath();
+    QStringList devCandidates = {
+        appDir + QStringLiteral("/../ltr_pipe"),
+        appDir + QStringLiteral("/../../ltr_pipe"),
+        appDir + QStringLiteral("/../src/ltr_pipe"),
+        appDir + QStringLiteral("/../../src/ltr_pipe"),
+        QStringLiteral("./ltr_pipe"),
+        QStringLiteral("./.libs/ltr_pipe")
+    };
+    for (const QString &cand : devCandidates) {
+        QFileInfo fi(cand);
+        if (fi.exists() && fi.isExecutable()) {
+            return fi.canonicalFilePath();
+        }
+    }
+
+    // Then check common installation paths
+    QStringList systemPaths = {
+        QStringLiteral("/opt/linuxtrack/bin/ltr_pipe"),
+        QStringLiteral("/usr/local/bin/ltr_pipe"),
+        QStringLiteral("/usr/bin/ltr_pipe")
+    };
+    for (const QString &path : systemPaths) {
+        if (QFile::exists(path)) {
+            return path;
+        }
+    }
+
+    // Finally check PATH
+    QString pathResult = QStandardPaths::findExecutable(QStringLiteral("ltr_pipe"));
+    if (!pathResult.isEmpty()) {
+        return pathResult;
+    }
+
+    return QString(); // Not found
+}
+
+QStringList LinuxtrackGui::buildLtrPipeArguments(const QString &format, const QString &)
+{
+    QStringList arguments;
+    
+    if (format.contains(QStringLiteral("uinput-abs"))) {
+        // Antimicrox format - absolute joystick emulation
+        arguments << QStringLiteral("--format-uinput-abs")
+                 << QStringLiteral("--uinput-abs-range=1000")
+                 << QStringLiteral("--output-file=/dev/uinput");
+        // Note: Device name is not supported by ltr_pipe, it always creates "LinuxTrack uinput-abs"
+    } else if (format.contains(QStringLiteral("FlightGear"))) {
+        // FlightGear format - network output
+        arguments << QStringLiteral("--format-flightgear")
+                 << QStringLiteral("--output-net-udp")
+                 << QStringLiteral("--dst-port=6543");
+    } else if (format.contains(QStringLiteral("IL-2"))) {
+        // IL-2 Shturmovik format - DeviceLink
+        arguments << QStringLiteral("--format-il2")
+                 << QStringLiteral("--output-net-udp")
+                 << QStringLiteral("--dst-port=6543");
+    } else if (format.contains(QStringLiteral("Silent Wings"))) {
+        // Silent Wings format - remote control
+        arguments << QStringLiteral("--format-silentwings")
+                 << QStringLiteral("--output-net-udp")
+                 << QStringLiteral("--dst-port=6543");
+    } else {
+        // Default format - tab-separated output
+        arguments << QStringLiteral("--format-default")
+                 << QStringLiteral("--output-stdout");
+    }
+    
+    // Add common options
+    arguments << QStringLiteral("--ltr-profile=Default");
+    
+    return arguments;
+}
+
+void LinuxtrackGui::stopLtrPipeProcess()
+{
+    // Find and stop ltr_pipe processes
+    QProcess pkill;
+    pkill.start(QStringLiteral("pkill"), QStringList() << QStringLiteral("ltr_pipe"));
+    pkill.waitForFinished();
+    
+    // Wait a moment for processes to terminate
+    QThread::msleep(100);
+}
+
+void LinuxtrackGui::pauseLtrPipeProcess()
+{
+    // Send USR1 signal to pause ltr_pipe
+    QProcess pkill;
+    pkill.start(QStringLiteral("pkill"), QStringList() << QStringLiteral("-USR1") << QStringLiteral("ltr_pipe"));
+    pkill.waitForFinished();
+}
+
+void LinuxtrackGui::resumeLtrPipeProcess()
+{
+    // Send USR1 signal again to resume ltr_pipe
+    QProcess pkill;
+    pkill.start(QStringLiteral("pkill"), QStringList() << QStringLiteral("-USR1") << QStringLiteral("ltr_pipe"));
+    pkill.waitForFinished();
+}
+
+void LinuxtrackGui::cleanupUinputDevices()
+{
+    // Find and remove uinput devices created by ltr_pipe
+    QProcess findDevices;
+    findDevices.start(QStringLiteral("find"), QStringList() 
+        << QStringLiteral("/sys/class/input") 
+        << QStringLiteral("-name") 
+        << QStringLiteral("*LinuxTrack*"));
+    
+    if (findDevices.waitForFinished()) {
+        QString output = QString::fromUtf8(findDevices.readAllStandardOutput());
+        QStringList devices = output.split(QChar::fromLatin1('\n'), Qt::SkipEmptyParts);
+        
+        for (const QString &device : devices) {
+            if (!device.trimmed().isEmpty()) {
+                // Extract device number from path like /sys/class/input/eventX
+                QRegExp eventRegex(QStringLiteral("event(\\d+)"));
+                if (eventRegex.indexIn(device) != -1) {
+                    QString eventNum = eventRegex.cap(1);
+                    
+                    // Remove the device using udevadm
+                    QProcess removeDevice;
+                    removeDevice.start(QStringLiteral("udevadm"), QStringList() 
+                        << QStringLiteral("trigger") 
+                        << QStringLiteral("--remove") 
+                        << QStringLiteral("--subsystem-match=input") 
+                        << QStringLiteral("--attr-match=event=") + eventNum);
+                    removeDevice.waitForFinished();
+                }
+            }
+        }
+    }
+    
+    // Also try to remove any remaining uinput devices
+    QProcess pkill;
+    pkill.start(QStringLiteral("pkill"), QStringList() << QStringLiteral("-f") << QStringLiteral("ltr_pipe"));
+    pkill.waitForFinished();
+    
+    // Wait a moment for cleanup to complete
+    QThread::msleep(200);
+}
+
+void LinuxtrackGui::initializeLtrPipeInterface()
+{
+    // Load saved settings for ltr_pipe interface
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_pipe"));
+    
+    // Restore last used format
+    QString lastFormat = settings.value(QStringLiteral("selected_format"), QStringLiteral("uinput-abs (Antimicrox)")).toString();
+    int formatIndex = ui.FormatComboBox->findText(lastFormat);
+    if (formatIndex >= 0) {
+        ui.FormatComboBox->setCurrentIndex(formatIndex);
+    }
+    
+    // Restore last used device name
+    QString lastDeviceName = settings.value(QStringLiteral("device_name"), QStringLiteral("tir1")).toString();
+    ui.DeviceNameEdit->setText(lastDeviceName);
+    
+    settings.endGroup();
+    
+    // Set initial UI state
+    ui.StartLtrPipeButton->setEnabled(true);
+    ui.StopLtrPipeButton->setEnabled(false);
+    ui.PauseLtrPipeButton->setEnabled(false);
+    ui.FormatComboBox->setEnabled(true);
+    ui.DeviceNameEdit->setEnabled(true);
+    ui.LtrPipeStatusLabel->setText(tr("Ready"));
 }
