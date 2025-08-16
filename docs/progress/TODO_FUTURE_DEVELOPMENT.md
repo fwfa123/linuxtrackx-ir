@@ -11,6 +11,13 @@
 - **Comprehensive error handling** and detailed logging
 - **Successfully tested** with real Steam and Lutris installations
 
+### ✅ **Automatic Wine Prefix Architecture Detection - COMPLETED** (January 2025)
+- Automatic detection of Wine prefix architecture (win32/win64)
+- Intelligent tester selection: `Tester.exe` (32-bit) vs `Tester64.exe` (64-bit)
+- `WINEARCH` set per platform execution (Steam Proton, Lutris, Custom Prefix)
+- Clear UI feedback showing detected architecture and selected tester
+- Fallback behavior when architecture is unknown
+
 ### ✅ **Automatic Tracking Start Feature - COMPLETED** (August 2025)
 - **Immediate tracking start**: Tracking begins BEFORE NSIS installer launches
 - **Enhanced user experience**: Users can test tracking while installer runs
@@ -68,6 +75,12 @@ This TODO list is organized by complexity and impact, starting with **low-hangin
 - [ ] Move detailed technical information to Wiki
 - [ ] Focus on quick start and essential information
 - [ ] Add clear troubleshooting section
+
+### 1.3 Wine Prefix Architecture Detection ✅ **COMPLETED**
+- [x] Detect wine prefix architecture without relying on filename
+- [x] Select appropriate tester based on detected architecture
+- [x] Set `WINEARCH` per platform execution path
+- [x] Provide user feedback and fallback logic
 
 #### Create GitHub Wiki
 - [ ] Set up comprehensive Wiki structure
@@ -278,6 +291,11 @@ git checkout -b feature/qt-interface-upgrades
 autoreconf -fiv
 ./configure --prefix=/opt --enable-debug
 make -j$(nproc)
+```
+
+### Recommended configure for multi-arch (Debian/Ubuntu)
+```bash
+./configure --prefix=/usr --with-lib32-dir=i386-linux-gnu --enable-ltr-32lib-on-x64
 ```
 
 ### Starting with Phase 1
