@@ -78,18 +78,11 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
         runTesterButton->setEnabled(false);
     }
 
-    // Persist last selections
-    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
-    settings.beginGroup(QStringLiteral("TestingSection"));
-    const QString lastPlatform = settings.value(QStringLiteral("last_platform"), QStringLiteral("Steam")).toString();
-    const QString lastGame = settings.value(QStringLiteral("last_game_%1").arg(lastPlatform), QString()).toString();
-    settings.endGroup();
-
+    // Set default to "Select Platform" - don't auto-restore last selection
     if (platformComboBox) {
-        int idx = platformComboBox->findText(lastPlatform);
-        if (idx >= 0) platformComboBox->setCurrentIndex(idx);
+        platformComboBox->setCurrentIndex(0); // "Select Platform" is now index 0
     }
-    currentPlatform = platformComboBox ? platformComboBox->currentText() : QString();
+    currentPlatform = QString(); // No platform selected initially
 
     if (testingStatusLabel) {
         testingStatusLabel->clear();
@@ -136,6 +129,10 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
 }
 QString TestingSection::getCurrentPlatformKey() const
 {
+    // Return empty string if no valid platform is selected
+    if (currentPlatform == QStringLiteral("Select Platform") || currentPlatform.isEmpty()) {
+        return QString();
+    }
     return toPlatformKey(currentPlatform);
 }
 
@@ -203,6 +200,14 @@ void TestingSection::onPlatformSelectionChanged()
             runTesterButton->setEnabled(false);
         }
 
+        // Check if a valid platform is selected (not "Select Platform")
+        if (currentPlatform == QStringLiteral("Select Platform")) {
+            // Placeholder selected - clear status and don't load games
+            if (testingStatusLabel) testingStatusLabel->clear();
+            if (testingProgressBar) testingProgressBar->setVisible(false);
+            return;
+        }
+
         // Begin testing workflow: ensure tracking is started
         startTracking();
 
@@ -222,9 +227,16 @@ void TestingSection::onPlatformSelectionChanged()
 void TestingSection::onLoadGamesClicked()
 {
     if (platformComboBox) {
+        QString platform = platformComboBox->currentText();
+        
+        // Check if a valid platform is selected (not "Select Platform")
+        if (platform == QStringLiteral("Select Platform")) {
+            if (testingStatusLabel) testingStatusLabel->setText(QObject::tr("Please select a platform first"));
+            return;
+        }
+        
         // Beginning testing workflow via Load Games should start tracking
         startTracking();
-        QString platform = platformComboBox->currentText();
         if (testingStatusLabel) testingStatusLabel->setText(QObject::tr("Loading..."));
         if (testingProgressBar) testingProgressBar->setVisible(true);
         loadGamesForPlatform(platform);
@@ -233,6 +245,13 @@ void TestingSection::onLoadGamesClicked()
 
 void TestingSection::loadGamesForPlatform(const QString &platform)
 {
+    // Validate platform selection
+    if (platform == QStringLiteral("Select Platform") || platform.isEmpty()) {
+        if (testingStatusLabel) testingStatusLabel->setText(QObject::tr("Please select a valid platform"));
+        if (testingProgressBar) testingProgressBar->setVisible(false);
+        return;
+    }
+    
     currentPlatform = platform;
     currentGames.clear();
     
@@ -501,6 +520,9 @@ void TestingSection::offerWineBridgeInstallation(const QString &prefixPath)
 
 QString TestingSection::getCurrentGameId()
 {
+    if (currentPlatform == QStringLiteral("Select Platform") || currentPlatform.isEmpty()) {
+        return QString::fromUtf8("");
+    }
     if (platformLabelToKey(currentPlatform) != QStringLiteral("steam")) {
         return QString::fromUtf8("");
     }
@@ -524,6 +546,9 @@ QString TestingSection::getCurrentGameId()
 
 QString TestingSection::getCurrentGameSlug()
 {
+    if (currentPlatform == QStringLiteral("Select Platform") || currentPlatform.isEmpty()) {
+        return QString::fromUtf8("");
+    }
     if (platformLabelToKey(currentPlatform) != QStringLiteral("lutris")) {
         return QString::fromUtf8("");
     }
@@ -547,6 +572,14 @@ QString TestingSection::getCurrentGameSlug()
 
 void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform)
 {
+    // Check if a valid platform is selected
+    if (platform == QStringLiteral("Select Platform") || platform.isEmpty()) {
+        qDebug() << "No valid platform selected for tester execution";
+        QMessageBox::warning(nullptr, tr("Platform Not Selected"), 
+                             tr("Please select a valid platform first."));
+        return;
+    }
+    
     const QString platformKey = platformLabelToKey(platform);
     if (platformKey == QStringLiteral("steam")) {
         // Use existing Steam integration logic
