@@ -5,6 +5,7 @@
 - Help system fix: bundled Qt SQLite driver and plugin paths; Help works without host Qt
 - Gaming tab improvements: installers via Automake, Wii desktop Exec fix, UI/UX polish
 - Tester autofill and Wine prefix architecture detection refinements
+ - Project migration: repository moved to GitLab; file issues and feature requests on GitLab
 
 ## Feature summary (0001–0007)
 - 0001: Testing Section for Gaming Tab – core workflow, Steam/Lutris/Custom prefix support
@@ -48,3 +49,7 @@ chmod +x LinuxTrack-X-IR-0.99.23-x86_64.AppImage
 
 ## Acknowledgements
 Thanks to contributors across recent feature branches and documentation updates.
+
+---
+
+Repository migration notice: The project has moved to GitLab. Please use GitLab for issues and feature requests: https://gitlab.com/fwfa123/linuxtrackx-ir
