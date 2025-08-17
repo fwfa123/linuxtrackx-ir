@@ -6,6 +6,15 @@
 - Gaming tab improvements: installers via Automake, Wii desktop Exec fix, UI/UX polish
 - Tester autofill and Wine prefix architecture detection refinements
 
+## Feature summary (0001–0007)
+- 0001: Testing Section for Gaming Tab – core workflow, Steam/Lutris/Custom prefix support
+- 0002: Installation Flow – no auto-start/auto-launch in install buttons; testing remains explicit
+- 0003: Gaming Tab UI Improvements – prerequisites gating, grouped installers, workflow polish
+- 0004: Antimicrox Integration Plan – ltr_pipe control (uinput-abs), device naming, UI hooks
+- 0005: Automatic Wine Prefix Architecture Detection – selects 32/64-bit tester and sets WINEARCH
+- 0006: Tester Game ID Auto-fill – prefill from gamedata.txt, env hints (LTR_GAME_NAME/ID)
+- 0007: AppImage Builder Rework (v2) – modular pipeline, Qt bundling, validation, packaging
+
 ## What’s New
 - AppImage v2 pipeline: prepare → bundle → wine_bridge → optimize → validate → package
   - Bundles Qt libs/plugins, XCB platform, SQLite driver
