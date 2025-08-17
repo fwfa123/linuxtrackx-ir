@@ -47,6 +47,14 @@ chmod +x LinuxTrack-X-IR-0.99.23-x86_64.AppImage
 - AppImage relies on host glibc/toolchain and GPU/X11 drivers (normal for AppImages)
 - For broader distro compatibility, consider building on an older base or bundling libstdc++/libgcc_s
 
+### Upgrade notice (required actions)
+- Reinstall TrackIR firmware and MFC42 runtime (Prerequisites → Install/Repair)
+- Reinstall the Wine Bridge in every Wine/Proton prefix where it was previously installed:
+  - Steam (Proton): use the Steam installer button
+  - Lutris: use the Lutris installer button
+  - Custom Prefix: choose your WINEPREFIX via the Custom Prefix installer
+These steps ensure the updated testers and runtime files are deployed in each prefix.
+
 ## Acknowledgements
 Thanks to contributors across recent feature branches and documentation updates.
 
