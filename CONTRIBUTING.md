@@ -7,7 +7,7 @@ Thank you for your interest in contributing to LinuxTrack X-IR! This document pr
 ### Before Reporting
 1. **Search existing issues** to avoid duplicates
 2. **Check the documentation** in `/docs` for solutions
-3. **Test with the latest version** (currently v0.99.22)
+3. **Test with the latest version** (currently v0.99.23)
 
 ### Issue Report Template
 When creating an issue, please include:
@@ -17,7 +17,7 @@ When creating an issue, please include:
 Brief summary of the problem
 
 ## Steps to Reproduce
-1. Download LinuxTrack X-IR v0.99.22
+1. Download LinuxTrack X-IR v0.99.23
 2. Run the AppImage
 3. Go to [specific menu/tab]
 4. Click [specific button]
@@ -31,7 +31,7 @@ What actually happens
 
 ## System Information
 - **OS**: Ubuntu 22.04 / Fedora 37 / Arch Linux / etc.
-- **LinuxTrack Version**: v0.99.22
+- **LinuxTrack Version**: v0.99.23
 - **Installation Method**: AppImage / Source / Package
 - **Wine Version**: (if applicable)
 - **Hardware**: CPU, GPU, RAM

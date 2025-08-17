@@ -15,7 +15,7 @@ APPDIR="$PROJECT_ROOT/AppDir_v2"
 APP_NAME="LinuxTrack-X-IR"
 APP_DISPLAY_NAME="LinuxTrack X-IR"
 APP_ID="com.linuxtrack.linuxtrackx-ir"
-VERSION="0.99.22"
+VERSION="0.99.23"
 
 # Tools (expected under scripts/appimage)
 APPIMAGETOOL="$APPSCRIPTS_DIR/appimagetool-x86_64.AppImage"
