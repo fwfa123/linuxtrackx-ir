@@ -31,6 +31,11 @@
 - **System Tab**: ✅ Renamed and reorganized Misc tab with comprehensive system information
 - **Improved user experience** with better organization and clearer interface
 
+### ✅ **AppImage Builder v2 + Help Runtime Fix - COMPLETED** (August 2025)
+- Modular AppImage pipeline (`scripts/appimage/v2/`) producing fully self-contained images
+- Bundled Qt SQLite driver and plugin path setup; Qt Help initializes correctly without host Qt
+- RPATH harmonization and validation step (ldd audit, Qt plugin checks)
+
 ---
 
 ## 🎯 Development Priority Overview
@@ -95,6 +100,7 @@ This TODO list is organized by complexity and impact, starting with **low-hangin
 - [ ] Ensure help system matches current GUI
 - [ ] Add screenshots and step-by-step guides
 - [ ] Update Wine/Steam integration help
+  - Runtime fix completed in v0.99.23 (bundled SQLite driver + plugin paths)
 
 ---
 
@@ -329,5 +335,5 @@ make -j$(nproc)
 
 ---
 
-*Last Updated: [Current Date]*
+*Last Updated: 2025-08-17*
 *Next Review: [Date + 1 month]* 

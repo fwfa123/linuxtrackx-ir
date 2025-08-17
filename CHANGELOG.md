@@ -2,7 +2,24 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.22) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+> **Note**: This version (0.99.23) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+
+## [0.99.23] - Modular AppImage Builder v2 and Help System Fix (2025)
+
+### Major Changes
+- **AppImage Builder v2**: New modular, configuration-driven pipeline under `scripts/appimage/v2/` (build → bundle → wine_bridge → optimize → validate → package)
+- **Self-contained Qt**: Bundle Qt libs and plugins; explicit `QT_SQL_DRIVER_PATH` ensures Help system works without host Qt
+
+### Added
+- `scripts/appimage/v2/` with `config.sh`, `common.sh`, `prepare.sh`, `bundle.sh`, `wine_bridge.sh`, `optimize.sh`, `validate.sh`, `package.sh`, `ci_build.sh`
+- Validation step: ldd audit, Qt plugin checks, rpath harmonization
+
+### Changed
+- AppRun sets plugin/search paths and prefers XCB; rpaths adjusted for local libs
+- Documentation updated to reference new AppImage build and artifact names
+
+### Fixed
+- **Help System**: Missing SQLite driver inside AppImage resolved; QtHelp loads correctly
 
 ## [0.99.22] - Gaming Platform Integration & Automatic Tracking (2025)
 

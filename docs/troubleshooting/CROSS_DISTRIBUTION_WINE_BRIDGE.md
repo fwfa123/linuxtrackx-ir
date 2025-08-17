@@ -30,17 +30,17 @@ Build separate AppImages for each major distribution:
 # On Arch Linux
 ./scripts/build_wine_bridge_multi_distro.sh
 ./scripts/appimage/build_appimage_phase4.sh
-# Result: LinuxTrack-X-IR-0.99.22-arch-x86_64.AppImage
+# Result: LinuxTrack-X-IR-0.99.23-arch-x86_64.AppImage
 
 # On Debian/Ubuntu  
 ./scripts/build_wine_bridge_multi_distro.sh
 ./scripts/appimage/build_appimage_phase4.sh
-# Result: LinuxTrack-X-IR-0.99.22-debian-x86_64.AppImage
+# Result: LinuxTrack-X-IR-0.99.23-debian-x86_64.AppImage
 
 # On Fedora
 ./scripts/build_wine_bridge_multi_distro.sh
 ./scripts/appimage/build_appimage_phase4.sh
-# Result: LinuxTrack-X-IR-0.99.22-fedora-x86_64.AppImage
+# Result: LinuxTrack-X-IR-0.99.23-fedora-x86_64.AppImage
 ```
 
 ### Solution 2: Universal Build with Fallbacks

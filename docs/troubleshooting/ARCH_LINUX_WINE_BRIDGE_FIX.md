@@ -135,7 +135,7 @@ wine src/wine_bridge/client/check_data.exe.so
 wine src/wine_bridge/linuxtrack-wine.exe
 
 # Test the new AppImage
-./LinuxTrack-X-IR-0.99.22-x86_64.AppImage
+./LinuxTrack-X-IR-0.99.23-x86_64.AppImage
 ```
 
 ## AppImage-Specific Workflow
@@ -159,7 +159,7 @@ The complete workflow for fixing the AppImage issue:
 
 4. **Test on Arch Linux**:
    ```bash
-   ./LinuxTrack-X-IR-0.99.22-x86_64.AppImage
+   ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage
    ```
 
 ## Troubleshooting

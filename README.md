@@ -1,10 +1,10 @@
-# LinuxTrack X-IR v0.99.22 - Modern Head Tracking for Linux
+# LinuxTrack X-IR v0.99.23 - Modern Head Tracking for Linux
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
 
-> **Note**: This version (0.99.22) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+> **Note**: This version (0.99.23) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
 
 LinuxTrack X-IR is a modern fork of the original LinuxTrack project, providing enhanced head tracking support for Linux systems with TrackIR devices.
 
@@ -216,7 +216,7 @@ cd linuxtrackx-ir
 # Build and create AppImage
 ./scripts/appimage/build_appimage_phase4.sh --clean
 
-# The AppImage will be created as: LinuxTrack-X-IR-0.99.22-x86_64.AppImage
+# The AppImage will be created as: LinuxTrack-X-IR-0.99.23-x86_64.AppImage
 ```
 
 #### **AppImage Features**

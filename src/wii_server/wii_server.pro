@@ -38,7 +38,7 @@ unix:!macx {
   LIBS += "-L../.libs" "-L$${LIBDIR}" -lm -lltr -lcwiid\
            "-Wl,-rpath,$${LIBDIR}"
   
-  target.path = /usr/local/bin
+  target.path = /usr/bin
   INSTALLS += target
 }
 

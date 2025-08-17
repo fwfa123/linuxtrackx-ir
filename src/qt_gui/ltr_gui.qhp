@@ -2,13 +2,13 @@
   <QtHelpProject version="1.0">
       <namespace>uglyDwarf.com.linuxtrack.1.0</namespace>
       <virtualFolder>doc</virtualFolder>
-      <customFilter name="Linuxtrack X-IR 0.99.22">
+      <customFilter name="Linuxtrack X-IR 0.99.23">
           <filterAttribute>linuxtrack</filterAttribute>
-          <filterAttribute>0.99.22</filterAttribute>
+          <filterAttribute>0.99.23</filterAttribute>
       </customFilter>
       <filterSection>
           <filterAttribute>linuxtrack</filterAttribute>
-          <filterAttribute>0.99.22</filterAttribute>
+          <filterAttribute>0.99.23</filterAttribute>
           <toc>
               <section title="Linuxtrack Manual" ref="help/welcome.htm">
                 <section title="What's new" ref="help/news.htm"/>
