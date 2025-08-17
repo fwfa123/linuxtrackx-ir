@@ -1,10 +1,12 @@
-# LinuxTrack X-IR v0.99.23 - Modern Head Tracking for Linux
+# LinuxTrack X-IR v0.99.23 - Modern Head Tracking for Linux (Now on GitLab)
 
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/fwfa123/linuxtrackx-ir)
-[![License](https://img.shields.io/badge/license-MIT-blue)](https://github.com/fwfa123/linuxtrackx-ir/blob/master/LICENSE.md)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://github.com/fwfa123/linuxtrackx-ir)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
+[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 
-> **Note**: This version (0.99.23) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+> ⚠️ Repository migrated to GitLab: [GitLab: fwfa123/linuxtrackx-ir](https://gitlab.com/fwfa123/linuxtrackx-ir). All new issues and feature requests should be opened on GitLab.
+
+> **Note**: This version (0.99.23) will be the last version published on GitHub. The repository has moved to GitLab for future development and releases. Please file issues and feature requests on GitLab.
 
 LinuxTrack X-IR is a modern fork of the original LinuxTrack project, providing enhanced head tracking support for Linux systems with TrackIR devices.
 
