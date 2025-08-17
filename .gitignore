@@ -242,3 +242,14 @@ coverage/
 *.cache 
 # Ignore Qt Designer autosave files
 *.autosave
+
+# AppImage build artifacts
+*.AppImage
+*.zsync
+/AppDir_v2/
+/AppDir/
+/squashfs-root/
+
+# Downloaded AppImage helper tools
+scripts/appimage/*-x86_64.AppImage
+
