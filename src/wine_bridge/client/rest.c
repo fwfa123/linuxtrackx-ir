@@ -5,6 +5,7 @@
 #include "rest.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #ifdef HAVE_CONFIG_H
   #include <config.h>
@@ -198,24 +199,57 @@ static size_t score_match(const char *a, const char *b)
   return best;
 }
 
+// Return true if candidate contains at least one alphabetic token from query (len >= 3)
+static bool candidate_contains_alpha_keyword(const char *qbuf, const char *nbuf)
+{
+  if(!qbuf || !nbuf) return false;
+  const char *p = qbuf;
+  while(*p){
+    // skip non letters
+    while(*p && !((*p >= 'a' && *p <= 'z'))) p++;
+    const char *start = p;
+    while(*p && ((*p >= 'a' && *p <= 'z'))) p++;
+    size_t len = (size_t)(p - start);
+    if(len >= 3){
+      // check substring
+      if(strstr(nbuf, (const char*)start) != NULL){ return true; }
+    }
+  }
+  return false;
+}
+
 static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1, uint32_t k2, void *ctx)
 {
   (void)encrypted; (void)k1; (void)k2;
   name_match_ctx_t *c = (name_match_ctx_t*)ctx;
   if (!c || !c->query || !name) return false;
+  // Precompute lowercase buffers for candidate and query
+  const char *q = c->query;
+  char nbuf[4096]; size_t ni = 0; for(; name[ni] && ni < sizeof(nbuf)-1; ni++){ char ch = name[ni]; if(ch>='A'&&ch<='Z') ch = (char)(ch - 'A' + 'a'); nbuf[ni] = ch; } nbuf[ni] = 0;
+  char qbuf[4096]; size_t qi = 0; for(; q[qi] && qi < sizeof(qbuf)-1; qi++){ char ch = q[qi]; if(ch>='A'&&ch<='Z') ch = (char)(ch - 'A' + 'a'); qbuf[qi] = ch; } qbuf[qi] = 0;
+
+  // Strong rule: if the alphabetic prefix token matches and the first numbers match, short-circuit
+  // Extract first alphabetic token (>=3 letters) from query
+  const char *p = qbuf; while(*p && !((*p >= 'a' && *p <= 'z'))) p++; const char *qstart = p; while(*p && ((*p >= 'a' && *p <= 'z'))) p++; size_t qplen = (size_t)(p - qstart);
+  // Extract first alphabetic token from candidate at the beginning
+  const char *cstart = nbuf; const char *cp = cstart; while(*cp && ((*cp >= 'a' && *cp <= 'z'))) cp++; size_t cplen = (size_t)(cp - cstart);
+  if(qplen >= 3 && cplen >= 3 && qplen == cplen && strncmp(qstart, cstart, qplen) == 0){
+    // Compare first numbers
+    int qnum = c->query_first_number;
+    int cnum = 0; const char *tn = nbuf; while(*tn && (*tn < '0' || *tn > '9')) tn++; if(*tn){ while(*tn >= '0' && *tn <= '9'){ cnum = cnum*10 + (*tn - '0'); tn++; } }
+    if(qnum > 0 && cnum == qnum){ c->best_id = id; c->best_score = (size_t)-1; c->found_contains = true; c->best_contains_len = (size_t)-1; return true; }
+  }
   // exact, case-insensitive match wins immediately
   if(strcasecmp(name, c->query) == 0){ c->best_id = id; c->best_score = (size_t)-1; c->found_contains = true; c->best_contains_len = (size_t)-1; return true; }
   // contains check (case-insensitive)
-  const char *q = c->query;
   size_t nq = strlen(q);
-  char nbuf[4096]; size_t ni = 0; for(; name[ni] && ni < sizeof(nbuf)-1; ni++){ char ch = name[ni]; if(ch>='A'&&ch<='Z') ch = (char)(ch - 'A' + 'a'); nbuf[ni] = ch; } nbuf[ni] = 0;
-  char qbuf[4096]; size_t qi = 0; for(; q[qi] && qi < sizeof(qbuf)-1; qi++){ char ch = q[qi]; if(ch>='A'&&ch<='Z') ch = (char)(ch - 'A' + 'a'); qbuf[qi] = ch; } qbuf[qi] = 0;
   if(strstr(nbuf, qbuf) != NULL){
     // Extract first integer from candidate name for numeric-aware preference
     int cand_num = 0; {
       const char *p = nbuf; while(*p && (*p < '0' || *p > '9')) p++; if(*p){ cand_num = 0; while(*p >= '0' && *p <= '9'){ cand_num = cand_num*10 + (*p - '0'); p++; } }
     }
-    bool cand_numeric_match = (c->query_first_number > 0 && cand_num == c->query_first_number);
+    bool has_kw = candidate_contains_alpha_keyword(qbuf, nbuf);
+    bool cand_numeric_match = (has_kw && c->query_first_number > 0 && cand_num == c->query_first_number);
     // Prefer numeric matches over non-numeric when available; otherwise fall back to existing tie-breaks
     if(!c->found_contains){
       c->found_contains = true; c->best_contains_len = nq; c->best_id = id; c->best_contains_numeric_match = cand_numeric_match;
@@ -241,7 +275,8 @@ static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1
     int cand_num = 0; {
       const char *p = nbuf; while(*p && (*p < '0' || *p > '9')) p++; if(*p){ while(*p >= '0' && *p <= '9'){ cand_num = cand_num*10 + (*p - '0'); p++; } }
     }
-    if(cand_num == c->query_first_number){
+    bool has_kw = candidate_contains_alpha_keyword(qbuf, nbuf);
+    if(has_kw && cand_num == c->query_first_number){
       // Add a significant bonus to outweigh close fuzzy scores from similarly named titles
       s += 1000;
     }
