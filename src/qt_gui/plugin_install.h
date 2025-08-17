@@ -31,6 +31,12 @@ class PluginInstall : public QObject
   void installWineBridgeToCustomPrefix();
   void installLutrisWineBridge();
   void installSteamProtonBridge();
+  // Gating helpers
+  bool areGamingPrereqsReady() const { return isTirFirmwareInstalled() && isMfc42uInstalled(); }
+  bool isTirFirmwareInstalled() const;
+  bool isMfc42uInstalled() const;
+signals:
+  void prereqStatusChanged(bool ready);
  private:
   enum state{TIR_FW, MFC, LTR_W, DONE, TIR_FW_ONLY, MFC_ONLY, TIR_MFC_ONLY} state;
   const Ui::LinuxtrackMainForm &gui;
@@ -38,8 +44,6 @@ class PluginInstall : public QObject
   WineLauncher *inst;
   TirFwExtractor *dlfw;
   Mfc42uWinetricksExtractor *dlmfc42;
-  bool isTirFirmwareInstalled();
-  bool isMfc42uInstalled();
   void enableButtons(bool ena);
   void mfc42uInstall();
   QWidget* getParentWidget();

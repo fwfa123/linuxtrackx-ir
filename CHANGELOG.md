@@ -8,16 +8,16 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 ### Major Changes
 - **Complete Gaming Platform Integration**: Comprehensive Steam Proton and Lutris support
-- **Automatic Tracking Start Feature**: Seamless tracking initiation before NSIS installer begins
 - **Modern UI Design**: Dedicated Gaming and System tabs for better organization
-- **Enhanced User Experience**: One-click Wine Bridge installation with immediate tracking feedback
+- **Enhanced User Experience**: Prerequisite gating (TrackIR firmware + MFC42), grouped installers, Advanced menu, testing workflow improvements
 
 ### Added
-- **Automatic Tracking Start Feature**: Seamless tracking initiation before NSIS installer begins
-  - Immediate tracking start for Steam Proton, Lutris, and Custom Prefix installations
-  - Enhanced user experience - users can test tracking while installer runs
-  - Eliminates manual tracking window interaction
-  - Future-ready placeholder implementations for upcoming features
+- **Gaming Tab UI Improvements**
+  - Prerequisites group with live status and Install/Repair actions for TrackIR firmware and MFC42
+  - Gated installer buttons and Testing section enabled when prerequisites met
+  - Grouped installer targets (Steam, Lutris, Custom Prefix) with Advanced popup for Other Platform/Wine Prefix
+  - Testing workflow: auto-load games, status label, filter, last platform/game persistence
+  - Visual polish: icons, tooltips, accessibility names; translation via tr()
 - **Complete Gaming Platform Integration**: Comprehensive Steam Proton and Lutris support
   - **Steam Proton Integration**: Multi-library support with Proton version detection
   - **Lutris Integration**: Complete Lutris prefix detection and Wine Bridge installation
@@ -38,7 +38,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 - **Community Attribution**: Proper credit to Arch Linux community and GitHub Issue #206 contributors
 
 ### Changed
-- **User Workflow**: Eliminated manual tracking window interaction after installations
+- **User Workflow**: Non-autostart installer UX preserved; clearer gating and status-driven flow
 - **Gaming Integration**: One-click Wine Bridge installation for both Lutris and Steam Proton games
 - **UI Organization**: Reorganized interface with dedicated Gaming and System tabs
 - **Error Handling**: Professional-grade error handling with detailed debugging

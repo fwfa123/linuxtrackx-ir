@@ -166,6 +166,18 @@ dist_pkgdata_DATA = \
   99-Mickey.rules \
   haarcascade_frontalface_alt2.xml
 
+# Desktop launcher entries (XDG .desktop files)
+# Install to the system applications directory so environments can discover them
+desktopdir = /usr/share/applications
+dist_desktop_DATA = \
+  linuxtrack.desktop \
+  mickey.desktop \
+  linuxtrack-wii.desktop
+
+# Refresh desktop database after installation (best-effort)
+install-data-hook:
+	- update-desktop-database $(desktopdir) 2>/dev/null || true
+
 # Uninstall qmake-built apps
 uninstall-local:
 	- $(MAKE) -C $(GUI_DIR) uninstall || true

@@ -65,11 +65,17 @@ class LinuxtrackGui : public QMainWindow
   void on_InstallTirMfcButton_pressed();
   void on_SteamProtonButton_pressed();
   void on_LutrisButton_pressed();
-  void on_OtherPlatformButton_pressed();
   void on_CustomPrefixButton_pressed();
   // void on_BatchInstallButton_pressed();
+  void on_OtherPlatformButton_pressed();
   void on_WinePrefixButton_pressed();
-  void on_LaunchLtrPipeButton_pressed();
+  
+  // ltr_pipe control slots
+  void on_FormatComboBox_currentTextChanged(const QString &text);
+  void on_StartLtrPipeButton_pressed();
+  void on_StopLtrPipeButton_pressed();
+  void on_PauseLtrPipeButton_pressed();
+  void on_DeviceNameEdit_textChanged(const QString &text);
   
   // Testing section slots
   void on_TesterExeRadioButton_toggled(bool checked);
@@ -136,6 +142,22 @@ class LinuxtrackGui : public QMainWindow
   void saveDockingState();
   void loadDockingState();
   void updateDockingActions();
+
+  // Gaming prerequisites helpers
+  void refreshGamingPrereqStatus();
+  void setGamingControlsEnabled(bool enabled);
+  
+  // ltr_pipe helper functions
+  QString findLtrPipeExecutable();
+  QStringList buildLtrPipeArguments(const QString &format, const QString &deviceName);
+  void stopLtrPipeProcess();
+  void pauseLtrPipeProcess();
+  void resumeLtrPipeProcess();
+  void cleanupUinputDevices();
+  void initializeLtrPipeInterface();
+  
+  // ltr_pipe state management
+  bool ltrPipePaused = false;
 };
 
 #endif

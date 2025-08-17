@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <style>
+      .bg{fill:#5c1835}
+      .glass{fill:#fff;opacity:0.8}
+      .wine{fill:#9b2242}
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="128" height="128" rx="20"/>
+  <g transform="translate(32,12)">
+    <path class="glass" d="M32 0c17.7 0 32 6 32 13.5S49.7 27 32 27 0 21 0 13.5 14.3 0 32 0z"/>
+    <path class="wine" d="M4 14c6 6 17 9 28 9s22-3 28-9v24c0 11-12 19-28 19S4 49 4 38V14z"/>
+    <rect class="glass" x="30" y="57" width="4" height="30"/>
+    <rect class="glass" x="18" y="87" width="28" height="6" rx="3"/>
+  </g>
+  <text x="64" y="118" font-family="DejaVu Sans, Arial" font-size="14" text-anchor="middle" fill="#fff">Wine</text>
+</svg>
+

@@ -56,9 +56,15 @@ git clone <repository-url>
 cd linuxtrackx-ir
 cd scripts/dev && ./wine_dev_setup.sh && cd ../..
 autoreconf -fiv
-./configure --prefix=/usr/local
+# Enable 32-bit linuxtrack runtime so 32-bit Tester.exe works (installs to /usr/lib/i386-linux-gnu/linuxtrack)
+./configure --prefix=/usr --with-lib32-dir=i386-linux-gnu --enable-ltr-32lib-on-x64
 make -j$(nproc)
 sudo make install
+sudo ldconfig
+
+# Verify both runtimes installed
+file /usr/lib/linuxtrack/liblinuxtrack.so.0 || true
+file /usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0 || true
 
 ```
 
@@ -72,9 +78,11 @@ git clone <repository-url>
 cd linuxtrackx-ir
 cd scripts/dev && ./wine_dev_setup.sh && cd ../..
 autoreconf -fiv
-./configure --prefix=/usr/local
+# Enable 32-bit runtime (Fedora multiarch lib dir is /usr/lib)
+./configure --prefix=/usr --with-lib32-dir=lib --enable-ltr-32lib-on-x64
 make -j$(nproc)
 sudo make install
+sudo ldconfig
 
 ```
 
@@ -144,9 +152,10 @@ sudo pacman -S wine-gecko
 
 # Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
 make -j$(nproc)
 sudo make install
+sudo ldconfig
 ```
 
 #### **Method 4: Prebuilt Installation**
@@ -328,7 +337,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 ## 🎯 Supported Hardware
 
 ### **USB Devices**
-- **TrackIR 4 & 5** - Full support via reverse engineering
+- **TrackIR 4 & 5** - Support
 
 
 ### **DIY Solutions**
@@ -570,7 +579,7 @@ The optimized Wine installation approach for Arch Linux was developed through co
 
 ## 🔄 Fork Notice
 
-This project is a fork of the original LinuxTrack project. The original project was abandoned, and this fork continues development with modern build systems and enhanced compatibility. We maintain full attribution to the original authors and respect their contributions to the open-source community.
+This project is a fork of the original LinuxTrack project. The original project slowed down, and this fork continues development with modern build systems and enhanced compatibility. We maintain full attribution to the original authors and respect their contributions to the open-source community.
 
 **Original Project**: [LinuxTrack by uglyDwarf](https://github.com/uglyDwarf/linuxtrack)  
 **License**: MIT License (same as original)  

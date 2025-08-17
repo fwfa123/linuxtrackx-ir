@@ -120,29 +120,87 @@
       </attribute>
       <layout class="QVBoxLayout" name="gamingTabLayout">
        <item>
-        <widget class="QPushButton" name="InstallTirMfcButton">
-         <property name="text">
-          <string>Install Linuxtrack-Wine support (TIR Firmware + MFC42)</string>
+        <widget class="QGroupBox" name="PrereqGroupBox">
+         <property name="title">
+          <string>Prerequisites</string>
          </property>
+         <layout class="QGridLayout" name="prereqLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="FirmwareLabel">
+            <property name="text">
+             <string>TrackIR firmware:</string>
+            </property>
+            <property name="accessibleName">
+             <string>TrackIR firmware label</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="FirmwareStatusLabel">
+            <property name="text">
+             <string>Not installed</string>
+            </property>
+            <property name="accessibleName">
+             <string>TrackIR firmware status</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QPushButton" name="FirmwareActionButton">
+            <property name="text">
+             <string>Install/Repair</string>
+            </property>
+            <property name="accessibleName">
+             <string>Install or repair TrackIR firmware</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="MfcLabel">
+            <property name="text">
+             <string>MFC42 libraries:</string>
+            </property>
+            <property name="accessibleName">
+             <string>MFC42 label</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="MfcStatusLabel">
+            <property name="text">
+             <string>Not installed</string>
+            </property>
+            <property name="accessibleName">
+             <string>MFC42 status</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QPushButton" name="MfcActionButton">
+            <property name="text">
+             <string>Install/Repair</string>
+            </property>
+            <property name="accessibleName">
+             <string>Install or repair MFC42 libraries</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_6">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout_3">
          <item row="0" column="0">
           <widget class="QPushButton" name="SteamProtonButton">
+            <property name="toolTip">
+             <string>Install Linuxtrack Wine Bridge to a Steam (Proton) game</string>
+            </property>
+            <property name="accessibleName">
+             <string>Steam Install Button</string>
+            </property>
+            <property name="minimumWidth">
+             <number>160</number>
+            </property>
            <property name="text">
             <string>Steam (Proton)</string>
            </property>
@@ -150,6 +208,15 @@
          </item>
          <item row="0" column="1">
           <widget class="QPushButton" name="CustomPrefixButton">
+            <property name="toolTip">
+             <string>Install Linuxtrack Wine Bridge to a custom Wine prefix</string>
+            </property>
+            <property name="accessibleName">
+             <string>Custom Prefix Install Button</string>
+            </property>
+            <property name="minimumWidth">
+             <number>160</number>
+            </property>
            <property name="text">
             <string>Custom Prefix</string>
            </property>
@@ -157,32 +224,51 @@
          </item>
          <item row="0" column="2">
           <widget class="QPushButton" name="LutrisButton">
+            <property name="toolTip">
+             <string>Install Linuxtrack Wine Bridge to a Lutris game</string>
+            </property>
+            <property name="accessibleName">
+             <string>Lutris Install Button</string>
+            </property>
+            <property name="minimumWidth">
+             <number>160</number>
+            </property>
            <property name="text">
             <string>Lutris</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
-          <widget class="QPushButton" name="OtherPlatformButton">
-           <property name="text">
-            <string>Other Platform</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QPushButton" name="WinePrefixButton">
-           <property name="text">
-            <string>Wine Prefix</string>
-           </property>
-          </widget>
-         </item>
+          <!-- Removed legacy OtherPlatformButton; covered by Advanced... menu -->
+          <!-- Removed legacy WinePrefixButton; covered by Advanced... menu -->
          <item row="1" column="1">
-          <widget class="QPushButton" name="XplanePluginButton">
+           <widget class="QPushButton" name="XplanePluginButton">
+            <property name="toolTip">
+             <string>Install the Linuxtrack plugin for X-Plane flight simulator</string>
+            </property>
+            <property name="accessibleName">
+             <string>X-Plane Plugin Install Button</string>
+            </property>
+            <property name="minimumWidth">
+             <number>160</number>
+            </property>
            <property name="text">
             <string>Install Xplane plugin...</string>
            </property>
           </widget>
          </item>
+          <item row="2" column="0" colspan="3">
+           <widget class="QToolButton" name="AdvancedButton">
+            <property name="text">
+             <string>Advanced...</string>
+            </property>
+            <property name="toolTip">
+             <string>Advanced installation options</string>
+            </property>
+            <property name="popupMode">
+             <enum>QToolButton::InstantPopup</enum>
+            </property>
+           </widget>
+          </item>
         </layout>
        </item>
        <item>
@@ -215,6 +301,9 @@
             </item>
             <item>
              <widget class="QRadioButton" name="TesterExeRadioButton">
+              <property name="accessibleName">
+               <string>TrackIR Tester Radio</string>
+              </property>
               <property name="text">
                <string>Tester.exe (TrackIR)</string>
               </property>
@@ -225,6 +314,9 @@
             </item>
             <item>
              <widget class="QRadioButton" name="FTTesterRadioButton">
+              <property name="accessibleName">
+               <string>FreeTrack Tester Radio</string>
+              </property>
               <property name="text">
                <string>FT_Tester (FreeTrack)</string>
               </property>
@@ -243,6 +335,17 @@
             </item>
             <item>
              <widget class="QComboBox" name="PlatformComboBox">
+              <property name="toolTip">
+               <string>Select the platform to load games from</string>
+              </property>
+              <property name="accessibleName">
+               <string>Testing Platform</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>Select Platform</string>
+               </property>
+              </item>
               <item>
                <property name="text">
                 <string>Steam</string>
@@ -265,6 +368,36 @@
               <property name="text">
                <string>Load Games</string>
               </property>
+               <property name="visible">
+                <bool>false</bool>
+               </property>
+              <property name="toolTip">
+               <string>Manually reload games (shown if auto-load fails)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="filterLayout">
+            <item>
+             <widget class="QLabel" name="FilterLabel">
+              <property name="text">
+               <string>Filter:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="GameFilterEdit">
+              <property name="placeholderText">
+               <string>Type to filter games...</string>
+              </property>
+              <property name="toolTip">
+               <string>Filter the game list by name</string>
+              </property>
+              <property name="accessibleName">
+               <string>Game Filter</string>
+              </property>
              </widget>
             </item>
            </layout>
@@ -283,6 +416,12 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="toolTip">
+               <string>Select a game to run the tester in its Wine prefix</string>
+              </property>
+              <property name="accessibleName">
+               <string>Testing Game</string>
+              </property>
              </widget>
             </item>
             <item>
@@ -290,12 +429,44 @@
               <property name="enabled">
                <bool>false</bool>
               </property>
+              <property name="toolTip">
+               <string>Launch the selected tester in the selected game's prefix</string>
+              </property>
+              <property name="accessibleName">
+               <string>Run Tester Button</string>
+              </property>
               <property name="text">
                <string>Run Tester</string>
               </property>
              </widget>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="TestingStatusLabel">
+            <property name="text">
+             <string/>
+            </property>
+            <property name="accessibleName">
+             <string>Testing Status</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="TestingProgressBar">
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>0</number>
+            </property>
+            <property name="textVisible">
+             <bool>false</bool>
+            </property>
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+           </widget>
           </item>
           <item>
            <spacer name="verticalSpacer_5">
@@ -314,22 +485,163 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <widget class="QPushButton" name="LaunchMickeyButton">
-           <property name="text">
-            <string>Launch Mickey (TrackIR)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="LaunchLtrPipeButton">
-           <property name="text">
-            <string>Launch ltr_pipe for Antimicrox</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QGroupBox" name="LtrPipeControlGroupBox">
+         <property name="title">
+          <string>ltr_pipe Control</string>
+         </property>
+         <layout class="QVBoxLayout" name="ltrPipeControlLayout">
+          <item>
+           <layout class="QHBoxLayout" name="formatSelectionLayout">
+            <item>
+             <widget class="QLabel" name="FormatLabel">
+              <property name="text">
+               <string>Format:</string>
+              </property>
+              <property name="accessibleName">
+               <string>Format Selection Label</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="FormatComboBox">
+              <property name="toolTip">
+               <string>Select the output format for ltr_pipe</string>
+              </property>
+              <property name="accessibleName">
+               <string>Format Selection</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>uinput-abs (Antimicrox)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>FlightGear</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>IL-2 Shturmovik</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Silent Wings</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Default</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="deviceNameLayout">
+            <item>
+             <widget class="QLabel" name="DeviceNameLabel">
+              <property name="text">
+               <string>Device Name (Info Only):</string>
+              </property>
+              <property name="accessibleName">
+               <string>Device Name Label</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="DeviceNameEdit">
+              <property name="text">
+               <string>tir1</string>
+              </property>
+              <property name="placeholderText">
+               <string>Device name for reference only</string>
+              </property>
+              <property name="toolTip">
+               <string>Device name for reference (ltr_pipe always creates 'LinuxTrack uinput-abs')</string>
+              </property>
+              <property name="accessibleName">
+               <string>Device Name Input</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="controlButtonsLayout">
+            <item>
+             <widget class="QPushButton" name="StartLtrPipeButton">
+              <property name="text">
+               <string>Start</string>
+              </property>
+              <property name="toolTip">
+               <string>Start ltr_pipe with selected format</string>
+              </property>
+              <property name="accessibleName">
+               <string>Start ltr_pipe</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../ltr_rc.qrc">
+                <normaloff>:/ltr/icons/play.svg</normaloff>:/ltr/icons/play.svg</iconset>
+               </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="StopLtrPipeButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Stop</string>
+              </property>
+              <property name="toolTip">
+               <string>Stop ltr_pipe and cleanup devices</string>
+              </property>
+              <property name="accessibleName">
+               <string>Stop ltr_pipe</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../ltr_rc.qrc">
+                <normaloff>:/ltr/icons/stop.svg</normaloff>:/ltr/icons/stop.svg</iconset>
+               </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="PauseLtrPipeButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Pause</string>
+              </property>
+              <property name="toolTip">
+               <string>Pause/resume ltr_pipe tracking</string>
+              </property>
+              <property name="accessibleName">
+               <string>Pause ltr_pipe</string>
+              </property>
+              <property name="icon">
+               <iconset resource="../ltr_rc.qrc">
+                <normaloff>:/ltr/icons/pause.svg</normaloff>:/ltr/icons/pause.svg</iconset>
+               </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="LtrPipeStatusLabel">
+            <property name="text">
+             <string>Ready</string>
+            </property>
+            <property name="accessibleName">
+             <string>ltr_pipe Status</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer_4">
@@ -618,6 +930,28 @@
           </widget>
          </item>
         </layout>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="UtilitiesGroupBox">
+         <property name="title">
+          <string>Utilities</string>
+         </property>
+         <layout class="QVBoxLayout" name="utilitiesLayout">
+          <item>
+           <widget class="QPushButton" name="LaunchMickeyButton">
+            <property name="toolTip">
+             <string>Launch the Mickey (TrackIR) demo application</string>
+            </property>
+            <property name="text">
+             <string>Launch Mickey (TrackIR)</string>
+            </property>
+            <property name="accessibleName">
+             <string>Launch Mickey Button</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>

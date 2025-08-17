@@ -12,7 +12,7 @@ INCLUDEPATH += .
 INCLUDEPATH += ./..
 RESOURCES = ltr_rc.qrc
 #QT          += opengl network webkit
-QT          += opengl network help
+QT          += opengl network help concurrent
 
 contains(QT_VERSION, ^5.*){
 #       QT += webkitwidgets widgets
@@ -78,11 +78,19 @@ unix:!macx {
   LIBS += "-L../.libs" "-L/usr/local/lib" "-L$${LIBDIR}" -lm -lltr -lGLU -lmxml \
            "-Wl,-rpath,$${LIBDIR}" "-Wl,-rpath,/usr/local/lib"
 
+  # Auto-generate Qt Help files during build
+  HELP_OUT_DIR = $${OUT_PWD}
+  HELP_QHC = $${HELP_OUT_DIR}/help.qhc
+  HELP_QCH = $${HELP_OUT_DIR}/help.qch
+
+  QMAKE_POST_LINK += qhelpgenerator $${PWD}/ltr_gui.qhcp -o $${HELP_QHC} && \
+                     qhelpgenerator $${PWD}/ltr_gui.qhp  -o $${HELP_QCH}
+
   data.path += /usr/local/share/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png sources.txt spec.txt \
                  sphere.obj sphere.png sources_mfc.txt sources_mfc42.txt win7.reg win10.reg
   help.path += /usr/local/share/linuxtrack/help/ltr_gui
-  help.files += help.qhc help.qch 
+  help.files += $${HELP_QHC} $${HELP_QCH}
   target.path = /usr/local/bin
   INSTALLS += target data help
 }

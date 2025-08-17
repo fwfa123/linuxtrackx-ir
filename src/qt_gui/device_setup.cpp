@@ -167,8 +167,9 @@ void DeviceSetup::refresh()
 {
   ui.DeviceSelector->clear();
   bool res = false;
-  res |= WiimotePrefs::AddAvailableDevices(*(ui.DeviceSelector));
+  // Prefer TrackIR when available by adding it first
   res |= TirPrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
+  res |= WiimotePrefs::AddAvailableDevices(*(ui.DeviceSelector));
 #ifdef DARWIN
   res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= MacP3eFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));

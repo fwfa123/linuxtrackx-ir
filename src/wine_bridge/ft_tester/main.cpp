@@ -6,13 +6,96 @@
 #include <sstream>
 #include <cstdlib>
 #include <iomanip>
+#include <stdarg.h>
+#include <time.h>
+#include <string.h>
+#ifdef __MINGW32__
+#include <direct.h>
+#define MKDIR(p, m) _mkdir(p)
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#define MKDIR(p, m) mkdir(p, m)
+#endif
+#include <cstdlib>
 
 #include "resource.h"
+#include "../client/rest.h"
+
+// Use shared helper from rest.c instead of duplicating parsing logic
 
 HINSTANCE hInst;
 UINT_PTR timer = 0;
 
 HMODULE ftclient;
+static void ensure_parent_dirs(const char *filepath)
+{
+  if(!filepath) return;
+  char buf[4096];
+  snprintf(buf, sizeof(buf), "%s", filepath);
+  // strip filename
+  char *last_slash = strrchr(buf, '/');
+  if(!last_slash) return;
+  *last_slash = '\0';
+  // create recursively
+  char tmp[4096]; size_t len = strlen(buf);
+  size_t i = 0; size_t j = 0;
+  while(i < len){
+    if(buf[i] == '/'){
+      if(j > 0){ tmp[j] = '\0'; MKDIR(tmp, 0700); }
+    }else{
+      tmp[j++] = buf[i];
+    }
+    i++;
+  }
+  if(j > 0){ tmp[j] = '\0'; MKDIR(tmp, 0700); }
+}
+
+static void append_log(const char *fmt, ...)
+{
+  const char *home = getenv("HOME");
+  if(!home) home = getenv("USERPROFILE");
+  if(!home) home = ".";
+  char path[4096];
+  snprintf(path, sizeof(path), "%s/.config/linuxtrack/tester_autofill.log", home);
+  ensure_parent_dirs(path);
+  FILE *f = fopen(path, "a");
+  if(!f){
+    // Fallback to WINEPREFIX
+    const char *prefix = getenv("WINEPREFIX");
+    if(prefix && *prefix){
+      snprintf(path, sizeof(path), "%s/drive_c/linuxtrack/tester_autofill.log", prefix);
+      ensure_parent_dirs(path);
+      f = fopen(path, "a");
+    }
+  }
+  if(!f){
+    // Final fallback: same directory as the running executable (Wine path)
+    char exe_path[1024];
+    DWORD n = GetModuleFileNameA(NULL, exe_path, sizeof(exe_path));
+    if(n > 0 && n < sizeof(exe_path)){
+      char *p1 = strrchr(exe_path, '\\');
+      char *p2 = strrchr(exe_path, '/');
+      char *cut = p1; if(p2 && (!cut || p2 > cut)) cut = p2;
+      if(cut){ *cut = '\0'; }
+      snprintf(path, sizeof(path), "%s\\tester_autofill.log", exe_path);
+      f = fopen(path, "a");
+      if(!f){ snprintf(path, sizeof(path), "%s/tester_autofill.log", exe_path); f = fopen(path, "a"); }
+    }
+  }
+  if(!f){ return; }
+  time_t t = time(NULL);
+  struct tm *tmv = localtime(&t);
+  char ts[64];
+  if(tmv){ strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%S", tmv); } else { snprintf(ts, sizeof(ts), "-"); }
+  fprintf(f, "%s [FT_Tester] ", ts);
+  va_list ap; va_start(ap, fmt);
+  vfprintf(f, fmt, ap);
+  va_end(ap);
+  fputc('\n', f);
+  fflush(f);
+  fclose(f);
+}
 
 typedef struct
 {
@@ -163,6 +246,38 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         case WM_INITDIALOG:
             SetDlgItemText(hwndDlg, IDC_TITLE, "Default");
+            {
+              int initial_id = 2307;
+              char *env_id = getenv("LTR_GAME_ID");
+              if(env_id && *env_id){
+                int v = atoi(env_id);
+                if(v > 0){ initial_id = v; printf("INFO: Using LTR_GAME_ID=%d\n", v); append_log("Using LTR_GAME_ID=%d", v); }
+              }else{
+                // Steam hint first
+                char *steam_appid = getenv("SteamAppId");
+                if(!(steam_appid && *steam_appid)){
+                  steam_appid = getenv("SteamGameId");
+                }
+                int mapped_id = -1;
+                if(steam_appid && *steam_appid && game_data_find_id_by_steam_appid(steam_appid, &mapped_id) && mapped_id > 0){
+                  initial_id = mapped_id;
+                  printf("INFO: Using Steam mapping SteamAppId=%s => TrackIR ID=%d\n", steam_appid, mapped_id);
+                  append_log("Using Steam mapping SteamAppId=%s => TrackIR ID=%d", steam_appid, mapped_id);
+                }else{
+                  char *env_name = getenv("LTR_GAME_NAME");
+                  if(env_name && *env_name){
+                    int found_id = -1;
+                    if(game_data_find_id_by_name(env_name, &found_id) && found_id > 0){
+                      initial_id = found_id;
+                      printf("INFO: Using LTR_GAME_NAME match '%s' => TrackIR ID=%d\n", env_name, found_id);
+                      append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d", env_name, found_id);
+                    }
+                  }
+                }
+              }
+              if(initial_id == 2307){ printf("INFO: Auto-fill not found; using default TrackIR ID=2307\n"); append_log("Auto-fill not found; using default TrackIR ID=2307"); }
+              SetDlgItemInt(hwndDlg, IDC_NUM, (UINT)initial_id, TRUE);
+            }
             return TRUE;
 
         case WM_CLOSE:

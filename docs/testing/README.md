@@ -56,6 +56,7 @@ This directory contains comprehensive testing documentation for LinuxTrack Qt5 m
 
 ### Current Testing Documentation
 - **`TESTING_INSTRUCTIONS.md`** - Comprehensive testing procedures (200KB)
+- **Gaming Tab UX Checklist** – See the end of `TESTING_INSTRUCTIONS.md` for step-by-step verification of the new Gaming tab behavior
 - **`KUBUNTU_25_TESTING.md`** - Detailed Kubuntu testing log (328KB)
 - **`KUBUNTU_25_QT5_TESTING.md`** - Qt5-specific Kubuntu testing (29KB)
 - **`TESTING_GUIDE.md`** - General testing guidelines (13KB)

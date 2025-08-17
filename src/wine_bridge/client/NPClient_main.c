@@ -45,6 +45,7 @@ static bool crypted = false;
 static unsigned char table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static int dbg_flag;
 static HINSTANCE thisDll;
+static char g_profile_name[256] = {0};
 
 static void dbg_report(const char *msg,...)
 {
@@ -108,7 +109,7 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-    TRACE("(0x%p, %d, %p)\n", hinstDLL, fdwReason, lpvReserved);
+    TRACE("(0x%p, %ld, %p)\n", hinstDLL, (long)fdwReason, lpvReserved);
     thisDll = hinstDLL;
     switch (fdwReason)
     {
@@ -392,20 +393,20 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
   game_desc_t gd;
   if(game_data_get_desc(id, &gd)){
     printf("Application ID: %d - %s!!!\n", id, gd.name);
-    if(game_data_get_desc(id, &gd)){
-      crypted = gd.encrypted;
-      if(gd.encrypted){
-        printf("Table: %02X %02X %02X %02X %02X %02X %02X %02X\n", table[0],table[1],table[2],table[3],table[4],
-             table[5], table[6], table[7]);
-        table[0] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
-        table[1] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
-        table[2] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
-        table[3] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
-        table[4] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
-        table[5] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
-        table[6] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
-        table[7] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
-      }
+    /* Remember profile name for later lazy init (disabled due to build issue) */
+    /* snprintf(g_profile_name, sizeof(g_profile_name), "%s", gd.name); */
+    crypted = gd.encrypted;
+    if(gd.encrypted){
+      printf("Table: %02X %02X %02X %02X %02X %02X %02X %02X\n", table[0],table[1],table[2],table[3],table[4],
+           table[5], table[6], table[7]);
+      table[0] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
+      table[1] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
+      table[2] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
+      table[3] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
+      table[4] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
+      table[5] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
+      table[6] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
+      table[7] = (unsigned char)(gd.key2&0xff); gd.key2 >>= 8;
     }
     
     // Try to initialize LinuxTrack - if it fails, try to start the daemon first
@@ -535,6 +536,7 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
   }else{
     // Try to initialize with default profile
     linuxtrack_state_type init_result = linuxtrack_init("Default");
+    /* snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default"); */
     if(init_result < LINUXTRACK_OK){
       printf("LinuxTrack initialization failed with default profile (%d): %s\n", 
              init_result, linuxtrack_explain(init_result));
@@ -659,10 +661,20 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
     }
   }
   char *toLock = file_path("NPClient.dll");
-  sharedLock(toLock);
-  free(toLock);
-  runFile("TrackIR.exe");
-  linuxtrack_suspend();
+  if(toLock != NULL){
+    sharedLock(toLock);
+    free(toLock);
+  }
+  /*
+   * Do not auto-launch TrackIR or suspend LinuxTrack by default in Wine bridge tester.
+   * This caused the camera to immediately pause after starting the tester.
+   * If needed for debugging real TrackIR integration, set LINUXTRACK_RUN_TRACKIR=1
+   * to enable launching TrackIR.exe and suspending the LinuxTrack processing.
+   */
+  if(getenv("LINUXTRACK_RUN_TRACKIR") != NULL){
+    runFile("TrackIR.exe");
+    linuxtrack_suspend();
+  }
   return 0;
 }
 /******************************************************************
@@ -718,31 +730,64 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
 {
   dbg_report("StartDataTransmission request\n");
   
-  // First check if master is running by trying to connect
+  // Ensure linuxtrack is initialized; try to initialize with last known profile
+  linuxtrack_state_type st = linuxtrack_get_tracking_state();
+  if(st < LINUXTRACK_OK){
+    const char *profile = (g_profile_name[0] != '\0') ? g_profile_name : "Default";
+    st = linuxtrack_init(profile);
+    /* wait briefly for INITIALIZING state to settle */
+    for(int i = 0; i < 20 && st == INITIALIZING; ++i){
+      Sleep(100);
+      st = linuxtrack_get_tracking_state();
+    }
+  }
+
+  // Try direct linuxtrack API to start streaming
+  st = linuxtrack_wakeup();
+  dbg_report("linuxtrack_wakeup() -> %d\n", st);
+  st = linuxtrack_request_frames();
+  dbg_report("linuxtrack_request_frames() -> %d\n", st);
+  st = linuxtrack_notification_on();
+  dbg_report("linuxtrack_notification_on() -> %d\n", st);
+
+  // Additionally, ping master to wake in case API call path is unavailable
   int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (sock == -1) {
-    dbg_report("Failed to create socket for master check: %s\n", strerror(errno));
-    return 0;
-  }
-  
-  struct sockaddr_un addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sun_family = AF_UNIX;
-  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
-  
-  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-    dbg_report("LinuxTrack master is not running. Please start the LinuxTrack GUI first.\n");
+  if (sock != -1) {
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+      if (send_command_to_master(3, 0) == 0) {
+        dbg_report("Sent CMD_WAKEUP to master\n");
+      }
+    }
     close(sock);
-    return 0;
   }
-  close(sock);
-  
-  // Master is running, try to send CMD_WAKEUP
-  if (send_command_to_master(3, 0) == 0) {
-    dbg_report("Successfully sent CMD_WAKEUP to master\n");
-  } else {
-    dbg_report("Failed to send CMD_WAKEUP to master, device may need manual start\n");
-    // Don't fall back to direct call as it won't work in Wine
+
+  // Wait for RUNNING state briefly; retry wake once if needed
+  for(int i = 0; i < 20; ++i){
+    linuxtrack_state_type cur = linuxtrack_get_tracking_state();
+    if(cur == RUNNING) {
+      dbg_report("Tracker state RUNNING after %d00ms\n", i);
+      break;
+    }
+    if(i == 10){
+      // mid-way retry wake
+      (void)linuxtrack_wakeup();
+      (void)linuxtrack_request_frames();
+      // best-effort master ping
+      int s2 = socket(AF_UNIX, SOCK_STREAM, 0);
+      if (s2 != -1) {
+        struct sockaddr_un a2; memset(&a2, 0, sizeof(a2)); a2.sun_family = AF_UNIX;
+        memcpy(a2.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+        if (connect(s2, (struct sockaddr*)&a2, sizeof(a2)) == 0) {
+          (void)send_command_to_master(3, 0);
+        }
+        close(s2);
+      }
+    }
+    Sleep(100);
   }
   return 0;
 }
@@ -766,31 +811,21 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
 {
   dbg_report("StopDataTransmission request\n");
   
-  // First check if master is running by trying to connect
+  // Fully shutdown to avoid background reconnect attempts
+  linuxtrack_state_type st = linuxtrack_shutdown();
+  dbg_report("linuxtrack_shutdown() -> %d\n", st);
+
+  // Also notify master (best-effort)
   int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (sock == -1) {
-    dbg_report("Failed to create socket for master check: %s\n", strerror(errno));
-    return 0;
-  }
-  
-  struct sockaddr_un addr;
-  memset(&addr, 0, sizeof(addr));
-  addr.sun_family = AF_UNIX;
-  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
-  
-  if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-    dbg_report("LinuxTrack master is not running.\n");
+  if (sock != -1) {
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+      (void)send_command_to_master(2, 0);
+    }
     close(sock);
-    return 0;
-  }
-  close(sock);
-  
-  // Master is running, try to send CMD_PAUSE
-  if (send_command_to_master(2, 0) == 0) {
-    dbg_report("Successfully sent CMD_PAUSE to master\n");
-  } else {
-    dbg_report("Failed to send CMD_PAUSE to master\n");
-    // Don't fall back to direct call as it won't work in Wine
   }
   return 0;
 }

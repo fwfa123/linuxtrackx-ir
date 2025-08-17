@@ -35,6 +35,10 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
 #endif
   inst = new WineLauncher();
   Connect();
+
+  // Initialize initial prereq UI if available (safe to call even before main connects)
+  const bool ready = isTirFirmwareInstalled() && isMfc42uInstalled();
+  emit prereqStatusChanged(ready);
 }
 
 void PluginInstall::close()
@@ -120,14 +124,14 @@ void PluginInstall::installWinePlugin()
 
 
 
-bool PluginInstall::isTirFirmwareInstalled()
+bool PluginInstall::isTirFirmwareInstalled() const
 {
   return QFile::exists(poem1) && QFile::exists(poem2) && QFile::exists(gameData) && QFile::exists(tirViews);
 }
 
 
 
-bool PluginInstall::isMfc42uInstalled()
+bool PluginInstall::isMfc42uInstalled() const
 {
   return QFile::exists(mfc42u);
 }
@@ -154,8 +158,8 @@ void PluginInstall::installLinuxtrackWine()
     if (!parentWidget) {
       parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
     }
-    QMessageBox::warning(parentWidget, QString::fromUtf8("MFC42 Library Required"),
-      QString::fromUtf8("MFC42 library is required but not found in the tir_firmware directory.\\n\\n"
+    QMessageBox::warning(parentWidget, QObject::tr("MFC42 Library Required"),
+      QObject::tr("MFC42 library is required but not found in the tir_firmware directory.\n\n"
       "Please install MFC42 using winetricks:\n"
       "winetricks mfc42\n"
       "Or run the MFC42 installation in the LinuxTrack GUI first.")
@@ -177,7 +181,7 @@ void PluginInstall::installLinuxtrackWine()
   if (!parentWidget) {
     parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
   }
-  QString prefix = QFileDialog::getExistingDirectory(parentWidget, QString::fromUtf8("Select Wine Prefix..."),
+  QString prefix = QFileDialog::getExistingDirectory(parentWidget, QObject::tr("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
 
   // Handle user cancellation gracefully
@@ -188,16 +192,16 @@ void PluginInstall::installLinuxtrackWine()
   // Validate the selected directory exists
   QDir chosenPrefix(prefix);
   if (!chosenPrefix.exists()) {
-    QMessageBox::warning(parentWidget, QString::fromUtf8("Invalid Prefix"),
-      QString::fromUtf8("The selected directory does not exist."));
+    QMessageBox::warning(parentWidget, QObject::tr("Invalid Prefix"),
+      QObject::tr("The selected directory does not exist."));
     return;
   }
   
   // Resolve installer via centralized resolver
   QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
   if (installerPath.isEmpty()) {
-    QMessageBox::critical(parentWidget, QString::fromUtf8("Installer Not Found"),
-      QString::fromUtf8("Could not find linuxtrack-wine.exe in expected locations."));
+    QMessageBox::critical(parentWidget, QObject::tr("Installer Not Found"),
+      QObject::tr("Could not find linuxtrack-wine.exe in expected locations."));
     return;
   }
 
@@ -205,8 +209,8 @@ void PluginInstall::installLinuxtrackWine()
 
   // Ensure launcher is available (should be constructed in constructor)
   if (!inst) {
-    QMessageBox::critical(parentWidget, QString::fromUtf8("Installer Not Available"),
-      QString::fromUtf8("Wine installer launcher is not available."));
+    QMessageBox::critical(parentWidget, QObject::tr("Installer Not Available"),
+      QObject::tr("Wine installer launcher is not available."));
     return;
   }
 
@@ -227,10 +231,9 @@ void PluginInstall::installLinuxtrackWine()
     if (!parentWidget) {
       parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
     }
-    QMessageBox::information(parentWidget, QString::fromUtf8("Firmware extraction successfull"),
-      QString::fromUtf8("Firmware extraction finished successfully!"
-      "\nNow you can install linuxtrack-wine.exe to the Wine bottle/prefix of your choice."
-      )
+    QMessageBox::information(parentWidget, QObject::tr("Firmware extraction successfull"),
+      QObject::tr("Firmware extraction finished successfully!"
+      "\nNow you can install linuxtrack-wine.exe to the Wine bottle/prefix of your choice.")
     );
   }
 #endif
@@ -264,8 +267,8 @@ void PluginInstall::mfc42uInstall()
     if (!parentWidget) {
       parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
     }
-    QMessageBox::warning(parentWidget, QString::fromUtf8("Mfc42u install"),
-                         QString::fromUtf8("Install TrackIR firmware first!"));
+    QMessageBox::warning(parentWidget, QObject::tr("Mfc42u install"),
+                         QObject::tr("Install TrackIR firmware first!"));
     state = TIR_FW;
     tirFirmwareInstall();
     return;
@@ -352,6 +355,7 @@ void PluginInstall::finished(bool ok)
         // MFC42 installation successful - proceed to Wine bridge installation
         state = LTR_W;
         installLinuxtrackWine();
+        emit prereqStatusChanged(isTirFirmwareInstalled() && isMfc42uInstalled());
       } else {
         // MFC42 extraction failed - don't proceed
         state = DONE;
@@ -367,6 +371,7 @@ void PluginInstall::finished(bool ok)
         state = DONE;
         enableButtons(true);
         isTirMfcOnlyInstallation = false;  // Reset flag
+        emit prereqStatusChanged(isTirFirmwareInstalled() && isMfc42uInstalled());
       } else {
         // MFC42 extraction failed - don't proceed
         state = DONE;
@@ -380,13 +385,14 @@ void PluginInstall::finished(bool ok)
     default:
       if (ok && state == LTR_W) {
         // Wine bridge installation was successful
-        QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Complete"),
-          QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed!\n\n") +
-          QString::fromUtf8("You can now test your head tracking in your games!\n\n") +
-          QString::fromUtf8("Use the tracking window to pause, recenter, or stop tracking as needed."));
+    QMessageBox::information(getParentWidget(), QObject::tr("Installation Complete"),
+      QObject::tr("Linuxtrack Wine Bridge has been successfully installed!\n\n") +
+      QObject::tr("You can now test your head tracking in your games!\n\n") +
+      QObject::tr("Use the tracking window to pause, recenter, or stop tracking as needed."));
       }
       state = DONE;
       enableButtons(true);
+      emit prereqStatusChanged(isTirFirmwareInstalled() && isMfc42uInstalled());
       break;
   }
 }
@@ -425,9 +431,10 @@ void PluginInstall::installTirFirmwareAndMfc42()
   
   // Check if all required firmware files already exist
   if(isTirFirmwareInstalled() && isMfc42uInstalled()){
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
-      QString::fromUtf8("TIR Firmware and MFC42 libraries are already installed."));
+    QMessageBox::information(getParentWidget(), QObject::tr("Already Installed"),
+      QObject::tr("TIR Firmware and MFC42 libraries are already installed."));
     isTirMfcOnlyInstallation = false;  // Reset flag
+    emit prereqStatusChanged(true);
     return;
   }
   
@@ -441,9 +448,10 @@ void PluginInstall::installTirFirmwareAndMfc42()
     mfc42uInstall();
   } else {
     // Both already installed
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("Already Installed"),
-      QString::fromUtf8("TIR Firmware and MFC42 libraries are already installed."));
+    QMessageBox::information(getParentWidget(), QObject::tr("Already Installed"),
+      QObject::tr("TIR Firmware and MFC42 libraries are already installed."));
     isTirMfcOnlyInstallation = false;  // Reset flag
+    emit prereqStatusChanged(true);
   }
 }
 
@@ -452,8 +460,8 @@ void PluginInstall::installWineBridgeToCustomPrefix()
 {
   // Check prerequisites
   if(!isTirFirmwareInstalled() || !isMfc42uInstalled()) {
-    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
-      QString::fromUtf8("Please install TIR Firmware and MFC42 libraries first using the button above."));
+    QMessageBox::warning(getParentWidget(), QObject::tr("Prerequisites Required"),
+      QObject::tr("Please install TIR Firmware and MFC42 libraries first using the button above."));
     return;
   }
   
@@ -466,8 +474,8 @@ void PluginInstall::installLutrisWineBridge()
 {
   // Check prerequisites
   if(!isTirFirmwareInstalled() || !isMfc42uInstalled()) {
-    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
-      QString::fromUtf8("Please install TIR Firmware and MFC42 libraries first using the button above."));
+    QMessageBox::warning(getParentWidget(), QObject::tr("Prerequisites Required"),
+      QObject::tr("Please install TIR Firmware and MFC42 libraries first using the button above."));
     return;
   }
   
@@ -478,19 +486,19 @@ void PluginInstall::installLutrisWineBridge()
   
   // Check if Lutris is installed
   if (!lutrisIntegration->isLutrisInstalled()) {
-    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Lutris Not Found"),
-      QString::fromUtf8("Lutris is not installed or not properly configured.\n\n") +
-      QString::fromUtf8("Error: ") + lutrisIntegration->getLastError());
+    QMessageBox::warning(getParentWidget(), QObject::tr("Lutris Not Found"),
+      QObject::tr("Lutris is not installed or not properly configured.\n\n") +
+      QObject::tr("Error: ") + lutrisIntegration->getLastError());
     return;
   }
   
   // Get available Lutris games
   QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
   if (games.isEmpty()) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("No Lutris Games Found"),
-      QString::fromUtf8("No Wine-based games were found in Lutris.\n\n") +
-      QString::fromUtf8("Please install some games in Lutris first, then try again.\n\n") +
-      QString::fromUtf8("Debug Info: ") + lutrisIntegration->getDebugInfo());
+    QMessageBox::information(getParentWidget(), QObject::tr("No Lutris Games Found"),
+      QObject::tr("No Wine-based games were found in Lutris.\n\n") +
+      QObject::tr("Please install some games in Lutris first, then try again.\n\n") +
+      QObject::tr("Debug Info: ") + lutrisIntegration->getDebugInfo());
     return;
   }
   
@@ -524,23 +532,23 @@ void PluginInstall::installLutrisWineBridge()
   QString selectedSlug = gameSlugs[selectedIndex];
   
   // Show information dialog about interactive installation (align with Steam flow)
-  QMessageBox::information(getParentWidget(), QString::fromUtf8("Starting Interactive Installation"),
-    QString::fromUtf8("Starting Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
-    QString::fromUtf8("The NSIS installer will open in a new window.\n") +
-    QString::fromUtf8("Please follow the installation prompts in that window."));
+  QMessageBox::information(getParentWidget(), QObject::tr("Starting Interactive Installation"),
+    QObject::tr("Starting Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
+    QObject::tr("The NSIS installer will open in a new window.\n") +
+    QObject::tr("Please follow the installation prompts in that window."));
   
   // Install to the selected game
   bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
   
   if (success) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Completed"),
-      QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed for: ") + selectedGame + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("You can now use Linuxtrack with this game in Lutris!"));
+    QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
+      QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n").arg(selectedGame) +
+      QObject::tr("You can now use Linuxtrack with this game in Lutris!"));
   } else {
-    QMessageBox::critical(getParentWidget(), QString::fromUtf8("Installation Failed"),
-      QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("Error: ") + lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("Debug Info: ") + lutrisIntegration->getDebugInfo());
+    QMessageBox::critical(getParentWidget(), QObject::tr("Installation Failed"),
+      QObject::tr("Failed to start Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
+      QObject::tr("Error: ") + lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
+      QObject::tr("Debug Info: ") + lutrisIntegration->getDebugInfo());
   }
 }
 
@@ -549,8 +557,8 @@ void PluginInstall::installSteamProtonBridge()
 {
   // Check prerequisites
   if(!isTirFirmwareInstalled() || !isMfc42uInstalled()) {
-    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Prerequisites Required"),
-      QString::fromUtf8("Please install TIR Firmware and MFC42 libraries first using the button above."));
+    QMessageBox::warning(getParentWidget(), QObject::tr("Prerequisites Required"),
+      QObject::tr("Please install TIR Firmware and MFC42 libraries first using the button above."));
     return;
   }
   
@@ -561,19 +569,19 @@ void PluginInstall::installSteamProtonBridge()
   
   // Check if Steam is installed
   if (!steamIntegration->isSteamInstalled()) {
-    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Steam Not Found"),
-      QString::fromUtf8("Steam is not installed or not properly configured.\n\n") +
-      QString::fromUtf8("Error: ") + steamIntegration->getLastError());
+    QMessageBox::warning(getParentWidget(), QObject::tr("Steam Not Found"),
+      QObject::tr("Steam is not installed or not properly configured.\n\n") +
+      QObject::tr("Error: ") + steamIntegration->getLastError());
     return;
   }
   
   // Get available Steam games with Proton prefixes
   QList<SteamGame> games = steamIntegration->getSteamGames();
   if (games.isEmpty()) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("No Steam Games Found"),
-      QString::fromUtf8("No Steam games with Proton prefixes were found.\n\n") +
-      QString::fromUtf8("Please install some games in Steam first, then try again.\n\n") +
-      QString::fromUtf8("Debug Info: ") + steamIntegration->getDebugInfo());
+    QMessageBox::information(getParentWidget(), QObject::tr("No Steam Games Found"),
+      QObject::tr("No Steam games with Proton prefixes were found.\n\n") +
+      QObject::tr("Please install some games in Steam first, then try again.\n\n") +
+      QObject::tr("Debug Info: ") + steamIntegration->getDebugInfo());
     return;
   }
   
@@ -586,10 +594,10 @@ void PluginInstall::installSteamProtonBridge()
   }
   
   if (protonGames.isEmpty()) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("No Proton Games Found"),
-      QString::fromUtf8("No Steam games with Proton prefixes were found.\n\n") +
-      QString::fromUtf8("Please install some games that use Proton in Steam first, then try again.\n\n") +
-      QString::fromUtf8("Debug Info: ") + steamIntegration->getDebugInfo());
+    QMessageBox::information(getParentWidget(), QObject::tr("No Proton Games Found"),
+      QObject::tr("No Steam games with Proton prefixes were found.\n\n") +
+      QObject::tr("Please install some games that use Proton in Steam first, then try again.\n\n") +
+      QObject::tr("Debug Info: ") + steamIntegration->getDebugInfo());
     return;
   }
   
@@ -604,8 +612,8 @@ void PluginInstall::installSteamProtonBridge()
   
   bool ok;
   QString selectedGame = QInputDialog::getItem(getParentWidget(),
-    QString::fromUtf8("Select Steam Game"),
-    QString::fromUtf8("Choose a game to install Linuxtrack Wine Bridge:"),
+    QObject::tr("Select Steam Game"),
+    QObject::tr("Choose a game to install Linuxtrack Wine Bridge:"),
     gameNames, 0, false, &ok);
   
   if (!ok || selectedGame.isEmpty()) {
@@ -615,19 +623,19 @@ void PluginInstall::installSteamProtonBridge()
   // Find the selected game
   int selectedIndex = gameNames.indexOf(selectedGame);
   if (selectedIndex == -1) {
-    QMessageBox::warning(getParentWidget(), QString::fromUtf8("Selection Error"),
-      QString::fromUtf8("Invalid game selection."));
+    QMessageBox::warning(getParentWidget(), QObject::tr("Selection Error"),
+      QObject::tr("Invalid game selection."));
     return;
   }
   
   QString selectedGameId = gameIds[selectedIndex];
   
   // Show information dialog about interactive installation
-  QMessageBox::information(getParentWidget(), QString::fromUtf8("Starting Interactive Installation"),
-    QString::fromUtf8("Starting Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
-    QString::fromUtf8("The NSIS installer will open in a new window.\n") +
-    QString::fromUtf8("Please follow the installation prompts in that window.\n\n") +
-    QString::fromUtf8("Click OK to start the installation."));
+  QMessageBox::information(getParentWidget(), QObject::tr("Starting Interactive Installation"),
+    QObject::tr("Starting Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
+    QObject::tr("The NSIS installer will open in a new window.\n") +
+    QObject::tr("Please follow the installation prompts in that window.\n\n") +
+    QObject::tr("Click OK to start the installation."));
   
   // Do not auto-start tracking here; installation should be non-intrusive
   
@@ -635,14 +643,14 @@ void PluginInstall::installSteamProtonBridge()
   bool success = steamIntegration->installToSteamGame(selectedGameId);
   
   if (success) {
-    QMessageBox::information(getParentWidget(), QString::fromUtf8("Installation Completed"),
-      QString::fromUtf8("Linuxtrack Wine Bridge has been successfully installed for: ") + selectedGame + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("You can now use Linuxtrack with this game in Steam!"));
+    QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
+      QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n").arg(selectedGame) +
+      QObject::tr("You can now use Linuxtrack with this game in Steam!"));
   } else {
-    QMessageBox::critical(getParentWidget(), QString::fromUtf8("Installation Failed"),
-      QString::fromUtf8("Failed to start Linuxtrack Wine Bridge installation for: ") + selectedGame + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("Error: ") + steamIntegration->getLastError() + QString::fromUtf8("\n\n") +
-      QString::fromUtf8("Debug Info: ") + steamIntegration->getDebugInfo());
+    QMessageBox::critical(getParentWidget(), QObject::tr("Installation Failed"),
+      QObject::tr("Failed to start Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
+      QObject::tr("Error: ") + steamIntegration->getLastError() + QString::fromUtf8("\n\n") +
+      QObject::tr("Debug Info: ") + steamIntegration->getDebugInfo());
   }
 }
 

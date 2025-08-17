@@ -44,14 +44,14 @@ void ModelCreate::on_CreateButton_pressed()
   QStringList sectionList;
   PREF.getSectionList(sectionList);
   if(sec.isEmpty()){
-    QMessageBox::warning(this, QString::fromUtf8("Linuxtrack"),
-      QString::fromUtf8("Please specify the Model name!"), QMessageBox::Ok);
+    QMessageBox::warning(this, tr("Linuxtrack"),
+      tr("Please specify the Model name!"), QMessageBox::Ok);
     ui.ModelName->setFocus();
     return;
   }
   if(sectionList.contains(sec, Qt::CaseInsensitive)){
-    QMessageBox::warning(this, QString::fromUtf8("Linuxtrack"),
-      QString::fromUtf8("The name is already taken, please change the Model name!"), QMessageBox::Ok);
+    QMessageBox::warning(this, tr("Linuxtrack"),
+      tr("The name is already taken, please change the Model name!"), QMessageBox::Ok);
     return;
   }
   if(PREF.createSection(sec)){
