@@ -24,8 +24,8 @@ SUFFIXES = .o .cpp .c .rc
 .rc.o :
 	wrc -o $@ $(RCFLAGS) $<
 
-CXXFLAGS_PRE = -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
-CFLAGS_PRE = -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@
+CXXFLAGS_PRE = -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@ -I@srcdir@/../client -I../client
+CFLAGS_PRE = -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@ -I@srcdir@/../client -I../client
 RCFLAGS = -I @srcdir@
 #VPATH = ../..:@srcdir@/../..:@top_builddir@:@srcdir@
 vpath %.h @srcdir@/../..
@@ -33,7 +33,7 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-ftc.exe.so : main.o fttester.o
+ftc.exe.so : main.o fttester.o ../client/rest.o
 	wineg++ -g -o $@ -L. $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra $^
 
 fttester.o : fttester.rc resource.h config.h

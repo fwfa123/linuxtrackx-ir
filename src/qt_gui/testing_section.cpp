@@ -638,6 +638,10 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     env.insert(QString::fromUtf8("STEAM_COMPAT_DATA_PATH"), compatDataPath);
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
                     env.insert(QString::fromUtf8("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamIntegration->getSteamPath());
+                    // Provide game name hint to tester for auto-ID lookup
+                    if (!currentGame.isEmpty()) {
+                        env.insert(QString::fromUtf8("LTR_GAME_NAME"), currentGame);
+                    }
                     
                     // Set WINEARCH based on detected architecture
                     if (arch == WineArchitecture::WIN64) {
@@ -712,6 +716,9 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     
                     // Set up environment variables for Lutris
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+                    if (!currentGame.isEmpty()) {
+                        env.insert(QString::fromUtf8("LTR_GAME_NAME"), currentGame);
+                    }
                     
                     // Set WINEARCH based on detected architecture instead of tester filename
                     if (arch == WineArchitecture::WIN64) {
@@ -768,6 +775,9 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         
         env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+        if (!currentGame.isEmpty()) {
+            env.insert(QString::fromUtf8("LTR_GAME_NAME"), currentGame);
+        }
         
         // Set WINEARCH based on detected architecture
         if (arch == WineArchitecture::WIN64) {
