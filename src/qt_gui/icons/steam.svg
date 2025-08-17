@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <style>
+      .bg{fill:#1b2838}
+      .fg{fill:#ffffff}
+    </style>
+  </defs>
+  <circle class="bg" cx="64" cy="64" r="64"/>
+  <g>
+    <circle class="fg" cx="86" cy="42" r="18" opacity="0.15"/>
+    <circle class="fg" cx="86" cy="42" r="10"/>
+    <path class="fg" d="M25 80l20 8a18 18 0 1031-15l-10-4a26 26 0 11-41 11z" opacity="0.15"/>
+    <path class="fg" d="M26 78l25 10a12 12 0 1018-10l-13-6A20 20 0 1026 78z"/>
+  </g>
+  <text x="64" y="118" font-family="DejaVu Sans, Arial, sans-serif" font-size="14" text-anchor="middle" fill="#a0b3c5">Steam</text>
+</svg>
+

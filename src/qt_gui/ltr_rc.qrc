@@ -12,5 +12,11 @@
     <file>clip_small.png</file>
     <file>cap.png</file>
     <file>clip.png</file>
+    <file>icons/steam.svg</file>
+    <file>icons/lutris.svg</file>
+    <file>icons/wine.svg</file>
+    <file>translations/ltr_gui_en.qm</file>
+    <file>translations/ltr_gui_cs.qm</file>
+    <file>translations/ltr_gui_de.qm</file>
   </qresource>
 </RCC>

@@ -909,6 +909,34 @@ bundle_dependencies() {
     
     # Manual bundling of critical libraries
     print_status "Manual bundling of critical libraries..."
+
+	# Bundle 32-bit LinuxTrack runtime (for 32-bit Wine apps using Tester.exe)
+	print_status "Checking for 32-bit linuxtrack runtime to bundle..."
+	mkdir -p "usr/lib32/linuxtrack"
+	LINUXTRACK32_CANDIDATES=(
+		"/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+		"/usr/local/lib/linuxtrack/liblinuxtrack.so.0"
+		"/usr/lib32/linuxtrack/liblinuxtrack.so.0"
+		"/usr/local/lib32/linuxtrack/liblinuxtrack.so.0"
+	)
+	for lib32 in "${LINUXTRACK32_CANDIDATES[@]}"; do
+		if [ -f "$lib32" ]; then
+			print_status "Bundling 32-bit liblinuxtrack from: $lib32"
+			cp -P "$lib32" "usr/lib32/linuxtrack/" 2>/dev/null || true
+			# Also copy the real file the symlink points to (if applicable)
+			real32=$(readlink -f "$lib32" 2>/dev/null || echo "")
+			if [ -n "$real32" ] && [ -f "$real32" ]; then
+				cp -P "$real32" "usr/lib32/linuxtrack/" 2>/dev/null || true
+				print_status "Bundled 32-bit real file: $(basename "$real32")"
+			fi
+			break
+		fi
+	done
+	if [ ! -f "usr/lib32/linuxtrack/liblinuxtrack.so.0" ]; then
+		print_warning "32-bit liblinuxtrack not found on this system; 32-bit Tester.exe may require system install of liblinuxtrack:i386"
+	else
+		print_success "32-bit liblinuxtrack bundled"
+	fi
     
     # Bundle ALL Qt5 libraries to ensure complete self-containment
     print_status "Bundling ALL Qt5 libraries for complete self-containment..."
@@ -1213,6 +1241,8 @@ bundle_dependencies() {
     # Set rpath for all bundled libraries to use ONLY bundled libraries
     find usr/lib -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
     find usr/lib/linuxtrack -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
+	# Also set rpath for 32-bit linuxtrack libs (kept separate under usr/lib32)
+	find usr/lib32/linuxtrack -name "*.so*" -type f -exec patchelf --set-rpath '$ORIGIN' {} \; 2>/dev/null || true
     
     # Additional library bundling based on common missing libraries
     print_status "Bundling additional commonly missing libraries..."

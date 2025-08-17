@@ -87,8 +87,8 @@ void ProfileSelector::on_ImportProfile_pressed()
   }
   QFile f(fname);
   if(!f.open(QIODevice::ReadOnly)){
-    QMessageBox::warning(this, QString::fromUtf8("Problem importing profile!"),
-      QString::fromUtf8("There was a problem opening the profile file '") + fname + QString::fromUtf8("'!") );
+    QMessageBox::warning(this, tr("Problem importing profile!"),
+      tr("There was a problem opening the profile file '%1'!").arg(fname) );
     return;
   }
   QTextStream tf(&f);
@@ -121,8 +121,8 @@ void ProfileSelector::on_ExportProfile_pressed()
   }
   QFile f(fname);
   if(!f.open(QIODevice::WriteOnly | QFile::Truncate)){
-    QMessageBox::warning(this, QString::fromUtf8("Problem exporting profile!"),
-      QString::fromUtf8("There was a problem saving the profile to file '") + fname + QString::fromUtf8("'!") );
+    QMessageBox::warning(this, tr("Problem exporting profile!"),
+      tr("There was a problem saving the profile to file '%1'!").arg(fname) );
     return;
   }
   QTextStream tf(&f);

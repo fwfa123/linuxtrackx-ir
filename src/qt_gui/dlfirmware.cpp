@@ -171,7 +171,7 @@ void dlfwGui::unpack_finished(int exitCode, QProcess::ExitStatus exitStatus)
     QFile::link(destPath, l);
     emit finished(true);
   }else{
-    QMessageBox::warning(this, fromUtf8("Problem unpacking firmware..."), 
+    QMessageBox::warning(this, tr("Problem unpacking firmware..."), 
                          unpacker->readAllStandardError());
     emit finished(false);
   }
@@ -202,7 +202,7 @@ void dlfwGui::done(bool ok, QString fileName)
     QFileInfo fi(fileName);
     unpackFirmware(fi.absoluteFilePath(), fi.absolutePath());
   }else{
-    QMessageBox::warning(this, fromUtf8("Problem downloading firmware..."), 
+    QMessageBox::warning(this, tr("Problem downloading firmware..."), 
                          fileName);
     emit finished(false);
   }

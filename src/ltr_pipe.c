@@ -2,6 +2,14 @@
  *      Author: Alexander Pravdin <aledin@evpatoria.com.ua>
  */
 
+/*
+ * Ensure Linux-specific code paths are enabled when compiling on Linux.
+ * Some build environments don't define LINUX, but do define __linux__.
+ */
+#if !defined(LINUX) && defined(__linux__)
+#define LINUX 1
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

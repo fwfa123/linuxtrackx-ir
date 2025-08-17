@@ -86,8 +86,8 @@ Tracker::Tracker() : axes(LTR_AXES_T_INITIALIZER), axes_valid(false),
   currentProfile(QString::fromUtf8("Default")), common_ff(0.0)
 {
   if(!ltr_int_gui_lock(true)){
-    QMessageBox::warning(NULL, QString::fromUtf8("Linuxtrack"),
-      QString::fromUtf8("Another linuxtrack gui is running already!"),
+    QMessageBox::warning(NULL, QObject::tr("Linuxtrack"),
+      QObject::tr("Another linuxtrack gui is running already!"),
                          QMessageBox::Ok);
   }
   master = new MasterThread();

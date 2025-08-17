@@ -11,9 +11,15 @@
 #include <QHBoxLayout>
 #include <QMessageBox>
 #include <QStringList>
+#include <QProgressBar>
+#include <QtConcurrent>
+#include <QFutureWatcher>
 #include "ltr_gui.h"
 #include "steam_integration.h"
 #include "lutris_integration.h"
+#include "tester_launcher.h"
+
+// WineArchitecture is defined in tester_launcher.h
 
 class TestingSection : public QObject
 {
@@ -34,6 +40,9 @@ public:
     QPushButton *loadGamesButton;
     QComboBox *gameComboBox;
     QPushButton *runTesterButton;
+    QLabel *testingStatusLabel;
+    QLineEdit *gameFilterEdit;
+    QProgressBar *testingProgressBar;
 
     // Testing functionality
     void startTracking();
@@ -51,6 +60,12 @@ public slots:
     void onLoadGamesClicked();
     void onRunTesterClicked();
     void onTrackerStateChanged(linuxtrack_state_type current_state);
+    void onGameSelectionChanged();
+    void onFilterTextChanged(const QString &text);
+    
+    // Platform helpers (avoid string-based logic tied to translations)
+    QString getCurrentPlatformKey() const;
+    static QString platformLabelToKey(const QString &label);
 
 private:
     QStringList getSteamGames();
@@ -58,8 +73,13 @@ private:
     QStringList getCustomPrefixGames();
     QString getPrefixForGame(const QString &gameName, const QString &platform);
     QString findTesterInPrefix(const QString &prefixPath, const QString &testerType);
-    void executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform);
+    void executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform, WineArchitecture arch);
     void showMissingTesterDialog(const QString &prefixPath);
+    
+    // New architecture detection functions
+    WineArchitecture detectWinePrefixArchitecture(const QString &prefixPath);
+    QString selectAppropriateTester(const QString &prefixPath, WineArchitecture arch, const QString &preferredTester);
+    bool validateTesterCompatibility(const QString &testerPath, const QString &prefixPath, WineArchitecture arch);
     
     // Helper methods for game identification
     QString getCurrentGameId();
@@ -79,6 +99,9 @@ private:
 
     // Guard to avoid repeated tracking starts
     bool trackingStarted;
+
+    // Async loading support
+    QFutureWatcher<QStringList> gamesLoadWatcher;
 };
 
 #endif // TESTING_SECTION_H 

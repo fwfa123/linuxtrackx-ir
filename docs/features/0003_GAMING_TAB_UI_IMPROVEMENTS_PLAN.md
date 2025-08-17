@@ -114,10 +114,10 @@ Goal: Improve information hierarchy, consistency with install flows, discoverabi
   4. Optional: support text filter to reduce visible game list; selection drives the enabled state of Run.
 
 ### Phasing (can be done incrementally)
-- Phase 1 (UI structure + gating): Update `ltr.ui`; add prerequisite status and gating in `ltr_gui`; reuse existing install flows.
-- Phase 2 (Testing UX): Auto-load games, add status label, persist selections; optional filter.
-- Phase 3 (Polish): Icons, tooltips, tab order, accessibility names, string cleanup for translation.
-- Phase 4 (Advanced): Advanced menu for Other Platform/Wine Prefix, batch install (if desired later), and background loaders with busy indicators.
+- Phase 1 (UI structure + gating): Implemented.
+- Phase 2 (Testing UX): Implemented (auto-load, status label, persistence, optional filter).
+- Phase 3 (Polish): Implemented (icons, tooltips, accessibility, tr()).
+- Phase 4 (Advanced): Advanced menu implemented; batch install and busy indicators deferred.
 
 ### Notes
 - Keep the non-autostart design intact: the pre-launch dialog remains informational and the NSIS window is user-driven; completion/failure dialog appears after we can observe process termination.
