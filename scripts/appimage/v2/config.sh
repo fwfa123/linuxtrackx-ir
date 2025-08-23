@@ -33,6 +33,7 @@ CLEAN="0"
 JOBS="${JOBS:-$(nproc)}"
 
 # Environment harmonization
-export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git -C "$PROJECT_ROOT" log -1 --format=%ct 2>/dev/null || date +%s)}"
+# Commented out to avoid conflict with appimagetool timestamp handling
+# export SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(git -C "$PROJECT_ROOT" log -1 --format=%ct 2>/dev/null || date +%s)}"
 
 

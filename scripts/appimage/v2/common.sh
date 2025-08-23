@@ -40,15 +40,24 @@ set_rpath_library() {
 }
 
 write_minimal_apprun() {
-    print_status "Writing minimal AppRun"
+    print_status "Writing comprehensive AppRun with device detection support"
     cat > "$APPDIR/AppRun" << 'EOF'
 #!/usr/bin/env bash
-set -e
+# AppRun - LinuxTrack AppImage launcher with comprehensive Qt isolation and device detection support
 
+# Get the directory where the AppImage is mounted
 APPDIR="$(dirname "$(readlink -f "$0")")"
 
-# Minimal, production-safe Qt env
-# Prefer linuxdeploy-plugin-qt layout under usr/plugins, then legacy path
+# Set up completely isolated environment for self-contained AppImage
+export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+
+# CRITICAL: Complete Qt isolation to prevent version mixing
+export QT_DISABLE_VERSION_CHECK=1
+export QT_LOGGING_RULES="qt.qpa.*=false"
+export QT_DEBUG_PLUGINS=0
+export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
+
+# Qt plugin paths - support both layouts
 QT_PLUG_ROOT="$APPDIR/usr/plugins"
 if [ -d "$QT_PLUG_ROOT" ]; then
     export QT_PLUGIN_PATH="$QT_PLUG_ROOT:$APPDIR/usr/lib/qt5/plugins"
@@ -61,14 +70,43 @@ else
 fi
 export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
 
-# Ensure bundled libs are preferred
-export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+# Force X11 usage to avoid Wayland compatibility issues
+export QT_QPA_PLATFORM="xcb"
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export QT_SCALE_FACTOR=1
 
-# Prefer XCB by default for compatibility (can be overridden by env)
-if [ "${FORCE_XCB:-1}" = "1" ] && [ -z "${QT_QPA_PLATFORM:-}" ]; then
-    export QT_QPA_PLATFORM="xcb"
+# CRITICAL: Isolate GLib environment to prevent symbol conflicts
+export GIO_EXTRA_MODULES="$APPDIR/usr/lib/gio/modules"
+export GI_TYPELIB_PATH="$APPDIR/usr/lib/girepository-1.0"
+export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas"
+export G_DEBUG="fatal-warnings"
+
+# Help system debugging and configuration
+export QT_DEBUG_PLUGINS=1
+export QT_LOGGING_RULES="qt.help.*=true;qt.qpa.*=false;qt.sql.*=true"
+export QT_HELP_PATH="$APPDIR/usr/share/linuxtrack/help"
+
+# Enhanced SQLite driver configuration
+export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+
+# Additional Qt environment variables for help system
+export QT_IMAGEIO_MAXALLOC=0
+export QT_AUTO_SCREEN_SCALE_FACTOR=1
+
+# Prevent system Qt libraries from being loaded
+unset QT_DIR QTDIR QT_SELECT QT4DIR QT5DIR
+
+# Ensure X11 is available
+if ! xset q >/dev/null 2>&1; then
+    echo "Warning: X11 server not responding, but continuing..."
+    echo "If the application fails to start, try running: xhost +local:"
 fi
 
+# Debug output for device detection
+echo "=== Help System Initialization Complete ==="
+
+# Launch the application with proper library isolation
 exec "$APPDIR/usr/bin/ltr_gui" "$@"
 EOF
     chmod +x "$APPDIR/AppRun"

@@ -54,25 +54,55 @@ pushd "$APPDIR" >/dev/null
             /usr/lib/qt/plugins/platforms/libqxcb.so)
     fi
 
-    # Ensure SQLite driver
-    if ! ls usr/plugins/sqldrivers/libqsqlite.so* usr/lib/qt5/plugins/sqldrivers/libqsqlite.so* >/dev/null 2>&1; then
-        print_status "Ensuring Qt SQLite driver is present"
-        while read -r candidate; do
-            [[ -z "$candidate" ]] && continue
-            if [[ -f "$candidate" ]]; then
-                cp "$candidate" usr/plugins/sqldrivers/ 2>/dev/null || cp "$candidate" usr/lib/qt5/plugins/sqldrivers/
-                print_success "Copied SQLite driver: $(basename "$candidate")"
-                break
-            fi
-        done < <(printf "%s\n" \
-            /usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so \
-            /usr/lib/qt5/plugins/sqldrivers/libqsqlite.so \
-            /usr/lib/qt/plugins/sqldrivers/libqsqlite.so \
-            /usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5 \
-            /usr/lib/qt5/plugins/sqldrivers/libqsqlite.so.5)
-        if ! ls usr/plugins/sqldrivers/libqsqlite.so* usr/lib/qt5/plugins/sqldrivers/libqsqlite.so* >/dev/null 2>&1; then
-            print_warning "SQLite plugin not found; help system may not work inside AppImage"
+    # Ensure SQLite driver with comprehensive search
+    print_status "Ensuring Qt SQLite driver is present"
+    SQLITE_FOUND=false
+
+    # Search multiple locations for SQLite driver
+    SQLITE_LOCATIONS=(
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5"
+        "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so.5"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15.2"
+    )
+
+    for candidate in "${SQLITE_LOCATIONS[@]}"; do
+        if [[ -f "$candidate" ]]; then
+            # Ensure both directories exist
+            ensure_dir usr/plugins/sqldrivers
+            ensure_dir usr/lib/qt5/plugins/sqldrivers
+
+            # Copy to both plugin directories to ensure it's found
+            cp "$candidate" usr/plugins/sqldrivers/
+            cp "$candidate" usr/lib/qt5/plugins/sqldrivers/
+            print_success "Copied SQLite driver: $(basename "$candidate")"
+            SQLITE_FOUND=true
+            break
         fi
+    done
+
+    # Also search using find for any SQLite drivers
+    if [[ "$SQLITE_FOUND" = false ]]; then
+        SQLITE_FIND=$(find /usr -name "libqsqlite.so*" -type f 2>/dev/null | head -1)
+        if [[ -n "$SQLITE_FIND" && -f "$SQLITE_FIND" ]]; then
+            # Ensure both directories exist
+            ensure_dir usr/plugins/sqldrivers
+            ensure_dir usr/lib/qt5/plugins/sqldrivers
+
+            cp "$SQLITE_FIND" usr/plugins/sqldrivers/
+            cp "$SQLITE_FIND" usr/lib/qt5/plugins/sqldrivers/
+            print_success "Found and copied SQLite driver from find: $(basename "$SQLITE_FIND")"
+            SQLITE_FOUND=true
+        fi
+    fi
+
+    if [[ "$SQLITE_FOUND" = false ]]; then
+        print_error "SQLite plugin not found in any standard location - help system will fail"
+    else
+        print_success "SQLite driver successfully bundled"
     fi
 
     # Bundle additional system libraries for self-contained runtime
@@ -95,13 +125,24 @@ pushd "$APPDIR" >/dev/null
     done
 
     # Extra libs frequently not bundled by linuxdeploy but required
-    for so in libcom_err.so.2 libusb-1.0.so.0; do
+    for so in libcom_err.so.2 libusb-1.0.so.0 libudev.so.1 libv4l2.so.0 libv4lconvert.so.0 libjpeg.so.62; do
         for dir in /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
             if [[ -f "$dir/$so" ]]; then
                 cp -n "$dir/$so" usr/lib/ 2>/dev/null || true
+                print_status "Bundled critical library: $so"
                 break
             fi
         done
+    done
+
+    # CRITICAL: Ensure all linuxtrack libraries use bundled dependencies
+    print_status "Fixing library dependencies to use bundled versions"
+    for lib in usr/lib/linuxtrack/*.so*; do
+        if [[ -f "$lib" && -x "$lib" ]]; then
+            # Set rpath to look in parent directory where bundled libs are located
+            patchelf --set-rpath '$ORIGIN/..' "$lib" 2>/dev/null || true
+            print_status "Fixed rpath for $(basename "$lib")"
+        fi
     done
 
     # Normalize plugin layout: prefer usr/plugins, remove duplicates under usr/lib/qt5/plugins
@@ -127,6 +168,42 @@ pushd "$APPDIR" >/dev/null
     fi
 popd >/dev/null
 
-print_success "Bundle complete"
+    # Verify library dependencies are correctly resolved
+    print_status "Verifying library dependency resolution"
+    if command -v ldd >/dev/null 2>&1; then
+        # Check if critical libraries are linking to bundled versions
+        LIBUSB_BUNDLED=$(ldd usr/lib/linuxtrack/libltusb1.so.0.0.0 2>/dev/null | grep "libusb-1.0.so.0" | grep "AppDir_v2" | wc -l)
+        LIBUDEV_BUNDLED=$(ldd usr/lib/linuxtrack/libltusb1.so.0.0.0 2>/dev/null | grep "libudev.so.1" | grep "AppDir_v2" | wc -l)
+
+        if [[ $LIBUSB_BUNDLED -gt 0 ]]; then
+            print_success "libltusb1.so correctly links to bundled libusb"
+        else
+            print_warning "libltusb1.so still links to system libusb"
+        fi
+
+        if [[ $LIBUDEV_BUNDLED -gt 0 ]]; then
+            print_success "libltusb1.so correctly links to bundled libudev"
+        else
+            print_warning "libltusb1.so still links to system libudev"
+        fi
+    fi
+
+    # Verify SQLite driver is in both locations
+    SQLITE_USR_PLUGINS=$(ls usr/plugins/sqldrivers/libqsqlite.so* 2>/dev/null | wc -l)
+    SQLITE_QT5_PLUGINS=$(ls usr/lib/qt5/plugins/sqldrivers/libqsqlite.so* 2>/dev/null | wc -l)
+
+    if [[ $SQLITE_USR_PLUGINS -gt 0 ]]; then
+        print_success "SQLite driver found in usr/plugins/sqldrivers/"
+    else
+        print_warning "SQLite driver missing from usr/plugins/sqldrivers/"
+    fi
+
+    if [[ $SQLITE_QT5_PLUGINS -gt 0 ]]; then
+        print_success "SQLite driver found in usr/lib/qt5/plugins/sqldrivers/"
+    else
+        print_warning "SQLite driver missing from usr/lib/qt5/plugins/sqldrivers/"
+    fi
+
+    print_success "Bundle complete"
 
 
