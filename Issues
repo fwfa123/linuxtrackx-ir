@@ -1,0 +1,260 @@
+From Terminal
+$ ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage 
+qt.svg: Cannot open file ':/ltr/icons/play.svg', because: No such file or directory
+qt.svg: Cannot open file ':/ltr/icons/play.svg', because: No such file or directory
+qt.svg: Cannot open file ':/ltr/icons/stop.svg', because: No such file or directory
+qt.svg: Cannot open file ':/ltr/icons/stop.svg', because: No such file or directory
+qt.svg: Cannot open file ':/ltr/icons/pause.svg', because: No such file or directory
+qt.svg: Cannot open file ':/ltr/icons/pause.svg', because: No such file or directory
+QObject::connect: Incompatible sender/receiver arguments
+        TestingSection::testingWorkflowStarted() --> LinuxtrackGui::on_TesterExeRadioButton_toggled(bool)
+=== LinuxTrack Help System Initialization ===
+1. Checking Qt environment...
+   Qt version: 5.15.8
+   Application path: /tmp/.mount_LinuxTxgRC4a/usr/bin
+2. Checking Qt plugin paths...
+   Plugin path: /tmp/.mount_LinuxTxgRC4a/usr/plugins
+   Plugin path: /tmp/.mount_LinuxTxgRC4a/usr/bin
+3. Checking environment variables...
+   QT_PLUGIN_PATH: /tmp/.mount_LinuxTxgRC4a/usr/lib/qt5/plugins
+   QT_SQL_DRIVER_PATH: /tmp/.mount_LinuxTxgRC4a/usr/lib/qt5/plugins/sqldrivers
+   QT_HELP_PATH: NOT SET
+4. Checking SQLite driver availability...
+   Available SQL drivers: QSQLITE
+   ✅ QSQLITE driver found in available drivers
+5. Checking help file...
+   Help file path: /tmp/.mount_LinuxTxgRC4a/usr/share/linuxtrack/help/ltr_gui/help.qhc
+   ✅ Help file exists
+6. Testing SQLite database access...
+   ✅ SQLite database access working
+7. Initializing help engine...
+   ✅ Help engine setup successful
+=== Help System Initialization Complete ===
+
+From Debug
+$ ./debug_trackir.sh 
+[INFO] TrackIR Device Detection Debug
+[INFO] =================================
+[INFO] Checking TrackIR libraries...
+[SUCCESS] Found: usr/lib/linuxtrack/libtir.so
+[INFO] Dependencies for usr/lib/linuxtrack/libtir.so:
+  libltr.so.0 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libltr.so.0 (0x00007f4311356000)
+  libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f431131d000)
+  libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f431113c000)
+  libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f4310e00000)
+  libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f431105c000)
+  libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f431103a000)
+  /lib64/ld-linux-x86-64.so.2 (0x00007f43113a4000)
+[SUCCESS] Found: usr/lib/linuxtrack/libltusb1.so
+[INFO] Dependencies for usr/lib/linuxtrack/libltusb1.so:
+  libltr.so.0 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libltr.so.0 (0x00007f56363e5000)
+  libusb-1.0.so.0 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libusb-1.0.so.0 (0x00007f56363c4000)
+  libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f56361c9000)
+  libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5635e00000)
+  libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f56360e9000)
+  libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f56360c7000)
+  libudev.so.1 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libudev.so.1 (0x00007f5636098000)
+  libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f5636093000)
+  /lib64/ld-linux-x86-64.so.2 (0x00007f5636428000)
+[INFO] Checking USB libraries...
+[SUCCESS] Found: libusb-1.0.so.0
+[SUCCESS] Found: libudev.so.1
+[INFO] Testing library loading...
+[INFO] Attempting to load libtir.so...
+SUCCESS: libtir.so loaded successfully
+[SUCCESS] ltr_int_tir_found function found in libtir.so
+[INFO] Checking AppRun environment setup...
+[INFO] AppRun script found - checking content...
+[WARNING] LD_LIBRARY_PATH not set in AppRun
+[WARNING] Qt isolation not configured in AppRun
+[INFO] Debug complete. Check the output above for issues.
+
+
+From Logfile
+Linuxtrack version 0.99.22
+[Sat 2025-08-23 11:25:28 EDT] Couldn't load library 'libwc.so.0' - libwc.so.0: cannot open shared object file: No such file or directory!
+[Sat 2025-08-23 11:25:28 EDT] Starting ltr_gui
+[Sat 2025-08-23 11:25:28 EDT] Preferences read OK!
+[Sat 2025-08-23 11:25:28 EDT] Dumping prefs:
+[Sat 2025-08-23 11:25:28 EDT] [Global]
+Model = NP TrackClip
+Prefix = "/tmp/.mount_LinuxTThIDfO/usr/bin"
+Input = Wiimote
+
+
+[Wiimote]
+Capture-device = Wiimote
+Capture-device-id = Wiimote
+Running-indication = 0100
+Paused-indication = 0010
+
+
+[TrackIR]
+Capture-device = Tir
+Capture-device-id = Tir
+Threshold = 140
+Min-blob = 150
+Max-blob = 2500
+Status-led-brightness = 0
+Ir-led-brightness = 7
+Status-signals = On
+
+
+[NP TrackClip]
+Model-type = Cap
+Cap-X = 67
+Cap-Y = 54
+Cap-Z = 96
+Head-Y = 160
+Head-Z = 50
+Active = no
+
+
+[NP TrackClip Pro]
+Model-type = Clip
+Clip-Y1 = 40
+Clip-Y2 = 110
+Clip-Z1 = 30
+Clip-Z2 = 50
+Head-X = -100
+Head-Y = -100
+Head-Z = 50
+Active = yes
+
+
+[Face]
+Model-type = Face
+
+
+[Single Point Reflective]
+Model-type = SinglePoint
+Active = no
+
+
+[Single LED]
+Model-type = SinglePoint
+Active = yes
+
+
+[Default]
+Title = Default
+Pitch-enabled = Yes
+Pitch-deadzone = 0.0
+Pitch-left-curvature = 0.5
+Pitch-right-curvature = 0.5
+Pitch-sensitivity = 5.000000
+Pitch-left-limit = 80.000000
+Pitch-right-limit = 80.000000
+Pitch-filter = 0.2
+Pitch-inverted = No
+Yaw-enabled = Yes
+Yaw-deadzone = 0.0
+Yaw-left-curvature = 0.5
+Yaw-right-curvature = 0.5
+Yaw-sensitivity = 5.000000
+Yaw-left-limit = 130.000000
+Yaw-right-limit = 130.000000
+Yaw-filter = 0.2
+Yaw-inverted = No
+Roll-enabled = Yes
+Roll-deadzone = 0.0
+Roll-left-curvature = 0.5
+Roll-right-curvature = 0.5
+Roll-sensitivity = 1.500000
+Roll-left-limit = 45.000000
+Roll-right-limit = 45.000000
+Roll-filter = 0.2
+Roll-inverted = No
+Xtranslation-enabled = Yes
+Xtranslation-deadzone = 0.0
+Xtranslation-left-curvature = 0.5
+Xtranslation-right-curvature = 0.5
+Xtranslation-sensitivity = 5.000000
+Xtranslation-left-limit = 300.000000
+Xtranslation-right-limit = 300.000000
+Xtranslation-filter = 0.2
+Xtranslation-inverted = No
+Ytranslation-enabled = Yes
+Ytranslation-deadzone = 0.0
+Ytranslation-left-curvature = 0.5
+Ytranslation-right-curvature = 0.5
+Ytranslation-sensitivity = 5.000000
+Ytranslation-left-limit = 300.000000
+Ytranslation-right-limit = 300.000000
+Ytranslation-filter = 0.2
+Ytranslation-inverted = No
+Ztranslation-enabled = Yes
+Ztranslation-deadzone = 0.0
+Ztranslation-left-curvature = 0.5
+Ztranslation-right-curvature = 0.5
+Ztranslation-sensitivity = 2.000000
+Ztranslation-left-limit = 300.000000
+Ztranslation-right-limit = 1.000000
+Ztranslation-filter = 0.5
+Ztranslation-inverted = No
+
+
+
+[Sat 2025-08-23 11:25:28 EDT] ================================================
+[Sat 2025-08-23 11:25:28 EDT] Preferences read OK!
+[Sat 2025-08-23 11:25:28 EDT] Opening logfile viewer.
+
+[Sat 2025-08-23 11:25:28 EDT] Searching for compatible wine versions (requires 9.0+ for TrackIR 5.5.2 installer)...
+[Sat 2025-08-23 11:25:28 EDT] Found wine at /opt/wine-staging/bin/wine version 10.12
+[Sat 2025-08-23 11:25:28 EDT] Selected best wine version: /opt/wine-staging/bin/wine (v10.12)
+[Sat 2025-08-23 11:25:28 EDT] Selected wine version: /opt/wine-staging/bin/wine
+[Sat 2025-08-23 11:25:28 EDT]     WINEARCH='win64'
+[Sat 2025-08-23 11:25:28 EDT] Launching wine command: '/opt/wine-staging/bin/wine --version'
+[Sat 2025-08-23 11:25:28 EDT]     WINEDEBUG='+err+fixme'
+[Sat 2025-08-23 11:25:28 EDT] Going to create lock '/home/mario/.config/linuxtrack/ltr_server.lock' => 14!
+[Sat 2025-08-23 11:25:28 EDT] Lock 14 success!
+[Sat 2025-08-23 11:25:28 EDT] Passing the lock to protect fifo (pid 2971)!
+[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
+[Sat 2025-08-23 11:25:28 EDT] Closing axes!
+[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
+[Sat 2025-08-23 11:25:28 EDT] Closing axes!
+[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
+[Sat 2025-08-23 11:25:28 EDT] Closing axes!
+[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::getHomeDirectory() - HOME env var: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Current user: mario
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Expected home: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Actual home: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Final home directory: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Steam path: /home/mario/.steam/steam/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Steam apps path: /home/mario/.steam/steam/steamapps/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Compat data path: /home/mario/.steam/steam/steamapps/compatdata/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering library section: 0
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Raw line: '"path"		"/home/mario/.steam/debian-installation"'
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Library path: /home/mario/.steam/debian-installation
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering apps section
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found library: /home/mario/.steam/debian-installation
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering library section: 1
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Raw line: '"path"		"/media/mario/Fast/Steam_Linux"'
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Library path: /media/mario/Fast/Steam_Linux
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering apps section
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found library: /media/mario/Fast/Steam_Linux
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found 3 libraries
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found 1 manifest files in /home/mario/.steam/steam/steamapps/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found game 228980 in library: /home/mario/.steam/steam/steamapps/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found 1 manifest files in /home/mario/.steam/debian-installation/steamapps/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found game 228980 in library: /home/mario/.steam/debian-installation/steamapps/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Library path does not exist: /media/mario/Fast/Steam_Linux/steamapps/
+[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found 1 games
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::getHomeDirectory() - HOME env var: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Current user: mario
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Expected home: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Actual home: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Final home directory: /home/mario
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Database path: /home/mario/.local/share/lutris/pga.db
+[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Config path: /home/mario/.config/lutris/games/
+[Sat 2025-08-23 11:25:28 EDT] Searching for compatible wine versions (requires 9.0+ for TrackIR 5.5.2 installer)...
+[Sat 2025-08-23 11:25:28 EDT] Found wine at /opt/wine-staging/bin/wine version 10.12
+[Sat 2025-08-23 11:25:28 EDT] Selected best wine version: /opt/wine-staging/bin/wine (v10.12)
+[Sat 2025-08-23 11:25:28 EDT] Selected wine version: /opt/wine-staging/bin/wine
+[Sat 2025-08-23 11:25:28 EDT]     WINEARCH='win64'
+[Sat 2025-08-23 11:25:28 EDT] Launching wine command: '/opt/wine-staging/bin/wine --version'
+[Sat 2025-08-23 11:25:28 EDT]     WINEDEBUG='+err+fixme'
+[Sat 2025-08-23 11:25:28 EDT] Couldn't load library 'libtir.so.0' - libtir.so.0: cannot open shared object file: No such file or directory!
+
+[Sat 2025-08-23 11:25:31 EDT] Couldn't load library 'libjoy.so.0' - libjoy.so.0: cannot open shared object file: No such file or directory!

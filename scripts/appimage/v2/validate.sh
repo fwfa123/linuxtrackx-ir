@@ -28,6 +28,17 @@ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/
     fi
 done
 
+# Ensure 3D assets exist (GL 3D view)
+print_status "Validating 3D model assets"
+for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj; do
+    if [[ ! -f "$APPDIR/$asset" ]]; then
+        print_error "Missing 3D model asset: $asset"
+        failures=$((failures+1))
+    else
+        print_status "Found 3D asset: $asset"
+    fi
+done
+
 # Check for USB libraries required for device detection
 usb_libs_missing=true
 for usb_lib in libusb-1.0.so.0 libudev.so.1; do

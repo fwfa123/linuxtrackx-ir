@@ -165,11 +165,12 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.RunTesterButton, SIGNAL(pressed()), this, SLOT(on_RunTesterButton_pressed()));
 
   // Ensure the tracking window UI timers are active when testing workflow triggers tracking
-  connect(testingSection, SIGNAL(testingWorkflowStarted()), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
   connect(testingSection, &TestingSection::testingWorkflowStarted, [this]() {
     if (showWindow) {
       showWindow->startTimersOnly();
     }
+    // Also trigger the radio button toggle with true (workflow started)
+    on_TesterExeRadioButton_toggled(true);
   });
   
   // Connect System information buttons

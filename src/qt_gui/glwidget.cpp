@@ -31,6 +31,9 @@ void ReaderThread::run()
 
 void GLWidget::objectsRead()
 {
+  makeCurrent();
+  makeObjects();
+  updateGL();
   emit ready();
 }
 
