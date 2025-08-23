@@ -72,6 +72,10 @@ void Window::start_widget()
   inConstruction = false;
   constructed = true;
   control->setEnabled(true);
+  if (timer) {
+    // Ensure the 3D view refresh timer is started
+    timer->start(20);
+  }
 }
 
 void Window::newPose(linuxtrack_full_pose_t *raw, linuxtrack_pose_t *unfiltered, linuxtrack_pose_t *processed)
