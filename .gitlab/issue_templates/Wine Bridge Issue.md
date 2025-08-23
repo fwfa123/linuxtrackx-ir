@@ -2,7 +2,7 @@
 Brief description of the Wine bridge problem
 
 ## Steps to Reproduce
-1. Launch LinuxTrack X-IR v0.99.22
+1. Launch LinuxTrack X-IR v0.99.23
 2. Go to "Misc" tab
 3. Click "Install Wine Bridge" button
 4. [Describe what happens]
@@ -15,7 +15,7 @@ What actually happens
 
 ## System Information
 - **OS**: Ubuntu 22.04 / Fedora 37 / Arch Linux / etc.
-- **LinuxTrack Version**: v0.99.22
+- **LinuxTrack Version**: v0.99.23
 - **Wine Version**: (e.g., 8.0, 7.0, etc.)
 - **Wine Installation**: System package / Lutris / Manual
 - **Wine Prefix**: Default (~/.wine) / Custom location

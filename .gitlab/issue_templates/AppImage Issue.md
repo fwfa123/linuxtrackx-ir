@@ -15,7 +15,7 @@ What actually happens
 
 ## System Information
 - **OS**: Ubuntu 22.04 / Fedora 37 / Arch Linux / etc.
-- **LinuxTrack Version**: v0.99.22
+- **LinuxTrack Version**: v0.99.23
 - **AppImage Size**: 69MB
 - **Hardware**: CPU, GPU, RAM
 - **Desktop Environment**: GNOME / KDE / XFCE / etc.
