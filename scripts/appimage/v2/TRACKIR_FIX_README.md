@@ -135,6 +135,26 @@ grep -n "LD_LIBRARY_PATH" "$APPDIR/AppRun"
    - `validate.sh`: Validate with TrackIR checks
    - `package.sh`: Create the final AppImage
 
+### Using Bundled 32-bit Runtime for Wine
+
+The v2 pipeline now attempts to bundle a 32-bit `liblinuxtrack.so.0` into the AppImage under `usr/lib/i386-linux-gnu/linuxtrack/`.
+
+- When you run the installer inside the AppImage (`wine_bridge/scripts/install_wine_bridge.sh`), the script sets `LINUXTRACK_LIBS` to the bundled 32-bit lib if present, so 32-bit Wine prefixes can dlopen it.
+- To manually run a 32-bit executable with the bundled runtime without installing system-wide:
+  ```bash
+  ./LinuxTrack-X-IR-*.AppImage --appimage-extract
+  cd squashfs-root/wine_bridge/scripts
+  ./run_with_ltr32.sh "C:\\Program Files\\Linuxtrack\\Tester.exe"
+  ```
+  The wrapper exports `LINUXTRACK_LIBS` to the embedded 32-bit library and executes Wine.
+
+Verification tips:
+```bash
+ls -l squashfs-root/usr/lib/i386-linux-gnu/linuxtrack/
+ls -t /tmp/linuxtrack.log* 2>/dev/null | head -n1 | xargs -r cat
+# Expect: "Loaded OK." when the 32-bit loader finds the library
+```
+
 ### Debugging TrackIR Issues
 
 If you still experience TrackIR device detection issues:

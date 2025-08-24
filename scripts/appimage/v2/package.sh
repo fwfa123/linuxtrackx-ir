@@ -6,13 +6,18 @@ source "$SCRIPT_DIR/common.sh"
 
 print_status "Package: creating AppImage"
 
+[[ -e "$APPIMAGETOOL" ]] || die "appimagetool not found at $APPIMAGETOOL"
+chmod +x "$APPIMAGETOOL" 2>/dev/null || true
 [[ -x "$APPIMAGETOOL" ]] || die "appimagetool not executable at $APPIMAGETOOL"
 [[ -d "$APPDIR" ]] || die "AppDir not found: $APPDIR"
 
 pushd "$PROJECT_ROOT" >/dev/null
     OUT="${APP_NAME}-${VERSION}-x86_64.AppImage"
     print_status "Building AppImage -> $OUT"
-    ARCH=x86_64 "$APPIMAGETOOL" "$APPDIR" "$OUT"
+    # Enable extract-and-run to avoid FUSE dependency issues on some distros
+    ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=${APPIMAGE_EXTRACT_AND_RUN:-1} "$APPIMAGETOOL" "$APPDIR" "$OUT" || die "appimagetool failed to create $OUT"
+
+    [[ -f "$OUT" ]] || die "Expected AppImage not created: $OUT"
 
     if [[ "${WITH_ZSYNC}" = "1" ]]; then
         print_status "Generating zsync"
@@ -56,6 +61,43 @@ pushd "$PROJECT_ROOT" >/dev/null
         else
             print_error "libltusb1.so still links to system libudev"
         fi
+    fi
+
+    # Verify critical contents inside the final AppImage (help system and 32-bit runtime)
+    print_status "Verifying contents inside the AppImage"
+    TMP_EXTRACT_DIR=$(mktemp -d)
+    if [[ -f "$OUT" ]]; then
+        pushd "$TMP_EXTRACT_DIR" >/dev/null
+            APPIMAGE_EXTRACT_AND_RUN=1 "$PROJECT_ROOT/$OUT" --appimage-extract >/dev/null 2>&1 || true
+            ROOT_DIR="squashfs-root"
+            # Help files for ltr_gui and mickey
+            HELP_OK=1
+            for f in \
+                "$ROOT_DIR/usr/share/linuxtrack/help/ltr_gui/help.qhc" \
+                "$ROOT_DIR/usr/share/linuxtrack/help/ltr_gui/help.qch" \
+                "$ROOT_DIR/usr/share/linuxtrack/help/mickey/help.qhc" \
+                "$ROOT_DIR/usr/share/linuxtrack/help/mickey/help.qch"; do
+                if [[ ! -f "$f" ]]; then
+                    print_error "Missing help artifact in AppImage: ${f#${ROOT_DIR}/}"
+                    HELP_OK=0
+                fi
+            done
+
+            # 32-bit runtime library for Wine bridge
+            LTR32_PATH="$ROOT_DIR/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+            if [[ ! -f "$LTR32_PATH" ]]; then
+                print_error "Missing 32-bit liblinuxtrack in AppImage: usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+                HELP_OK=0
+            fi
+        popd >/dev/null
+        rm -rf "$TMP_EXTRACT_DIR"
+        if [[ $HELP_OK -ne 1 ]]; then
+            die "AppImage content validation failed"
+        else
+            print_success "AppImage content validation passed"
+        fi
+    else
+        print_warning "Cannot verify AppImage contents; $OUT not found"
     fi
 
 popd >/dev/null
