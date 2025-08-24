@@ -33,6 +33,8 @@ This directory contains user-facing guides for LinuxTrack Qt5 modernization, inc
 - **`SUCCESS_SUMMARY.md`** - Project success status (3KB)
 - **`FINAL_INTEGRATION_SUMMARY.md`** - Integration completion summary (5KB)
 - **`MX_LINUX_FIX_SUMMARY.md`** - MX Linux specific fixes (5KB)
+ - **`WINE_BRIDGE_INSTALLATION_GUIDE.md`** - Wine bridge installation steps
+ - See also: `../AppImage_WineBridge.md` for AppImage 32-bit/64-bit Wine usage
 
 ## Installation Guides
 

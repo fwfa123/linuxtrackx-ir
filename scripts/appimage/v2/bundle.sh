@@ -31,6 +31,38 @@ pushd "$APPDIR" >/dev/null
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
     fi
 
+    # Ensure Qt Help module is properly bundled
+    print_status "Verifying Qt Help module bundling"
+    if [[ ! -f usr/lib/libQt5Help.so.5 && ! -f usr/lib/libQt5Help.so ]]; then
+        print_warning "Qt5Help library not found in bundled libraries"
+        # Try to find and copy Qt5Help from system
+        for qt5help in /usr/lib/x86_64-linux-gnu/libQt5Help.so.5* /usr/lib/libQt5Help.so.5* /usr/lib/qt5/lib/libQt5Help.so.5*; do
+            if [[ -f "$qt5help" ]]; then
+                cp -f "$qt5help" usr/lib/
+                print_success "Copied Qt5Help library: $(basename "$qt5help")"
+                break
+            fi
+        done
+    else
+        print_success "Qt5Help library found in bundled libraries"
+    fi
+
+    # Ensure Qt SQL module is properly bundled (required for help system)
+    print_status "Verifying Qt SQL module bundling"
+    if [[ ! -f usr/lib/libQt5Sql.so.5 && ! -f usr/lib/libQt5Sql.so ]]; then
+        print_warning "Qt5Sql library not found in bundled libraries"
+        # Try to find and copy Qt5Sql from system
+        for qt5sql in /usr/lib/x86_64-linux-gnu/libQt5Sql.so.5* /usr/lib/libQt5Sql.so.5* /usr/lib/qt5/lib/libQt5Sql.so.5*; do
+            if [[ -f "$qt5sql" ]]; then
+                cp -f "$qt5sql" usr/lib/
+                print_success "Copied Qt5Sql library: $(basename "$qt5sql")"
+                break
+            fi
+        done
+    else
+        print_success "Qt5Sql library found in bundled libraries"
+    fi
+
     # Ensure Qt plugin directories exist
     ensure_dir usr/lib/qt5/plugins/platforms
     ensure_dir usr/lib/qt5/plugins/sqldrivers
@@ -49,6 +81,77 @@ pushd "$APPDIR" >/dev/null
         cp -f "$ASSET_SRC_DIR/$a" usr/share/linuxtrack/
     done
     print_success "3D model assets copied to usr/share/linuxtrack/"
+
+    # Bundle Qt Help system files (required for help functionality)
+    print_status "Bundling Qt Help system files"
+    ensure_dir usr/share/linuxtrack/help/ltr_gui
+    ensure_dir usr/share/linuxtrack/help/mickey
+    
+    # Copy ltr_gui help files (should exist after prepare step)
+    if [[ -f "$PROJECT_ROOT/src/qt_gui/help.qhc" ]]; then
+        cp -f "$PROJECT_ROOT/src/qt_gui/help.qhc" usr/share/linuxtrack/help/ltr_gui/
+        print_success "Copied ltr_gui help.qhc"
+    else
+        print_error "ltr_gui help.qhc not found - help generation may have failed"
+    fi
+    
+    if [[ -f "$PROJECT_ROOT/src/qt_gui/help.qch" ]]; then
+        cp -f "$PROJECT_ROOT/src/qt_gui/help.qch" usr/share/linuxtrack/help/ltr_gui/
+        print_success "Copied ltr_gui help.qch"
+    else
+        print_error "ltr_gui help.qch not found - help generation may have failed"
+    fi
+    
+    # Copy mickey help files (should exist after prepare step)
+    if [[ -f "$PROJECT_ROOT/src/mickey/help.qhc" ]]; then
+        cp -f "$PROJECT_ROOT/src/mickey/help.qhc" usr/share/linuxtrack/help/mickey/
+        print_success "Copied mickey help.qhc"
+    else
+        print_error "mickey help.qhc not found - help generation may have failed"
+    fi
+    
+    if [[ -f "$PROJECT_ROOT/src/mickey/help.qch" ]]; then
+        cp -f "$PROJECT_ROOT/src/mickey/help.qch" usr/share/linuxtrack/help/mickey/
+        print_success "Copied mickey help.qch"
+    else
+        print_error "mickey help.qch not found - help generation may have failed"
+    fi
+    
+    # Copy help content directories if they exist
+    if [[ -d "$PROJECT_ROOT/src/qt_gui/help" ]]; then
+        cp -r "$PROJECT_ROOT/src/qt_gui/help"/* usr/share/linuxtrack/help/ltr_gui/ 2>/dev/null || true
+        print_success "Copied ltr_gui help content"
+    fi
+    
+    if [[ -d "$PROJECT_ROOT/src/mickey/help" ]]; then
+        cp -r "$PROJECT_ROOT/src/mickey/help"/* usr/share/linuxtrack/help/mickey/ 2>/dev/null || true
+        print_success "Copied mickey help content"
+    fi
+    
+    print_success "Qt Help system files bundled"
+
+    # Bundle Qt Help plugins specifically
+    print_status "Bundling Qt Help plugins"
+    ensure_dir usr/plugins/help
+    ensure_dir usr/plugins/kauth/helper
+    
+    # Copy Qt Help plugins from system if available
+    for plugin in /usr/lib/x86_64-linux-gnu/qt5/plugins/help/*.so /usr/lib/qt5/plugins/help/*.so /usr/lib/qt/plugins/help/*.so; do
+        if [[ -f "$plugin" ]]; then
+            cp -f "$plugin" usr/plugins/help/
+            print_status "Bundled Qt Help plugin: $(basename "$plugin")"
+        fi
+    done
+    
+    # Copy KIO Help plugins if available
+    for plugin in /usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper/*.so /usr/lib/qt5/plugins/kauth/helper/*.so; do
+        if [[ -f "$plugin" ]]; then
+            cp -f "$plugin" usr/plugins/kauth/helper/
+            print_status "Bundled Qt Help KIO plugin: $(basename "$plugin")"
+        fi
+    done
+    
+    print_success "Qt Help plugins bundled"
 
     # Ensure platform plugin (xcb) fallback if plugin didn't bundle
     if [[ ! -f usr/plugins/platforms/libqxcb.so && ! -f usr/lib/qt5/plugins/platforms/libqxcb.so ]]; then
@@ -226,4 +329,20 @@ popd >/dev/null
 
     print_success "Bundle complete"
 
+    # Ensure 32-bit linuxtrack runtime is bundled if available on system
+    print_status "Ensuring 32-bit liblinuxtrack is bundled if available"
+    DEST32_DIR="usr/lib/i386-linux-gnu/linuxtrack"
+    if [[ ! -f "$DEST32_DIR/liblinuxtrack.so.0" ]]; then
+        SYS_LTR32="/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+        if [[ -f "$SYS_LTR32" ]]; then
+            print_status "Copying 32-bit lib from system: $SYS_LTR32"
+            mkdir -p "$DEST32_DIR"
+            cp -f "$SYS_LTR32" "$DEST32_DIR/"
+            print_success "Bundled 32-bit liblinuxtrack.so.0"
+        else
+            print_warning "No system 32-bit liblinuxtrack.so.0 found; AppImage will not include 32-bit runtime"
+        fi
+    else
+        print_success "32-bit liblinuxtrack already present in AppDir"
+    fi
 

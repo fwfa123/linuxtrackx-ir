@@ -56,6 +56,16 @@ TARGET_PREFIX="${WINEPREFIX:-$HOME/.wine}"
 info "Installing Wine bridge into: $TARGET_PREFIX"
 export WINEPREFIX="$TARGET_PREFIX"
 
+# Ensure 32-bit runtime is discoverable by linuxtrack loader in 32-bit prefixes
+APPDIR_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+LTR32="$APPDIR_ROOT/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+if [[ -f "$LTR32" ]]; then
+    info "Configuring 32-bit linuxtrack runtime for Wine (LINUXTRACK_LIBS)"
+    export LINUXTRACK_LIBS="$LTR32"
+else
+    warn "32-bit linuxtrack runtime not bundled; relying on system installation"
+fi
+
 set +e
 wine "$INSTALLER" /S 2>/dev/null
 rc=$?
@@ -70,5 +80,24 @@ EOF
 chmod +x "$APPDIR/wine_bridge/scripts/install_wine_bridge.sh"
 
 print_success "Wine bridge staging complete"
+
+# Provide a helper wrapper to run Wine with bundled 32-bit liblinuxtrack
+cat > "$APPDIR/wine_bridge/scripts/run_with_ltr32.sh" << 'EOF'
+#!/usr/bin/env bash
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+APPDIR_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
+
+LTR32="$APPDIR_ROOT/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+if [[ ! -f "$LTR32" ]]; then
+  echo "[ERROR] Bundled 32-bit linuxtrack library not found in AppImage." >&2
+  exit 1
+fi
+
+export LINUXTRACK_LIBS="$LTR32"
+exec wine "$@"
+EOF
+chmod +x "$APPDIR/wine_bridge/scripts/run_with_ltr32.sh"
 
 

@@ -49,7 +49,7 @@ write_minimal_apprun() {
 APPDIR="$(dirname "$(readlink -f "$0")")"
 
 # Set up completely isolated environment for self-contained AppImage
-export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack"
+export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack:$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
 
 # CRITICAL: Complete Qt isolation to prevent version mixing
 export QT_DISABLE_VERSION_CHECK=1
@@ -85,10 +85,6 @@ export G_DEBUG="fatal-warnings"
 export QT_DEBUG_PLUGINS=1
 export QT_LOGGING_RULES="qt.help.*=true;qt.qpa.*=false;qt.sql.*=true"
 export QT_HELP_PATH="$APPDIR/usr/share/linuxtrack/help"
-
-# Enhanced SQLite driver configuration
-export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt5/plugins/sqldrivers"
-export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
 
 # Additional Qt environment variables for help system
 export QT_IMAGEIO_MAXALLOC=0

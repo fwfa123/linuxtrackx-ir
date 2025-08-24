@@ -68,12 +68,13 @@ QT_QPA_PLATFORM=xcb ./LinuxTrack-X-IR-*.AppImage
 # Install dependencies
 sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging
 
-# Build and install
+# Build and install (includes 32-bit runtime for Wine Tester.exe)
 git clone <repository-url>
 cd linuxtrackx-ir
 cd scripts/dev && ./wine_dev_setup.sh && cd ../..
 autoreconf -fiv
-# Enable 32-bit linuxtrack runtime so 32-bit Tester.exe works (installs to /usr/lib/i386-linux-gnu/linuxtrack)
+# Enable 32-bit linuxtrack runtime so 32-bit Tester.exe works
+# This installs liblinuxtrack.so.0 to /usr/lib/i386-linux-gnu/linuxtrack
 ./configure --prefix=/usr --with-lib32-dir=i386-linux-gnu --enable-ltr-32lib-on-x64
 make -j$(nproc)
 sudo make install
@@ -220,8 +221,9 @@ sudo apt-get install -y qtbase5-dev qtwayland5-dev libqt5waylandclient5 libqt5x1
 # Additional dependencies for AppImage creation
 sudo apt-get install -y patchelf appstream-util
 
-# Standard LinuxTrack dependencies
-sudo apt-get install -y qttools5-dev-tools qttools5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging
+# Standard LinuxTrack dependencies (include multilib toolchain and 32-bit dev headers)
+sudo apt-get install -y qttools5-dev-tools qttools5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging \
+  libmxml-dev:i386 libusb-1.0-0-dev:i386 liblo-dev:i386 libx11-dev:i386 libxrandr-dev:i386
 ```
 
 #### **Build AppImage**
@@ -242,8 +244,10 @@ cd linuxtrackx-ir
 - ✅ **Qt5 Enhanced**: Full Qt5 development support
 - ✅ **Wayland Compatible**: Includes Wayland libraries for modern desktop environments
 - ✅ **Wine Bridge**: Complete Wine integration for Windows game compatibility
+- ✅ **32-bit + 64-bit Runtime**: Bundles 32-bit liblinuxtrack for 32-bit Wine prefixes
 - ✅ **Help System**: Integrated Qt help system with SQLite support
 - ✅ **Library Isolation**: Complete library isolation for maximum compatibility
+- ✅ **Wine Bridge Guide**: See `docs/AppImage_WineBridge.md` for 32-bit/64-bit Wine usage
 ```
 
 ## 🎮 Usage
@@ -423,6 +427,15 @@ make -j$(nproc)
 | **Missing 32-bit libraries (liblo, mxml)** | **Use the automated build script: `./scripts/build_32bit_libs.sh`** |
 | **32-bit/64-bit compilation conflicts** | **Use explicit 64-bit flags: `CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"`** |
 | **Qt5 Makefile not generated** | **Manually generate: `cd src/qt_gui && /usr/bin/qmake-qt5 -spec linux-g++ "LIBDIR=/usr/local/lib/linuxtrack" ltr_gui.pro`** |
+
+#### **32-bit Runtime Verification**
+```bash
+# After install from source
+file /usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0
+
+# After running AppImage
+ls -l squashfs-root/usr/lib/i386-linux-gnu/linuxtrack/ 2>/dev/null || true
+```
 
 #### **Build System Issues:**
 
