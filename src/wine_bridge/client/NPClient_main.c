@@ -127,6 +127,29 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
     return TRUE;
 }
+
+/******************************************************************
+ *		DllRegisterServer - Required for Wine DLL loading
+ *
+ *
+ */
+HRESULT WINAPI DllRegisterServer(void)
+{
+    TRACE("()\n");
+    return S_OK;
+}
+
+/******************************************************************
+ *		DllUnregisterServer - Required for Wine DLL loading
+ *
+ *
+ */
+HRESULT WINAPI DllUnregisterServer(void)
+{
+    TRACE("()\n");
+    return S_OK;
+}
+
 /******************************************************************
  *		NPPriv_ClientNotify (NPCLIENT.1)
  *

@@ -1,0 +1,14 @@
+[INFO] Preflight checks
+- autoreconf:
+OK autoreconf (GNU Autoconf) 2.71
+- make:
+OK GNU Make 4.3
+- qhelpgenerator:
+OK present
+- qmake:
+OK QMake version 3.1
+- patchelf:
+OK patchelf 0.14.3
+- ldd:
+OK ldd (Debian GLIBC 2.36-9+deb12u10) 2.36
+OK present

@@ -1,0 +1,168 @@
++ set -euo pipefail
++++ dirname ./validate.sh
+++ cd .
+++ pwd
++ SCRIPT_DIR=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2
++ source /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2/common.sh
+++ set -euo pipefail
+++++ dirname /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2/common.sh
++++ cd /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2
++++ pwd
+++ SCRIPT_DIR=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2
+++ source /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2/config.sh
++++ set -euo pipefail
++++++ dirname /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2/config.sh
+++++ cd /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2
+++++ pwd
++++ SCRIPT_DIR=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2
+++++ dirname /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/v2
++++ APPSCRIPTS_DIR=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage
++++++ dirname /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage
+++++ dirname /media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts
++++ PROJECT_ROOT=/media/mario/Local_Git/git-repos/linuxtrackx-ir
+++++ basename /media/mario/Local_Git/git-repos/linuxtrackx-ir
++++ [[ linuxtrackx-ir != \l\i\n\u\x\t\r\a\c\k\x\-\i\r ]]
++++ APPDIR=/media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2
++++ APP_NAME=LinuxTrack-X-IR
++++ APP_DISPLAY_NAME='LinuxTrack X-IR'
++++ APP_ID=com.linuxtrack.linuxtrackx-ir
++++ VERSION=0.99.23
++++ APPIMAGETOOL=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/appimagetool-x86_64.AppImage
++++ LINUXDEPLOY=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/linuxdeploy-x86_64.AppImage
++++ LINUXDEPLOY_QT=/media/mario/Local_Git/git-repos/linuxtrackx-ir/scripts/appimage/linuxdeploy-plugin-qt-x86_64.AppImage
++++ FORCE_XCB=1
++++ WITH_WINE_BRIDGE=1
++++ WITH_HELP=1
++++ WITH_ZSYNC=0
++++ CLEAN=0
+++++ nproc
++++ JOBS=16
+++ RED='\033[0;31m'
+++ GREEN='\033[0;32m'
+++ YELLOW='\033[1;33m'
+++ BLUE='\033[0;34m'
+++ NC='\033[0m'
++ print_status 'Validate: auditing AppDir'
++ echo -e '\033[0;34m[INFO]\033[0m Validate: auditing AppDir'
+[0;34m[INFO][0m Validate: auditing AppDir
++ [[ -d /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2 ]]
++ failures=0
++ for bin in usr/bin/ltr_gui
++ [[ ! -x /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/bin/ltr_gui ]]
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltr.so
++ [[ ! -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so ]]
++ print_status 'Found TrackIR library: usr/lib/linuxtrack/libtir.so'
++ echo -e '\033[0;34m[INFO]\033[0m Found TrackIR library: usr/lib/linuxtrack/libtir.so'
+[0;34m[INFO][0m Found TrackIR library: usr/lib/linuxtrack/libtir.so
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltr.so
++ [[ ! -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so ]]
++ print_status 'Found TrackIR library: usr/lib/linuxtrack/libltusb1.so'
++ echo -e '\033[0;34m[INFO]\033[0m Found TrackIR library: usr/lib/linuxtrack/libltusb1.so'
+[0;34m[INFO][0m Found TrackIR library: usr/lib/linuxtrack/libltusb1.so
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltr.so
++ [[ ! -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltr.so ]]
++ print_status 'Found TrackIR library: usr/lib/linuxtrack/libltr.so'
++ echo -e '\033[0;34m[INFO]\033[0m Found TrackIR library: usr/lib/linuxtrack/libltr.so'
+[0;34m[INFO][0m Found TrackIR library: usr/lib/linuxtrack/libltr.so
++ print_status 'Validating 3D model assets'
++ echo -e '\033[0;34m[INFO]\033[0m Validating 3D model assets'
+[0;34m[INFO][0m Validating 3D model assets
++ for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj
++ [[ ! -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/share/linuxtrack/sphere.obj ]]
++ print_status 'Found 3D asset: usr/share/linuxtrack/sphere.obj'
++ echo -e '\033[0;34m[INFO]\033[0m Found 3D asset: usr/share/linuxtrack/sphere.obj'
+[0;34m[INFO][0m Found 3D asset: usr/share/linuxtrack/sphere.obj
++ for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj
++ [[ ! -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/share/linuxtrack/sparow_opaq.obj ]]
++ print_status 'Found 3D asset: usr/share/linuxtrack/sparow_opaq.obj'
++ echo -e '\033[0;34m[INFO]\033[0m Found 3D asset: usr/share/linuxtrack/sparow_opaq.obj'
+[0;34m[INFO][0m Found 3D asset: usr/share/linuxtrack/sparow_opaq.obj
++ for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj
++ [[ ! -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/share/linuxtrack/sparow_glass.obj ]]
++ print_status 'Found 3D asset: usr/share/linuxtrack/sparow_glass.obj'
++ echo -e '\033[0;34m[INFO]\033[0m Found 3D asset: usr/share/linuxtrack/sparow_glass.obj'
+[0;34m[INFO][0m Found 3D asset: usr/share/linuxtrack/sparow_glass.obj
++ usb_libs_missing=true
++ for usb_lib in libusb-1.0.so.0 libudev.so.1
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libusb-1.0.so.0 ]]
++ print_status 'Found USB library: libusb-1.0.so.0'
++ echo -e '\033[0;34m[INFO]\033[0m Found USB library: libusb-1.0.so.0'
+[0;34m[INFO][0m Found USB library: libusb-1.0.so.0
++ usb_libs_missing=false
++ for usb_lib in libusb-1.0.so.0 libudev.so.1
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libudev.so.1 ]]
++ print_status 'Found USB library: libudev.so.1'
++ echo -e '\033[0;34m[INFO]\033[0m Found USB library: libudev.so.1'
+[0;34m[INFO][0m Found USB library: libudev.so.1
++ usb_libs_missing=false
++ false
++ print_status 'Verifying rpath settings on TrackIR libraries'
++ echo -e '\033[0;34m[INFO]\033[0m Verifying rpath settings on TrackIR libraries'
+[0;34m[INFO][0m Verifying rpath settings on TrackIR libraries
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so ]]
+++ patchelf --print-rpath /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so
++ rpath='$ORIGIN/..'
++ [[ $ORIGIN/.. == \N\O\N\E ]]
++ [[ -z $ORIGIN/.. ]]
+++ basename usr/lib/linuxtrack/libtir.so
++ print_status 'rpath for libtir.so: $ORIGIN/..'
++ echo -e '\033[0;34m[INFO]\033[0m rpath for libtir.so: $ORIGIN/..'
+[0;34m[INFO][0m rpath for libtir.so: $ORIGIN/..
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so.0 ]]
+++ patchelf --print-rpath /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so.0
++ rpath='$ORIGIN/..'
++ [[ $ORIGIN/.. == \N\O\N\E ]]
++ [[ -z $ORIGIN/.. ]]
+++ basename usr/lib/linuxtrack/libtir.so.0
++ print_status 'rpath for libtir.so.0: $ORIGIN/..'
++ echo -e '\033[0;34m[INFO]\033[0m rpath for libtir.so.0: $ORIGIN/..'
+[0;34m[INFO][0m rpath for libtir.so.0: $ORIGIN/..
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so.0.0.0 ]]
+++ patchelf --print-rpath /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libtir.so.0.0.0
++ rpath='$ORIGIN/..'
++ [[ $ORIGIN/.. == \N\O\N\E ]]
++ [[ -z $ORIGIN/.. ]]
+++ basename usr/lib/linuxtrack/libtir.so.0.0.0
++ print_status 'rpath for libtir.so.0.0.0: $ORIGIN/..'
++ echo -e '\033[0;34m[INFO]\033[0m rpath for libtir.so.0.0.0: $ORIGIN/..'
+[0;34m[INFO][0m rpath for libtir.so.0.0.0: $ORIGIN/..
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so ]]
+++ patchelf --print-rpath /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so
++ rpath='$ORIGIN/..'
++ [[ $ORIGIN/.. == \N\O\N\E ]]
++ [[ -z $ORIGIN/.. ]]
+++ basename usr/lib/linuxtrack/libltusb1.so
++ print_status 'rpath for libltusb1.so: $ORIGIN/..'
++ echo -e '\033[0;34m[INFO]\033[0m rpath for libltusb1.so: $ORIGIN/..'
+[0;34m[INFO][0m rpath for libltusb1.so: $ORIGIN/..
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so.0 ]]
+++ patchelf --print-rpath /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so.0
++ rpath='$ORIGIN/..'
++ [[ $ORIGIN/.. == \N\O\N\E ]]
++ [[ -z $ORIGIN/.. ]]
+++ basename usr/lib/linuxtrack/libltusb1.so.0
++ print_status 'rpath for libltusb1.so.0: $ORIGIN/..'
++ echo -e '\033[0;34m[INFO]\033[0m rpath for libltusb1.so.0: $ORIGIN/..'
+[0;34m[INFO][0m rpath for libltusb1.so.0: $ORIGIN/..
++ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0
++ [[ -f /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so.0.0.0 ]]
+++ patchelf --print-rpath /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/linuxtrack/libltusb1.so.0.0.0
++ rpath='$ORIGIN/..'
++ [[ $ORIGIN/.. == \N\O\N\E ]]
++ [[ -z $ORIGIN/.. ]]
+++ basename usr/lib/linuxtrack/libltusb1.so.0.0.0
++ print_status 'rpath for libltusb1.so.0.0.0: $ORIGIN/..'
++ echo -e '\033[0;34m[INFO]\033[0m rpath for libltusb1.so.0.0.0: $ORIGIN/..'
+[0;34m[INFO][0m rpath for libltusb1.so.0.0.0: $ORIGIN/..
++ [[ ! -e /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/plugins/platforms/libqxcb.so ]]
+++ ls /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/plugins/sqldrivers/libqsqlite.so
+++ wc -l
++ SQLITE_USR_PLUGINS=1
+++ ls '/media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so*'
+++ wc -l
++ SQLITE_QT5_PLUGINS=0

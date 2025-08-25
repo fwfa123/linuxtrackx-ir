@@ -83,6 +83,7 @@ unix:!macx {
   HELP_QHC = $${HELP_OUT_DIR}/help.qhc
   HELP_QCH = $${HELP_OUT_DIR}/help.qch
 
+  # Auto-generate Qt Help files during build
   QMAKE_POST_LINK += qhelpgenerator $${PWD}/ltr_gui.qhcp -o $${HELP_QHC} && \
                      qhelpgenerator $${PWD}/ltr_gui.qhp  -o $${HELP_QCH}
 

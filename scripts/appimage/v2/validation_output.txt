@@ -1,0 +1,17 @@
+[0;34m[INFO][0m Validate: auditing AppDir
+[0;34m[INFO][0m Found TrackIR library: usr/lib/linuxtrack/libtir.so
+[0;34m[INFO][0m Found TrackIR library: usr/lib/linuxtrack/libltusb1.so
+[0;34m[INFO][0m Found TrackIR library: usr/lib/linuxtrack/libltr.so
+[0;34m[INFO][0m Validating 3D model assets
+[0;34m[INFO][0m Found 3D asset: usr/share/linuxtrack/sphere.obj
+[0;34m[INFO][0m Found 3D asset: usr/share/linuxtrack/sparow_opaq.obj
+[0;34m[INFO][0m Found 3D asset: usr/share/linuxtrack/sparow_glass.obj
+[0;34m[INFO][0m Found USB library: libusb-1.0.so.0
+[0;34m[INFO][0m Found USB library: libudev.so.1
+[0;34m[INFO][0m Verifying rpath settings on TrackIR libraries
+[0;34m[INFO][0m rpath for libtir.so: $ORIGIN
+[0;34m[INFO][0m rpath for libtir.so.0: $ORIGIN
+[0;34m[INFO][0m rpath for libtir.so.0.0.0: $ORIGIN
+[0;34m[INFO][0m rpath for libltusb1.so: $ORIGIN
+[0;34m[INFO][0m rpath for libltusb1.so.0: $ORIGIN
+[0;34m[INFO][0m rpath for libltusb1.so.0.0.0: $ORIGIN

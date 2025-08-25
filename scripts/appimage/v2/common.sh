@@ -84,7 +84,161 @@ export G_DEBUG="fatal-warnings"
 # Help system debugging and configuration
 export QT_DEBUG_PLUGINS=1
 export QT_LOGGING_RULES="qt.help.*=true;qt.qpa.*=false;qt.sql.*=true"
-export QT_HELP_PATH="$APPDIR/usr/share/linuxtrack/help"
+
+# Enhanced help system setup with comprehensive error handling and fallbacks
+HELP_RUNTIME_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/linuxtrack/help"
+HELP_SYSTEM_STATUS="initializing"
+HELP_SYSTEM_ERRORS=()
+HELP_SYSTEM_WARNINGS=()
+
+# Create help directories with comprehensive error handling
+echo "Initializing help system runtime environment..."
+if ! mkdir -p "$HELP_RUNTIME_ROOT/ltr_gui" "$HELP_RUNTIME_ROOT/mickey" 2>/dev/null; then
+    error_msg="Could not create help directories in $HELP_RUNTIME_ROOT"
+    HELP_SYSTEM_ERRORS+=("$error_msg")
+    echo "Error: $error_msg"
+    HELP_SYSTEM_STATUS="directory_creation_failed"
+    
+    # Try fallback location
+    FALLBACK_HELP_ROOT="$HOME/.linuxtrack/help"
+    echo "Attempting fallback location: $FALLBACK_HELP_ROOT"
+    if mkdir -p "$FALLBACK_HELP_ROOT/ltr_gui" "$FALLBACK_HELP_ROOT/mickey" 2>/dev/null; then
+        HELP_RUNTIME_ROOT="$FALLBACK_HELP_ROOT"
+        echo "Success: Using fallback help location"
+        HELP_SYSTEM_STATUS="using_fallback"
+    else
+        echo "Error: Fallback location also failed - help system will be disabled"
+        HELP_SYSTEM_STATUS="completely_failed"
+    fi
+fi
+
+# Copy help files with comprehensive error handling and validation
+HELP_FILES_COPIED=0
+HELP_COMPONENTS_READY=0
+
+echo "Copying help system files to runtime location..."
+for comp in ltr_gui mickey; do
+    COMPONENT_READY=true
+    COMPONENT_FILES=0
+    
+    echo "  Processing $comp component..."
+    
+    # Copy help database files (.qhc, .qch)
+    for f in help.qhc help.qch; do
+        source_file="$APPDIR/usr/share/linuxtrack/help/$comp/$f"
+        target_file="$HELP_RUNTIME_ROOT/$comp/$f"
+        
+        if [ -f "$source_file" ]; then
+            if cp -f "$source_file" "$target_file" 2>/dev/null; then
+                if chmod u+w "$target_file" 2>/dev/null; then
+                    echo "    ✓ Copied $f for $comp"
+                    ((HELP_FILES_COPIED++))
+                    ((COMPONENT_FILES++))
+                else
+                    warning_msg="Could not make $f writable for $comp"
+                    HELP_SYSTEM_WARNINGS+=("$warning_msg")
+                    echo "    ⚠️  $warning_msg"
+                    COMPONENT_READY=false
+                fi
+            else
+                error_msg="Failed to copy $f for $comp"
+                HELP_SYSTEM_ERRORS+=("$error_msg")
+                echo "    ✗ $error_msg"
+                COMPONENT_READY=false
+            fi
+        else
+            warning_msg="Help file $f not found for $comp"
+            HELP_SYSTEM_WARNINGS+=("$warning_msg")
+            echo "    ⚠️  $warning_msg"
+            COMPONENT_READY=false
+        fi
+    done
+    
+    # Copy help content directories
+    content_source="$APPDIR/usr/share/linuxtrack/help/$comp/content"
+    content_target="$HELP_RUNTIME_ROOT/$comp/content"
+    
+    if [ -d "$content_source" ] && [ ! -d "$content_target" ]; then
+        if cp -r "$content_source" "$content_target" 2>/dev/null; then
+            echo "    ✓ Copied help content for $comp"
+        else
+            warning_msg="Failed to copy help content for $comp"
+            HELP_SYSTEM_WARNINGS+=("$warning_msg")
+            echo "    ⚠️  $warning_msg"
+            COMPONENT_READY=false
+        fi
+    elif [ ! -d "$content_source" ]; then
+        echo "    ℹ️  No help content directory for $comp"
+    else
+        echo "    ℹ️  Help content already exists for $comp"
+    fi
+    
+    # Validate component readiness
+    if [ "$COMPONENT_READY" = true ] && [ $COMPONENT_FILES -ge 2 ]; then
+        echo "    ✅ $comp component ready ($COMPONENT_FILES files)"
+        ((HELP_COMPONENTS_READY++))
+    else
+        echo "    ❌ $comp component not ready"
+    fi
+    
+    echo ""
+done
+
+# Set help system environment variables
+export QT_HELP_PATH="$HELP_RUNTIME_ROOT"
+
+# Comprehensive help system validation and status reporting
+echo "=== Help System Validation ==="
+
+# Determine overall system status
+if [ "$HELP_SYSTEM_STATUS" = "completely_failed" ]; then
+    echo "❌ Help system completely failed - will be disabled"
+    HELP_SYSTEM_STATUS="disabled"
+elif [ $HELP_FILES_COPIED -gt 0 ] && [ $HELP_COMPONENTS_READY -gt 0 ]; then
+    if [ "$HELP_SYSTEM_STATUS" = "using_fallback" ]; then
+        HELP_SYSTEM_STATUS="ready_fallback"
+        echo "✅ Help system ready using fallback location"
+    else
+        HELP_SYSTEM_STATUS="ready"
+        echo "✅ Help system ready"
+    fi
+elif [ $HELP_FILES_COPIED -gt 0 ]; then
+    HELP_SYSTEM_STATUS="partial"
+    echo "⚠️  Help system partially functional"
+else
+    HELP_SYSTEM_STATUS="no_files"
+    echo "❌ No help files copied - help system disabled"
+fi
+
+# Report detailed status
+echo "  Status: $HELP_SYSTEM_STATUS"
+echo "  Files copied: $HELP_FILES_COPIED"
+echo "  Components ready: $HELP_COMPONENTS_READY/2"
+echo "  Runtime location: $HELP_RUNTIME_ROOT"
+
+# Report errors and warnings
+if [ ${#HELP_SYSTEM_ERRORS[@]} -gt 0 ]; then
+    echo "  Errors: ${#HELP_SYSTEM_ERRORS[@]}"
+    for error in "${HELP_SYSTEM_ERRORS[@]}"; do
+        echo "    ✗ $error"
+    done
+fi
+
+if [ ${#HELP_SYSTEM_WARNINGS[@]} -gt 0 ]; then
+    echo "  Warnings: ${#HELP_SYSTEM_WARNINGS[@]}"
+    for warning in "${HELP_SYSTEM_WARNINGS[@]}"; do
+        echo "    ⚠️  $warning"
+    done
+fi
+
+# Set appropriate environment variables based on status
+if [ "$HELP_SYSTEM_STATUS" = "disabled" ] || [ "$HELP_SYSTEM_STATUS" = "no_files" ]; then
+    echo "  Note: Help system will be disabled at runtime"
+    export QT_HELP_PATH=""
+    unset QT_HELP_PATH
+else
+    echo "  Note: Help system will be available at runtime"
+fi
 
 # Additional Qt environment variables for help system
 export QT_IMAGEIO_MAXALLOC=0
@@ -99,7 +253,36 @@ if ! xset q >/dev/null 2>&1; then
     echo "If the application fails to start, try running: xhost +local:"
 fi
 
-# Debug output for device detection
+# Final help system status and launch preparation
+echo ""
+echo "=== Help System Launch Summary ==="
+echo "Final Status: $HELP_SYSTEM_STATUS"
+echo "Files Available: $HELP_FILES_COPIED"
+echo "Components Ready: $HELP_COMPONENTS_READY/2"
+echo "Runtime Path: $HELP_RUNTIME_ROOT"
+
+# Provide user guidance based on status
+case "$HELP_SYSTEM_STATUS" in
+    "ready"|"ready_fallback")
+        echo "✅ Help system will be fully functional"
+        echo "   Users can access help content through the application menu"
+        ;;
+    "partial")
+        echo "⚠️  Help system will be partially functional"
+        echo "   Some help content may be unavailable"
+        ;;
+    "disabled"|"no_files")
+        echo "❌ Help system will be disabled"
+        echo "   Users will not have access to help content"
+        echo "   Application functionality will not be affected"
+        ;;
+    *)
+        echo "❓ Help system status unclear"
+        echo "   Behavior may be unpredictable"
+        ;;
+esac
+
+echo ""
 echo "=== Help System Initialization Complete ==="
 
 # Launch the application with proper library isolation

@@ -62,6 +62,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Original modernization plan (7KB)
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB)
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
+- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - Qt5 Help System AppImage bundling fix plan (12KB)
 
 ### 📈 Development Progress (`progress/`)
 **For development history and project tracking**
@@ -87,6 +88,10 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 5. **Wine support installation fails** → [WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)
 6. **Application won't launch** → [troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)
 7. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
+
+### AppImage-Specific Issues
+8. **Help system not working in AppImage** → [technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)
+9. **AppImage won't run on different distributions** → [technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)
 
 ### Distribution-Specific Guides
 - **MX Linux** → [guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)
@@ -137,6 +142,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/README.md](technical/README.md)** - Technical documentation
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Technical architecture
 - **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Implementation details
+- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help system fix
 - **[progress/README.md](progress/README.md)** - Development progress
 
 ### Testers
@@ -187,6 +193,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 #### "AppImage" or "Packaging" or "Distribution"
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)**
+- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)**
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** (Packaging section)
 

@@ -1,260 +1,593 @@
-From Terminal
-$ ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage 
-qt.svg: Cannot open file ':/ltr/icons/play.svg', because: No such file or directory
-qt.svg: Cannot open file ':/ltr/icons/play.svg', because: No such file or directory
-qt.svg: Cannot open file ':/ltr/icons/stop.svg', because: No such file or directory
-qt.svg: Cannot open file ':/ltr/icons/stop.svg', because: No such file or directory
-qt.svg: Cannot open file ':/ltr/icons/pause.svg', because: No such file or directory
-qt.svg: Cannot open file ':/ltr/icons/pause.svg', because: No such file or directory
-QObject::connect: Incompatible sender/receiver arguments
-        TestingSection::testingWorkflowStarted() --> LinuxtrackGui::on_TesterExeRadioButton_toggled(bool)
+QT_DEBUG_PLUGINS=1 QT_LOGGING_RULES='qt.help.*=true;qt.sql.*=true' ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage |& grep -E 'QFactoryLoader|qt\.help|qt\.sql'
+[liveuser@CachyOS linuxtrackx-ir]$ QT_DEBUG_PLUGINS=1 QT_LOGGING_RULES='qt.help.*=true;qt.sql.*=true' ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage |& grep -E 'QFactoryLoader|qt\.help|qt\.sql'
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/libqxcb.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_extractor"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_gui"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_pipe"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_recenter"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_server1"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/mickey"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/qt.conf"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/wii_server"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/platforms" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/libqxcb.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/platforms" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/libqxcb.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_extractor"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_gui"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_pipe"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_recenter"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/ltr_server1"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/mickey"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/qt.conf"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/bin/wii_server"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/platformthemes" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platformthemes" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/platformthemes" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/platforminputcontexts" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforminputcontexts" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforminputcontexts/libibusplatforminputcontextplugin.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/platforminputcontexts" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/styles" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/styles" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/styles" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/iconengines" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/iconengines" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/iconengines/libqsvgicon.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/iconengines" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/imageformats" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqgif.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqheif.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqicns.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqico.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqjpeg.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqmng.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqsvg.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqtga.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqtiff.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqwbmp.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/imageformats/libqwebp.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/imageformats" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/accessible" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/accessible" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/accessible" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/xcbglintegrations" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/xcbglintegrations" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/xcbglintegrations/libqxcb-egl-integration.so"
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/xcbglintegrations/libqxcb-glx-integration.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/xcbglintegrations" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/sqldrivers" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/sqldrivers" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/sqldrivers/libqsqlite.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/sqldrivers" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/platforms/accessiblebridge" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/plugins/accessiblebridge" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/.mount_LinuxTFmUbKJ/usr/bin/accessiblebridge" ...
+[liveuser@CachyOS linuxtrackx-ir]$
+
+
+
+APPIMAGE_EXTRACT_AND_RUN=1 ./LinuxTrack-X-IR-0.99.23-x86_64.AppImageThis worked
+[liveuser@CachyOS linuxtrackx-ir]$ APPIMAGE_EXTRACT_AND_RUN=1 ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage
+=== Help System Initialization Complete ===
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/libqxcb.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/libqxcb.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.QPlatformIntegrationFactoryInterface.5.3",
+    "MetaData": {
+        "Keys": [
+            "xcb"
+        ]
+    },
+    "archreq": 0,
+    "className": "QXcbIntegrationPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("xcb")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_extractor"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_extractor'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_gui"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_gui'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_pipe"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_pipe'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_recenter"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_recenter'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_server1"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_server1'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/mickey"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/mickey'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/qt.conf"
+QElfParser: '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/qt.conf' is not an ELF object
+"'/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/qt.conf' is not an ELF object"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/wii_server"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/wii_server'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/platforms" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/libqxcb.so"
+Got keys from plugin meta data ("xcb")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/platforms" ...
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/libqxcb.so"
+loaded library "Xcursor"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/libqxcb.so"
+Got keys from plugin meta data ()
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_extractor"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_extractor'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_gui"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_gui'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_pipe"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_pipe'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_recenter"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_recenter'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_server1"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/ltr_server1'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/mickey"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/mickey'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/qt.conf"
+QElfParser: '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/qt.conf' is not an ELF object
+"'/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/qt.conf' is not an ELF object"
+         not a plugin
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/wii_server"
+"Failed to extract plugin meta data from '/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/wii_server'"
+         not a plugin
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/platformthemes" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platformthemes" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/platformthemes" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/platforminputcontexts" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPlatformInputContextFactoryInterface.5.1",
+    "MetaData": {
+        "Keys": [
+            "compose",
+            "xim"
+        ]
+    },
+    "archreq": 0,
+    "className": "QComposePlatformInputContextPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("compose", "xim")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts/libibusplatforminputcontextplugin.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts/libibusplatforminputcontextplugin.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPlatformInputContextFactoryInterface.5.1",
+    "MetaData": {
+        "Keys": [
+            "ibus"
+        ]
+    },
+    "archreq": 0,
+    "className": "QIbusPlatformInputContextPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("ibus")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/platforminputcontexts" ...
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/styles" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/styles" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/styles" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/iconengines" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/iconengines" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/iconengines/libqsvgicon.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/iconengines/libqsvgicon.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QIconEngineFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "svg",
+            "svgz",
+            "svg.gz"
+        ]
+    },
+    "archreq": 0,
+    "className": "QSvgIconPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("svg", "svgz", "svg.gz")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/iconengines" ...
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/iconengines/libqsvgicon.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/imageformats" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqgif.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqgif.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "gif"
+        ],
+        "MimeTypes": [
+            "image/gif"
+        ]
+    },
+    "archreq": 0,
+    "className": "QGifPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("gif")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqheif.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqheif.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "heic",
+            "heif",
+            "heics",
+            "heifs"
+        ],
+        "MimeTypes": [
+            "image/heic",
+            "image/heif",
+            "image/heic-sequence",
+            "image/heif-sequence"
+        ]
+    },
+    "archreq": 0,
+    "className": "QHeifPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("heic", "heif", "heics", "heifs")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqicns.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqicns.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "icns"
+        ],
+        "MimeTypes": [
+            "image/x-icns"
+        ]
+    },
+    "archreq": 0,
+    "className": "QICNSPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("icns")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqico.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqico.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "ico",
+            "cur"
+        ],
+        "MimeTypes": [
+            "image/vnd.microsoft.icon",
+            "image/vnd.microsoft.icon"
+        ]
+    },
+    "archreq": 0,
+    "className": "QICOPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("ico", "cur")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqjpeg.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqjpeg.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "jpg",
+            "jpeg"
+        ],
+        "MimeTypes": [
+            "image/jpeg",
+            "image/jpeg"
+        ]
+    },
+    "archreq": 0,
+    "className": "QJpegPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("jpg", "jpeg")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqmng.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqmng.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "mng"
+        ],
+        "MimeTypes": [
+            "image/x-mng"
+        ]
+    },
+    "archreq": 0,
+    "className": "QMngPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("mng")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqsvg.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqsvg.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "svg",
+            "svgz"
+        ],
+        "MimeTypes": [
+            "image/svg+xml",
+            "image/svg+xml-compressed"
+        ]
+    },
+    "archreq": 0,
+    "className": "QSvgPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("svg", "svgz")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtga.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtga.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "tga"
+        ],
+        "MimeTypes": [
+            "image/x-tga"
+        ]
+    },
+    "archreq": 0,
+    "className": "QTgaPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("tga")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtiff.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtiff.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "tiff",
+            "tif"
+        ],
+        "MimeTypes": [
+            "image/tiff",
+            "image/tiff"
+        ]
+    },
+    "archreq": 0,
+    "className": "QTiffPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("tiff", "tif")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwbmp.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwbmp.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "wbmp"
+        ],
+        "MimeTypes": [
+            "image/vnd.wap.wbmp"
+        ]
+    },
+    "archreq": 0,
+    "className": "QWbmpPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("wbmp")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwebp.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwebp.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QImageIOHandlerFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "webp"
+        ],
+        "MimeTypes": [
+            "image/webp"
+        ]
+    },
+    "archreq": 0,
+    "className": "QWebpPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("webp")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/imageformats" ...
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqgif.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqheif.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqicns.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqico.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqjpeg.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqmng.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqsvg.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtga.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtiff.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwbmp.so"
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwebp.so"
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/accessible" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/accessible" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/accessible" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/xcbglintegrations" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations/libqxcb-egl-integration.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations/libqxcb-egl-integration.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.Xcb.QXcbGlIntegrationFactoryInterface.5.5",
+    "MetaData": {
+        "Keys": [
+            "xcb_egl"
+        ]
+    },
+    "archreq": 0,
+    "className": "QXcbEglIntegrationPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("xcb_egl")
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations/libqxcb-glx-integration.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations/libqxcb-glx-integration.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QPA.Xcb.QXcbGlIntegrationFactoryInterface.5.5",
+    "MetaData": {
+        "Keys": [
+            "xcb_glx"
+        ]
+    },
+    "archreq": 0,
+    "className": "QXcbGlxIntegrationPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("xcb_glx")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/xcbglintegrations" ...
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations/libqxcb-glx-integration.so"
 === LinuxTrack Help System Initialization ===
 1. Checking Qt environment...
    Qt version: 5.15.8
-   Application path: /tmp/.mount_LinuxTxgRC4a/usr/bin
+   Application path: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin
 2. Checking Qt plugin paths...
-   Plugin path: /tmp/.mount_LinuxTxgRC4a/usr/plugins
-   Plugin path: /tmp/.mount_LinuxTxgRC4a/usr/bin
+   Plugin path: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms
+   Plugin path: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins
+   Plugin path: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin
 3. Checking environment variables...
-   QT_PLUGIN_PATH: /tmp/.mount_LinuxTxgRC4a/usr/lib/qt5/plugins
-   QT_SQL_DRIVER_PATH: /tmp/.mount_LinuxTxgRC4a/usr/lib/qt5/plugins/sqldrivers
-   QT_HELP_PATH: NOT SET
+   QT_PLUGIN_PATH: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins:/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/lib/qt5/plugins
+   QT_SQL_DRIVER_PATH: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/sqldrivers:/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/lib/qt5/plugins/sqldrivers
+   QT_HELP_PATH: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/share/linuxtrack/help
 4. Checking SQLite driver availability...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/sqldrivers" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/sqldrivers" ...
+QFactoryLoader::QFactoryLoader() looking at "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/sqldrivers/libqsqlite.so"
+Found metadata in lib /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/sqldrivers/libqsqlite.so, metadata=
+{
+    "IID": "org.qt-project.Qt.QSqlDriverFactoryInterface",
+    "MetaData": {
+        "Keys": [
+            "QSQLITE"
+        ]
+    },
+    "archreq": 0,
+    "className": "QSQLiteDriverPlugin",
+    "debug": false,
+    "version": 331520
+}
+
+
+Got keys from plugin meta data ("QSQLITE")
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/sqldrivers" ...
    Available SQL drivers: QSQLITE
    ✅ QSQLITE driver found in available drivers
 5. Checking help file...
-   Help file path: /tmp/.mount_LinuxTxgRC4a/usr/share/linuxtrack/help/ltr_gui/help.qhc
+   Help file path: /tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/share/linuxtrack/help/ltr_gui/help.qhc
    ✅ Help file exists
 6. Testing SQLite database access...
+loaded library "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/sqldrivers/libqsqlite.so"
    ✅ SQLite database access working
 7. Initializing help engine...
    ✅ Help engine setup successful
 === Help System Initialization Complete ===
+libpng warning: iCCP: known incorrect sRGB profile
+Found device 4008
+Type: 8
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/accessiblebridge" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/accessiblebridge" ...
+QFactoryLoader::QFactoryLoader() checking directory path "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/bin/accessiblebridge" ...
+libpng warning: iCCP: known incorrect sRGB profile
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/sqldrivers/libqsqlite.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/xcbglintegrations/libqxcb-glx-integration.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqgif.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqheif.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqicns.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqico.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqjpeg.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqmng.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqsvg.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtga.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqtiff.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwbmp.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/imageformats/libqwebp.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/iconengines/libqsvgicon.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforminputcontexts/libcomposeplatforminputcontextplugin.so"
+QLibraryPrivate::unload succeeded on "/tmp/appimage_extracted_8f522ca8f91ea9989aac65445c9ad261/usr/plugins/platforms/libqxcb.so"
+QLibraryPrivate::unload succeeded on "Xcursor" (faked)
 
-From Debug
-$ ./debug_trackir.sh 
-[INFO] TrackIR Device Detection Debug
-[INFO] =================================
-[INFO] Checking TrackIR libraries...
-[SUCCESS] Found: usr/lib/linuxtrack/libtir.so
-[INFO] Dependencies for usr/lib/linuxtrack/libtir.so:
-  libltr.so.0 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libltr.so.0 (0x00007f4311356000)
-  libz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f431131d000)
-  libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f431113c000)
-  libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f4310e00000)
-  libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f431105c000)
-  libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f431103a000)
-  /lib64/ld-linux-x86-64.so.2 (0x00007f43113a4000)
-[SUCCESS] Found: usr/lib/linuxtrack/libltusb1.so
-[INFO] Dependencies for usr/lib/linuxtrack/libltusb1.so:
-  libltr.so.0 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libltr.so.0 (0x00007f56363e5000)
-  libusb-1.0.so.0 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libusb-1.0.so.0 (0x00007f56363c4000)
-  libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f56361c9000)
-  libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f5635e00000)
-  libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f56360e9000)
-  libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f56360c7000)
-  libudev.so.1 => /media/mario/Local_Git/git-repos/linuxtrackx-ir/AppDir_v2/usr/lib/libudev.so.1 (0x00007f5636098000)
-  libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f5636093000)
-  /lib64/ld-linux-x86-64.so.2 (0x00007f5636428000)
-[INFO] Checking USB libraries...
-[SUCCESS] Found: libusb-1.0.so.0
-[SUCCESS] Found: libudev.so.1
-[INFO] Testing library loading...
-[INFO] Attempting to load libtir.so...
-SUCCESS: libtir.so loaded successfully
-[SUCCESS] ltr_int_tir_found function found in libtir.so
-[INFO] Checking AppRun environment setup...
-[INFO] AppRun script found - checking content...
-[WARNING] LD_LIBRARY_PATH not set in AppRun
-[WARNING] Qt isolation not configured in AppRun
-[INFO] Debug complete. Check the output above for issues.
-
-
-From Logfile
-Linuxtrack version 0.99.22
-[Sat 2025-08-23 11:25:28 EDT] Couldn't load library 'libwc.so.0' - libwc.so.0: cannot open shared object file: No such file or directory!
-[Sat 2025-08-23 11:25:28 EDT] Starting ltr_gui
-[Sat 2025-08-23 11:25:28 EDT] Preferences read OK!
-[Sat 2025-08-23 11:25:28 EDT] Dumping prefs:
-[Sat 2025-08-23 11:25:28 EDT] [Global]
-Model = NP TrackClip
-Prefix = "/tmp/.mount_LinuxTThIDfO/usr/bin"
-Input = Wiimote
-
-
-[Wiimote]
-Capture-device = Wiimote
-Capture-device-id = Wiimote
-Running-indication = 0100
-Paused-indication = 0010
-
-
-[TrackIR]
-Capture-device = Tir
-Capture-device-id = Tir
-Threshold = 140
-Min-blob = 150
-Max-blob = 2500
-Status-led-brightness = 0
-Ir-led-brightness = 7
-Status-signals = On
-
-
-[NP TrackClip]
-Model-type = Cap
-Cap-X = 67
-Cap-Y = 54
-Cap-Z = 96
-Head-Y = 160
-Head-Z = 50
-Active = no
-
-
-[NP TrackClip Pro]
-Model-type = Clip
-Clip-Y1 = 40
-Clip-Y2 = 110
-Clip-Z1 = 30
-Clip-Z2 = 50
-Head-X = -100
-Head-Y = -100
-Head-Z = 50
-Active = yes
-
-
-[Face]
-Model-type = Face
-
-
-[Single Point Reflective]
-Model-type = SinglePoint
-Active = no
-
-
-[Single LED]
-Model-type = SinglePoint
-Active = yes
-
-
-[Default]
-Title = Default
-Pitch-enabled = Yes
-Pitch-deadzone = 0.0
-Pitch-left-curvature = 0.5
-Pitch-right-curvature = 0.5
-Pitch-sensitivity = 5.000000
-Pitch-left-limit = 80.000000
-Pitch-right-limit = 80.000000
-Pitch-filter = 0.2
-Pitch-inverted = No
-Yaw-enabled = Yes
-Yaw-deadzone = 0.0
-Yaw-left-curvature = 0.5
-Yaw-right-curvature = 0.5
-Yaw-sensitivity = 5.000000
-Yaw-left-limit = 130.000000
-Yaw-right-limit = 130.000000
-Yaw-filter = 0.2
-Yaw-inverted = No
-Roll-enabled = Yes
-Roll-deadzone = 0.0
-Roll-left-curvature = 0.5
-Roll-right-curvature = 0.5
-Roll-sensitivity = 1.500000
-Roll-left-limit = 45.000000
-Roll-right-limit = 45.000000
-Roll-filter = 0.2
-Roll-inverted = No
-Xtranslation-enabled = Yes
-Xtranslation-deadzone = 0.0
-Xtranslation-left-curvature = 0.5
-Xtranslation-right-curvature = 0.5
-Xtranslation-sensitivity = 5.000000
-Xtranslation-left-limit = 300.000000
-Xtranslation-right-limit = 300.000000
-Xtranslation-filter = 0.2
-Xtranslation-inverted = No
-Ytranslation-enabled = Yes
-Ytranslation-deadzone = 0.0
-Ytranslation-left-curvature = 0.5
-Ytranslation-right-curvature = 0.5
-Ytranslation-sensitivity = 5.000000
-Ytranslation-left-limit = 300.000000
-Ytranslation-right-limit = 300.000000
-Ytranslation-filter = 0.2
-Ytranslation-inverted = No
-Ztranslation-enabled = Yes
-Ztranslation-deadzone = 0.0
-Ztranslation-left-curvature = 0.5
-Ztranslation-right-curvature = 0.5
-Ztranslation-sensitivity = 2.000000
-Ztranslation-left-limit = 300.000000
-Ztranslation-right-limit = 1.000000
-Ztranslation-filter = 0.5
-Ztranslation-inverted = No
-
-
-
-[Sat 2025-08-23 11:25:28 EDT] ================================================
-[Sat 2025-08-23 11:25:28 EDT] Preferences read OK!
-[Sat 2025-08-23 11:25:28 EDT] Opening logfile viewer.
-
-[Sat 2025-08-23 11:25:28 EDT] Searching for compatible wine versions (requires 9.0+ for TrackIR 5.5.2 installer)...
-[Sat 2025-08-23 11:25:28 EDT] Found wine at /opt/wine-staging/bin/wine version 10.12
-[Sat 2025-08-23 11:25:28 EDT] Selected best wine version: /opt/wine-staging/bin/wine (v10.12)
-[Sat 2025-08-23 11:25:28 EDT] Selected wine version: /opt/wine-staging/bin/wine
-[Sat 2025-08-23 11:25:28 EDT]     WINEARCH='win64'
-[Sat 2025-08-23 11:25:28 EDT] Launching wine command: '/opt/wine-staging/bin/wine --version'
-[Sat 2025-08-23 11:25:28 EDT]     WINEDEBUG='+err+fixme'
-[Sat 2025-08-23 11:25:28 EDT] Going to create lock '/home/mario/.config/linuxtrack/ltr_server.lock' => 14!
-[Sat 2025-08-23 11:25:28 EDT] Lock 14 success!
-[Sat 2025-08-23 11:25:28 EDT] Passing the lock to protect fifo (pid 2971)!
-[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
-[Sat 2025-08-23 11:25:28 EDT] Closing axes!
-[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
-[Sat 2025-08-23 11:25:28 EDT] Closing axes!
-[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
-[Sat 2025-08-23 11:25:28 EDT] Closing axes!
-[Sat 2025-08-23 11:25:28 EDT] Initializing axes for profile 'Default'!
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::getHomeDirectory() - HOME env var: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Current user: mario
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Expected home: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Actual home: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Final home directory: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Steam path: /home/mario/.steam/steam/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Steam apps path: /home/mario/.steam/steam/steamapps/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::initializePaths() - Compat data path: /home/mario/.steam/steam/steamapps/compatdata/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering library section: 0
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Raw line: '"path"		"/home/mario/.steam/debian-installation"'
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Library path: /home/mario/.steam/debian-installation
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering apps section
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found library: /home/mario/.steam/debian-installation
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering library section: 1
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Raw line: '"path"		"/media/mario/Fast/Steam_Linux"'
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Library path: /media/mario/Fast/Steam_Linux
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Entering apps section
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found library: /media/mario/Fast/Steam_Linux
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found 3 libraries
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found 1 manifest files in /home/mario/.steam/steam/steamapps/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found game 228980 in library: /home/mario/.steam/steam/steamapps/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found 1 manifest files in /home/mario/.steam/debian-installation/steamapps/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Found game 228980 in library: /home/mario/.steam/debian-installation/steamapps/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::scanLibrariesForGames() - Library path does not exist: /media/mario/Fast/Steam_Linux/steamapps/
-[Sat 2025-08-23 11:25:28 EDT] SteamIntegration::parseLibraryFolders() - Found 1 games
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::getHomeDirectory() - HOME env var: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Current user: mario
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Expected home: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Actual home: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Final home directory: /home/mario
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Database path: /home/mario/.local/share/lutris/pga.db
-[Sat 2025-08-23 11:25:28 EDT] LutrisIntegration::initializePaths() - Config path: /home/mario/.config/lutris/games/
-[Sat 2025-08-23 11:25:28 EDT] Searching for compatible wine versions (requires 9.0+ for TrackIR 5.5.2 installer)...
-[Sat 2025-08-23 11:25:28 EDT] Found wine at /opt/wine-staging/bin/wine version 10.12
-[Sat 2025-08-23 11:25:28 EDT] Selected best wine version: /opt/wine-staging/bin/wine (v10.12)
-[Sat 2025-08-23 11:25:28 EDT] Selected wine version: /opt/wine-staging/bin/wine
-[Sat 2025-08-23 11:25:28 EDT]     WINEARCH='win64'
-[Sat 2025-08-23 11:25:28 EDT] Launching wine command: '/opt/wine-staging/bin/wine --version'
-[Sat 2025-08-23 11:25:28 EDT]     WINEDEBUG='+err+fixme'
-[Sat 2025-08-23 11:25:28 EDT] Couldn't load library 'libtir.so.0' - libtir.so.0: cannot open shared object file: No such file or directory!
-
-[Sat 2025-08-23 11:25:31 EDT] Couldn't load library 'libjoy.so.0' - libjoy.so.0: cannot open shared object file: No such file or directory!
+sudo install -Dm644 AppDir_v2/udev/rules.d/99-TIR.rules /lib/udev/rules.d/99-TIR.rules
+sudo install -Dm644 AppDir_v2/udev/rules.d/99-Mickey.rules /lib/udev/rules.d/99-Mickey.rules
+sudo udevadm control --reload && sudo udevadm trigger
+This worked

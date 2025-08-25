@@ -91,13 +91,19 @@ else
     failures=$((failures+1))
 fi
 
-# Check Qt Help system files
+# Check Qt Help system files comprehensively
 print_status "Checking Qt Help system files"
 HELP_LTR_GUI_QHC=false
 HELP_LTR_GUI_QCH=false
+HELP_MICKEY_QHC=false
+HELP_MICKEY_QCH=false
+
 [[ -f "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qhc" ]] && HELP_LTR_GUI_QHC=true
 [[ -f "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qch" ]] && HELP_LTR_GUI_QCH=true
+[[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qhc" ]] && HELP_MICKEY_QHC=true
+[[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" ]] && HELP_MICKEY_QCH=true
 
+# Check ltr_gui help files
 if [[ "$HELP_LTR_GUI_QHC" = true ]] && [[ "$HELP_LTR_GUI_QCH" = true ]]; then
     print_success "Qt Help system files present (ltr_gui)"
 else
@@ -105,13 +111,53 @@ else
     failures=$((failures+1))
 fi
 
-# Check if help files are valid SQLite databases (optional but helpful)
-if command -v sqlite3 >/dev/null 2>&1 && [[ "$HELP_LTR_GUI_QCH" = true ]]; then
-    if sqlite3 "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qch" ".tables" >/dev/null 2>&1; then
-        print_success "Qt Help content file (help.qch) is valid SQLite database"
-    else
-        print_warning "Qt Help content file (help.qch) appears to be corrupted or invalid"
+# Check mickey help files
+if [[ "$HELP_MICKEY_QHC" = true ]] && [[ "$HELP_MICKEY_QCH" = true ]]; then
+    print_success "Qt Help system files present (mickey)"
+else
+    print_warning "Qt Help system files missing from mickey (optional component)"
+fi
+
+validate_help_db() {
+    local path="$1"
+    local label="$2"
+    if ! sqlite3 "$path" ".tables" >/dev/null 2>&1; then
+        print_error "${label} is not a valid SQLite database"
+        failures=$((failures+1))
+        return
     fi
+
+    # Only enforce contents tables for .qch (content database). .qhc (collection) has different schema.
+    if [[ "$path" == *.qch ]]; then
+        local tables
+        tables=$(sqlite3 "$path" ".tables" 2>/dev/null || true)
+        if [[ "$tables" =~ ContentsTable && "$tables" =~ FileDataTable ]]; then
+            print_success "${label} valid: required tables present"
+        else
+            print_error "${label} missing required tables (ContentsTable, FileDataTable)"
+            failures=$((failures+1))
+        fi
+    else
+        print_success "${label} opens as SQLite (schema acceptable for collection)"
+    fi
+}
+
+# Check if help files are valid SQLite databases with required tables
+if command -v sqlite3 >/dev/null 2>&1; then
+    if [[ "$HELP_LTR_GUI_QCH" = true ]]; then
+        validate_help_db "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qch" "ltr_gui help.qch"
+    fi
+    if [[ "$HELP_LTR_GUI_QHC" = true ]]; then
+        validate_help_db "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qhc" "ltr_gui help.qhc"
+    fi
+    if [[ "$HELP_MICKEY_QCH" = true ]]; then
+        validate_help_db "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" "mickey help.qch"
+    fi
+    if [[ "$HELP_MICKEY_QHC" = true ]]; then
+        validate_help_db "$APPDIR/usr/share/linuxtrack/help/mickey/help.qhc" "mickey help.qhc"
+    fi
+else
+    print_warning "sqlite3 not available; skipping detailed help database validation"
 fi
 
 # Check Qt Help and SQL module libraries
@@ -133,21 +179,57 @@ else
     failures=$((failures+1))
 fi
 
-# Check Qt Help plugins
+# Check Qt Help plugins comprehensively
 print_status "Checking Qt Help plugins"
-HELP_PLUGINS=$({ find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
+HELP_PLUGINS_USR=$({ find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
+HELP_PLUGINS_QT5=$({ find "$APPDIR/usr/lib/qt5/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
 KIO_HELP_PLUGINS=$({ find "$APPDIR/usr/plugins/kauth/helper" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
+KIO_KF5_PLUGINS=$({ find "$APPDIR/usr/plugins/kf5/kio" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
 
-if [[ $HELP_PLUGINS -gt 0 ]]; then
-    print_success "Qt Help plugins found: $HELP_PLUGINS"
+# Total help plugins found
+TOTAL_HELP_PLUGINS=$((HELP_PLUGINS_USR + HELP_PLUGINS_QT5))
+TOTAL_KIO_PLUGINS=$((KIO_HELP_PLUGINS + KIO_KF5_PLUGINS))
+
+if [[ $TOTAL_HELP_PLUGINS -gt 0 ]]; then
+    print_success "Qt Help plugins found: $TOTAL_HELP_PLUGINS total (usr/plugins: $HELP_PLUGINS_USR, usr/lib/qt5/plugins: $HELP_PLUGINS_QT5)"
+    
+    # List specific plugins found
+    if [[ $HELP_PLUGINS_USR -gt 0 ]]; then
+        echo "  usr/plugins/help:"
+        find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
+            echo "    - $(basename "$plugin")"
+        done
+    fi
+    
+    if [[ $HELP_PLUGINS_QT5 -gt 0 ]]; then
+        echo "  usr/lib/qt5/plugins/help:"
+        find "$APPDIR/usr/lib/qt5/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
+            echo "    - $(basename "$plugin")"
+        done
+    fi
 else
-    print_status "No Qt Help plugins found (optional)"
+    print_warning "No Qt Help plugins found - help system will have limited functionality"
 fi
 
-if [[ $KIO_HELP_PLUGINS -gt 0 ]]; then
-    print_success "KIO Help plugins found: $KIO_HELP_PLUGINS"
+if [[ $TOTAL_KIO_PLUGINS -gt 0 ]]; then
+    print_success "KIO Help plugins found: $TOTAL_KIO_PLUGINS total (kauth/helper: $KIO_HELP_PLUGINS, kf5/kio: $KIO_KF5_PLUGINS)"
+    
+    # List specific KIO plugins found
+    if [[ $KIO_HELP_PLUGINS -gt 0 ]]; then
+        echo "  usr/plugins/kauth/helper:"
+        find "$APPDIR/usr/plugins/kauth/helper" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
+            echo "    - $(basename "$plugin")"
+        done
+    fi
+    
+    if [[ $KIO_KF5_PLUGINS -gt 0 ]]; then
+        echo "  usr/plugins/kf5/kio:"
+        find "$APPDIR/usr/plugins/kf5/kio" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
+            echo "    - $(basename "$plugin")"
+        done
+    fi
 else
-    print_status "No KIO Help plugins found (optional)"
+    print_status "No KIO Help plugins found (optional enhancement)"
 fi
 
 # Ensure 32-bit linuxtrack runtime is present when wine bridge is enabled

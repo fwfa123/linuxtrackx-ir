@@ -13,18 +13,19 @@ chmod +x "$APPIMAGETOOL" 2>/dev/null || true
 
 pushd "$PROJECT_ROOT" >/dev/null
     OUT="${APP_NAME}-${VERSION}-x86_64.AppImage"
-    print_status "Building AppImage -> $OUT"
+    OUT_PATH="$PROJECT_ROOT/$OUT"
+    print_status "Building AppImage -> $OUT_PATH"
     # Enable extract-and-run to avoid FUSE dependency issues on some distros
-    ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=${APPIMAGE_EXTRACT_AND_RUN:-1} "$APPIMAGETOOL" "$APPDIR" "$OUT" || die "appimagetool failed to create $OUT"
+    ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=${APPIMAGE_EXTRACT_AND_RUN:-1} "$APPIMAGETOOL" "$APPDIR" "$OUT_PATH" || die "appimagetool failed to create $OUT_PATH"
 
-    [[ -f "$OUT" ]] || die "Expected AppImage not created: $OUT"
+    [[ -f "$OUT_PATH" ]] || die "Expected AppImage not created: $OUT_PATH"
 
     if [[ "${WITH_ZSYNC}" = "1" ]]; then
         print_status "Generating zsync"
         "$APPIMAGETOOL" --comp zsync "$OUT" || print_warning "zsync generation failed"
     fi
 
-    print_success "AppImage created: $PROJECT_ROOT/$OUT"
+    print_success "AppImage created: $OUT_PATH"
 
     # Post-processing: Fix rpath for critical TrackIR libraries after linuxdeploy-plugin-qt
     print_status "Post-processing: Fixing rpath for TrackIR libraries after Qt deployment"
@@ -66,9 +67,9 @@ pushd "$PROJECT_ROOT" >/dev/null
     # Verify critical contents inside the final AppImage (help system and 32-bit runtime)
     print_status "Verifying contents inside the AppImage"
     TMP_EXTRACT_DIR=$(mktemp -d)
-    if [[ -f "$OUT" ]]; then
+    if [[ -f "$OUT_PATH" ]]; then
         pushd "$TMP_EXTRACT_DIR" >/dev/null
-            APPIMAGE_EXTRACT_AND_RUN=1 "$PROJECT_ROOT/$OUT" --appimage-extract >/dev/null 2>&1 || true
+            APPIMAGE_EXTRACT_AND_RUN=1 "$OUT_PATH" --appimage-extract >/dev/null 2>&1 || true
             ROOT_DIR="squashfs-root"
             # Help files for ltr_gui and mickey
             HELP_OK=1
