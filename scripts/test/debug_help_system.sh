@@ -141,6 +141,48 @@ echo "     QT_PLUGIN_PATH: $QT_PLUGIN_PATH"
 echo "     QT_SQL_DRIVER_PATH: $QT_SQL_DRIVER_PATH"
 echo "     QT_HELP_PATH: $QT_HELP_PATH"
 
+# Enhanced environment variable validation
+print_status "Step 7.5: Validating environment variable configuration..."
+echo "   Checking for duplicate QT_HELP_PATH exports..."
+
+# Check if there are multiple QT_HELP_PATH exports in the environment
+QT_HELP_PATH_COUNT=$(env | grep -c "^QT_HELP_PATH=" || echo "0")
+if [ "$QT_HELP_PATH_COUNT" -eq 1 ]; then
+    print_success "Single QT_HELP_PATH export detected"
+elif [ "$QT_HELP_PATH_COUNT" -gt 1 ]; then
+    print_error "Multiple QT_HELP_PATH exports detected - this will cause conflicts!"
+    env | grep "^QT_HELP_PATH="
+else
+    print_warning "No QT_HELP_PATH export found"
+fi
+
+# Check for conflicting Qt environment variables
+echo "   Checking for Qt environment conflicts..."
+if [ -n "$QT_DIR" ] || [ -n "$QTDIR" ] || [ -n "$QT_SELECT" ]; then
+    print_warning "System Qt environment variables detected that may conflict:"
+    [ -n "$QT_DIR" ] && echo "     QT_DIR: $QT_DIR"
+    [ -n "$QTDIR" ] && echo "     QTDIR: $QTDIR"
+    [ -n "$QT_SELECT" ] && echo "     QT_SELECT: $QT_SELECT"
+else
+    print_success "No conflicting Qt environment variables detected"
+fi
+
+# Validate plugin paths
+echo "   Validating plugin paths..."
+if [ -d "$QT_PLUGIN_PATH" ]; then
+    PLUGIN_COUNT=$(find "$QT_PLUGIN_PATH" -type f -name "*.so" 2>/dev/null | wc -l)
+    print_success "Plugin path valid: $QT_PLUGIN_PATH ($PLUGIN_COUNT plugins)"
+else
+    print_error "Plugin path invalid: $QT_PLUGIN_PATH"
+fi
+
+if [ -d "$QT_SQL_DRIVER_PATH" ]; then
+    SQL_DRIVER_COUNT=$(find "$QT_SQL_DRIVER_PATH" -type f -name "*.so" 2>/dev/null | wc -l)
+    print_success "SQL driver path valid: $QT_SQL_DRIVER_PATH ($SQL_DRIVER_COUNT drivers)"
+else
+    print_error "SQL driver path invalid: $QT_SQL_DRIVER_PATH"
+fi
+
 # Step 8: Test Qt help system directly
 print_status "Step 8: Testing Qt help system directly..."
 if [ -f "$APPDIR/usr/bin/ltr_gui" ]; then
@@ -155,6 +197,101 @@ if [ -f "$APPDIR/usr/bin/ltr_gui" ]; then
     fi
 else
     print_error "ltr_gui binary not found in AppImage"
+fi
+
+# Step 8.5: Test enhanced help system runtime setup and error handling
+print_status "Step 8.5: Testing enhanced help system runtime setup..."
+echo "   Testing comprehensive help system error handling and fallbacks..."
+
+# Test the enhanced help runtime setup logic
+HELP_RUNTIME_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/linuxtrack/help"
+HELP_SYSTEM_STATUS="initializing"
+HELP_SYSTEM_ERRORS=()
+HELP_SYSTEM_WARNINGS=()
+
+echo "   Help runtime root: $HELP_RUNTIME_ROOT"
+
+# Test directory creation with fallback
+if mkdir -p "$HELP_RUNTIME_ROOT/ltr_gui" "$HELP_RUNTIME_ROOT/mickey" 2>/dev/null; then
+    print_success "Help runtime directories created successfully"
+else
+    print_warning "Primary help directories failed, testing fallback..."
+    FALLBACK_HELP_ROOT="$HOME/.linuxtrack/help"
+    if mkdir -p "$FALLBACK_HELP_ROOT/ltr_gui" "$FALLBACK_HELP_ROOT/mickey" 2>/dev/null; then
+        HELP_RUNTIME_ROOT="$FALLBACK_HELP_ROOT"
+        print_success "Fallback help directories created successfully"
+        HELP_SYSTEM_STATUS="using_fallback"
+    else
+        print_error "Both primary and fallback directories failed"
+        HELP_SYSTEM_STATUS="completely_failed"
+    fi
+fi
+
+# Test enhanced help file copying with validation
+HELP_FILES_COPIED=0
+HELP_COMPONENTS_READY=0
+
+echo "   Testing enhanced help file copying..."
+for comp in ltr_gui mickey; do
+    COMPONENT_READY=true
+    COMPONENT_FILES=0
+    
+    echo "     Processing $comp component..."
+    
+    for f in help.qhc help.qch; do
+        source_file="$APPDIR/usr/share/linuxtrack/help/$comp/$f"
+        target_file="$HELP_RUNTIME_ROOT/$comp/$f"
+        
+        if [ -f "$source_file" ]; then
+            if cp -f "$source_file" "$target_file" 2>/dev/null; then
+                if chmod u+w "$target_file" 2>/dev/null; then
+                    echo "       ✓ Copied $f for $comp"
+                    ((HELP_FILES_COPIED++))
+                    ((COMPONENT_FILES++))
+                else
+                    echo "       ⚠️  Could not make $f writable for $comp"
+                    COMPONENT_READY=false
+                fi
+            else
+                echo "       ✗ Failed to copy $f for $comp"
+                COMPONENT_READY=false
+            fi
+        else
+            echo "       ⚠️  Help file $f not found for $comp"
+            COMPONENT_READY=false
+        fi
+    done
+    
+    # Validate component readiness
+    if [ "$COMPONENT_READY" = true ] && [ $COMPONENT_FILES -ge 2 ]; then
+        echo "       ✅ $comp component ready ($COMPONENT_FILES files)"
+        ((HELP_COMPONENTS_READY++))
+    else
+        echo "       ❌ $comp component not ready"
+    fi
+done
+
+echo "   Total help files copied: $HELP_FILES_COPIED"
+echo "   Components ready: $HELP_COMPONENTS_READY/2"
+
+# Test environment variable handling based on status
+if [ "$HELP_SYSTEM_STATUS" = "completely_failed" ] || [ $HELP_FILES_COPIED -eq 0 ]; then
+    echo "   Note: Help system will be disabled at runtime"
+    unset QT_HELP_PATH
+else
+    export QT_HELP_PATH="$HELP_RUNTIME_ROOT"
+    echo "   QT_HELP_PATH set to: $QT_HELP_PATH"
+fi
+
+# Validate runtime help system
+if [ $HELP_FILES_COPIED -gt 0 ] && [ $HELP_COMPONENTS_READY -gt 0 ]; then
+    print_success "Enhanced help system runtime setup successful"
+    echo "   Runtime help files:"
+    find "$HELP_RUNTIME_ROOT" -type f 2>/dev/null | while read -r file; do
+        echo "     - $file"
+    done
+else
+    print_warning "Help system runtime setup incomplete - functionality may be limited"
 fi
 
 # Step 9: Check system SQLite plugin

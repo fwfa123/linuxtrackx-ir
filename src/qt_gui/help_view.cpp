@@ -10,9 +10,12 @@
 #include <QSplitter>
 #include <QDir>
 #include <QApplication>
+#include <QStandardPaths>
 #include <QPluginLoader>
 #include <QSqlDatabase>
 #include <QSqlError>
+#include <QSqlQuery>
+#include <QFileInfo>
 #include <QDebug>
 #include <QMessageBox>
 #include <QProcessEnvironment>
@@ -77,15 +80,25 @@ void HelpViewer::StorePrefs(QSettings &settings)
   settings.endGroup();
 }
 
-// Robust help system initialization with comprehensive error handling
+// Robust help system initialization with comprehensive error handling and compatibility validation
 bool HelpViewer::initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngine)
 {
     std::cout << "=== LinuxTrack Help System Initialization ===" << std::endl;
     
-    // Step 1: Verify Qt environment
-    std::cout << "1. Checking Qt environment..." << std::endl;
+    // Step 1: Verify Qt environment and version compatibility
+    std::cout << "1. Checking Qt environment and version compatibility..." << std::endl;
     std::cout << "   Qt version: " << qVersion() << std::endl;
     std::cout << "   Application path: " << QApplication::applicationDirPath().toStdString() << std::endl;
+    
+    // Check Qt version compatibility
+    QString currentQtVersion = QString::fromUtf8(qVersion());
+    if (currentQtVersion.startsWith(QStringLiteral("5."))) {
+        std::cout << "   ✅ Qt5 detected - compatible with help system" << std::endl;
+    } else if (currentQtVersion.startsWith(QStringLiteral("6."))) {
+        std::cout << "   ⚠️  Qt6 detected - may have compatibility issues with Qt5 help files" << std::endl;
+    } else {
+        std::cout << "   ❓ Unknown Qt version - compatibility uncertain" << std::endl;
+    }
     
     // Step 2: Check Qt plugin paths
     std::cout << "2. Checking Qt plugin paths..." << std::endl;
@@ -197,23 +210,75 @@ bool HelpViewer::initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngin
         testDb.close();
     }
     
-    // Step 7: Initialize help engine
-    std::cout << "7. Initializing help engine..." << std::endl;
+    // Step 7: Validate help file format and compatibility
+    std::cout << "7. Validating help file format and compatibility..." << std::endl;
+    
+    // Check if help file exists and is readable
+    QFileInfo helpFileInfo(helpFile);
+    if (!helpFileInfo.exists()) {
+        std::cout << "   ❌ Help file does not exist: " << helpFile.toStdString() << std::endl;
+        return false;
+    }
+    
+    if (!helpFileInfo.isReadable()) {
+        std::cout << "   ❌ Help file is not readable: " << helpFile.toStdString() << std::endl;
+        return false;
+    }
+    
+    std::cout << "   ✅ Help file exists and is readable" << std::endl;
+    
+    // Validate help file format using SQLite
+    QSqlDatabase helpDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("help_validation"));
+    helpDb.setDatabaseName(helpFile);
+    
+    if (!helpDb.open()) {
+        std::cout << "   ❌ Cannot open help file as SQLite database: " << helpDb.lastError().text().toStdString() << std::endl;
+        std::cout << "      This indicates the help file is corrupted or in an incompatible format" << std::endl;
+        return false;
+    }
+    
+    // Check for required tables to validate format compatibility
+    QSqlQuery query(helpDb);
+    QStringList requiredTables;
+    requiredTables << QStringLiteral("ContentsTable") << QStringLiteral("FileDataTable");
+    QStringList missingTables;
+    
+    for (const QString &table : requiredTables) {
+        query.exec(QStringLiteral("SELECT name FROM sqlite_master WHERE type='table' AND name='%1'").arg(table));
+        if (!query.next()) {
+            missingTables.append(table);
+        }
+    }
+    
+    if (!missingTables.isEmpty()) {
+        std::cout << "   ❌ Help file missing required tables: " << missingTables.join(QStringLiteral(", ")).toStdString() << std::endl;
+        std::cout << "      This indicates format incompatibility - the file may have been generated with a different Qt version" << std::endl;
+        helpDb.close();
+        return false;
+    }
+    
+    std::cout << "   ✅ Help file format validation passed - all required tables present" << std::endl;
+    helpDb.close();
+    
+    // Step 8: Initialize help engine
+    std::cout << "8. Initializing help engine..." << std::endl;
     helpEngine = new QHelpEngine(helpFile);
     
     if (!helpEngine->setupData()) {
         std::cout << "   ❌ Failed to setup help data!" << std::endl;
         std::cout << "      Help engine error: " << helpEngine->error().toStdString() << std::endl;
         
-        // Try to get more detailed error information
-        QSqlDatabase helpDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("help_test"));
-        helpDb.setDatabaseName(helpFile);
-        
-        if (!helpDb.open()) {
-            std::cout << "      Database open error: " << helpDb.lastError().text().toStdString() << std::endl;
+        // Enhanced error analysis for compatibility issues
+        QString errorText = helpEngine->error();
+        if (errorText.contains(QStringLiteral("Cannot unregister index tables"), Qt::CaseInsensitive)) {
+            std::cout << "      🔍 COMPATIBILITY ISSUE DETECTED: 'Cannot unregister index tables'" << std::endl;
+            std::cout << "      This error typically indicates Qt version mismatch between help file generation and consumption" << std::endl;
+            std::cout << "      Solution: Regenerate help files with the same Qt version that will be used at runtime" << std::endl;
+        } else if (errorText.contains(QStringLiteral("database"), Qt::CaseInsensitive)) {
+            std::cout << "      🔍 DATABASE ISSUE DETECTED: Database-related error" << std::endl;
+            std::cout << "      This may indicate help file corruption or SQLite driver issues" << std::endl;
         } else {
-            std::cout << "      Database opens successfully, but help engine fails" << std::endl;
-            helpDb.close();
+            std::cout << "      🔍 UNKNOWN ERROR: Unrecognized help engine error" << std::endl;
         }
         
         return false;
@@ -230,8 +295,56 @@ HelpViewer::HelpViewer(QWidget *parent) : QWidget(parent)
   ui.setupUi(this);
   setWindowTitle(QString::fromUtf8("Help viewer"));
 
-  QString helpFile = PREF.getDataPath(QString::fromUtf8("/help/") +
-                     QString::fromUtf8(HELP_BASE) + QString::fromUtf8("/help.qhc"));
+  // Determine writable runtime help collection path
+  QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+  QString runtimeRoot = env.value(QStringLiteral("QT_HELP_PATH"));
+  auto chooseUserHelpRoot = [](){
+    QString base = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    if (base.isEmpty()) base = QDir::homePath() + QStringLiteral("/.local/share");
+    return base + QStringLiteral("/linuxtrack/help");
+  };
+  if (runtimeRoot.isEmpty()) {
+    runtimeRoot = chooseUserHelpRoot();
+  } else {
+    // If QT_HELP_PATH points to a read-only mount (e.g., AppImage), prefer user dir
+    QString probe = runtimeRoot + QStringLiteral("/.wtest");
+    QFile tf(probe);
+    if (!tf.open(QIODevice::WriteOnly)) {
+      runtimeRoot = chooseUserHelpRoot();
+    } else {
+      tf.close();
+      QFile::remove(probe);
+    }
+  }
+  QDir().mkpath(runtimeRoot + QStringLiteral("/") + QString::fromUtf8(HELP_BASE));
+
+  // Packaged (read-only) help location inside AppImage or system install
+  QString packagedHelpDir = PREF.getDataPath(QString::fromUtf8("/help/") +
+                           QString::fromUtf8(HELP_BASE));
+
+  // Ensure writable copy exists (qhc/qch)
+  QString runtimeHelpDir = runtimeRoot + QStringLiteral("/") + QString::fromUtf8(HELP_BASE);
+  QString runtimeQhc = runtimeHelpDir + QStringLiteral("/help.qhc");
+  QString runtimeQch = runtimeHelpDir + QStringLiteral("/help.qch");
+  QString packagedQhc = QDir(packagedHelpDir).filePath(QStringLiteral("help.qhc"));
+  QString packagedQch = QDir(packagedHelpDir).filePath(QStringLiteral("help.qch"));
+
+  auto ensureWritableCopy = [&](const QString &src, const QString &dst){
+    if (QFile::exists(src)) {
+      // Copy if destination missing or older than source
+      QFileInfo sfi(src), dfi(dst);
+      if (!dfi.exists() || sfi.lastModified() > dfi.lastModified()) {
+        QFile::remove(dst);
+        QFile::copy(src, dst);
+        QFile::setPermissions(dst, QFileDevice::ReadUser | QFileDevice::WriteUser | QFileDevice::ReadGroup | QFileDevice::ReadOther);
+      }
+    }
+  };
+
+  ensureWritableCopy(packagedQhc, runtimeQhc);
+  ensureWritableCopy(packagedQch, runtimeQch);
+
+  QString helpFile = runtimeQhc;
   
   // Clean up the path to remove double slashes
   helpFile = QDir::cleanPath(helpFile);

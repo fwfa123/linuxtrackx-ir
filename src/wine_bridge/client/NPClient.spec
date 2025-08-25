@@ -21,3 +21,7 @@
 19 stdcall NP_StopCursor() NPCLIENT_NP_StopCursor
 20 stdcall NP_StopDataTransmission() NPCLIENT_NP_StopDataTransmission
 21 stdcall NP_UnregisterWindowHandle() NPCLIENT_NP_UnregisterWindowHandle
+
+# DLL registration functions required for Wine
+22 stdcall DllRegisterServer() DllRegisterServer
+23 stdcall DllUnregisterServer() DllUnregisterServer

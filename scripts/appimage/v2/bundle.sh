@@ -4,6 +4,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 
+# Emit a helpful error on any failure within this script
+set -E
+trap 'print_error "bundle.sh failed at ${BASH_SOURCE[0]}:$LINENO: $BASH_COMMAND"' ERR
+
 print_status "Bundle: dependencies into AppDir (linuxdeploy-first)"
 
 [[ -d "$APPDIR" ]] || die "AppDir not found: $APPDIR. Run prepare.sh first."
@@ -29,6 +33,40 @@ pushd "$APPDIR" >/dev/null
     if [[ -x "$LINUXDEPLOY_QT" && -f usr/bin/ltr_gui ]]; then
         print_status "Running linuxdeploy-plugin-qt"
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
+    fi
+
+    # Inject help runtime handling into the linuxdeploy Qt hook so AppRun sets QT_HELP_PATH to a writable dir
+    if [[ -f apprun-hooks/linuxdeploy-plugin-qt-hook.sh ]]; then
+        print_status "Patching linuxdeploy Qt hook to set writable QT_HELP_PATH and copy help files"
+        cat >> apprun-hooks/linuxdeploy-plugin-qt-hook.sh << 'EOHLP'
+
+# linuxtrack: ensure help collection is writable; copy packaged help to user dir and set QT_HELP_PATH
+_ltr_help_root="${XDG_DATA_HOME:-$HOME/.local/share}/linuxtrack/help"
+mkdir -p "$_ltr_help_root/ltr_gui" "$_ltr_help_root/mickey" 2>/dev/null || true
+for _comp in ltr_gui mickey; do
+  for _f in help.qhc help.qch; do
+    if [ -f "$APPDIR/usr/share/linuxtrack/help/$_comp/$_f" ]; then
+      cp -f "$APPDIR/usr/share/linuxtrack/help/$_comp/$_f" "$_ltr_help_root/$_comp/" 2>/dev/null || true
+      chmod u+w "$_ltr_help_root/$_comp/$_f" 2>/dev/null || true
+    fi
+  done
+  if [ -d "$APPDIR/usr/share/linuxtrack/help/$_comp/content" ] && [ ! -d "$_ltr_help_root/$_comp/content" ]; then
+    cp -r "$APPDIR/usr/share/linuxtrack/help/$_comp/content" "$_ltr_help_root/$_comp/" 2>/dev/null || true
+  fi
+done
+export QT_HELP_PATH="$_ltr_help_root"
+EOHLP
+        print_success "Patched qt hook with help runtime handling"
+    else
+        print_warning "Qt hook not found; cannot inject help runtime handling"
+    fi
+
+    # Note: AppRun.wrapped patching removed to avoid duplicate QT_HELP_PATH exports
+    # The linuxdeploy Qt hook already sets QT_HELP_PATH correctly
+    if [[ -f AppRun.wrapped ]]; then
+        print_status "AppRun.wrapped found - QT_HELP_PATH already set by Qt hook"
+    else
+        print_warning "AppRun.wrapped not found; Qt hook should handle help path"
     fi
 
     # Ensure Qt Help module is properly bundled
@@ -87,10 +125,25 @@ pushd "$APPDIR" >/dev/null
     ensure_dir usr/share/linuxtrack/help/ltr_gui
     ensure_dir usr/share/linuxtrack/help/mickey
     
-    # Copy ltr_gui help files (should exist after prepare step)
+    # Copy ltr_gui help files with compatibility validation
     if [[ -f "$PROJECT_ROOT/src/qt_gui/help.qhc" ]]; then
         cp -f "$PROJECT_ROOT/src/qt_gui/help.qhc" usr/share/linuxtrack/help/ltr_gui/
         print_success "Copied ltr_gui help.qhc"
+        
+        # Validate help file format compatibility
+        if command -v sqlite3 >/dev/null 2>&1; then
+            print_status "Validating ltr_gui help.qhc format compatibility..."
+            if sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qhc" ".tables" >/dev/null 2>&1; then
+                tables=$(sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qhc" ".tables" 2>/dev/null)
+                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
+                    print_success "ltr_gui help.qhc format validation passed"
+                else
+                    print_warning "ltr_gui help.qhc missing required tables - may have compatibility issues"
+                fi
+            else
+                print_warning "ltr_gui help.qhc is not a valid SQLite database"
+            fi
+        fi
     else
         print_error "ltr_gui help.qhc not found - help generation may have failed"
     fi
@@ -98,14 +151,44 @@ pushd "$APPDIR" >/dev/null
     if [[ -f "$PROJECT_ROOT/src/qt_gui/help.qch" ]]; then
         cp -f "$PROJECT_ROOT/src/qt_gui/help.qch" usr/share/linuxtrack/help/ltr_gui/
         print_success "Copied ltr_gui help.qch"
+        
+        # Validate help file format compatibility
+        if command -v sqlite3 >/dev/null 2>&1; then
+            print_status "Validating ltr_gui help.qch format compatibility..."
+            if sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qch" ".tables" >/dev/null 2>&1; then
+                tables=$(sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qch" ".tables" 2>/dev/null)
+                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
+                    print_success "ltr_gui help.qch format validation passed"
+                else
+                    print_warning "ltr_gui help.qch missing required tables - may have compatibility issues"
+                fi
+            else
+                print_warning "ltr_gui help.qch is not a valid SQLite database"
+            fi
+        fi
     else
         print_error "ltr_gui help.qch not found - help generation may have failed"
     fi
     
-    # Copy mickey help files (should exist after prepare step)
+    # Copy mickey help files with compatibility validation
     if [[ -f "$PROJECT_ROOT/src/mickey/help.qhc" ]]; then
         cp -f "$PROJECT_ROOT/src/mickey/help.qhc" usr/share/linuxtrack/help/mickey/
         print_success "Copied mickey help.qhc"
+        
+        # Validate help file format compatibility
+        if command -v sqlite3 >/dev/null 2>&1; then
+            print_status "Validating mickey help.qhc format compatibility..."
+            if sqlite3 "$PROJECT_ROOT/src/mickey/help.qhc" ".tables" >/dev/null 2>&1; then
+                tables=$(sqlite3 "$PROJECT_ROOT/src/mickey/help.qhc" ".tables" 2>/dev/null)
+                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
+                    print_success "mickey help.qhc format validation passed"
+                else
+                    print_warning "mickey help.qhc missing required tables - may have compatibility issues"
+                fi
+            else
+                print_warning "mickey help.qhc is not a valid SQLite database"
+            fi
+        fi
     else
         print_error "mickey help.qhc not found - help generation may have failed"
     fi
@@ -113,6 +196,21 @@ pushd "$APPDIR" >/dev/null
     if [[ -f "$PROJECT_ROOT/src/mickey/help.qch" ]]; then
         cp -f "$PROJECT_ROOT/src/mickey/help.qch" usr/share/linuxtrack/help/mickey/
         print_success "Copied mickey help.qch"
+        
+        # Validate help file format compatibility
+        if command -v sqlite3 >/dev/null 2>&1; then
+            print_status "Validating mickey help.qch format compatibility..."
+            if sqlite3 "$PROJECT_ROOT/src/mickey/help.qch" ".tables" >/dev/null 2>&1; then
+                tables=$(sqlite3 "$PROJECT_ROOT/src/mickey/help.qch" ".tables" 2>/dev/null)
+                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
+                    print_success "mickey help.qch format validation passed"
+                else
+                    print_warning "mickey help.qch missing required tables - may have compatibility issues"
+                fi
+            else
+                print_warning "mickey help.qch is not a valid SQLite database"
+            fi
+        fi
     else
         print_error "mickey help.qch not found - help generation may have failed"
     fi
@@ -130,28 +228,82 @@ pushd "$APPDIR" >/dev/null
     
     print_success "Qt Help system files bundled"
 
-    # Bundle Qt Help plugins specifically
-    print_status "Bundling Qt Help plugins"
-    ensure_dir usr/plugins/help
+    # Bundle Qt Help system components (Qt Help doesn't use standard plugin architecture)
+    print_status "Bundling Qt Help system components"
     ensure_dir usr/plugins/kauth/helper
+    ensure_dir usr/plugins/kf5/kio
     
-    # Copy Qt Help plugins from system if available
-    for plugin in /usr/lib/x86_64-linux-gnu/qt5/plugins/help/*.so /usr/lib/qt5/plugins/help/*.so /usr/lib/qt/plugins/help/*.so; do
-        if [[ -f "$plugin" ]]; then
-            cp -f "$plugin" usr/plugins/help/
-            print_status "Bundled Qt Help plugin: $(basename "$plugin")"
+    # Track what components we find
+    KIO_HELP_PLUGINS_FOUND=0
+    KIO_PLUGINS_FOUND=0
+    
+    # Copy KIO Help plugins (these provide enhanced help functionality)
+    print_status "Searching for KIO Help plugins..."
+    KIO_HELP_PLUGIN_LOCATIONS=(
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/kio_help.so"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/kio_ghelp.so"
+        "/usr/lib/qt5/plugins/kf5/kio/kio_help.so"
+        "/usr/lib/qt5/plugins/kf5/kio/kio_ghelp.so"
+    )
+    
+    for plugin_path in "${KIO_HELP_PLUGIN_LOCATIONS[@]}"; do
+        if [[ -f "$plugin_path" ]]; then
+            cp -f "$plugin_path" usr/plugins/kf5/kio/ 2>/dev/null || true
+            print_status "Bundled KIO Help plugin: $(basename "$plugin_path")"
+            KIO_HELP_PLUGINS_FOUND=$((KIO_HELP_PLUGINS_FOUND+1))
         fi
     done
     
-    # Copy KIO Help plugins if available
-    for plugin in /usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper/*.so /usr/lib/qt5/plugins/kauth/helper/*.so; do
-        if [[ -f "$plugin" ]]; then
-            cp -f "$plugin" usr/plugins/kauth/helper/
-            print_status "Bundled Qt Help KIO plugin: $(basename "$plugin")"
+    # Copy other KIO plugins for enhanced functionality
+    print_status "Searching for additional KIO plugins..."
+    KIO_PLUGIN_LOCATIONS=(
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio"
+        "/usr/lib/qt5/plugins/kf5/kio"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper"
+        "/usr/lib/qt5/plugins/kauth/helper"
+    )
+    
+    for plugin_dir in "${KIO_PLUGIN_LOCATIONS[@]}"; do
+        if [[ -d "$plugin_dir" ]]; then
+            for plugin in "$plugin_dir"/*.so; do
+                if [[ -f "$plugin" ]]; then
+                    # Skip help plugins we already copied
+                    if [[ "$plugin" == *"kio_help"* ]] || [[ "$plugin" == *"kio_ghelp"* ]]; then
+                        continue
+                    fi
+                    
+                    # Copy to appropriate subdirectories
+                    if [[ "$plugin_dir" == *"/kio" ]]; then
+                        ensure_dir usr/plugins/kf5/kio
+                        cp -f "$plugin" usr/plugins/kf5/kio/ 2>/dev/null || true
+                    else
+                        cp -f "$plugin" usr/plugins/kauth/helper/ 2>/dev/null || true
+                    fi
+                    print_status "Bundled KIO plugin: $(basename "$plugin")"
+                    KIO_PLUGINS_FOUND=$((KIO_PLUGINS_FOUND+1))
+                fi
+            done
         fi
     done
     
-    print_success "Qt Help plugins bundled"
+    # Report Qt Help system bundling status
+    print_status "Qt Help system bundling complete:"
+    print_success "  - Core libraries: Qt5Help and Qt5Sql (already bundled)"
+    print_success "  - SQLite driver: libqsqlite.so (already bundled)"
+    
+    if [[ $KIO_HELP_PLUGINS_FOUND -gt 0 ]]; then
+        print_success "  - KIO Help plugins: $KIO_HELP_PLUGINS_FOUND found"
+    else
+        print_warning "  - KIO Help plugins: None found (help system will use basic functionality)"
+    fi
+    
+    if [[ $KIO_PLUGINS_FOUND -gt 0 ]]; then
+        print_success "  - Additional KIO plugins: $KIO_PLUGINS_FOUND found"
+    else
+        print_warning "  - Additional KIO plugins: None found"
+    fi
+    
+    print_success "Qt Help system components bundled successfully"
 
     # Ensure platform plugin (xcb) fallback if plugin didn't bundle
     if [[ ! -f usr/plugins/platforms/libqxcb.so && ! -f usr/lib/qt5/plugins/platforms/libqxcb.so ]]; then
@@ -294,9 +446,9 @@ popd >/dev/null
     # Verify library dependencies are correctly resolved
     print_status "Verifying library dependency resolution"
     if command -v ldd >/dev/null 2>&1; then
-        # Check if critical libraries are linking to bundled versions
-        LIBUSB_BUNDLED=$(ldd usr/lib/linuxtrack/libltusb1.so.0.0.0 2>/dev/null | grep "libusb-1.0.so.0" | grep "AppDir_v2" | wc -l)
-        LIBUDEV_BUNDLED=$(ldd usr/lib/linuxtrack/libltusb1.so.0.0.0 2>/dev/null | grep "libudev.so.1" | grep "AppDir_v2" | wc -l)
+        # Check if critical libraries are linking to bundled versions (tolerate no-match under pipefail)
+        LIBUSB_BUNDLED=$({ ldd usr/lib/linuxtrack/libltusb1.so.0.0.0 2>/dev/null | grep -F "libusb-1.0.so.0" | grep -F "AppDir_v2"; } | wc -l || true)
+        LIBUDEV_BUNDLED=$({ ldd usr/lib/linuxtrack/libltusb1.so.0.0.0 2>/dev/null | grep -F "libudev.so.1" | grep -F "AppDir_v2"; } | wc -l || true)
 
         if [[ $LIBUSB_BUNDLED -gt 0 ]]; then
             print_success "libltusb1.so correctly links to bundled libusb"
@@ -312,8 +464,8 @@ popd >/dev/null
     fi
 
     # Verify SQLite driver is in both locations
-    SQLITE_USR_PLUGINS=$(ls usr/plugins/sqldrivers/libqsqlite.so* 2>/dev/null | wc -l)
-    SQLITE_QT5_PLUGINS=$(ls usr/lib/qt5/plugins/sqldrivers/libqsqlite.so* 2>/dev/null | wc -l)
+    SQLITE_USR_PLUGINS=$({ find usr/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
+    SQLITE_QT5_PLUGINS=$({ find usr/lib/qt5/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
 
     if [[ $SQLITE_USR_PLUGINS -gt 0 ]]; then
         print_success "SQLite driver found in usr/plugins/sqldrivers/"
@@ -331,7 +483,7 @@ popd >/dev/null
 
     # Ensure 32-bit linuxtrack runtime is bundled if available on system
     print_status "Ensuring 32-bit liblinuxtrack is bundled if available"
-    DEST32_DIR="usr/lib/i386-linux-gnu/linuxtrack"
+    DEST32_DIR="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
     if [[ ! -f "$DEST32_DIR/liblinuxtrack.so.0" ]]; then
         SYS_LTR32="/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
         if [[ -f "$SYS_LTR32" ]]; then

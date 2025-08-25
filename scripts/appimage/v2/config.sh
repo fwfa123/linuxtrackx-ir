@@ -8,6 +8,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPSCRIPTS_DIR="$(dirname "$SCRIPT_DIR")"              # scripts/appimage
 PROJECT_ROOT="$(dirname "$(dirname "$APPSCRIPTS_DIR")")"  # repo root
 
+# Ensure PROJECT_ROOT points to the correct linuxtrackx-ir directory
+if [[ "$(basename "$PROJECT_ROOT")" != "linuxtrackx-ir" ]]; then
+    PROJECT_ROOT="$PROJECT_ROOT/linuxtrackx-ir"
+fi
+
 # AppDir (v2)
 APPDIR="$PROJECT_ROOT/AppDir_v2"
 

@@ -53,7 +53,7 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 - **`QUICK_TROUBLESHOOTING_QT5.md`** - Quick fixes for common issues (3KB)
 - **`WAYLAND_COMPATIBILITY_ISSUE.md`** - Display server compatibility (2KB)
 
-### 💻 Technical Documentation (`technical/`) - 10 files
+### 💻 Technical Documentation (`technical/`) - 11 files
 **Purpose**: Developers and technical implementation
 - **`README.md`** - Technical documentation overview and quick reference
 - **`TECHNICAL_IMPLEMENTATION_GUIDE.md`** - Implementation details (13KB)
@@ -65,6 +65,7 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 - **`AI_CONTINUATION_PROMPT.md`** - AI development assistance (8KB)
 - **`DESKTOP_INTEGRATION_FIX_PLAN.md`** - Desktop integration fixes (8KB)
 - **`ISSUE_206_TRACKIR_ARCH_FIXES.md`** - TrackIR Arch Linux fixes (4KB)
+- **`QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md`** - Qt5 Help System AppImage fix plan (12KB)
 
 ### 📈 Development Progress (`progress/`) - 7 files
 **Purpose**: Development history and project tracking
