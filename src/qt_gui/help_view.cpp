@@ -227,38 +227,73 @@ bool HelpViewer::initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngin
     
     std::cout << "   ✅ Help file exists and is readable" << std::endl;
     
-    // Validate help file format using SQLite
-    QSqlDatabase helpDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("help_validation"));
-    helpDb.setDatabaseName(helpFile);
-    
-    if (!helpDb.open()) {
-        std::cout << "   ❌ Cannot open help file as SQLite database: " << helpDb.lastError().text().toStdString() << std::endl;
-        std::cout << "      This indicates the help file is corrupted or in an incompatible format" << std::endl;
+    // Validate collection file format using SQLite
+    QSqlDatabase collectionDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("collection_validation"));
+    collectionDb.setDatabaseName(helpFile);
+
+    if (!collectionDb.open()) {
+        std::cout << "   ❌ Cannot open collection file as SQLite database: " << collectionDb.lastError().text().toStdString() << std::endl;
+        std::cout << "      This indicates the collection file is corrupted or in an incompatible format" << std::endl;
         return false;
     }
-    
-    // Check for required tables to validate format compatibility
-    QSqlQuery query(helpDb);
+
+    // Find the associated content file from the collection
+    QSqlQuery query(collectionDb);
+    QString contentFileName;
+    if (query.exec(QStringLiteral("SELECT FilePath FROM NamespaceTable LIMIT 1"))) {
+        if (query.next()) {
+            contentFileName = query.value(0).toString();
+            std::cout << "   Found content filename in collection: " << contentFileName.toStdString() << std::endl;
+        }
+    }
+
+    if (contentFileName.isEmpty()) {
+        std::cout << "   ❌ Cannot find associated content file in collection" << std::endl;
+        collectionDb.close();
+        return false;
+    }
+
+    // Construct path to content file (same directory as collection file)
+    QFileInfo collectionInfo(helpFile);
+    QString contentFilePath = collectionInfo.absoluteDir().filePath(contentFileName);
+
+    std::cout << "   Found content file: " << contentFilePath.toStdString() << std::endl;
+
+    // Validate content file format
+    QSqlDatabase contentDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("content_validation"));
+    contentDb.setDatabaseName(contentFilePath);
+
+    if (!contentDb.open()) {
+        std::cout << "   ❌ Cannot open content file as SQLite database: " << contentDb.lastError().text().toStdString() << std::endl;
+        std::cout << "      This indicates the content file is corrupted or in an incompatible format" << std::endl;
+        collectionDb.close();
+        return false;
+    }
+
+    // Check for required tables in content file
+    QSqlQuery contentQuery(contentDb);
     QStringList requiredTables;
     requiredTables << QStringLiteral("ContentsTable") << QStringLiteral("FileDataTable");
     QStringList missingTables;
-    
+
     for (const QString &table : requiredTables) {
-        query.exec(QStringLiteral("SELECT name FROM sqlite_master WHERE type='table' AND name='%1'").arg(table));
-        if (!query.next()) {
+        contentQuery.exec(QStringLiteral("SELECT name FROM sqlite_master WHERE type='table' AND name='%1'").arg(table));
+        if (!contentQuery.next()) {
             missingTables.append(table);
         }
     }
-    
+
     if (!missingTables.isEmpty()) {
-        std::cout << "   ❌ Help file missing required tables: " << missingTables.join(QStringLiteral(", ")).toStdString() << std::endl;
+        std::cout << "   ❌ Content file missing required tables: " << missingTables.join(QStringLiteral(", ")).toStdString() << std::endl;
         std::cout << "      This indicates format incompatibility - the file may have been generated with a different Qt version" << std::endl;
-        helpDb.close();
+        collectionDb.close();
+        contentDb.close();
         return false;
     }
-    
+
     std::cout << "   ✅ Help file format validation passed - all required tables present" << std::endl;
-    helpDb.close();
+    collectionDb.close();
+    contentDb.close();
     
     // Step 8: Initialize help engine
     std::cout << "8. Initializing help engine..." << std::endl;
