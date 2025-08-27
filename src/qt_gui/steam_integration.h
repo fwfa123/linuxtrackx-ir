@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QProcess>
+#include "flatpak_detector.h"
 
 class SteamGame {
 public:
@@ -34,6 +35,7 @@ public:
     // Main functionality
     bool isSteamInstalled();
     QString getSteamPath();
+    bool isSteamInstalledFlatpak();
     QStringList getAvailableGames();
     QList<SteamGame> getSteamGames();
     bool installToSteamGame(const QString &gameId);
@@ -78,6 +80,8 @@ private:
     // Helper methods
     bool initializePaths();
     QString getHomeDirectory();
+    bool detectSteamFlatpak();
+    void setupFlatpakSteamPaths();
     bool createProtonEnvironment(const SteamGame &game);
     bool runWineBridgeInstaller(const QString &prefixPath, const QString &winePath);
     bool runWineBridgeInstallerWithProton(const QString &prefixPath, const QString &protonPath, const QProcessEnvironment &env);

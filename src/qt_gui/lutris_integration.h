@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include "flatpak_detector.h"
 
 class LutrisGame {
 public:
@@ -37,6 +38,7 @@ public:
     
     // Main functionality
     bool isLutrisInstalled();
+    bool isLutrisInstalledFlatpak();
     QStringList getAvailableGames();
     QList<LutrisGame> getLutrisGames();
     bool installToLutrisGame(const QString &gameSlug);
@@ -73,6 +75,8 @@ private:
     // Helper methods
     bool initializePaths();
     QString getHomeDirectory();
+    bool detectLutrisFlatpak();
+    void setupFlatpakLutrisPaths();
     bool createWineEnvironment(const LutrisGame &game);
     bool runWineBridgeInstaller(const QString &prefixPath, const QString &winePath);
 };
