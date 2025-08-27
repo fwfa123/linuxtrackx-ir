@@ -132,23 +132,34 @@ bool LutrisIntegration::isLutrisInstalled()
     // Check if Lutris database exists
     QFileInfo dbFile(databasePath);
     if (!dbFile.exists()) {
-        // Provide more helpful error message with suggestions
-        QString currentUser = QString::fromUtf8(qgetenv("USER"));
-        QString expectedPath = QString::fromUtf8("/home/") + currentUser + QString::fromUtf8("/.local/share/lutris/pga.db");
-        
-        lastError = QString::fromUtf8("Lutris database not found at: ") + databasePath + QString::fromUtf8("\n\n");
-        lastError += QString::fromUtf8("Expected location: ") + expectedPath + QString::fromUtf8("\n\n");
-        lastError += QString::fromUtf8("This could mean:\n");
-        lastError += QString::fromUtf8("1. Lutris is not installed\n");
-        lastError += QString::fromUtf8("2. Lutris database is in a different location\n");
-        lastError += QString::fromUtf8("3. The path was hardcoded during AppImage build\n\n");
-        lastError += QString::fromUtf8("To install Lutris:\n");
-        lastError += QString::fromUtf8("  Ubuntu/Debian: sudo apt install lutris\n");
-        lastError += QString::fromUtf8("  Fedora: sudo dnf install lutris\n");
-        lastError += QString::fromUtf8("  Arch: sudo pacman -S lutris");
-        
-        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Database file does not exist\n");
-        return false;
+        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Database file does not exist, trying Flatpak...\n");
+
+        // Try Flatpak detection as fallback
+        if (detectLutrisFlatpak()) {
+            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris detected and configured\n");
+            return true;
+        } else {
+            // Provide more helpful error message with suggestions
+            QString currentUser = QString::fromUtf8(qgetenv("USER"));
+            QString expectedPath = QString::fromUtf8("/home/") + currentUser + QString::fromUtf8("/.local/share/lutris/pga.db");
+
+            lastError = QStringLiteral(
+                "Lutris database not found at: %1\n\n"
+                "Expected location: %2\n\n"
+                "This could mean:\n"
+                "1. Lutris is not installed\n"
+                "2. Lutris database is in a different location\n"
+                "3. The path was hardcoded during AppImage build\n\n"
+                "To install Lutris:\n"
+                "  Ubuntu/Debian: sudo apt install lutris\n"
+                "  Fedora: sudo dnf install lutris\n"
+                "  Arch: sudo pacman -S lutris\n"
+                "  Flatpak: flatpak install flathub net.lutris.Lutris"
+            ).arg(databasePath, expectedPath);
+
+            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris not found either\n");
+            return false;
+        }
     }
     
     // Check if config directory exists
@@ -157,9 +168,18 @@ bool LutrisIntegration::isLutrisInstalled()
         lastError = QString::fromUtf8("Lutris config directory not found at: ") + configPath + QString::fromUtf8("\n\n");
         lastError += QString::fromUtf8("This usually means Lutris is not properly installed or configured.");
         ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Config directory does not exist\n");
-        return false;
+
+        // Try Flatpak detection as fallback
+        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Native Lutris not found, trying Flatpak...\n");
+        if (detectLutrisFlatpak()) {
+            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris detected and configured\n");
+            return true;
+        } else {
+            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris not found either\n");
+            return false;
+        }
     }
-    
+
     ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Lutris installation found\n");
     return true;
 }
@@ -641,4 +661,53 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
 
     ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Wine Bridge installer completed successfully\n");
     return true;
+}
+
+// Flatpak detection methods
+bool LutrisIntegration::isLutrisInstalledFlatpak()
+{
+    FlatpakDetector detector;
+    return detector.isAppInstalled(QStringLiteral("net.lutris.Lutris"));
+}
+
+bool LutrisIntegration::detectLutrisFlatpak()
+{
+    FlatpakDetector detector;
+
+    // Check if Lutris is installed as a Flatpak app
+    if (!detector.isAppInstalled(QStringLiteral("net.lutris.Lutris"))) {
+        ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Lutris Flatpak app not found\n");
+        return false;
+    }
+
+    // Get the Lutris data directory for Flatpak
+    QString flatpakLutrisPath = detector.getAppDataPath(QStringLiteral("net.lutris.Lutris")) + QStringLiteral("/lutris");
+
+    ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Checking Flatpak Lutris path: %s\n",
+                      flatpakLutrisPath.toUtf8().constData());
+
+    // Check if the Lutris directory structure exists in Flatpak data
+    if (QDir(flatpakLutrisPath).exists()) {
+        ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Flatpak Lutris directory found\n");
+        setupFlatpakLutrisPaths();
+        return true;
+    } else {
+        ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Flatpak Lutris directory not found: %s\n",
+                          flatpakLutrisPath.toUtf8().constData());
+        return false;
+    }
+}
+
+void LutrisIntegration::setupFlatpakLutrisPaths()
+{
+    FlatpakDetector detector;
+    QString flatpakDataPath = detector.getAppDataPath(QStringLiteral("net.lutris.Lutris"));
+
+    // Set up paths for Flatpak Lutris installation
+    databasePath = flatpakDataPath + QStringLiteral("/lutris/pga.db");
+    configPath = flatpakDataPath + QStringLiteral("/lutris/games/");
+
+    ltr_int_log_message("LutrisIntegration::setupFlatpakLutrisPaths() - Flatpak Lutris paths configured:\n");
+    ltr_int_log_message("  Database path: %s\n", databasePath.toUtf8().constData());
+    ltr_int_log_message("  Config path: %s\n", configPath.toUtf8().constData());
 }

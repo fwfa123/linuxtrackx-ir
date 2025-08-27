@@ -52,7 +52,20 @@ bool SteamIntegration::initializePaths()
     };
     
     for (const QString& path : steamPaths) {
-        if (QDir(path).exists() && QFile(path + QStringLiteral("steam")).exists()) {
+        if (!QDir(path).exists()) {
+            continue;
+        }
+        // Check for Steam installation indicators - be flexible to handle different
+        // Linux distributions that may use different launcher names or structures
+        bool hasSteam = QFile(path + QStringLiteral("steam")).exists();
+        bool hasSteamSh = QFile(path + QStringLiteral("steam.sh")).exists();
+        bool hasSteamLauncher = QFile(path + QStringLiteral("steam-launcher")).exists();
+        bool hasSteamApps = QDir(path + QStringLiteral("steamapps")).exists();
+
+        // Consider it a valid Steam installation if we find:
+        // 1. Any of the common launcher binaries/scripts, OR
+        // 2. Just the steamapps directory (indicates Steam was installed here)
+        if (hasSteam || hasSteamSh || hasSteamLauncher || hasSteamApps) {
             steamPath = path;
             steamAppsPath = path + QStringLiteral("steamapps/");
             compatDataPath = path + QStringLiteral("steamapps/compatdata/");
@@ -65,7 +78,29 @@ bool SteamIntegration::initializePaths()
     ltr_int_log_message("SteamIntegration::initializePaths() - Steam path: %s\n", steamPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::initializePaths() - Steam apps path: %s\n", steamAppsPath.toUtf8().constData());
     ltr_int_log_message("SteamIntegration::initializePaths() - Compat data path: %s\n", compatDataPath.toUtf8().constData());
-    
+
+    // If native Steam installation not found, try Flatpak as fallback
+    if (steamPath.isEmpty()) {
+        ltr_int_log_message("SteamIntegration::initializePaths() - Native Steam not found, trying Flatpak...\n");
+        if (detectSteamFlatpak()) {
+            ltr_int_log_message("SteamIntegration::initializePaths() - Flatpak Steam detected and configured\n");
+        } else {
+            ltr_int_log_message("SteamIntegration::initializePaths() - Flatpak Steam not found either\n");
+            // Provide a helpful user-facing hint via lastError for callers
+            QString msg = QStringLiteral(
+                "Steam not detected.\n\n"
+                "Tried native locations:\n"
+                "  %1\n"
+                "  %2\n"
+                "  %3\n\n"
+                "If you use Flatpak, install Steam with:\n"
+                "  flatpak install flathub com.valvesoftware.Steam\n\n"
+                "Flatpak data path expected at: ~/.var/app/com.valvesoftware.Steam/data/Steam"
+            ).arg(steamPaths.value(0), steamPaths.value(1), steamPaths.value(2));
+            setLastError(msg);
+        }
+    }
+
     return !steamPath.isEmpty();
 }
 
@@ -960,6 +995,57 @@ QString SteamIntegration::getDebugInfo() const
     }
     
     return info;
+}
+
+// Flatpak detection methods
+bool SteamIntegration::isSteamInstalledFlatpak()
+{
+    FlatpakDetector detector;
+    return detector.isAppInstalled(QStringLiteral("com.valvesoftware.Steam"));
+}
+
+bool SteamIntegration::detectSteamFlatpak()
+{
+    FlatpakDetector detector;
+
+    // Check if Steam is installed as a Flatpak app
+    if (!detector.isAppInstalled(QStringLiteral("com.valvesoftware.Steam"))) {
+        ltr_int_log_message("SteamIntegration::detectSteamFlatpak() - Steam Flatpak app not found\n");
+        return false;
+    }
+
+    // Get the Steam data directory for Flatpak
+    QString flatpakSteamPath = detector.getAppDataPath(QStringLiteral("com.valvesoftware.Steam")) + QStringLiteral("/Steam");
+
+    ltr_int_log_message("SteamIntegration::detectSteamFlatpak() - Checking Flatpak Steam path: %s\n",
+                      flatpakSteamPath.toUtf8().constData());
+
+    // Check if the Steam directory structure exists in Flatpak data
+    if (QDir(flatpakSteamPath).exists()) {
+        ltr_int_log_message("SteamIntegration::detectSteamFlatpak() - Flatpak Steam directory found\n");
+        setupFlatpakSteamPaths();
+        return true;
+    } else {
+        ltr_int_log_message("SteamIntegration::detectSteamFlatpak() - Flatpak Steam directory not found: %s\n",
+                          flatpakSteamPath.toUtf8().constData());
+        return false;
+    }
+}
+
+void SteamIntegration::setupFlatpakSteamPaths()
+{
+    FlatpakDetector detector;
+    QString flatpakDataPath = detector.getAppDataPath(QStringLiteral("com.valvesoftware.Steam"));
+
+    // Set up paths for Flatpak Steam installation
+    steamPath = flatpakDataPath + QStringLiteral("/Steam/");
+    steamAppsPath = steamPath + QStringLiteral("steamapps/");
+    compatDataPath = steamPath + QStringLiteral("steamapps/compatdata/");
+
+    ltr_int_log_message("SteamIntegration::setupFlatpakSteamPaths() - Flatpak Steam paths configured:\n");
+    ltr_int_log_message("  Steam path: %s\n", steamPath.toUtf8().constData());
+    ltr_int_log_message("  Steam apps path: %s\n", steamAppsPath.toUtf8().constData());
+    ltr_int_log_message("  Compat data path: %s\n", compatDataPath.toUtf8().constData());
 }
 
  
