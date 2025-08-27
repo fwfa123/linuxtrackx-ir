@@ -33,6 +33,18 @@ pushd "$APPDIR" >/dev/null
     if [[ -x "$LINUXDEPLOY_QT" && -f usr/bin/ltr_gui ]]; then
         print_status "Running linuxdeploy-plugin-qt"
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
+        
+        # Modify qt.conf to include both plugin paths for maximum compatibility
+        if [[ -f usr/bin/qt.conf ]]; then
+            print_status "Modifying qt.conf to include both plugin paths"
+            # Backup original
+            cp usr/bin/qt.conf usr/bin/qt.conf.backup
+            # Update to include both plugin paths
+            sed -i 's|Plugins = plugins|Plugins = plugins:lib/qt5/plugins|' usr/bin/qt.conf
+            print_success "Updated qt.conf to include both plugin paths"
+        else
+            print_warning "qt.conf not found after Qt deployment"
+        fi
     fi
 
     # Inject help runtime handling into the linuxdeploy Qt hook so AppRun sets QT_HELP_PATH to a writable dir
@@ -130,15 +142,17 @@ EOHLP
         cp -f "$PROJECT_ROOT/src/qt_gui/help.qhc" usr/share/linuxtrack/help/ltr_gui/
         print_success "Copied ltr_gui help.qhc"
         
-        # Validate help file format compatibility
+        # Validate collection file format compatibility
         if command -v sqlite3 >/dev/null 2>&1; then
             print_status "Validating ltr_gui help.qhc format compatibility..."
             if sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qhc" ".tables" >/dev/null 2>&1; then
-                tables=$(sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qhc" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
-                    print_success "ltr_gui help.qhc format validation passed"
+                # Check if collection file has proper namespace registration
+                namespace_info=$(sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qhc" "SELECT Name, FilePath FROM NamespaceTable;" 2>/dev/null)
+                if [[ -n "$namespace_info" ]]; then
+                    print_success "ltr_gui help.qhc collection format validation passed"
+                    print_status "Collection references content file: $namespace_info"
                 else
-                    print_warning "ltr_gui help.qhc missing required tables - may have compatibility issues"
+                    print_warning "ltr_gui help.qhc missing namespace registration"
                 fi
             else
                 print_warning "ltr_gui help.qhc is not a valid SQLite database"
@@ -152,15 +166,17 @@ EOHLP
         cp -f "$PROJECT_ROOT/src/qt_gui/help.qch" usr/share/linuxtrack/help/ltr_gui/
         print_success "Copied ltr_gui help.qch"
         
-        # Validate help file format compatibility
+        # Validate content file format compatibility
         if command -v sqlite3 >/dev/null 2>&1; then
             print_status "Validating ltr_gui help.qch format compatibility..."
             if sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qch" ".tables" >/dev/null 2>&1; then
                 tables=$(sqlite3 "$PROJECT_ROOT/src/qt_gui/help.qch" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
-                    print_success "ltr_gui help.qch format validation passed"
+                if [[ "$tables" =~ ContentsTable && "$tables" =~ FileDataTable ]]; then
+                    print_success "ltr_gui help.qch content format validation passed"
+                    print_status "Content file contains required tables: ContentsTable, FileDataTable"
                 else
                     print_warning "ltr_gui help.qch missing required tables - may have compatibility issues"
+                    print_status "Found tables: $tables"
                 fi
             else
                 print_warning "ltr_gui help.qch is not a valid SQLite database"
@@ -175,15 +191,17 @@ EOHLP
         cp -f "$PROJECT_ROOT/src/mickey/help.qhc" usr/share/linuxtrack/help/mickey/
         print_success "Copied mickey help.qhc"
         
-        # Validate help file format compatibility
+        # Validate collection file format compatibility
         if command -v sqlite3 >/dev/null 2>&1; then
             print_status "Validating mickey help.qhc format compatibility..."
             if sqlite3 "$PROJECT_ROOT/src/mickey/help.qhc" ".tables" >/dev/null 2>&1; then
-                tables=$(sqlite3 "$PROJECT_ROOT/src/mickey/help.qhc" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
-                    print_success "mickey help.qhc format validation passed"
+                # Check if collection file has proper namespace registration
+                namespace_info=$(sqlite3 "$PROJECT_ROOT/src/mickey/help.qhc" "SELECT Name, FilePath FROM NamespaceTable;" 2>/dev/null)
+                if [[ -n "$namespace_info" ]]; then
+                    print_success "mickey help.qhc collection format validation passed"
+                    print_status "Collection references content file: $namespace_info"
                 else
-                    print_warning "mickey help.qhc missing required tables - may have compatibility issues"
+                    print_warning "mickey help.qhc missing namespace registration"
                 fi
             else
                 print_warning "mickey help.qhc is not a valid SQLite database"
@@ -197,15 +215,17 @@ EOHLP
         cp -f "$PROJECT_ROOT/src/mickey/help.qch" usr/share/linuxtrack/help/mickey/
         print_success "Copied mickey help.qch"
         
-        # Validate help file format compatibility
+        # Validate content file format compatibility
         if command -v sqlite3 >/dev/null 2>&1; then
             print_status "Validating mickey help.qch format compatibility..."
             if sqlite3 "$PROJECT_ROOT/src/mickey/help.qch" ".tables" >/dev/null 2>&1; then
                 tables=$(sqlite3 "$PROJECT_ROOT/src/mickey/help.qch" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
-                    print_success "mickey help.qch format validation passed"
+                if [[ "$tables" =~ ContentsTable && "$tables" =~ FileDataTable ]]; then
+                    print_success "mickey help.qch content format validation passed"
+                    print_status "Content file contains required tables: ContentsTable, FileDataTable"
                 else
                     print_warning "mickey help.qch missing required tables - may have compatibility issues"
+                    print_status "Found tables: $tables"
                 fi
             else
                 print_warning "mickey help.qch is not a valid SQLite database"
@@ -336,38 +356,66 @@ EOHLP
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15.2"
     )
 
+    print_status "Searching for SQLite driver in: ${SQLITE_LOCATIONS[*]}"
+    
     for candidate in "${SQLITE_LOCATIONS[@]}"; do
         if [[ -f "$candidate" ]]; then
+            print_status "Found SQLite driver at: $candidate"
             # Ensure both directories exist
+            print_status "Creating plugin directories..."
             ensure_dir usr/plugins/sqldrivers
             ensure_dir usr/lib/qt5/plugins/sqldrivers
+            
+            print_status "Verifying directories were created..."
+            if [[ ! -d "usr/plugins/sqldrivers" ]]; then
+                die "Failed to create usr/plugins/sqldrivers directory - cannot proceed with AppImage build"
+            fi
+            if [[ ! -d "usr/lib/qt5/plugins/sqldrivers" ]]; then
+                die "Failed to create usr/lib/qt5/plugins/sqldrivers directory - cannot proceed with AppImage build"
+            fi
+            print_success "Plugin directories created successfully"
 
             # Copy to both plugin directories to ensure it's found
-            cp "$candidate" usr/plugins/sqldrivers/
-            cp "$candidate" usr/lib/qt5/plugins/sqldrivers/
+            print_status "Copying SQLite driver to both locations..."
+            if ! cp "$candidate" usr/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver to usr/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            fi
+            if ! cp "$candidate" usr/lib/qt5/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver to usr/lib/qt5/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            fi
             print_success "Copied SQLite driver: $(basename "$candidate")"
             SQLITE_FOUND=true
             break
+        else
+            print_status "SQLite driver not found at: $candidate"
         fi
     done
 
     # Also search using find for any SQLite drivers
     if [[ "$SQLITE_FOUND" = false ]]; then
+        print_status "SQLite driver not found in standard locations, searching with find..."
         SQLITE_FIND=$(find /usr -name "libqsqlite.so*" -type f 2>/dev/null | head -1)
         if [[ -n "$SQLITE_FIND" && -f "$SQLITE_FIND" ]]; then
+            print_status "Found SQLite driver with find at: $SQLITE_FIND"
             # Ensure both directories exist
             ensure_dir usr/plugins/sqldrivers
             ensure_dir usr/lib/qt5/plugins/sqldrivers
 
-            cp "$SQLITE_FIND" usr/plugins/sqldrivers/
-            cp "$SQLITE_FIND" usr/lib/qt5/plugins/sqldrivers/
+            if ! cp "$SQLITE_FIND" usr/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver from find to usr/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            fi
+            if ! cp "$SQLITE_FIND" usr/lib/qt5/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver from find to usr/lib/qt5/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            fi
             print_success "Found and copied SQLite driver from find: $(basename "$SQLITE_FIND")"
             SQLITE_FOUND=true
+        else
+            die "SQLite driver not found with find command - cannot proceed with AppImage build"
         fi
     fi
 
     if [[ "$SQLITE_FOUND" = false ]]; then
-        print_error "SQLite plugin not found in any standard location - help system will fail"
+        die "SQLite plugin not found in any standard location - help system will fail. Cannot proceed with AppImage build."
     else
         print_success "SQLite driver successfully bundled"
     fi
@@ -415,11 +463,13 @@ EOHLP
         fi
     done
 
-    # Normalize plugin layout: prefer usr/plugins, remove duplicates under usr/lib/qt5/plugins
+    # Keep both plugin layouts for maximum compatibility
+    # usr/plugins for standard Qt plugin path
+    # usr/lib/qt5/plugins for Qt5-specific applications that hardcode the path
     if [[ -d usr/lib/qt5/plugins ]]; then
-        print_status "Normalizing Qt plugin layout to usr/plugins"
-        rsync -a usr/lib/qt5/plugins/ usr/plugins/ 2>/dev/null || true
-        rm -rf usr/lib/qt5/plugins
+        print_status "Keeping both plugin layouts for maximum compatibility"
+        print_status "usr/plugins for standard Qt plugin path"
+        print_status "usr/lib/qt5/plugins for Qt5-specific applications"
     fi
 
     # RPATH: binaries and libraries
