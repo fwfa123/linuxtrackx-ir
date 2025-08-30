@@ -2,7 +2,38 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.23) will be the last version published on GitHub. The repository is moving to GitLab for future development and releases.
+> **Note**: This version (0.99.24) continues development on GitLab for future development and releases.
+
+## [0.99.24] - Cross-Distribution Compatibility & Wine Bridge Improvements (2025)
+
+### Major Changes
+- **Complete Cross-Distribution Support**: Full Fedora/Nobara Linux compatibility with automatic package detection
+- **Flatpak Gaming Platform Integration**: Seamless support for Flatpak-managed Steam and Lutris installations
+- **Enhanced Wine Bridge Detection**: Robust winetricks detection with Flatpak sandbox support
+- **Critical Bug Fixes**: Resolved Debian build issues and FreeTrack tester selection problems
+
+### Added
+- Comprehensive Fedora/Nobara Wine setup with correct package names (`qt5-qttools-devel`, `mxml-devel`, `libv4l-devel`, `mingw-nsis-base`)
+- Flatpak Steam/Lutris detection and integration (`FlatpakDetector` class)
+- Enhanced winetricks detection with multiple fallback paths and Flatpak host support
+- Improved RPM package detection for Fedora-based distributions
+
+### Changed
+- AppImage v2 config updated to use version 0.99.24
+- QT Help "What's New" page updated with v0.99.24 features
+- Wine bridge Makefiles properly isolate -m32 flag usage to Wine components only
+
+### Fixed
+- **Critical**: Global -m32 compilation flag removed (was breaking Debian builds)
+- FreeTrack tester selection logic corrected in Gaming tab
+- Enhanced Lutris detection for RPM-based distributions
+- Wine bridge error handling and user feedback improvements
+
+### Technical Details
+- Wine bridge components use -m32 locally in Makefiles (not globally)
+- Flatpak detection supports both native and sandboxed environments
+- Cross-distribution package detection with fallback mechanisms
+- Enhanced logging and debugging throughout Wine bridge functionality
 
 ## [0.99.23] - Modular AppImage Builder v2 and Help System Fix (2025)
 
