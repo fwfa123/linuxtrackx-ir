@@ -1,4 +1,7 @@
 #include <QFileDialog>
+#include <QFile>
+#include <QFileInfo>
+#include <QStandardPaths>
 #include <QtDebug>
 #include <QProcessEnvironment>
 #include <QMessageBox>
@@ -785,8 +788,11 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   // Test winetricks functionality
   progress(QString::fromUtf8("Testing winetricks functionality..."));
   QProcess testWinetricks;
-  testWinetricks.start(QStringLiteral("winetricks"), QStringList() << QStringLiteral("--version"));
-  testWinetricks.waitForFinished(5000);
+  QString resolved = locateWinetricks();
+  QString program = winetricksProgram_.isEmpty() ? (resolved.isEmpty() ? QStringLiteral("winetricks") : winetricksProgram_) : winetricksProgram_;
+  QStringList prefixArgs = winetricksPrefixArgs_;
+  testWinetricks.start(program, prefixArgs + (QStringList() << QStringLiteral("--version")));
+  testWinetricks.waitForFinished(10000);
   if(testWinetricks.exitCode() == 0) {
     QString version = QString::fromUtf8(testWinetricks.readAllStandardOutput());
     progress(QString::fromUtf8("Winetricks version: %1").arg(version.trimmed()));
@@ -812,6 +818,8 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   winetricks.setProcessChannelMode(QProcess::MergedChannels);
   
   QStringList args;
+  // prefix args may contain flatpak-spawn + --host + /usr/bin/winetricks
+  args = winetricksPrefixArgs_;
   args << QStringLiteral("mfc42");
   
   progress(QString::fromUtf8("Starting winetricks mfc42 installation..."));
@@ -827,7 +835,21 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   progress(QString::fromUtf8("Wine architecture: win32"));
   
   winetricks.setWorkingDirectory(tempPrefix);
-  winetricks.start(QStringLiteral("winetricks"), args);
+  // Ensure PATH has common locations for GUI-launched environments
+  QString path = env.value(QStringLiteral("PATH"));
+  // Merge current PATH with typical system locations to ensure winetricks can find dependencies
+  QStringList systemPaths = {QStringLiteral("/usr/bin"), QStringLiteral("/usr/local/bin"), QStringLiteral("/bin"), QStringLiteral("/usr/sbin"), QStringLiteral("/sbin")};
+  QString mergedPath = path;
+  for(const QString& sysPath : systemPaths) {
+    if(!mergedPath.contains(sysPath)) {
+      mergedPath += QStringLiteral(":") + sysPath;
+    }
+  }
+  env.insert(QStringLiteral("PATH"), mergedPath);
+  winetricks.setProcessEnvironment(env);
+  QString programExec = winetricksProgram_.isEmpty() ? QStringLiteral("winetricks") : winetricksProgram_;
+  progress(QString::fromUtf8("Executing: %1 %2").arg(programExec, args.join(QStringLiteral(" "))));
+  winetricks.start(programExec, args);
   
   // Show progress updates every 30 seconds
   QTimer progressTimer;
@@ -953,10 +975,11 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   
   // Try winetricks vcrun6 as a fallback
   args.clear();
+  args = winetricksPrefixArgs_;
   args << QStringLiteral("vcrun6");
   
   progress(QString::fromUtf8("Starting winetricks vcrun6 installation..."));
-  winetricks.start(QStringLiteral("winetricks"), args);
+  winetricks.start(programExec, args);
   
   if(!winetricks.waitForFinished(300000)) { // 5 minutes timeout
     progress(QString::fromUtf8("Winetricks vcrun6 installation timed out after 5 minutes"));
@@ -1100,14 +1123,63 @@ bool Mfc42uWinetricksExtractor::tryAlternativeScript()
 
 bool Mfc42uWinetricksExtractor::isWinetricksAvailable()
 {
-  QProcess winetricks;
-  winetricks.start(QStringLiteral("winetricks"), QStringList() << QStringLiteral("--version"));
-  
-  if(!winetricks.waitForFinished(5000)) { // 5 seconds timeout
+  QString resolved = locateWinetricks();
+  if(resolved.isEmpty()){
+    progress(QString::fromUtf8("Winetricks executable not found via PATH or common locations"));
     return false;
   }
-  
-  return winetricks.exitCode() == 0;
+  QProcess winetricks;
+  winetricks.start(winetricksProgram_.isEmpty() ? QStringLiteral("winetricks") : winetricksProgram_, winetricksPrefixArgs_ + (QStringList() << QStringLiteral("--version")));
+  if(!winetricks.waitForFinished(10000)) {
+    return false;
+  }
+  return winetricks.exitCode() == 0 && winetricks.exitStatus() == QProcess::NormalExit;
+}
+
+QString Mfc42uWinetricksExtractor::locateWinetricks()
+{
+  if(!winetricksProgram_.isEmpty()){
+    return winetricksProgram_;
+  }
+  // Try PATH
+  QString found = QStandardPaths::findExecutable(QStringLiteral("winetricks"));
+  if(!found.isEmpty()){
+    winetricksProgram_ = found;
+    winetricksPrefixArgs_.clear();
+    return winetricksProgram_;
+  }
+  // Try common absolute paths
+  QStringList candidates;
+  candidates << QStringLiteral("/usr/bin/winetricks")
+             << QStringLiteral("/usr/local/bin/winetricks")
+             << QStringLiteral("/bin/winetricks");
+  for(const QString &c : candidates){
+    if(QFile::exists(c) && QFileInfo(c).isExecutable()){
+      winetricksProgram_ = c;
+      winetricksPrefixArgs_.clear();
+      return winetricksProgram_;
+    }
+  }
+  // Detect Flatpak/sandbox and try host
+  QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+  bool inFlatpak = env.contains(QStringLiteral("FLATPAK_ID")) || QFile::exists(QStringLiteral("/app"));
+  if(inFlatpak && QStandardPaths::findExecutable(QStringLiteral("flatpak-spawn")).length() > 0){
+    QProcess probe;
+    probe.start(QStringLiteral("flatpak-spawn"), QStringList() << QStringLiteral("--host") << QStringLiteral("which") << QStringLiteral("winetricks"));
+    if(probe.waitForFinished(3000) && probe.exitCode() == 0){
+      QString hostPath = QString::fromUtf8(probe.readAllStandardOutput()).trimmed();
+      if(!hostPath.isEmpty()){
+        winetricksProgram_ = QStringLiteral("flatpak-spawn");
+        winetricksPrefixArgs_.clear();
+        winetricksPrefixArgs_ << QStringLiteral("--host") << hostPath;
+        return hostPath;
+      }
+    }
+  }
+  // Not found
+  winetricksProgram_.clear();
+  winetricksPrefixArgs_.clear();
+  return QString();
 }
 
 QString Mfc42uWinetricksExtractor::findCachedDownload()

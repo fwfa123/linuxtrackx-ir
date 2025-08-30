@@ -276,7 +276,9 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 }
               }
               if(initial_id == 2307){ printf("INFO: Auto-fill not found; using default TrackIR ID=2307\n"); append_log("Auto-fill not found; using default TrackIR ID=2307"); }
-              SetDlgItemInt(hwndDlg, IDC_NUM, (UINT)initial_id, TRUE);
+              char id_str[16];
+              sprintf(id_str, "%d", initial_id);
+              SetDlgItemText(hwndDlg, IDC_TITLE, id_str);
             }
             return TRUE;
 

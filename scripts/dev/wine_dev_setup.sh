@@ -50,7 +50,7 @@ show_welcome() {
     echo ""
     echo "Supported distributions:"
     echo "  • Debian/Ubuntu"
-    echo "  • Fedora/RHEL/CentOS"
+    echo "  • Fedora/RHEL/CentOS/Nobara"
     echo "  • Arch Linux/Manjaro"
     echo ""
     echo "This is the RECOMMENDED way to set up Wine development."
@@ -157,8 +157,8 @@ show_manual_installation() {
                 echo "4. Install development tools:"
                 echo "   sudo apt install build-essential gcc-multilib g++-multilib libc6-dev:i386 libc6-dev:amd64"
                 ;;
-            fedora|rhel|centos)
-                echo "For Fedora/RHEL/CentOS:"
+            fedora|rhel|centos|nobara)
+                echo "For Fedora/RHEL/CentOS/Nobara:"
                 echo "1. Update package lists:"
                 echo "   sudo dnf update"
                 echo ""

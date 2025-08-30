@@ -841,49 +841,30 @@ WineArchitecture TestingSection::detectWinePrefixArchitecture(const QString &pre
 QString TestingSection::selectAppropriateTester(const QString &prefixPath, WineArchitecture arch, const QString &preferredTester)
 {
     qDebug() << "Selecting appropriate tester for architecture:" << (int)arch << "with preferred:" << preferredTester;
-    
-    // First, try to find a tester based on the detected architecture
-    QString appropriateTester = TesterLauncher::findAppropriateTester(prefixPath, arch);
-    
-    if (!appropriateTester.isEmpty()) {
-        qDebug() << "Found architecture-appropriate tester:" << appropriateTester;
-        return appropriateTester;
+
+    // Handle FT_Tester specifically by looking for FreeTrack tester files
+    if (preferredTester == QString::fromUtf8("FT_Tester")) {
+        QString ftTester = TesterLauncher::findTesterInPrefix(prefixPath, preferredTester);
+        if (!ftTester.isEmpty()) {
+            qDebug() << "Found FT_Tester:" << ftTester;
+            return ftTester;
+        }
+        qDebug() << "FT_Tester not found, will fall back to other testers";
+    }
+
+    // For Tester.exe, use architecture-based selection
+    if (preferredTester == QString::fromUtf8("Tester.exe")) {
+        QString appropriateTester = TesterLauncher::findAppropriateTester(prefixPath, arch);
+        if (!appropriateTester.isEmpty()) {
+            qDebug() << "Found architecture-appropriate tester:" << appropriateTester;
+            return appropriateTester;
+        }
     }
     
     // If no architecture-specific tester found, try to find any compatible tester
-    QStringList searchDirs = {
-        QString::fromUtf8(""),
-        QString::fromUtf8("drive_c/windows"),
-        QString::fromUtf8("drive_c/Program Files"),
-        QString::fromUtf8("drive_c/Program Files/Linuxtrack"),
-        QString::fromUtf8("drive_c/Program Files (x86)"),
-        QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")
-    };
-    
-    QDir prefixDir(prefixPath);
-    if (!prefixDir.exists()) {
-        return QString();
-    }
-    
-    // Look for any available tester
-    QStringList testerNames = {QString::fromUtf8("Tester.exe"), QString::fromUtf8("Tester64.exe")};
-    
-    for (const QString &searchDir : searchDirs) {
-        QDir searchDirObj = prefixDir;
-        if (!searchDir.isEmpty()) {
-            if (!searchDirObj.cd(searchDir)) {
-                continue;
-            }
-        }
-        
-        for (const QString &testerName : testerNames) {
-            QString testerPath = searchDirObj.filePath(testerName);
-            QFileInfo testerFile(testerPath);
-            if (testerFile.exists() && testerFile.isFile()) {
-                qDebug() << "Found fallback tester:" << testerPath;
-                return testerPath;
-            }
-        }
+    QString fallbackTester = findAnyTesterInPrefix(prefixPath);
+    if (!fallbackTester.isEmpty()) {
+        return fallbackTester;
     }
     
     qDebug() << "No tester found in prefix:" << prefixPath;
@@ -904,4 +885,59 @@ bool TestingSection::validateTesterCompatibility(const QString &testerPath, cons
     }
     
     return isCompatible;
+}
+
+QString TestingSection::findAnyTesterInPrefix(const QString &prefixPath)
+{
+    // First try to use TesterLauncher with UNKNOWN architecture to find any available tester
+    QString fallbackTester = TesterLauncher::findAppropriateTester(prefixPath, WineArchitecture::UNKNOWN);
+    if (!fallbackTester.isEmpty()) {
+        qDebug() << "Found fallback tester via TesterLauncher:" << fallbackTester;
+        return fallbackTester;
+    }
+    
+    // If TesterLauncher didn't find anything, try to find any tester manually
+    // This covers edge cases where testers might be in unusual locations
+    QStringList searchDirs = {
+        QString::fromUtf8(""),
+        QString::fromUtf8("drive_c/windows"),
+        QString::fromUtf8("drive_c/Program Files"),
+        QString::fromUtf8("drive_c/Program Files/Linuxtrack"),
+        QString::fromUtf8("drive_c/Program Files (x86)"),
+        QString::fromUtf8("drive_c/Program Files (x86)/Linuxtrack")
+    };
+    
+    QDir prefixDir(prefixPath);
+    if (!prefixDir.exists()) {
+        return QString();
+    }
+    
+    // Look for any available tester (including both TrackIR and FreeTrack variants)
+    QStringList testerNames = {
+        QString::fromUtf8("Tester.exe"), 
+        QString::fromUtf8("Tester64.exe"),
+        QString::fromUtf8("FT_Tester.exe"),
+        QString::fromUtf8("FreeTrackTester.exe")
+    };
+    
+    for (const QString &searchDir : searchDirs) {
+        QDir searchDirObj = prefixDir;
+        if (!searchDir.isEmpty()) {
+            if (!searchDirObj.cd(searchDir)) {
+                continue;
+            }
+        }
+        
+        for (const QString &testerName : testerNames) {
+            QString testerPath = searchDirObj.filePath(testerName);
+            QFileInfo testerFile(testerPath);
+            if (testerFile.exists() && testerFile.isFile()) {
+                qDebug() << "Found fallback tester via manual search:" << testerPath;
+                return testerPath;
+            }
+        }
+    }
+    
+    qDebug() << "No tester found in manual search for prefix:" << prefixPath;
+    return QString();
 } 

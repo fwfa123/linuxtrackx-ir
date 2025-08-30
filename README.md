@@ -1,4 +1,4 @@
-# LinuxTrack X-IR v0.99.23 - Modern Head Tracking for Linux (Now on GitLab)
+# LinuxTrack X-IR v0.99.24 - Modern Head Tracking for Linux (Now on GitLab)
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
@@ -6,9 +6,9 @@
 
 > ⚠️ Repository migrated to GitLab: [GitLab: fwfa123/linuxtrackx-ir](https://gitlab.com/fwfa123/linuxtrackx-ir). All new issues and feature requests should be opened on GitLab.
 
-> **Note**: This version (0.99.23) will be the last version published on GitHub. The repository has moved to GitLab for future development and releases. Please file issues and feature requests on GitLab.
+> **Note**: This version (0.99.24) continues development on GitLab. Please file issues and feature requests on GitLab.
 
-### Important upgrade notice for v0.99.23
+### Important upgrade notice for v0.99.24
 - Due to significant updates to the testers and Wine Bridge runtime, you should:
   - Reinstall TrackIR firmware and MFC42 runtime
   - Reinstall the Wine Bridge into every Wine/Proton prefix where you previously installed it
@@ -88,8 +88,11 @@ file /usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0 || true
 
 #### **Fedora / RHEL / CentOS**
 ```bash
-# Install dependencies
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging
+# Install core dependencies
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel opencv-devel libusb1-devel mxml-devel libX11-devel libXrandr-devel bison flex mingw-nsis-base glibc-devel.i686 libstdc++-devel.i686 libv4l-devel liblo-devel wine-staging
+
+# Additional 32-bit development packages (may be needed for full functionality)
+sudo dnf install -y gcc-c++.i686 zlib-ng-compat-devel.i686 libusb1-devel.i686 mxml-devel.i686 libv4l-devel.i686
 
 # Build and install
 git clone <repository-url>
@@ -102,6 +105,36 @@ make -j$(nproc)
 sudo make install
 sudo ldconfig
 
+```
+
+**Fedora-Specific Notes:**
+- **32-bit Support**: The `--enable-ltr-32lib-on-x64` option enables 32-bit library building, which requires the additional 32-bit development packages listed above
+- **Qt5 Path Issues**: If you encounter Qt5 path errors, the symlink `/usr/lib/qt5/bin/qmake -> /usr/lib64/qt5/bin/qmake` may need to be created
+- **Wine Bridge**: The Wine bridge components may show compilation warnings but don't affect core LinuxTrack functionality
+- **Package Updates**: Fedora package names may change between versions - use `dnf search` to find current package names if installation fails
+
+#### **Fedora-Specific Troubleshooting**
+
+| Problem | Solution |
+|---------|----------|
+| `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development packages: `sudo dnf install gcc-c++.i686` |
+| `cannot find -lz: No such file or directory` | Install 32-bit zlib development: `sudo dnf install zlib-ng-compat-devel.i686` |
+| `cannot find -lmxml: No such file or directory` | Install 32-bit mxml development: `sudo dnf install mxml-devel.i686` |
+| `cannot find -lusb-1.0: No such file or directory` | Install 32-bit libusb development: `sudo dnf install libusb1-devel.i686` |
+| `cannot find -lv4l2: No such file or directory` | Install 32-bit v4l development: `sudo dnf install libv4l-devel.i686` |
+| `i386:x86-64 architecture of input file is incompatible` | This is fixed by the additional 32-bit packages above |
+| Qt5 qmake not found | Create symlink: `sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake` |
+| Wine bridge compilation errors | These don't affect core functionality - LinuxTrack will work without Wine bridge |
+| **Build succeeds but Wine bridge fails** | **This is normal** - core LinuxTrack functionality is intact |
+
+**Quick Fix for Common Fedora Issues:**
+```bash
+# If you encounter missing library errors during build
+sudo dnf install -y gcc-c++.i686 zlib-ng-compat-devel.i686 libusb1-devel.i686 mxml-devel.i686 libv4l-devel.i686
+
+# If Qt5 qmake is not found
+sudo mkdir -p /usr/lib/qt5/bin
+sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
 ```
 
 #### **Arch Linux / Manjaro**
@@ -235,7 +268,7 @@ cd linuxtrackx-ir
 # Build and create AppImage
 ./scripts/appimage/build_appimage_phase4.sh --clean
 
-# The AppImage will be created as: LinuxTrack-X-IR-0.99.23-x86_64.AppImage
+# The AppImage will be created as: LinuxTrack-X-IR-0.99.24-x86_64.AppImage
 ```
 
 #### **AppImage Features**
@@ -382,6 +415,26 @@ QT_QPA_PLATFORM=xcb ltr_gui
 | Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
 | Firmware extraction fails | Run `./scripts/wine_check.sh` to diagnose Wine issues |
+
+### Fedora/Nobara Notes (winetricks)
+
+- Install prerequisites:
+```bash
+sudo dnf install winetricks cabextract wine
+```
+
+- Verify winetricks availability:
+```bash
+which winetricks
+winetricks --version
+```
+
+- If launching the GUI from a desktop icon, the environment PATH may exclude `/usr/bin`. Launch from a terminal, or ensure `/usr/bin` is present in PATH, then retry the MFC42 installation in the GUI.
+
+- Flatpak/sandboxed environments: the app can use host tools. Verify host winetricks with:
+```bash
+flatpak-spawn --host which winetricks
+```
 
 ### **Arch Linux Troubleshooting**
 

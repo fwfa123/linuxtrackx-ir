@@ -81,6 +81,9 @@ private:
     QString selectAppropriateTester(const QString &prefixPath, WineArchitecture arch, const QString &preferredTester);
     bool validateTesterCompatibility(const QString &testerPath, const QString &prefixPath, WineArchitecture arch);
     
+    // Helper method for fallback tester search
+    QString findAnyTesterInPrefix(const QString &prefixPath);
+    
     // Helper methods for game identification
     QString getCurrentGameId();
     QString getCurrentGameSlug();
