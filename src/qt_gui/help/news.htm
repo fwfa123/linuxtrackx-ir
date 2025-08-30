@@ -10,18 +10,21 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the Linuxtrack X-IR software.
 
-<h2>Linuxtrack X-IR v0.99.23 - Gaming Platform Integration & Automatic Tracking (2025)</h2>
-<h3>Complete Gaming Platform Integration</h3>
-Added comprehensive support for Steam Proton and Lutris gaming platforms. The application now provides one-click Wine Bridge installation for both Steam Proton games (with multi-library support) and Lutris games, including automatic Proton version detection for beta versions.
+<h2>Linuxtrack X-IR v0.99.24 - Cross-Distribution Compatibility & Wine Bridge Improvements (2025)</h2>
+<h3>Complete Cross-Distribution Support</h3>
+Added comprehensive support for Fedora, Nobara Linux, and other RPM-based distributions. The Wine development setup now automatically detects and configures the correct packages for Fedora/Nobara, eliminating manual package resolution issues.
 
-<h3>Automatic Tracking Start Feature</h3>
-Implemented seamless tracking initiation that starts BEFORE the NSIS installer begins. Users can now test their head tracking while the installer runs, eliminating the need for manual tracking window interaction and providing immediate feedback.
+<h3>Flatpak Gaming Platform Integration</h3>
+Implemented full Flatpak support for Steam and Lutris installations. The application now automatically detects and integrates with Flatpak-managed gaming platforms, providing seamless Wine Bridge installation for Flatpak games.
 
-<h3>Modern UI Design</h3>
-Reorganized the interface with dedicated Gaming and System tabs for better organization and improved user experience. The Gaming tab consolidates all gaming-related functionality while the System tab provides comprehensive system information.
+<h3>AppImage Builder Modernization</h3>
+Completely redesigned the AppImage building process with modular architecture, deterministic builds, and enhanced cross-distribution compatibility. The new system provides better portability and more reliable deployments.
 
-<h3>Enhanced Error Handling</h3>
-Implemented professional-grade error handling with detailed debugging and logging throughout the gaming integration features, providing users with comprehensive feedback and troubleshooting information.
+<h3>Enhanced Wine Bridge Detection</h3>
+Improved winetricks and Wine bridge detection with Flatpak sandbox support. The system now properly detects winetricks in sandboxed environments and provides robust fallback mechanisms for various installation scenarios.
+
+<h3>Critical Bug Fixes</h3>
+Resolved critical Debian build issues caused by global -m32 compilation flags. Fixed FreeTrack tester selection logic and improved error handling throughout the Wine bridge functionality.
 
 <h2>Linuxtrack X-IR v0.99.21 - Qt5 Modernization (2025)</h2>
 <h3>Qt4 to Qt5 Migration</h3>
