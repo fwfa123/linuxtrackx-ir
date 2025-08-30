@@ -142,20 +142,17 @@ install_debian_ubuntu() {
 # Function to install on Fedora
 install_fedora() {
     print_status "Installing Wine development packages for Fedora"
-    
+
     # Update package lists
     dnf update -y
-    
+
     # Install Wine development packages
     dnf install -y \
         wine \
         wine-devel \
         wine-devel.i686 \
-        wine-devel.x86_64 \
-        wine-devel-debuginfo \
-        wine-devel-debuginfo.i686 \
-        wine-devel-debuginfo.x86_64
-    
+        wine-devel.x86_64
+
     # Install additional development tools
     dnf install -y \
         gcc \
@@ -163,7 +160,14 @@ install_fedora() {
         glibc-devel \
         glibc-devel.i686 \
         glibc-devel.x86_64
-    
+
+    # Ensure 32-bit Wine WoW64 support
+    print_status "Ensuring 32-bit Wine support is properly configured"
+    if ! dnf list installed wine.i686 >/dev/null 2>&1; then
+        print_status "Installing 32-bit Wine runtime for WoW64 support"
+        dnf install -y wine.i686 2>/dev/null || print_warning "32-bit Wine runtime not available in repositories"
+    fi
+
     print_success "Wine development packages installed for Fedora"
 }
 
@@ -226,6 +230,13 @@ verify_installation() {
     # Check for 32-bit libraries
     if [ -d "/usr/lib/i386-linux-gnu" ] || [ -d "/usr/lib32" ] || [ -d "/lib32" ]; then
         print_success "32-bit libraries are available"
+    elif command -v winegcc >/dev/null 2>&1; then
+        # For Fedora/RHEL systems, check if winegcc is available and WoW64 is supported
+        if wine --version 2>/dev/null | grep -q "Staging\|Development" || [ -f "/usr/lib/wine/wine" ]; then
+            print_success "32-bit Wine support detected (WoW64)"
+        else
+            print_warning "32-bit libraries may not be properly installed"
+        fi
     else
         print_warning "32-bit libraries may not be properly installed"
     fi
@@ -243,7 +254,7 @@ show_usage() {
     echo "  -v, --verify   Only verify installation without installing"
     echo ""
     echo "This script installs 32-bit Wine development packages for building Wine applications."
-    echo "Supported distributions: Debian, Ubuntu, Fedora, Arch Linux"
+    echo "Supported distributions: Debian, Ubuntu, Fedora, Nobara, Arch Linux"
     echo ""
     echo "Examples:"
     echo "  sudo $0              # Install Wine development packages"
@@ -305,7 +316,7 @@ main() {
         debian|ubuntu)
             install_debian_ubuntu
             ;;
-        fedora|rhel|centos)
+        fedora|rhel|centos|nobara)
             install_fedora
             ;;
         arch|manjaro)
@@ -313,7 +324,7 @@ main() {
             ;;
         *)
             print_error "Unsupported distribution: $DISTRO"
-            print_warning "This script supports Debian, Ubuntu, Fedora, and Arch Linux"
+            print_warning "This script supports Debian, Ubuntu, Fedora, Nobara, and Arch Linux"
             exit 1
             ;;
     esac

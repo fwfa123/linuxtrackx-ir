@@ -7,6 +7,7 @@
 #include <QThread>
 #include <QProcess>
 #include <QDialog>
+#include <QStringList>
 
 #include <stdint.h>
 #include <map>
@@ -132,7 +133,12 @@ class Mfc42uWinetricksExtractor : public Extractor
   void showDownloadInstructions();
   void showWinetricksInstructions();
   bool isWinetricksAvailable();
+  QString locateWinetricks();
   void populateDownloadCombo();
+  
+  // Cached resolution of winetricks program and any required prefix arguments
+  QString winetricksProgram_;
+  QStringList winetricksPrefixArgs_;
   
  private slots:
   void wineFinished(bool result);

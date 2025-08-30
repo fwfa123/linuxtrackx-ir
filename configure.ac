@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([LinuxTrack],[0.99.23],[https://github.com/fwfa123/linuxtrackx-ir/issues])
+AC_INIT([LinuxTrack],[0.99.24],[https://github.com/fwfa123/linuxtrackx-ir/issues])
 AM_INIT_AUTOMAKE([subdir-objects no-dependencies -Wall -Werror])
 
 # Set default installation prefix to /opt for LinuxTrack
@@ -342,11 +342,6 @@ if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
       WINE_LIBS="-L/usr/lib32/wine"
       AC_MSG_NOTICE([Using Arch Linux wine32 path: /usr/lib32/wine])
     fi
-    # Set 32-bit compilation flags for Arch Linux only if 32-bit library build is enabled
-    AS_IF([test "x$with_ltr_32lib_on_x64" = xyes],
-          [CFLAGS+=" -m32"
-           CXXFLAGS+=" -m32"
-           LDFLAGS+=" -m32"])
   # Check for Debian/Ubuntu wine32 paths
   elif test -d "/usr/lib/i386-linux-gnu/wine"; then
     arch_wine32_found=yes
@@ -362,6 +357,17 @@ if test -f "/usr/bin/wine32" || test -f "/usr/bin/wine"; then
 else
   AC_MSG_RESULT([not found])
 fi
+
+# NOTE: Removed global 32-bit compilation flags for --enable-ltr-32lib-on-x64
+# The -m32 flag should only be applied to Wine bridge components in their Makefiles,
+# not globally to all LinuxTrack components. This was breaking Debian builds.
+# Wine bridge Makefiles (ft_client, ft_tester, views) already explicitly use -m32
+# in their compilation rules where needed.
+# AS_IF([test "x$with_ltr_32lib_on_x64" = xyes],
+#       [CFLAGS+=" -m32"
+#        CXXFLAGS+=" -m32"
+#        LDFLAGS+=" -m32 -L/usr/lib -L/usr/lib/gcc/x86_64-redhat-linux/15/32"
+#        AC_MSG_NOTICE([32-bit compilation flags enabled for cross-compilation (-m32)])])
 
 # is this needed anymore?
 LIB32DIR="lib32"

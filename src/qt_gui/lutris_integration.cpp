@@ -125,62 +125,45 @@ QString LutrisIntegration::getLutrisConfigPath()
 
 bool LutrisIntegration::isLutrisInstalled()
 {
-    // Debug logging to show what paths are being checked
-    ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Checking database path: %s\n", databasePath.toUtf8().constData());
-    ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Checking config path: %s\n", configPath.toUtf8().constData());
-    
-    // Check if Lutris database exists
-    QFileInfo dbFile(databasePath);
-    if (!dbFile.exists()) {
-        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Database file does not exist, trying Flatpak...\n");
-
-        // Try Flatpak detection as fallback
+    // Check if Lutris binary exists in the current PATH
+    const QString lutrisExe = QStandardPaths::findExecutable(QStringLiteral("lutris"));
+    if (lutrisExe.isEmpty()) {
+        // Binary not found in PATH, try Flatpak fallback
         if (detectLutrisFlatpak()) {
-            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris detected and configured\n");
+            ltr_int_log_message("Lutris detected via Flatpak fallback.\n");
             return true;
-        } else {
-            // Provide more helpful error message with suggestions
-            QString currentUser = QString::fromUtf8(qgetenv("USER"));
-            QString expectedPath = QString::fromUtf8("/home/") + currentUser + QString::fromUtf8("/.local/share/lutris/pga.db");
-
-            lastError = QStringLiteral(
-                "Lutris database not found at: %1\n\n"
-                "Expected location: %2\n\n"
-                "This could mean:\n"
-                "1. Lutris is not installed\n"
-                "2. Lutris database is in a different location\n"
-                "3. The path was hardcoded during AppImage build\n\n"
-                "To install Lutris:\n"
-                "  Ubuntu/Debian: sudo apt install lutris\n"
-                "  Fedora: sudo dnf install lutris\n"
-                "  Arch: sudo pacman -S lutris\n"
-                "  Flatpak: flatpak install flathub net.lutris.Lutris"
-            ).arg(databasePath, expectedPath);
-
-            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris not found either\n");
-            return false;
         }
+        ltr_int_log_message("Lutris executable not found in PATH.\n");
+        return false;            // truly *not* installed
     }
-    
-    // Check if config directory exists
-    QDir configDir(configPath);
-    if (!configDir.exists()) {
-        lastError = QString::fromUtf8("Lutris config directory not found at: ") + configPath + QString::fromUtf8("\n\n");
-        lastError += QString::fromUtf8("This usually means Lutris is not properly installed or configured.");
-        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Config directory does not exist\n");
+    ltr_int_log_message("Found Lutris binary at: %s\n", lutrisExe.toUtf8().constData());
 
-        // Try Flatpak detection as fallback
-        ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Native Lutris not found, trying Flatpak...\n");
-        if (detectLutrisFlatpak()) {
-            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris detected and configured\n");
-            return true;
-        } else {
-            ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Flatpak Lutris not found either\n");
-            return false;
-        }
+    // Check per-user data – but don't fail if it's missing
+    const QFileInfo dbFile(databasePath);
+    bool dbExists = dbFile.exists();
+
+    QDir cfgDir(configPath);
+    bool cfgExists = cfgDir.exists();
+
+    ltr_int_log_message("Database file %s (exists=%s)\n",
+                        databasePath.toUtf8().constData(),
+                        dbExists ? "yes" : "no");
+    ltr_int_log_message("Config dir   %s (exists=%s)\n",
+                        configPath.toUtf8().constData(),
+                        cfgExists ? "yes" : "no");
+
+    // If the binary is there, we consider Lutris *installed*,
+    // even if the user hasn't run it yet.
+    if (!dbExists && !cfgExists) {
+        ltr_int_log_message("Lutris binary present but per-user data missing – "
+                            "likely not yet launched.\n");
+        // Optionally create empty config dir so subsequent calls see something:
+        // QDir().mkpath(configPath);
+        return true;           // still "installed"
     }
 
-    ltr_int_log_message("LutrisIntegration::isLutrisInstalled() - Lutris installation found\n");
+    // If DB or cfg exists, everything is fine
+    ltr_int_log_message("Lutris installation detected.\n");
     return true;
 }
 
@@ -190,7 +173,7 @@ bool LutrisIntegration::openLutrisDatabase()
         return false;
     }
     
-    lutrisDb = QSqlDatabase::addDatabase(QString::fromUtf8("QSQLITE"), QString::fromUtf8("LutrisConnection"));
+    lutrisDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("LutrisConnection"));
     lutrisDb.setDatabaseName(databasePath);
     
     if (!lutrisDb.open()) {
@@ -206,7 +189,7 @@ void LutrisIntegration::closeLutrisDatabase()
     if (lutrisDb.isOpen()) {
         lutrisDb.close();
     }
-    QSqlDatabase::removeDatabase(QString::fromUtf8("LutrisConnection"));
+    QSqlDatabase::removeDatabase(QStringLiteral("LutrisConnection"));
 }
 
 QList<LutrisGame> LutrisIntegration::queryLutrisGames()
@@ -221,7 +204,7 @@ QList<LutrisGame> LutrisIntegration::queryLutrisGames()
     
     // First, let's see what runners are available
     QSqlQuery runnerQuery(lutrisDb);
-    runnerQuery.prepare(QString::fromUtf8("SELECT DISTINCT runner FROM games"));
+    runnerQuery.prepare(QStringLiteral("SELECT DISTINCT runner FROM games"));
     if (runnerQuery.exec()) {
         QStringList runners;
         while (runnerQuery.next()) {
@@ -232,7 +215,7 @@ QList<LutrisGame> LutrisIntegration::queryLutrisGames()
     
     // Now query for wine games
     QSqlQuery query(lutrisDb);
-    query.prepare(QString::fromUtf8("SELECT id, slug, runner, directory, configpath, name FROM games WHERE runner = 'wine'"));
+    query.prepare(QStringLiteral("SELECT id, slug, runner, directory, configpath, name FROM games WHERE runner = 'wine'"));
     
     if (!query.exec()) {
         lastError = QString::fromUtf8("Failed to query Lutris games: ") + query.lastError().text();
@@ -398,7 +381,7 @@ bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame 
         }
         
         // Check if we're entering the wine section
-        if (trimmedLine == QString::fromUtf8("wine:")) {
+        if (trimmedLine == QStringLiteral("wine:")) {
             inWineSection = true;
             wineIndent = indent;
             ltr_int_log_message("Entered wine section at indent level %d\n", indent);
@@ -407,11 +390,11 @@ bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame 
         
         // If we're in the wine section, look for version
         if (inWineSection && indent > wineIndent) {
-            if (trimmedLine.startsWith(QString::fromUtf8("version:"))) {
+            if (trimmedLine.startsWith(QStringLiteral("version:"))) {
                 wineVersion = trimmedLine.mid(8).trimmed();
                 ltr_int_log_message("Found wine.version: '%s'\n", wineVersion.toUtf8().constData());
                 // Remove quotes if present
-                if (wineVersion.startsWith(QString::fromUtf8("\"")) && wineVersion.endsWith(QString::fromUtf8("\""))) {
+                if (wineVersion.startsWith(QStringLiteral("\"")) && wineVersion.endsWith(QStringLiteral("\""))) {
                     wineVersion = wineVersion.mid(1, wineVersion.length() - 2);
                 }
                 break;
@@ -603,7 +586,7 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
 
     // Prepare environment
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-    env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+    env.insert(QStringLiteral("WINEPREFIX"), prefixPath);
 
     // Log what we're about to do
     debugInfo += QString::fromUtf8("Starting Wine installer with:\n");
