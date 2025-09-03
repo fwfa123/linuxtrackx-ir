@@ -173,14 +173,12 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
               if(initial_id == 2307){ printf("INFO: Auto-fill not found; using default TrackIR ID=2307\n"); append_log("Auto-fill not found; using default TrackIR ID=2307"); }
               SetDlgItemInt(hwndDlg, IDC_APPID, (UINT)initial_id, true);
             }
-            // Try to show NPClient signature/version if available
+            // Try to show NPClient signature if available
             {
               tir_signature_t sig;
-              unsigned short ver = 0;
-              if(npifc_get_signature_and_version(&sig, &ver)){
+              if(npifc_get_signature_and_version(&sig, NULL)){
                 SetDlgItemText(hwndDlg, IDC_DLLSIG, sig.DllSignature);
                 SetDlgItemText(hwndDlg, IDC_APPSIG, sig.AppSignature);
-                SetDlgItemInt(hwndDlg, IDC_VER, ver, FALSE);
               }
             }
             return TRUE;

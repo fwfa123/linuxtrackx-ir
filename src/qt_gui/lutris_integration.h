@@ -43,6 +43,8 @@ public:
     QList<LutrisGame> getLutrisGames();
     bool installToLutrisGame(const QString &gameSlug);
     bool installToLutrisPrefix(const QString &prefixPath, const QString &wineVersion = QString());
+    // Fast path: set the currently selected game's identifiers so we can avoid full scans
+    void setSelectedLutrisGameConfig(const QString &gameSlug, const QString &configPath);
     
     // Database operations
     bool openLutrisDatabase();
@@ -71,6 +73,12 @@ private:
     QString debugInfo;
     QString databasePath;
     QString configPath;
+    // Cache for fast-path installs
+    bool hasSelectedGame = false;
+    QString selectedGameSlug;
+    QString selectedConfigPath;
+    LutrisGame selectedParsedGame;
+    QMap<QString, LutrisGame> configParseCache; // key: configPath
     
     // Helper methods
     bool initializePaths();

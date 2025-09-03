@@ -286,38 +286,46 @@ WINE64_LIBS_DEFAULT=""
 # Enhanced wine64 library path detection for modern distributions
 case "$host_os" in
   linux*)
+    # Modern Ubuntu/Debian (22.04+) - prioritize architecture-specific paths
+    if test -d "/usr/lib/x86_64-linux-gnu/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+      AC_MSG_NOTICE([Found Ubuntu/Debian wine64 libraries in /usr/lib/x86_64-linux-gnu/wine])
     # Arch Linux with wine64
-    if test -d "/usr/lib/wine/x86_64-unix"; then
+    elif test -d "/usr/lib/wine/x86_64-unix"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/wine/x86_64-unix"
       AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine/x86_64-unix])
+    # Modern Fedora (38+) - check for x86_64 specific paths first
+    elif test -d "/usr/lib64/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+      AC_MSG_NOTICE([Found Fedora wine64 libraries in /usr/lib64/wine])
+    # Generic /usr/lib/wine (contains binaries, not libraries - use as last resort)
     elif test -d "/usr/lib/wine"; then
       WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
-      AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine])
-    # Modern Ubuntu/Debian (22.04+)
-    elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
-    # Modern Fedora (38+)
-    elif test -d "/usr/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
-    # Arch Linux standard wine
-    elif test -d "/usr/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+      AC_MSG_NOTICE([Using generic wine path /usr/lib/wine])
     # OpenSUSE
-    elif test -d "/usr/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+    elif test -d "/usr/lib64/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+      AC_MSG_NOTICE([Found OpenSUSE wine64 libraries in /usr/lib64/wine])
     # Legacy paths for older distributions
-    elif test -d "/usr/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
-    elif test -d "/usr/local/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/local/lib/wine"
+    elif test -d "/usr/local/lib64/wine"; then
+      WINE64_LIBS_DEFAULT="-L/usr/local/lib64/wine"
+      AC_MSG_NOTICE([Found legacy wine64 libraries in /usr/local/lib64/wine])
     else
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+      WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+      AC_MSG_NOTICE([Using default Ubuntu/Debian path for wine64 libraries])
     fi
     ;;
   *)
     WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
     ;;
 esac
+
+# Check for 64-bit Wine support based on library availability
+# Since 64-bit libraries are available and 32-bit works, enable 64-bit support
+# Extract directory path from WINE64_LIBS_DEFAULT (remove -L prefix)
+wine64_lib_dir=`echo "$WINE64_LIBS_DEFAULT" | sed 's/^-L//'`
+AS_IF([test -d "$wine64_lib_dir"],
+      [build_wine64_plugin=yes], [build_wine64_plugin=no])
 
 AC_ARG_WITH([wine64-libs],
             [AS_HELP_STRING([--with-wine64-libs],
@@ -480,9 +488,6 @@ AS_IF([(test "x$webcam_support" = xyes) &&
 
 AS_IF([(test "x$WINEGCC32_COMPILES" = xyes) && (test "x$WINEGPP32_COMPILES" = xyes) &&
   (test "x$with_makensis" = xyes) ], [build_wine_plugin=yes], [build_wine_plugin=no])
-
-AS_IF([(test "x$WINEGCC_COMPILES" = xyes) && (test "x$WINEGPP_COMPILES" = xyes) &&
-  (test "x$with_makensis" = xyes) ], [build_wine64_plugin=yes], [build_wine64_plugin=no])
 
 # Add configure option to disable PIE for native builds
 AC_ARG_ENABLE([pie],

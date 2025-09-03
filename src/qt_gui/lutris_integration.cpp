@@ -354,9 +354,11 @@ bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame 
         }
     }
     
-    // Extract wine version - parse YAML structure properly
+    // Extract wine version / wine executable - parse YAML structure properly
     QStringList lines = content.split(QString::fromUtf8("\n"));
-    QString wineVersion;
+    QString wineSectionVersion;
+    QString topLevelVersion;
+    QString wineExecutablePath;
     bool inWineSection = false;
     int wineIndent = 0;
     
@@ -388,16 +390,22 @@ bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame 
             continue;
         }
         
-        // If we're in the wine section, look for version
+        // If we're in the wine section, look for version or executable/path
         if (inWineSection && indent > wineIndent) {
             if (trimmedLine.startsWith(QStringLiteral("version:"))) {
-                wineVersion = trimmedLine.mid(8).trimmed();
-                ltr_int_log_message("Found wine.version: '%s'\n", wineVersion.toUtf8().constData());
+                wineSectionVersion = trimmedLine.mid(8).trimmed();
+                ltr_int_log_message("Found wine.version: '%s'\n", wineSectionVersion.toUtf8().constData());
                 // Remove quotes if present
-                if (wineVersion.startsWith(QStringLiteral("\"")) && wineVersion.endsWith(QStringLiteral("\""))) {
-                    wineVersion = wineVersion.mid(1, wineVersion.length() - 2);
+                if (wineSectionVersion.startsWith(QStringLiteral("\"")) && wineSectionVersion.endsWith(QStringLiteral("\""))) {
+                    wineSectionVersion = wineSectionVersion.mid(1, wineSectionVersion.length() - 2);
                 }
-                break;
+            } else if (trimmedLine.startsWith(QStringLiteral("executable:")) || trimmedLine.startsWith(QStringLiteral("path:"))) {
+                QString exeValue = trimmedLine.mid(trimmedLine.indexOf(QLatin1Char(':')) + 1).trimmed();
+                if (exeValue.startsWith(QStringLiteral("\"")) && exeValue.endsWith(QStringLiteral("\""))) {
+                    exeValue = exeValue.mid(1, exeValue.length() - 2);
+                }
+                wineExecutablePath = exeValue;
+                ltr_int_log_message("Found wine.executable/path: '%s'\n", wineExecutablePath.toUtf8().constData());
             }
         }
         
@@ -408,15 +416,112 @@ bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame 
         }
     }
     
-    if (!wineVersion.isEmpty()) {
-        game.wine_version = wineVersion;
-        // Expand $HOME if present
+    // If wine section didn't yield anything, check for top-level keys
+    if (wineExecutablePath.isEmpty()) {
+        // Look for top-level wine_path: <abs_path>
+        QRegularExpression winePathRe(QString::fromUtf8("^\\s*wine_path\\s*:\\s*['\"]?([^'\"\n]+)['\"]?"), QRegularExpression::MultilineOption);
+        QRegularExpressionMatch m = winePathRe.match(content);
+        if (m.hasMatch()) {
+            wineExecutablePath = m.captured(1).trimmed();
+            ltr_int_log_message("Found top-level wine_path: '%s'\n", wineExecutablePath.toUtf8().constData());
+        }
+    }
+
+    // Look for wine_path in installer tasks (for games that specify wine during installation)
+    if (wineExecutablePath.isEmpty()) {
+        // Try quoted version first
+        QRegularExpression quotedInstallerRe(QString::fromUtf8("\\s*wine_path\\s*:\\s*['\"]([^'\"\\n]+)['\"]"));
+        QRegularExpressionMatch quotedMatch = quotedInstallerRe.match(content);
+        if (quotedMatch.hasMatch()) {
+            wineExecutablePath = quotedMatch.captured(1).trimmed();
+            ltr_int_log_message("Found installer wine_path (quoted): %s\n", wineExecutablePath.toUtf8().constData());
+        } else {
+            // Try unquoted version
+            QRegularExpression unquotedInstallerRe(QString::fromUtf8("\\s*wine_path\\s*:\\s*([^\\s\\n]+)"));
+            QRegularExpressionMatch unquotedMatch = unquotedInstallerRe.match(content);
+            if (unquotedMatch.hasMatch()) {
+                wineExecutablePath = unquotedMatch.captured(1).trimmed();
+                ltr_int_log_message("Found installer wine_path (unquoted): %s\n", wineExecutablePath.toUtf8().constData());
+            }
+        }
+    }
+
+    if (wineSectionVersion.isEmpty()) {
+        // Look for top-level version: <string>
+        for (const QString &line : lines) {
+            int indent = 0;
+            for (int i = 0; i < line.length(); i++) {
+                if (line[i] == QChar::fromLatin1(' ')) {
+                    indent++;
+                } else {
+                    break;
+                }
+            }
+            QString trimmedLine = line.trimmed();
+            if (indent == 0 && trimmedLine.startsWith(QStringLiteral("version:"))) {
+                QString v = trimmedLine.mid(8).trimmed();
+                if (v.startsWith(QStringLiteral("\"")) && v.endsWith(QStringLiteral("\""))) {
+                    v = v.mid(1, v.length() - 2);
+                }
+                topLevelVersion = v;
+                ltr_int_log_message("Found top-level version: '%s'\n", topLevelVersion.toUtf8().constData());
+                break;
+            }
+        }
+    }
+
+    // Selection precedence - prioritize runtime configuration over installer configuration:
+    // 1) wine-section version (runtime configuration)
+    // 2) top-level version (if it looks like a Wine runner id)
+    // 3) wine executable path (installer or other paths)
+
+    // Updated regex to match more patterns: lutris-*, wine-*, lutris-GE-*, wine-ge-*, etc.
+    QRegularExpression plausibleRunner(QString::fromUtf8("^(lutris|wine)(-[a-zA-Z0-9]+)?-.+"));
+
+    // Priority 1: Wine section version (runtime configuration)
+    if (!wineSectionVersion.isEmpty()) {
+        game.wine_version = wineSectionVersion;
         if (game.wine_version.contains(QString::fromUtf8("$HOME"))) {
             game.wine_version.replace(QString::fromUtf8("$HOME"), getHomeDirectory());
         }
-        ltr_int_log_message("Found Wine version: %s\n", game.wine_version.toUtf8().constData());
+        ltr_int_log_message("Using Wine version (wine section): %s\n", game.wine_version.toUtf8().constData());
+    }
+    // Priority 2: Top-level version (if it looks like a wine runner)
+    else if (!topLevelVersion.isEmpty() && plausibleRunner.match(topLevelVersion).hasMatch()) {
+        game.wine_version = topLevelVersion;
+        if (game.wine_version.contains(QString::fromUtf8("$HOME"))) {
+            game.wine_version.replace(QString::fromUtf8("$HOME"), getHomeDirectory());
+        }
+        ltr_int_log_message("Using Wine version (top-level): %s\n", game.wine_version.toUtf8().constData());
+    }
+    // Priority 3: Extract from wine executable path (installer or other paths)
+    else if (!wineExecutablePath.isEmpty()) {
+        // Expand environment variables
+        if (wineExecutablePath.contains(QString::fromUtf8("$HOME"))) {
+            wineExecutablePath.replace(QString::fromUtf8("$HOME"), getHomeDirectory());
+        }
+        if (wineExecutablePath.startsWith(QStringLiteral("~"))) {
+            wineExecutablePath.replace(0, 1, getHomeDirectory());
+        }
+
+        // If this is a full path to wine binary, extract the version name
+        if (wineExecutablePath.contains(QString::fromUtf8("/bin/wine"))) {
+            // Extract version from path like: /home/user/.local/share/lutris/runners/wine/wine-ge-8-26-x86_64/bin/wine
+            QString pathWithoutBin = wineExecutablePath.left(wineExecutablePath.lastIndexOf(QString::fromUtf8("/bin/wine")));
+            QString versionFromPath = pathWithoutBin.mid(pathWithoutBin.lastIndexOf(QString::fromUtf8("/")) + 1);
+            if (!versionFromPath.isEmpty() && versionFromPath != QString::fromUtf8("wine")) {
+                game.wine_version = versionFromPath;
+                ltr_int_log_message("Extracted version from wine path: %s\n", game.wine_version.toUtf8().constData());
+            } else {
+                game.wine_version = wineExecutablePath;
+                ltr_int_log_message("Using Wine executable path (couldn't extract version): %s\n", game.wine_version.toUtf8().constData());
+            }
+        } else {
+            game.wine_version = wineExecutablePath;
+            ltr_int_log_message("Using Wine executable path: %s\n", game.wine_version.toUtf8().constData());
+        }
     } else {
-        ltr_int_log_message("No Wine version found in config\n");
+        ltr_int_log_message("No Wine version or path found in config\n");
     }
     
     return true;
@@ -438,6 +543,13 @@ QString LutrisIntegration::findWineVersion(const QString &configPath)
         return game.wine_version;
     }
     return QString();
+}
+
+void LutrisIntegration::setSelectedLutrisGameConfig(const QString &gameSlug, const QString &configPath)
+{
+    selectedGameSlug = gameSlug;
+    selectedConfigPath = configPath;
+    hasSelectedGame = !selectedGameSlug.isEmpty() && !selectedConfigPath.isEmpty();
 }
 
 QStringList LutrisIntegration::getWinePrefixes()
@@ -478,6 +590,28 @@ bool LutrisIntegration::isValidWinePrefix(const QString &prefixPath)
 
 bool LutrisIntegration::installToLutrisGame(const QString &gameSlug)
 {
+    // Fast path: if the selected game is set and matches the slug, reuse it
+    if (hasSelectedGame && selectedGameSlug == gameSlug) {
+        // Ensure we have parsed details for the selected config
+        if (selectedParsedGame.game_slug == selectedGameSlug && !selectedParsedGame.wine_prefix.isEmpty()) {
+            return installToLutrisPrefix(selectedParsedGame.wine_prefix, selectedParsedGame.wine_version);
+        }
+        // Parse from cache or file
+        LutrisGame parsed;
+        if (configParseCache.contains(selectedConfigPath)) {
+            parsed = configParseCache.value(selectedConfigPath);
+        } else {
+            if (!parseLutrisConfig(selectedConfigPath, parsed)) {
+                lastError = QString::fromUtf8("Failed to parse selected game's config: ") + selectedConfigPath;
+                return false;
+            }
+            parsed.game_slug = selectedGameSlug;
+            configParseCache.insert(selectedConfigPath, parsed);
+        }
+        selectedParsedGame = parsed;
+        return installToLutrisPrefix(parsed.wine_prefix, parsed.wine_version);
+    }
+
     QList<LutrisGame> games = queryLutrisGames();
     
     for (const LutrisGame &game : games) {
@@ -512,9 +646,11 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
     
     // Find wine executable
     QString winePath;
+    printf("DEBUG: installToLutrisPrefix called with wineVersion='%s'\n", wineVersion.toUtf8().constData());
+    ltr_int_log_message("DEBUG: installToLutrisPrefix called with wineVersion='%s'\n", wineVersion.toUtf8().constData());
     if (!wineVersion.isEmpty()) {
         QString homeDir = getHomeDirectory();
-        
+
         // Handle special cases for "Default wine" and "winehq-staging"
         QString actualWineVersion = wineVersion;
         if (wineVersion == QString::fromUtf8("winehq-staging") || 
@@ -524,7 +660,54 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
             ltr_int_log_message("Detected 'Default wine' or 'winehq-staging', checking for system Wine\n");
         }
         
-        winePath = homeDir + QString::fromUtf8("/.local/share/lutris/runners/wine/") + actualWineVersion + QString::fromUtf8("/bin/wine");
+        // Resolve provided wineVersion into an executable path robustly
+        QString trimmedVersion = actualWineVersion.trimmed();
+        if (trimmedVersion.startsWith(QStringLiteral("~"))) {
+            trimmedVersion.replace(0, 1, homeDir);
+        }
+        if (trimmedVersion.contains(QString::fromUtf8("$HOME"))) {
+            trimmedVersion.replace(QString::fromUtf8("$HOME"), homeDir);
+        }
+
+        // Determine resolution branch explicitly
+        const bool hasBinWine = trimmedVersion.contains(QStringLiteral("/bin/wine"));
+        const bool looksAbsolute = QDir::isAbsolutePath(trimmedVersion) || trimmedVersion.startsWith(QLatin1Char('/'));
+        const bool looksLikeLutrisRunnerPath = trimmedVersion.contains(QStringLiteral("/.local/share/lutris/runners/wine/"));
+
+        ltr_int_log_message("wineVersion resolution: trimmed='%s', hasBinWine=%s, isAbsolute=%s, looksRunnerPath=%s\n",
+                            trimmedVersion.toUtf8().constData(),
+                            hasBinWine ? "true" : "false",
+                            looksAbsolute ? "true" : "false",
+                            looksLikeLutrisRunnerPath ? "true" : "false");
+
+        ltr_int_log_message("DEBUG: homeDir='%s', trimmedVersion='%s'\n", homeDir.toUtf8().constData(), trimmedVersion.toUtf8().constData());
+
+        QFileInfo directInfo(trimmedVersion);
+        if (looksAbsolute || looksLikeLutrisRunnerPath) {
+            ltr_int_log_message("DEBUG: Taking absolute/runner path branch\n");
+            if (directInfo.isDir()) {
+                winePath = QDir(trimmedVersion).filePath(QStringLiteral("bin/wine"));
+            } else {
+                winePath = trimmedVersion;
+            }
+            debugInfo += QString::fromUtf8("Using absolute/direct Wine path: ") + winePath + QString::fromUtf8("\n");
+            ltr_int_log_message("Using absolute/direct Wine path: %s\n", winePath.toUtf8().constData());
+        } else if (hasBinWine) {
+            ltr_int_log_message("DEBUG: Taking hasBinWine branch\n");
+            winePath = trimmedVersion;
+            debugInfo += QString::fromUtf8("Using provided Wine path containing /bin/wine: ") + winePath + QString::fromUtf8("\n");
+            ltr_int_log_message("Using provided Wine path containing /bin/wine: %s\n", winePath.toUtf8().constData());
+        } else {
+            ltr_int_log_message("DEBUG: Taking constructed path branch\n");
+            // Only construct if it's not already an absolute path
+            if (!QDir::isAbsolutePath(trimmedVersion)) {
+                winePath = homeDir + QString::fromUtf8("/.local/share/lutris/runners/wine/") + trimmedVersion + QString::fromUtf8("/bin/wine");
+                ltr_int_log_message("Constructed Wine path from runner version: %s\n", winePath.toUtf8().constData());
+            } else {
+                winePath = trimmedVersion;
+                ltr_int_log_message("Using absolute Wine path as-is: %s\n", winePath.toUtf8().constData());
+            }
+        }
         
         QFileInfo wineFile(winePath);
         if (!wineFile.exists()) {
