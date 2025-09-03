@@ -85,8 +85,7 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
   hwindow = CreateWindowEx (
          0,                   /* Extended possibilites for variation */
          szClassName,         /* Classname */
-         "Linuxtrack - Wine Server v"
-PACKAGE_VERSION,       /* Title Text */
+         "Linuxtrack - Wine Server",       /* Title Text */
          WS_OVERLAPPEDWINDOW, /* default window */
          CW_USEDEFAULT,       /* Windows decides the position */
          CW_USEDEFAULT,       /* where the window ends up on the screen */

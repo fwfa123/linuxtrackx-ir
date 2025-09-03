@@ -65,26 +65,61 @@ QT_QPA_PLATFORM=xcb ./LinuxTrack-X-IR-*.AppImage
 
 #### **Debian / Ubuntu / MX Linux**
 ```bash
-# Install dependencies
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging
+# Install core build dependencies
+sudo apt update
+sudo apt install -y build-essential autoconf automake libtool pkg-config
 
-# Build and install (includes 32-bit runtime for Wine Tester.exe)
+# Install Qt5 development dependencies
+sudo apt install -y qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev
+
+# Install computer vision and USB dependencies
+sudo apt install -y libopencv-dev libusb-1.0-0-dev libmxml-dev liblo-dev
+
+# Install X11 and graphics dependencies
+sudo apt install -y libx11-dev libxrandr-dev libv4l-dev
+
+# Install build tools
+sudo apt install -y bison flex nsis
+
+# Install 32-bit development support (for Wine compatibility)
+sudo apt install -y gcc-multilib libc6-dev-i386
+
+# Install Wine (optional, for Windows game compatibility)
+# Note: For building 32-bit Wine bridge apps like Tester.exe, we need wine32-tools
+# This will replace wine64-tools but provides the necessary 32-bit winegcc
+sudo apt install -y wine wine-staging libwine-dev wine32-tools
+
+# Clone and build
 git clone <repository-url>
 cd linuxtrackx-ir
+
+# Set up Wine development environment (optional)
 cd scripts/dev && ./wine_dev_setup.sh && cd ../..
+
+# Generate build files
 autoreconf -fiv
-# Enable 32-bit linuxtrack runtime so 32-bit Tester.exe works
-# This installs liblinuxtrack.so.0 to /usr/lib/i386-linux-gnu/linuxtrack
+
+# Configure build (enable 32-bit runtime for Wine Tester.exe compatibility)
 ./configure --prefix=/usr --with-lib32-dir=i386-linux-gnu --enable-ltr-32lib-on-x64
+
+# Build with parallel compilation
 make -j$(nproc)
+
+# Install (automatically configures everything)
 sudo make install
-sudo ldconfig
 
-# Verify both runtimes installed
-file /usr/lib/linuxtrack/liblinuxtrack.so.0 || true
-file /usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0 || true
-
+# Test the installation
+ltr_gui --version
 ```
+
+**Debian-Specific Notes:**
+- **OpenCV Detection Issue**: The configure script may report "opencv4 >= 0.29.0... no" even when OpenCV is installed. This is a known issue with pkg-config detection but doesn't prevent the build from succeeding.
+- **Qt5 qmake**: The script automatically detects and uses the correct qmake version (5.15.x).
+- **32-bit Runtime**: If 32-bit libraries fail to build due to missing dependencies, the core LinuxTrack functionality will still work.
+- **Wine Integration**: Wine is optional but recommended for TrackIR Tester.exe compatibility. Note that `wine-development` doesn't exist - use `libwine-dev` and `wine32-tools` (not `wine64-tools`) for building 32-bit Wine bridge applications like Tester.exe.
+- **OSC Support**: Requires `liblo-dev` package for Open Sound Control network functionality.
+- **Installation**: Everything is now automatic during `sudo make install` - no post-installation steps required!
+- **Display Server**: LinuxTrack works best with X11. If using Wayland, force X11 compatibility with `QT_QPA_PLATFORM=xcb ltr_gui`
 
 #### **Fedora / RHEL / CentOS**
 ```bash
@@ -408,7 +443,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 
 | Problem | Solution |
 |---------|----------|
-| `winegcc: command not found` | Install Wine development tools: `sudo apt install wine-devel` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
+| `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | MFC42 installation fails | Use the built-in MFC42 installer in the GUI, or manually run `winetricks mfc42`. The enhanced debugging will show detailed output and automatically try `winetricks vcrun6` as fallback |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
@@ -579,6 +614,30 @@ The latest version includes comprehensive debugging for MFC42 winetricks install
 - File system inspection of installed DLLs
 - Fallback installation attempts
 - Detailed error reporting
+
+### **Debian/Ubuntu Build Troubleshooting**
+
+| Problem | Solution |
+|---------|----------|
+| `configure: error: Qt5 development headers not found` | Install: `sudo apt install qtbase5-dev qttools5-dev libqt5x11extras5-dev` |
+| `configure: opencv4 >= 0.29.0... no` | This is normal - OpenCV detection issue but build succeeds. Install: `sudo apt install libopencv-dev` |
+| GUI doesn't display after build | **Force X11 compatibility**: `QT_QPA_PLATFORM=xcb ltr_gui` |
+| `qmake: command not found` | Install: `sudo apt install qttools5-dev-tools` |
+| 32-bit build fails | This is normal if OpenCV detection failed. Core functionality still works. |
+| Wine bridge compilation errors | These don't affect core LinuxTrack functionality |
+
+### **GUI Display Issues**
+If `ltr_gui` appears to run but no window appears:
+```bash
+# Force X11 compatibility (recommended)
+QT_QPA_PLATFORM=xcb ltr_gui
+
+# Check display environment
+echo $DISPLAY $XDG_SESSION_TYPE
+
+# Run with debugging
+QT_DEBUG_PLUGINS=1 ltr_gui 2>&1 | head -20
+```
 
 ### **Getting Help**
 1. **Try AppImage first** - Easiest installation method

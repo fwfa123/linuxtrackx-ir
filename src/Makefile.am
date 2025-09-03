@@ -191,3 +191,23 @@ clean-local:
 
 distclean-local: clean-local
 	- rm -f $(GUI_MAKEFILE) $(MICKEY_MAKEFILE) $(WII_MAKEFILE)
+
+# Configure library path for dynamic loading
+install-exec-hook:
+	@echo "Configuring LinuxTrack library path..."
+	@if [ ! -f /etc/ld.so.conf.d/linuxtrack.conf ]; then \
+	  echo "$(pkglibdir)" > /etc/ld.so.conf.d/linuxtrack.conf; \
+	  echo "Created /etc/ld.so.conf.d/linuxtrack.conf"; \
+	else \
+	  echo "/etc/ld.so.conf.d/linuxtrack.conf already exists"; \
+	fi
+	@ldconfig
+	@echo "Library cache updated"
+
+# Clean up library configuration on uninstall
+uninstall-hook:
+	@if [ -f /etc/ld.so.conf.d/linuxtrack.conf ]; then \
+	  rm -f /etc/ld.so.conf.d/linuxtrack.conf; \
+	  echo "Removed /etc/ld.so.conf.d/linuxtrack.conf"; \
+	  ldconfig; \
+	fi
