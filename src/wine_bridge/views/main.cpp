@@ -70,7 +70,7 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
     case WM_CREATE:
       hCtrl0_0 = CreateWindowEx(0, WC_BUTTON, ("Quit"), WS_VISIBLE | WS_CHILD | WS_TABSTOP | 0x00000001,
                                 10, 45, 170, 30, hwnd, (HMENU)IDQUIT, hInst, 0);
-      hCtrl1_0 = CreateWindowEx(0, WC_STATIC, ("Linuxtrack " PACKAGE_VERSION ),
+      hCtrl1_0 = CreateWindowEx(0, WC_STATIC, ("Linuxtrack"),
                                 WS_VISIBLE | WS_CHILD | WS_GROUP | SS_LEFT,
                                 18, 5, 170, 15, hwnd, (HMENU)IDQUIT+1, hInst, 0);
       hCtrl1_0 = CreateWindowEx(0, WC_STATIC, ("Mock TrackIR window"),
