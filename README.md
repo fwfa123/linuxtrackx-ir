@@ -118,7 +118,7 @@ ltr_gui --version
 - **32-bit Runtime**: If 32-bit libraries fail to build due to missing dependencies, the core LinuxTrack functionality will still work.
 - **Wine Integration**: Wine is optional but recommended for TrackIR Tester.exe compatibility. Note that `wine-development` doesn't exist - use `libwine-dev` and `wine32-tools` (not `wine64-tools`) for building 32-bit Wine bridge applications like Tester.exe.
 - **OSC Support**: Requires `liblo-dev` package for Open Sound Control network functionality.
-- **Installation**: Everything is now automatic during `sudo make install` - no post-installation steps required!
+- **Installation**: Everything is now automatic during `sudo make install` - no post-installation steps required! The optional `scripts/post_install.sh` script can verify that all components are properly installed.
 - **Display Server**: LinuxTrack works best with X11. If using Wayland, force X11 compatibility with `QT_QPA_PLATFORM=xcb ltr_gui`
 
 #### **Fedora / RHEL / CentOS**
@@ -444,6 +444,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 | Problem | Solution |
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
+| `Couldn't load library 'libwc.so.0'` | Library cache not updated. Run: `sudo ldconfig` then restart LinuxTrack |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | MFC42 installation fails | Use the built-in MFC42 installer in the GUI, or manually run `winetricks mfc42`. The enhanced debugging will show detailed output and automatically try `winetricks vcrun6` as fallback |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |

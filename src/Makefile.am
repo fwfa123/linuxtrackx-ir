@@ -198,11 +198,12 @@ install-exec-hook:
 	@if [ ! -f /etc/ld.so.conf.d/linuxtrack.conf ]; then \
 	  echo "$(pkglibdir)" > /etc/ld.so.conf.d/linuxtrack.conf; \
 	  echo "Created /etc/ld.so.conf.d/linuxtrack.conf"; \
-	else \
-	  echo "/etc/ld.so.conf.d/linuxtrack.conf already exists"; \
 	fi
+	@echo "Running ldconfig to update library cache..."
 	@ldconfig
-	@echo "Library cache updated"
+	@sleep 1
+	@ldconfig -p | grep -q "libwc.so.0" && echo "✅ Library cache updated successfully" || (echo "❌ Library cache update failed" && exit 1)
+	@echo "LinuxTrack installation completed successfully"
 
 # Clean up library configuration on uninstall
 uninstall-hook:
