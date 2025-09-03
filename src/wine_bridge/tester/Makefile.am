@@ -34,7 +34,7 @@ SUFFIXES = .o .cpp .c .rc 64.o
 	wrc -o $@ $(RCFLAGS) $<
 
 .rc64.o :
-	wrc -o $@ $(RCFLAGS) $<
+	wrc -o $@ $(RCFLAGS) -DFOR_WIN64=1 $<
 
 CXXFLAGS += -g -DHAVE_CONFIG_H -I../../.. -I. -I@srcdir@/../.. -I@top_builddir@
 CFLAGS += -g -I../.. -I../../.. -DHAVE_CONFIG_H -I@srcdir@/../.. -I@top_builddir@
