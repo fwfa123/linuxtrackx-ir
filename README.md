@@ -174,14 +174,26 @@ sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
 
 #### **Arch Linux / Manjaro**
 
-**⚠️ IMPORTANT: Arch Linux users may encounter 32-bit library issues during build. See the troubleshooting section below for the complete solution.**
+**✅ AppImage Support: LinuxTrack-X-IR AppImage works perfectly on Arch Linux!**
 
-#### **Method 1: Automated Build Script (Recommended)**
+**⚠️ IMPORTANT: For Wine bridge functionality (TrackIR MFC42 support), wine-staging has 32-bit limitations. Use Method 3 below for optimal Wine support.**
+
+#### **Method 1: AppImage (Quick Start - Recommended)**
+```bash
+# Download and run the AppImage (works immediately on Arch Linux)
+chmod +x LinuxTrack-X-IR-*.AppImage
+./LinuxTrack-X-IR-*.AppImage
+
+# For Wayland users, force X11 compatibility
+QT_QPA_PLATFORM=xcb ./LinuxTrack-X-IR-*.AppImage
+```
+
+#### **Method 2: Automated Build Script**
 ```bash
 ./scripts/build_arch_linux.sh
 ```
 
-#### **Method 2: Manual Build with 32-bit Library Fix**
+#### **Method 3: Manual Build with 32-bit Library Fix**
 This method addresses the common 32-bit library issues on Arch Linux:
 
 **Step 1: Install Dependencies**
@@ -215,27 +227,50 @@ sudo make install
 
 ```
 
-#### **Method 3: Optimized Wine Installation (Advanced)**
-For users who need Wine bridge compatibility:
+#### **Method 4: Optimized Wine Installation (Recommended for TrackIR)**
+For users who need Wine bridge compatibility with TrackIR support:
 
+**Step 1: Install Dependencies**
 ```bash
-# Clean up existing Wine installations
-sudo pacman -R wine-staging wine-gecko wine-mono winetricks 2>/dev/null || true
-sudo pacman -Rns $(pacman -Qtdq) 2>/dev/null || true
+# Install required dependencies
+sudo pacman -S --needed desktop-file-utils fontconfig lib32-fontconfig freetype2 lib32-freetype2 gcc-libs lib32-gcc-libs gettext lib32-gettext libpcap lib32-libpcap libunwind lib32-libunwind libxcursor lib32-libxcursor libxi lib32-libxi libxkbcommon lib32-libxkbcommon libxrandr lib32-libxrandr wayland lib32-wayland
 
-# Install optimized Wine packages
+# Install build dependencies
+sudo pacman -S --needed alsa-lib lib32-alsa-lib gnutls lib32-gnutls gst-plugins-base-libs lib32-gst-plugins-base-libs libcups lib32-libcups libgphoto2 libpulse lib32-libpulse libxcomposite lib32-libxcomposite libxinerama lib32-libxinerama libxxf86vm lib32-libxxf86vm mesa lib32-mesa mingw-w64-gcc ocl-icd lib32-ocl-icd opencl-headers pcsclite lib32-pcsclite perl samba sane sdl2 lib32-sdl2 v4l-utils lib32-v4l-utils
+```
+
+**Step 2: Build Wine-Stable with CPU Optimizations**
+```bash
+# Clone and optimize wine-stable build
 cd /tmp
 git clone https://aur.archlinux.org/wine-stable.git
 cd wine-stable
-makepkg -sri
 
-# Install Wine Mono and Gecko
+# Set up GPG key for source verification
+gpg --keyserver keys.openpgp.org --recv-keys CFDF148828C642A7
+
+# Optimize PKGBUILD for fast compilation (16 cores + native CPU optimizations)
+sed -i 's/make$/make -j16/g' PKGBUILD
+sed -i 's/export CFLAGS="${CFLAGS/-fno-plt/}"/export CFLAGS="${CFLAGS/-fno-plt/}"\n  export MAKEFLAGS="-j16"\n  export CFLAGS+=" -O2 -march=native -mtune=native"\n  export CXXFLAGS+=" -O2 -march=native -mtune=native"/' PKGBUILD
+
+# Build wine-stable (30-45 minutes on 16-core system)
+makepkg -sri --noconfirm
+```
+
+**Step 3: Install Wine-Stable-Mono**
+```bash
+# Install Wine Mono for .NET Framework compatibility
 cd /tmp
 git clone https://aur.archlinux.org/wine-stable-mono.git
 cd wine-stable-mono
-makepkg -sri
-sudo pacman -S wine-gecko
+makepkg -sri --noconfirm
 
+# Install Wine Gecko for Internet Explorer compatibility
+sudo pacman -S wine-gecko
+```
+
+**Step 4: Build LinuxTrack with Wine Support**
+```bash
 # Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
@@ -244,7 +279,7 @@ sudo make install
 sudo ldconfig
 ```
 
-#### **Method 4: Prebuilt Installation**
+#### **Method 5: Prebuilt Installation**
 ```bash
 ./scripts/install/install_arch_prebuilt.sh
 ```
@@ -259,11 +294,12 @@ sudo ldconfig
 
 **🚀 Wine Optimization Details:**
 The optimized Wine installation includes:
-- **Parallel builds** using all CPU cores for faster compilation
-- **ccache integration** for 70-90% faster future builds
-- **CPU-specific optimizations** for your hardware
-- **Complete Wine suite**: wine-stable, wine-mono, wine-gecko
-- **Conflict resolution** to ensure clean installation
+- **16-core parallel builds** (`-j16`) for maximum compilation speed
+- **Native CPU optimizations** (`-march=native -mtune=native`) for your specific hardware
+- **O2 optimization level** for balanced speed/size optimization
+- **Complete Wine suite**: wine-stable, wine-stable-mono, wine-gecko
+- **32-bit Wine prefix support** for TrackIR MFC42 compatibility
+- **Build time**: ~30-45 minutes on 16-core systems (vs 2+ hours without optimization)
 
 **🔧 32-bit Library Solution:**
 The 32-bit library build system was developed to solve the common Arch Linux build issues:
@@ -507,15 +543,17 @@ make -j$(nproc)
 
 | Problem | Solution |
 |---------|----------|
+| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | **Use wine-stable instead of wine-staging** - wine-staging doesn't support pure 32-bit prefixes |
 | `wine-staging` conflicts with `wine-stable` | Remove conflicting packages: `sudo pacman -R wine-staging wine-gecko wine-mono winetricks` |
 | `lib32-unixodbc` not found | This package doesn't exist in Arch. Remove it from PKGBUILD dependencies |
-| Wine build takes hours | Use optimized builds with parallel compilation: `make -j$(nproc)` |
+| Wine build takes hours | Use optimized builds with parallel compilation: `make -j16` and native CPU optimizations |
 | Missing Wine dependencies | Install complete suite: `wine-stable`, `wine-stable-mono`, `wine-gecko` |
 | Wine bridge not working | Ensure wine-stable is installed, not wine-staging |
 | Orphaned packages after Wine removal | Clean up: `sudo pacman -Rns $(pacman -Qtdq)` |
 | **Missing 32-bit libraries (liblo, mxml)** | **Use the automated build script: `./scripts/build_32bit_libs.sh`** |
 | **32-bit/64-bit compilation conflicts** | **Use explicit 64-bit flags: `CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"`** |
 | **Qt5 Makefile not generated** | **Manually generate: `cd src/qt_gui && /usr/bin/qmake-qt5 -spec linux-g++ "LIBDIR=/usr/local/lib/linuxtrack" ltr_gui.pro`** |
+| **MFC42 installation fails** | **Use wine-stable with 32-bit prefix support, not wine-staging** |
 
 #### **32-bit Runtime Verification**
 ```bash
