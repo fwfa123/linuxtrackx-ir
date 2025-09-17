@@ -2,7 +2,45 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.24) continues development on GitLab for future development and releases.
+> **Note**: This version (0.99.25) continues development on GitLab for future development and releases.
+
+## [0.99.25] - Arch Linux Wine32 Alternative Sources & Enhanced Wine Integration (2025)
+
+### Major Changes
+- **Alternative MFC42.dll Sources**: Added VS6SP6.EXE and VC6RedistSetup_deu.exe sources for Arch Linux users without wine32
+- **Enhanced Wine Integration**: Fixed Lutris Wine path resolution and improved Wine version detection
+- **Automatic Installation**: Streamlined installation process with automatic post-installation steps
+- **Professional UI**: Cleaned up Wine bridge application titles and improved user experience
+
+### Added
+- Alternative MFC42.dll download sources with SHA256 verification
+- Smart extraction method selection (cabextract vs Wine installer) based on source type
+- Automatic installation hooks for library path configuration and desktop integration
+- Enhanced Lutris Wine path resolution with absolute path detection
+- Comprehensive Debian build analysis documentation
+- MFC42.dll symlink creation in winebridge installer
+
+### Changed
+- Manual download code path now properly parses pipe-delimited source metadata
+- Wine bridge application titles no longer display version numbers
+- Post-installation script transformed from installation to verification script
+- Enhanced Wine version detection with support for various runner patterns
+- Improved YAML parsing for Lutris game configurations
+
+### Fixed
+- **Critical**: Missing mfc42.dll symlink creation in winebridge installer
+- **Critical**: Lutris Wine path doubling issue causing invalid paths
+- Wine version detection and path resolution issues
+- NPTest dialog architecture identification
+- Library loading issues with automatic ldconfig execution
+- Desktop file installation and cache update issues
+
+### Technical Details
+- MFC42 extraction supports both cabextract and Wine installer methods
+- SHA256 verification ensures download integrity
+- Smart path resolution detects absolute vs relative Wine paths
+- Automatic installation eliminates manual post-installation steps
+- Enhanced cross-distribution compatibility for Arch Linux users
 
 ## [0.99.24] - Cross-Distribution Compatibility & Wine Bridge Improvements (2025)
 

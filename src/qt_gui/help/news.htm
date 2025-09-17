@@ -10,6 +10,22 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the Linuxtrack X-IR software.
 
+<h2>Linuxtrack X-IR v0.99.25 - Arch Linux Wine32 Alternative Sources & Enhanced Wine Integration (2025)</h2>
+<h3>Alternative MFC42.dll Sources for Arch Linux</h3>
+Added VS6SP6.EXE and VC6RedistSetup_deu.exe as alternative download sources for users on Arch Linux without wine32. The system automatically selects the appropriate extraction method (cabextract vs Wine installer) and verifies downloads with SHA256 checksums for security.
+
+<h3>Enhanced Wine Integration</h3>
+Fixed critical Lutris Wine path resolution issues and improved Wine version detection. The system now properly handles absolute vs relative Wine paths and supports various Wine runner patterns including lutris-GE-Proton8-15-x86_64 and wine-ge-8-26-x86_64.
+
+<h3>Automatic Installation Process</h3>
+Streamlined the installation experience with automatic post-installation steps. The system now handles library path configuration, desktop file installation, and cache updates automatically during 'sudo make install'.
+
+<h3>Professional User Interface</h3>
+Cleaned up Wine bridge application titles by removing version numbers, providing a more professional appearance. Enhanced error messages and troubleshooting information for better user experience.
+
+<h3>Critical Bug Fixes</h3>
+Fixed missing mfc42.dll symlink creation in winebridge installer and resolved Wine path doubling issues in Lutris integration. Improved NPTest architecture identification and library loading issues.
+
 <h2>Linuxtrack X-IR v0.99.24 - Cross-Distribution Compatibility & Wine Bridge Improvements (2025)</h2>
 <h3>Complete Cross-Distribution Support</h3>
 Added comprehensive support for Fedora, Nobara Linux, and other RPM-based distributions. The Wine development setup now automatically detects and configures the correct packages for Fedora/Nobara, eliminating manual package resolution issues.

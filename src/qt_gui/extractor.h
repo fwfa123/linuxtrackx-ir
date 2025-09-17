@@ -129,12 +129,18 @@ class Mfc42uWinetricksExtractor : public Extractor
   bool tryAlternativeScript();
   bool downloadVCRedist();
   bool extractMfc42FromInstaller(const QString &installerPath);
+  bool extractFromVS6SP6(const QString &installerPath);
+  bool extractFromVC6RedistSetup(const QString &installerPath);
+  bool downloadDirectDLL(const QString &sourceUrl);
   QString findCachedDownload();
   void showDownloadInstructions();
   void showWinetricksInstructions();
   bool isWinetricksAvailable();
   QString locateWinetricks();
   void populateDownloadCombo();
+  // Helpers for plan 0002
+  bool copyDllsToFirmware(const QStringList &sourceCandidates, const QStringList &dllNames);
+  QString computeSha256(const QString &filePath);
   
   // Cached resolution of winetricks program and any required prefix arguments
   QString winetricksProgram_;
