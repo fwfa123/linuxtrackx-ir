@@ -1,0 +1,11 @@
+prefix=/opt
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: linuxtrack
+Description: Library to interface with Linuxtrack head-tracking application 
+Version: 0.0.120118
+Libs: -L${libdir} -llinuxtrack
+Cflags: -I${includedir}
+

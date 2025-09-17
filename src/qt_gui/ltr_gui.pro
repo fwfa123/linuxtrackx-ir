@@ -8,8 +8,8 @@ TARGET = ltr_gui
 DEPENDPATH += .
 INCLUDEPATH += .
 INCLUDEPATH += ..
-INCLUDEPATH += @srcdir@
-INCLUDEPATH += @srcdir@/..
+INCLUDEPATH += .
+INCLUDEPATH += ./..
 RESOURCES = ltr_rc.qrc
 #QT          += opengl network webkit
 QT          += opengl network help concurrent
@@ -19,7 +19,7 @@ contains(QT_VERSION, ^5.*){
        QT += widgets sql
 }
 
-VPATH     = @srcdir@
+
 
 PRECOMPILED_HEADER = precomp_headers.h
 
@@ -60,8 +60,8 @@ SOURCES += main.cpp ltr_gui.cpp ltr_show.cpp ltr_dev_help.cpp \
            tester_launcher.cpp flatpak_detector.cpp \
            installer_paths.cpp about_dialog.cpp
 
-QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'" -I @prefix@/include
-QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI  -I @prefix@/include
+QMAKE_CXXFLAGS += -Wall -Wextra -DHAVE_CONFIG_H -DHELP_BASE="'\""ltr_gui/"\"'" -I /opt/include
+QMAKE_CFLAGS += -Wall -Wextra -DLTR_GUI  -I /opt/include
 
 QMAKE_CXXFLAGS += $$(CXXFLAGS)
 QMAKE_CFLAGS += $$(CFLAGS)
@@ -75,8 +75,8 @@ unix:!macx {
   HEADERS += webcam_prefs.h webcam_info.h webcam_ft_prefs.h joy_prefs.h
   FORMS += l_wc_setup.ui l_wcft_setup.ui joy_setup.ui
   SOURCES += webcam_info.cpp webcam_prefs.cpp webcam_ft_prefs.cpp joy_prefs.cpp
-  LIBS += "-L../.libs" "-L@prefix@/lib" "-L$${LIBDIR}" -lm -lltr -lGLU -lmxml \
-           "-Wl,-rpath,$${LIBDIR}" "-Wl,-rpath,@prefix@/lib"
+  LIBS += "-L../.libs" "-L/opt/lib" "-L$${LIBDIR}" -lm -lltr -lGLU -lmxml \
+           "-Wl,-rpath,$${LIBDIR}" "-Wl,-rpath,/opt/lib"
 
   # Auto-generate Qt Help files during build
   HELP_OUT_DIR = $${OUT_PWD}
@@ -87,12 +87,12 @@ unix:!macx {
   QMAKE_POST_LINK += qhelpgenerator $${PWD}/ltr_gui.qhcp -o $${HELP_QHC} && \
                      qhelpgenerator $${PWD}/ltr_gui.qhp  -o $${HELP_QCH}
 
-  data.path += @prefix@/share/linuxtrack
+  data.path += /opt/share/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png sources.txt spec.txt \
                  sphere.obj sphere.png sources_mfc.txt sources_mfc42.txt win7.reg win10.reg
-  help.path += @prefix@/share/linuxtrack/help/ltr_gui
+  help.path += /opt/share/linuxtrack/help/ltr_gui
   help.files += $${HELP_QHC} $${HELP_QCH}
-  target.path = @prefix@/bin
+  target.path = /opt/bin
   INSTALLS += target data help
 }
 
@@ -103,7 +103,7 @@ macx {
   #QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
   #QMAKE_MAC_SDK=/Developer/SDKs/MacOSX10.6.sdk
   CONFIG+=x86_64
-  LIBS += -L../.libs "-L$${LIBDIR}" -L@prefix@/lib -lm -lltr -lmxml
+  LIBS += -L../.libs "-L$${LIBDIR}" -L/opt/lib -lm -lltr -lmxml
   data.path += ltr_gui.app/Contents/Resources/linuxtrack
   data.files += sparow_opaq.obj sparow_glass.obj xm8_detail.png ../linuxtrack1.conf \
                 sources_mac.txt spec.txt sphere.obj sphere.png sources_mfc.txt sources_mfc42.txt win7.reg win10.reg
