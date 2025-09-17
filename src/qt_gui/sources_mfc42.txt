@@ -1,13 +1,24 @@
 # Visual C++ 6.0 Redistributable sources for MFC42
 # These are the official Microsoft Visual C++ 6.0 Redistributables
-# that contain mfc42u.dll (MFC libraries for Visual C++ 6.0)
+# that contain mfc42.dll and mfc42u.dll (MFC libraries for Visual C++ 6.0)
 
-# Microsoft Visual C++ 6.0 Redistributable
-https://download.microsoft.com/download/vc60pro/redist/6.0.8447.0/Win98Me/EN-US/vcredist.exe
-
-# Alternative download locations (if Microsoft servers are unavailable)
-https://web.archive.org/web/*/https://download.microsoft.com/download/vc60pro/redist/6.0.8447.0/Win98Me/EN-US/vcredist.exe
-
-# Winetricks installation method (preferred)
+# Primary winetricks method (preferred for users with wine32)
 # winetricks mfc42
-# winetricks vcrun6 
+# winetricks vcrun6
+
+# Alternative 1: VS6SP6.EXE (Visual Studio 6 Service Pack 6)
+# Most reliable alternative source
+https://www.ddsystem.com.br/update/setup/vb6+sp6/VS6SP6.EXE|7fa1d1778824b55a5fceb02f45c399b5d4e4dce7403661e67e587b5f455edbf3|VS6SP6.EXE|extract_vcredist
+
+# Alternative 2: VC6RedistSetup_deu.exe (German version)
+# Microsoft official source
+#https://download.microsoft.com/download/vc60pro/Update/2/W9XNT4/EN-US/VC6RedistSetup_deu.exe|c2eb91d9c4448d50e46a32fecbcc3b418706d002beab9b5f4981de552098cee7|VC6RedistSetup_deu.exe|wine_installer
+
+# Alternative 3: Direct DLL download sources (fallback)
+# Note: These require manual verification and may have security implications
+# https://www.dll-files.com/mfc42.dll.html|direct_dll_download
+# https://www.dllme.com/dll/files/mfc42|direct_dll_download
+
+# Legacy sources (keep for compatibility)
+https://download.microsoft.com/download/vc60pro/Update/2/W9XNT4/EN-US/VC6RedistSetup_deu.exe
+http://linuxtrack.eu/VC6RedistSetup_deu.exe 

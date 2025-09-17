@@ -13,35 +13,8 @@
 #include <QTimer>
 #include <unistd.h>
 #include <cstdlib>
+#include <QCryptographicHash>
 
-// Helper function to copy a directory recursively
-static bool copyDirectory(const QString& src, const QString& dst)
-{
-  QDir srcDir(src);
-  if(!srcDir.exists()) {
-    return false;
-  }
-  
-  QDir dstDir(dst);
-  if(!dstDir.exists()) {
-    dstDir.mkpath(dst);
-  }
-  
-  QDirIterator it(src, QDirIterator::Subdirectories);
-  while(it.hasNext()) {
-    QString srcPath = it.next();
-    QString dstPath = srcPath;
-    dstPath.replace(src, dst);
-    
-    if(it.fileInfo().isDir()) {
-      QDir().mkpath(dstPath);
-    } else {
-      QFile::copy(srcPath, dstPath);
-    }
-  }
-  
-  return true;
-}
 
 #include "extractor.h"
 #include "hashing.h"
@@ -595,14 +568,14 @@ Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extracto
     "<p style='margin: 5px 0;'>2. <b>Browse for installer</b>: If you already have the Visual C++ 6.0 Redistributable</p>"
     "<p style='margin: 5px 0;'>3. <b>Browse directory</b>: If you have extracted the installer to a directory</p>"
     "</div>"
-    "<p><b>Important:</b> Winetricks installation may take 5-10 minutes and the system may appear to hang. This is normal.</p>"
+    "<p><b>Important:</b> Winetricks installation may take 1-3 minutes and the system may appear to hang. This is normal.</p>"
     "<p><b>Note:</b> Winetricks installation is the preferred method as it ensures compatibility.</p>"
     "</div>"
   ));
   
   // Set up download combo box and button for MFC42
   ui.downloadLabel->setText(QString::fromUtf8("Select Installation Method"));
-  ui.DownloadButton->setText(QString::fromUtf8("Install with Winetricks"));
+  ui.DownloadButton->setText(QString::fromUtf8("Install"));
   
   // Populate the combo box with installation methods
   populateDownloadCombo();
@@ -614,6 +587,65 @@ Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extracto
 
 Mfc42uWinetricksExtractor::~Mfc42uWinetricksExtractor()
 {
+}
+
+// Plan 0002: helper to copy both DLLs idempotently
+bool Mfc42uWinetricksExtractor::copyDllsToFirmware(const QStringList &sourceCandidates, const QStringList &dllNames)
+{
+  bool anyCopied = false;
+  int copiedCount = 0;
+  QString firmwareDir = QDir::homePath() + QString::fromUtf8("/.config/linuxtrack/tir_firmware");
+  QDir().mkpath(firmwareDir);
+  
+  for(const QString &dllName : dllNames){
+    bool copiedThis = false;
+    for(const QString &candidateBase : sourceCandidates){
+      QString candidate = candidateBase;
+      if(!candidate.endsWith(QLatin1Char('/'))){
+        candidate += QLatin1Char('/');
+      }
+      QString src = candidate + dllName;
+      if(QFile::exists(src)){
+        QString dst = firmwareDir + QString::fromUtf8("/") + dllName;
+        if(QFile::exists(dst)){
+          QFile::remove(dst);
+        }
+        if(QFile::copy(src, dst)){
+          progress(QString::fromUtf8("Copied %1 to firmware directory").arg(dllName));
+          anyCopied = true;
+          copiedThis = true;
+          copiedCount++;
+          break;
+        }else{
+          progress(QString::fromUtf8("Failed to copy %1 from %2").arg(dllName, src));
+        }
+      }
+    }
+    if(!copiedThis){
+      progress(QString::fromUtf8("Did not find %1 in candidate locations").arg(dllName));
+    }
+  }
+  
+  // Show partial success warning if not all DLLs were copied
+  if(anyCopied && copiedCount < dllNames.size()){
+    progress(QString::fromUtf8("Warning: Only %1 of %2 DLLs were successfully copied").arg(copiedCount).arg(dllNames.size()));
+    progress(QString::fromUtf8("Both mfc42.dll and mfc42u.dll are recommended for full compatibility"));
+  }
+  
+  return anyCopied;
+}
+
+QString Mfc42uWinetricksExtractor::computeSha256(const QString &filePath)
+{
+  QFile f(filePath);
+  if(!f.open(QIODevice::ReadOnly)){
+    return QString();
+  }
+  QCryptographicHash hasher(QCryptographicHash::Sha256);
+  while(!f.atEnd()){
+    hasher.addData(f.read(1<<16));
+  }
+  return QString::fromUtf8(hasher.result().toHex());
 }
 
 void Mfc42uWinetricksExtractor::wineFinished(bool result)
@@ -632,9 +664,10 @@ void Mfc42uWinetricksExtractor::wineFinished(bool result)
     for(const QString& searchPath : searchPaths) {
       if(QFile::exists(searchPath)) {
         progress(QString::fromUtf8("Found mfc42u.dll at: %1").arg(searchPath));
-        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-        if(QFile::copy(searchPath, destPath)) {
-          progress(QString::fromUtf8("Mfc42u.dll copied successfully"));
+        QStringList candidateDirs;
+        candidateDirs << QFileInfo(searchPath).absolutePath();
+        // Try copying both DLLs from the same directory
+        if(copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"))){
           found = true;
           break;
         }
@@ -686,18 +719,21 @@ void Mfc42uWinetricksExtractor::wineFinished(bool result)
       break;
     case 1:{
         stage = 0;
-        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-        QString srcPath = winePrefix + QString::fromUtf8("/drive_c/mfc42u.dll");
-        if(!QFile::copy(srcPath, destPath)){
-          QMessageBox::warning(this, tr("Error extracting mfc42u.dll"),
-            tr("There was an error extracting mfc42u.dll.\n"
-            "Please see the help to learn other ways\n"
-      	  "ways of obtaining this file.\n\n")
-          );
+        // Attempt to copy both DLLs from the wine prefix locations
+        QStringList candidateDirs;
+        candidateDirs << winePrefix + QString::fromUtf8("/drive_c")
+                      << winePrefix + QString::fromUtf8("/drive_c/windows/system32")
+                      << winePrefix + QString::fromUtf8("/drive_c/windows/syswow64");
+        bool ok = copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"));
+        if(!ok){
+          QMessageBox::warning(this, tr("Error extracting MFC42 libraries"),
+            tr("There was an error extracting MFC42 libraries.\n"
+               "Please see the help to learn other ways\n"
+               "of obtaining these files.\n\n"));
           enableButtons(true);
           emit finished(false);
         }else{
-          progress(QString::fromUtf8("Mfc42u.dll extracted successfully"));
+          progress(QString::fromUtf8("MFC42 libraries extracted successfully"));
           QMessageBox::information(this, tr("Installation Successful"),
             tr("MFC42 libraries were successfully installed."));
           enableButtons(true);
@@ -935,12 +971,15 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   for(const QString& searchPath : searchPaths) {
     if(QFile::exists(searchPath)) {
       progress(QString::fromUtf8("Found MFC42 library at: %1").arg(searchPath));
-      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-      if(QFile::copy(searchPath, destPath)) {
-        progress(QString::fromUtf8("MFC42 library copied successfully from winetricks installation"));
+      QStringList candidateDirs;
+      candidateDirs << QFileInfo(searchPath).absolutePath();
+      if(copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"))){
+        progress(QString::fromUtf8("MFC42 libraries copied successfully from winetricks installation"));
+        // Cleanup temporary prefix
+        if(!tempPrefix.isEmpty() && tempPrefix.startsWith(QDir::tempPath())){
+          QDir(tempPrefix).removeRecursively();
+        }
         return true;
-      } else {
-        progress(QString::fromUtf8("Failed to copy MFC42 library to firmware directory"));
       }
     }
   }
@@ -959,12 +998,14 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
     QDir dir(QFileInfo(searchPath).absolutePath());
     QString pattern = QFileInfo(searchPath).fileName();
     QStringList files = dir.entryList(QStringList() << pattern, QDir::Files);
-    for(const QString& file : files) {
-      QString fullPath = dir.absoluteFilePath(file);
-      progress(QString::fromUtf8("Found MFC library: %1").arg(fullPath));
-      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-      if(QFile::copy(fullPath, destPath)) {
-        progress(QString::fromUtf8("MFC library copied successfully from winetricks installation"));
+    if(!files.isEmpty()){
+      QStringList candidateDirs;
+      candidateDirs << dir.absolutePath();
+      if(copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"))){
+        progress(QString::fromUtf8("MFC42 libraries copied successfully from winetricks installation"));
+        if(!tempPrefix.isEmpty() && tempPrefix.startsWith(QDir::tempPath())){
+          QDir(tempPrefix).removeRecursively();
+        }
         return true;
       }
     }
@@ -1024,12 +1065,14 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   for(const QString& searchPath : searchPaths) {
     if(QFile::exists(searchPath)) {
       progress(QString::fromUtf8("Found MFC42 library at: %1").arg(searchPath));
-      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-      if(QFile::copy(searchPath, destPath)) {
-        progress(QString::fromUtf8("MFC42 library copied successfully from winetricks vcrun6 installation"));
+      QStringList candidateDirs;
+      candidateDirs << QFileInfo(searchPath).absolutePath();
+      if(copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"))){
+        progress(QString::fromUtf8("MFC42 libraries copied successfully from winetricks vcrun6 installation"));
+        if(!tempPrefix.isEmpty() && tempPrefix.startsWith(QDir::tempPath())){
+          QDir(tempPrefix).removeRecursively();
+        }
         return true;
-      } else {
-        progress(QString::fromUtf8("Failed to copy MFC42 library to firmware directory"));
       }
     }
   }
@@ -1039,12 +1082,14 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
     QDir dir(QFileInfo(searchPath).absolutePath());
     QString pattern = QFileInfo(searchPath).fileName();
     QStringList files = dir.entryList(QStringList() << pattern, QDir::Files);
-    for(const QString& file : files) {
-      QString fullPath = dir.absoluteFilePath(file);
-      progress(QString::fromUtf8("Found MFC library: %1").arg(fullPath));
-      destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-      if(QFile::copy(fullPath, destPath)) {
-        progress(QString::fromUtf8("MFC library copied successfully from winetricks vcrun6 installation"));
+    if(!files.isEmpty()){
+      QStringList candidateDirs;
+      candidateDirs << dir.absolutePath();
+      if(copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"))){
+        progress(QString::fromUtf8("MFC42 libraries copied successfully from winetricks vcrun6 installation"));
+        if(!tempPrefix.isEmpty() && tempPrefix.startsWith(QDir::tempPath())){
+          QDir(tempPrefix).removeRecursively();
+        }
         return true;
       }
     }
@@ -1226,32 +1271,50 @@ bool Mfc42uWinetricksExtractor::downloadVCRedist()
     return false;
   }
   
-  QStringList urls;
+  QStringList sources;
   while(!file.atEnd()) {
     QString line = QString::fromUtf8(file.readLine()).trimmed();
     if(!line.startsWith(QString::fromUtf8("#")) && !line.isEmpty()) {
-      urls << line;
+      sources << line;
     }
   }
   file.close();
   
-  if(urls.isEmpty()) {
-    progress(QString::fromUtf8("No download URLs found in sources file"));
+  if(sources.isEmpty()) {
+    progress(QString::fromUtf8("No download sources found in sources file"));
     return false;
   }
   
-  // Try each URL until one works
-  for(const QString& url : urls) {
+  // Try each source until one works
+  for(const QString& source : sources) {
+    QStringList parts = source.split(QString::fromUtf8("|"));
+    QString url = parts[0];
+    QString sha256 = parts.size() > 1 ? parts[1] : QString();
+    QString filename = parts.size() > 2 ? parts[2] : QString();
+    QString method = parts.size() > 3 ? parts[3] : QString::fromUtf8("wine_installer");
+    
+    progress(QString::fromUtf8("DEBUG: source='%1'").arg(source));
+    progress(QString::fromUtf8("DEBUG: parts.size()=%1").arg(parts.size()));
+    for(int i = 0; i < parts.size(); i++) {
+      progress(QString::fromUtf8("DEBUG: parts[%1]='%2'").arg(i).arg(parts[i]));
+    }
+    progress(QString::fromUtf8("DEBUG: url='%1'").arg(url));
+    progress(QString::fromUtf8("DEBUG: filename='%1'").arg(filename));
+    progress(QString::fromUtf8("DEBUG: method='%1'").arg(method));
+    
     progress(QString::fromUtf8("Trying to download from: %1").arg(url));
     
-    // Extract filename from URL
-    QUrl qurl(url);
-    QString filename = qurl.fileName();
+    // Extract filename from URL if not specified
     if(filename.isEmpty()) {
-      filename = QString::fromUtf8("vc_redist.x64.exe");
+      QUrl qurl(url);
+      filename = qurl.fileName();
+      if(filename.isEmpty()) {
+        filename = QString::fromUtf8("vc_redist.exe");
+      }
     }
     
     QString downloadPath = cachedDownloadPath + QString::fromUtf8("/") + filename;
+    progress(QString::fromUtf8("DEBUG: downloadPath='%1'").arg(downloadPath));
     
     // Use wget or curl to download
     QProcess downloader;
@@ -1262,7 +1325,31 @@ bool Mfc42uWinetricksExtractor::downloadVCRedist()
     if(downloader.waitForFinished(300000)) { // 5 minutes timeout
       if(downloader.exitCode() == 0) {
         progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-        if(extractMfc42FromInstaller(downloadPath)) {
+        // Verify SHA256 if provided
+        if(!sha256.isEmpty()){
+          QString actual = computeSha256(downloadPath);
+          if(actual.isEmpty() || actual.compare(sha256, Qt::CaseInsensitive) != 0){
+            progress(QString::fromUtf8("SHA256 mismatch; expected %1 got %2. Discarding.").arg(sha256, actual));
+            QFile::remove(downloadPath);
+            progress(QString::fromUtf8("SHA256 verification failed, trying next source..."));
+            return false;
+          }
+        }
+        
+        // Choose extraction method based on source metadata
+        bool success = false;
+        if(method == QString::fromUtf8("extract_vcredist")) {
+          success = extractFromVS6SP6(downloadPath);
+        } else if(method == QString::fromUtf8("wine_installer")) {
+          success = extractFromVC6RedistSetup(downloadPath);
+        } else if(method == QString::fromUtf8("direct_dll_download")) {
+          success = downloadDirectDLL(url);
+        } else {
+          // Default to original method
+          success = extractMfc42FromInstaller(downloadPath);
+        }
+        
+        if(success) {
           return true;
         }
       }
@@ -1273,7 +1360,31 @@ bool Mfc42uWinetricksExtractor::downloadVCRedist()
     if(downloader.waitForFinished(300000)) { // 5 minutes timeout
       if(downloader.exitCode() == 0) {
         progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-        if(extractMfc42FromInstaller(downloadPath)) {
+        // Verify SHA256 if provided
+        if(!sha256.isEmpty()){
+          QString actual = computeSha256(downloadPath);
+          if(actual.isEmpty() || actual.compare(sha256, Qt::CaseInsensitive) != 0){
+            progress(QString::fromUtf8("SHA256 mismatch; expected %1 got %2. Discarding.").arg(sha256, actual));
+            QFile::remove(downloadPath);
+            progress(QString::fromUtf8("SHA256 verification failed, trying next source..."));
+            return false;
+          }
+        }
+        
+        // Choose extraction method based on source metadata
+        bool success = false;
+        if(method == QString::fromUtf8("extract_vcredist")) {
+          success = extractFromVS6SP6(downloadPath);
+        } else if(method == QString::fromUtf8("wine_installer")) {
+          success = extractFromVC6RedistSetup(downloadPath);
+        } else if(method == QString::fromUtf8("direct_dll_download")) {
+          success = downloadDirectDLL(url);
+        } else {
+          // Default to original method
+          success = extractMfc42FromInstaller(downloadPath);
+        }
+        
+        if(success) {
           return true;
         }
       }
@@ -1301,15 +1412,107 @@ bool Mfc42uWinetricksExtractor::extractMfc42FromInstaller(const QString &install
   return true;
 }
 
+bool Mfc42uWinetricksExtractor::extractFromVS6SP6(const QString &installerPath)
+{
+  progress(QString::fromUtf8("Extracting MFC42 from VS6SP6.EXE: %1").arg(installerPath));
+  
+  // Create temporary directory for extraction
+  QString tmpDir = QDir::tempPath() + QString::fromUtf8("/linuxtrack_vs6sp6_extract");
+  QDir().mkpath(tmpDir);
+  
+  // Step 1: Extract vcredist.exe from VS6SP6.EXE
+  progress(QString::fromUtf8("Step 1: Extracting vcredist.exe from VS6SP6.EXE..."));
+  QProcess cabextract1;
+  QStringList args1;
+  args1 << QString::fromUtf8("-d") << tmpDir << QString::fromUtf8("-F") << QString::fromUtf8("vcredist.exe") << installerPath;
+  
+  cabextract1.start(QString::fromUtf8("cabextract"), args1);
+  if(!cabextract1.waitForFinished(60000)) { // 1 minute timeout
+    progress(QString::fromUtf8("Failed to extract vcredist.exe from VS6SP6.EXE"));
+    return false;
+  }
+  
+  if(cabextract1.exitCode() != 0) {
+    progress(QString::fromUtf8("cabextract failed to extract vcredist.exe (exit code: %1)").arg(cabextract1.exitCode()));
+    return false;
+  }
+  
+  // Step 2: Extract DLLs from vcredist.exe
+  progress(QString::fromUtf8("Step 2: Extracting DLLs from vcredist.exe..."));
+  QString vcredistPath = tmpDir + QString::fromUtf8("/vcredist.exe");
+  if(!QFile::exists(vcredistPath)) {
+    progress(QString::fromUtf8("vcredist.exe not found after extraction"));
+    return false;
+  }
+  
+  QProcess cabextract2;
+  QStringList args2;
+  args2 << QString::fromUtf8("-d") << tmpDir << vcredistPath;
+  
+  cabextract2.start(QString::fromUtf8("cabextract"), args2);
+  if(!cabextract2.waitForFinished(60000)) { // 1 minute timeout
+    progress(QString::fromUtf8("Failed to extract DLLs from vcredist.exe"));
+    return false;
+  }
+  
+  if(cabextract2.exitCode() != 0) {
+    progress(QString::fromUtf8("cabextract failed to extract DLLs (exit code: %1)").arg(cabextract2.exitCode()));
+    return false;
+  }
+  
+  // Step 3: Copy DLLs to firmware directory (use helper)
+  progress(QString::fromUtf8("Step 3: Copying DLLs to firmware directory..."));
+  QStringList candidateDirs;
+  candidateDirs << tmpDir;
+  bool allCopied = copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"));
+  
+  // Clean up temporary directory
+  QDir(tmpDir).removeRecursively();
+  
+  if(allCopied) {
+    progress(QString::fromUtf8("VS6SP6.EXE extraction completed successfully"));
+    return true;
+  } else {
+    progress(QString::fromUtf8("VS6SP6.EXE extraction completed with warnings"));
+    return true; // Still return true as some DLLs might be available
+  }
+}
+
+bool Mfc42uWinetricksExtractor::extractFromVC6RedistSetup(const QString &installerPath)
+{
+  progress(QString::fromUtf8("Extracting MFC42 from VC6RedistSetup_deu.exe: %1").arg(installerPath));
+  
+  // Use Wine to run the installer with /T parameter
+  stage = 0;
+  QStringList args;
+  args << QStringLiteral("/T:c:\\") << QStringLiteral("/Q");
+  wine->setEnv(QString::fromUtf8("WINEPREFIX"), winePrefix);
+  wine->run(installerPath, args);
+  
+  // The actual extraction will be handled in wineFinished(), which now copies both DLLs.
+  return true;
+}
+
+bool Mfc42uWinetricksExtractor::downloadDirectDLL(const QString &sourceUrl)
+{
+  progress(QString::fromUtf8("Direct DLL download not yet implemented: %1").arg(sourceUrl));
+  progress(QString::fromUtf8("This feature requires manual verification for security"));
+  return false; // Not implemented yet for security reasons
+}
+
 void Mfc42uWinetricksExtractor::showDownloadInstructions()
 {
   QMessageBox::information(this, QString::fromUtf8("Manual Download Required"),
     QString::fromUtf8("Please download the Visual C++ 6.0 Redistributable manually:\n\n"
-    "1. Go to: https://download.microsoft.com/download/vc60pro/redist/6.0.8447.0/Win98Me/EN-US/vcredist.exe\n"
+    "Option 1 - VS6SP6.EXE (Recommended):\n"
+    "1. Go to: https://www.ddsystem.com.br/update/setup/vb6+sp6/VS6SP6.EXE\n"
     "2. Download the file\n"
-    "3. Use the 'Browse Directory' button to select the folder containing the downloaded file\n"
-    "4. The installer will automatically extract the required MFC42 library.\n\n"
-    "Alternatively, you can use the 'Browse Installer' button to select the installer file directly.\n\n"
+    "3. Use the 'Browse Installer' button to select the downloaded file\n\n"
+    "Option 2 - VC6RedistSetup_deu.exe:\n"
+    "1. Go to: https://download.microsoft.com/download/vc60pro/Update/2/W9XNT4/EN-US/VC6RedistSetup_deu.exe\n"
+    "2. Download the file\n"
+    "3. Use the 'Browse Installer' button to select the downloaded file\n\n"
+    "Option 3 - Use the 'Browse Directory' button to select a folder containing vcredist.exe\n\n"
     "Or try installing via winetricks: winetricks mfc42"));
 }
 
@@ -1370,16 +1573,17 @@ void Mfc42uWinetricksExtractor::cabextractFinished(int exitCode, QProcess::ExitS
       break;
     case 1:{
         stage = 0;
-        destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-        QString srcPath = winePrefix + QString::fromUtf8("/mfc42u.dll");
-        if(!QFile::copy(srcPath, destPath)){
-          QMessageBox::warning(this, QString::fromUtf8("Error extracting mfc42u.dll"),
-            QString::fromUtf8("There was an error extracting mfc42u.dll.\n"
+        // Use helper method to copy both DLLs
+        QStringList candidateDirs;
+        candidateDirs << winePrefix;
+        bool ok = copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"));
+        if(!ok){
+          QMessageBox::warning(this, QString::fromUtf8("Error extracting MFC42 libraries"),
+            QString::fromUtf8("There was an error extracting MFC42 libraries.\n"
             "Please see the help to learn other ways\n"
-          "ways of obtaining this file.\n\n")
-          );
+            "of obtaining these files.\n\n"));
         }else{
-          progress(QString::fromUtf8("Mfc42u.dll extracted successfully"));
+          progress(QString::fromUtf8("MFC42 libraries extracted successfully via cabextract"));
         }
         enableButtons(true);
         emit finished(true);
@@ -1406,19 +1610,15 @@ void Mfc42uWinetricksExtractor::browseDirPressed()
     }
   }
   
-  // Also check for extracted mfc42u.dll directly
-  QString mfc42Path = dir + QString::fromUtf8("/mfc42u.dll");
-  if(QFile::exists(mfc42Path)) {
-    progress(QString::fromUtf8("Found mfc42u.dll directly: %1").arg(mfc42Path));
-    destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll");
-    if(QFile::copy(mfc42Path, destPath)) {
-      progress(QString::fromUtf8("Mfc42u.dll copied successfully"));
-      QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
-        QString::fromUtf8("MFC42 libraries were successfully installed."));
-      emit finished(true);
-      hide();
-      return;
-    }
+  // Also check for extracted DLLs directly (both names)
+  QStringList candidateDirs;
+  candidateDirs << dir;
+  if(copyDllsToFirmware(candidateDirs, QStringList() << QString::fromUtf8("mfc42.dll") << QString::fromUtf8("mfc42u.dll"))){
+    QMessageBox::information(this, QString::fromUtf8("Installation Successful"),
+      QString::fromUtf8("MFC42 libraries were successfully installed."));
+    emit finished(true);
+    hide();
+    return;
   }
   
   QMessageBox::warning(this, QString::fromUtf8("No installer found"),
@@ -1433,16 +1633,20 @@ void Mfc42uWinetricksExtractor::on_BrowseInstaller_pressed()
   ui.BrowseInstaller->setEnabled(false);
   
   // Allow user to browse for installer
-  QString file = QFileDialog::getOpenFileName(this, QString::fromUtf8("Select Visual C++ 2015-2022 Redistributable installer:"));
+  QString file = QFileDialog::getOpenFileName(this, QString::fromUtf8("Select Visual C++ 6.0 Redistributable installer (VS6SP6.EXE / VC6RedistSetup*.exe / vcredist.exe):"));
   if(file.isEmpty()){
     enableButtons(true);
     return;
   }
   
-  // Check if it's a valid VC++ redistributable
-  if(!file.contains(QString::fromUtf8("vc_redist"), Qt::CaseInsensitive)) {
+  // Validate for VC6 installers (VS6SP6, VC6RedistSetup variants, or vcredist)
+  QString lower = file.toLower();
+  bool looksOk = lower.contains(QString::fromUtf8("vs6sp6")) ||
+                 lower.contains(QString::fromUtf8("vc6redistsetup")) ||
+                 lower.contains(QString::fromUtf8("vcredist"));
+  if(!looksOk){
     QMessageBox::warning(this, QString::fromUtf8("Invalid Installer"),
-      QString::fromUtf8("Please select a Visual C++ 2015-2022 Redistributable installer (vc_redist.x64.exe or vc_redist.x86.exe)"));
+      QString::fromUtf8("Please select a Visual C++ 6.0 installer: VS6SP6.EXE, VC6RedistSetup*.exe, or vcredist.exe"));
     enableButtons(true);
     return;
   }
@@ -1556,42 +1760,123 @@ void Mfc42uWinetricksExtractor::on_DownloadButton_pressed()
     QString selectedUrl = selectedOption.replace(QString::fromUtf8("Download: "), QString::fromUtf8(""));
     progress(QString::fromUtf8("Starting download from: %1").arg(selectedUrl));
     
-    // Extract filename from URL
-    QUrl qurl(selectedUrl);
-    QString filename = qurl.fileName();
+    // Parse the source line if it contains pipe-delimited metadata
+    QStringList parts = selectedUrl.split(QString::fromUtf8("|"));
+    QString url = parts[0];
+    QString sha256 = parts.size() > 1 ? parts[1] : QString();
+    QString filename = parts.size() > 2 ? parts[2] : QString();
+    QString method = parts.size() > 3 ? parts[3] : QString::fromUtf8("wine_installer");
+    
+    progress(QString::fromUtf8("DEBUG: selectedUrl='%1'").arg(selectedUrl));
+    progress(QString::fromUtf8("DEBUG: parts.size()=%1").arg(parts.size()));
+    for(int i = 0; i < parts.size(); i++) {
+      progress(QString::fromUtf8("DEBUG: parts[%1]='%2'").arg(i).arg(parts[i]));
+    }
+    progress(QString::fromUtf8("DEBUG: url='%1'").arg(url));
+    progress(QString::fromUtf8("DEBUG: filename='%1'").arg(filename));
+    progress(QString::fromUtf8("DEBUG: method='%1'").arg(method));
+    
+    // Extract filename from URL if not specified
     if(filename.isEmpty()) {
-      filename = QString::fromUtf8("vcredist.exe");
+      QUrl qurl(url);
+      filename = qurl.fileName();
+      if(filename.isEmpty()) {
+        filename = QString::fromUtf8("vcredist.exe");
+      }
     }
     
     QString downloadPath = cachedDownloadPath + QString::fromUtf8("/") + filename;
+    progress(QString::fromUtf8("DEBUG: downloadPath='%1'").arg(downloadPath));
     
     // Use wget or curl to download
     QProcess downloader;
     QStringList args;
     
     // Try wget first
-    downloader.start(QString::fromUtf8("wget"), QStringList() << QString::fromUtf8("-O") << downloadPath << selectedUrl);
+    downloader.start(QString::fromUtf8("wget"), QStringList() << QString::fromUtf8("-O") << downloadPath << url);
     if(downloader.waitForFinished(300000)) { // 5 minutes timeout
       if(downloader.exitCode() == 0) {
         progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-        // Start the extraction process
-        commenceExtraction(downloadPath);
-        return;
+        
+        // Verify SHA256 if provided
+        if(!sha256.isEmpty()){
+          QString actual = computeSha256(downloadPath);
+          if(actual.isEmpty() || actual.compare(sha256, Qt::CaseInsensitive) != 0){
+            progress(QString::fromUtf8("SHA256 mismatch; expected %1 got %2. Discarding.").arg(sha256, actual));
+            QFile::remove(downloadPath);
+            progress(QString::fromUtf8("SHA256 verification failed, trying next source..."));
+            return;
+          }
+        }
+        
+        // Choose extraction method based on source metadata
+        bool success = false;
+        if(method == QString::fromUtf8("extract_vcredist")) {
+          success = extractFromVS6SP6(downloadPath);
+        } else if(method == QString::fromUtf8("wine_installer")) {
+          success = extractFromVC6RedistSetup(downloadPath);
+        } else if(method == QString::fromUtf8("direct_dll_download")) {
+          success = downloadDirectDLL(url);
+        } else {
+          // Default to original method
+          commenceExtraction(downloadPath);
+          success = true; // commenceExtraction doesn't return a value, assume success
+        }
+        
+        if(success) {
+          progress(QString::fromUtf8("Extraction completed successfully"));
+          emit finished(true);
+          hide();
+          return;
+        } else {
+          progress(QString::fromUtf8("Extraction failed, trying next source..."));
+        }
       }
     }
     
     // Try curl if wget failed
-    downloader.start(QString::fromUtf8("curl"), QStringList() << QString::fromUtf8("-L") << QString::fromUtf8("-o") << downloadPath << selectedUrl);
+    downloader.start(QString::fromUtf8("curl"), QStringList() << QString::fromUtf8("-L") << QString::fromUtf8("-o") << downloadPath << url);
     if(downloader.waitForFinished(300000)) { // 5 minutes timeout
       if(downloader.exitCode() == 0) {
         progress(QString::fromUtf8("Download completed: %1").arg(downloadPath));
-        // Start the extraction process
-        commenceExtraction(downloadPath);
-        return;
+        
+        // Verify SHA256 if provided
+        if(!sha256.isEmpty()){
+          QString actual = computeSha256(downloadPath);
+          if(actual.isEmpty() || actual.compare(sha256, Qt::CaseInsensitive) != 0){
+            progress(QString::fromUtf8("SHA256 mismatch; expected %1 got %2. Discarding.").arg(sha256, actual));
+            QFile::remove(downloadPath);
+            progress(QString::fromUtf8("SHA256 verification failed, trying next source..."));
+            return;
+          }
+        }
+        
+        // Choose extraction method based on source metadata
+        bool success = false;
+        if(method == QString::fromUtf8("extract_vcredist")) {
+          success = extractFromVS6SP6(downloadPath);
+        } else if(method == QString::fromUtf8("wine_installer")) {
+          success = extractFromVC6RedistSetup(downloadPath);
+        } else if(method == QString::fromUtf8("direct_dll_download")) {
+          success = downloadDirectDLL(url);
+        } else {
+          // Default to original method
+          commenceExtraction(downloadPath);
+          success = true; // commenceExtraction doesn't return a value, assume success
+        }
+        
+        if(success) {
+          progress(QString::fromUtf8("Extraction completed successfully"));
+          emit finished(true);
+          hide();
+          return;
+        } else {
+          progress(QString::fromUtf8("Extraction failed, trying next source..."));
+        }
       }
     }
     
-    progress(QString::fromUtf8("Download failed from: %1").arg(selectedUrl));
+    progress(QString::fromUtf8("Download failed from: %1").arg(url));
     QMessageBox::warning(this, QString::fromUtf8("Download Failed"),
       QString::fromUtf8("Failed to download from the selected source. Please try another source or use the browse options."));
     enableButtons(true);

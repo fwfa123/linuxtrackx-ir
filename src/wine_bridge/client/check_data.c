@@ -272,6 +272,43 @@ int main()
     fflush(stdout);
   }
 
+  // Create MFC42.dll symlink (ANSI version)
+  sprintf(path1, "%s/.config/linuxtrack/tir_firmware/mfc42.dll", home);
+  printf("DEBUG: mfc42.dll path: %s\n", path1);
+  fflush(stdout);
+  
+  printf("DEBUG: Creating symlink for mfc42.dll...\n");
+  fflush(stdout);
+  if(symlink(path1, "mfc42.dll") != 0){
+    printf("DEBUG: Failed to create symlink for mfc42.dll (error: %d)\n", errno);
+    fflush(stdout);
+    
+    // Check if error is EEXIST (file already exists) - this is not a problem
+    if(errno == EEXIST) {
+      printf("DEBUG: mfc42.dll symlink already exists (this is normal)\n");
+      fflush(stdout);
+    } else {
+      // Show detailed error information to user only for real errors
+      char error_msg[2048];
+      snprintf(error_msg, sizeof(error_msg), 
+        "Failed to create symlink to mfc42.dll!\n\n"
+        "Error code: %d\n"
+        "Target path: %.256s\n"
+        "Working directory: %.256s\n\n"
+        "This usually means the MFC42 library is not properly installed.\n"
+        "Please install MFC42 using winetricks:\n"
+        "winetricks mfc42\n"
+        "Or run the MFC42 installation in the LinuxTrack GUI first.\n"
+        "Both mfc42.dll and mfc42u.dll are required.",
+        errno, path1, cwd);
+      
+      MessageBox(NULL, error_msg, "Linuxtrack-wine check", MB_OK);
+    }
+  } else {
+    printf("DEBUG: Successfully created symlink for mfc42.dll\n");
+    fflush(stdout);
+  }
+
   printf("DEBUG: Cleaning up memory...\n");
   fflush(stdout);
   free(path1);
