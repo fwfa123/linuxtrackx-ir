@@ -41,6 +41,7 @@
 #include "wine_warn.h"
 #include "tracker.h"
 #include "testing_section.h"
+#include "about_dialog.h"
 
 // Static string constants for better performance
 static const QString APP_TITLE = QStringLiteral("Linuxtrack");
@@ -86,7 +87,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   mainWidget = new QWidget(this);
   ui.setupUi(mainWidget);
   PREF;
-  setWindowTitle(QStringLiteral("Linuxtrack GUI v") + QStringLiteral(PACKAGE_VERSION));
+  setWindowTitle(QStringLiteral("Linuxtrack GUI"));
   setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
   setCentralWidget(mainWidget);
   
@@ -399,6 +400,12 @@ void LinuxtrackGui::on_HelpButton_pressed()
   HelpViewer::ShowWindow();
 }
 
+void LinuxtrackGui::on_AboutAction_triggered()
+{
+  AboutDialog aboutDialog(this);
+  aboutDialog.exec();
+}
+
 void LinuxtrackGui::on_LtrTab_currentChanged(int index)
 {
   switch (index) {
@@ -613,6 +620,13 @@ void LinuxtrackGui::createDockingMenu()
     setMenuBar(new QMenuBar(this));
   }
   menuBar()->addMenu(dockingMenu);
+  
+  // Create Help menu
+  QMenu *helpMenu = new QMenu(QStringLiteral("Help"), this);
+  QAction *aboutAction = helpMenu->addAction(QStringLiteral("About Linuxtrack X-IR"));
+  aboutAction->setStatusTip(QStringLiteral("Show information about Linuxtrack X-IR"));
+  connect(aboutAction, &QAction::triggered, this, &LinuxtrackGui::on_AboutAction_triggered);
+  menuBar()->addMenu(helpMenu);
 }
 
 // Helper to update docking actions

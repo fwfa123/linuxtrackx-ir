@@ -29,6 +29,7 @@ class ProfileSelector;
 class Guardian;
 class XPluginInstall;
 class TestingSection;
+class AboutDialog;
 
 class LinuxtrackGui : public QMainWindow
 {
@@ -49,6 +50,7 @@ class LinuxtrackGui : public QMainWindow
   void on_DefaultsButton_pressed();
   void on_DiscardChangesButton_pressed();
   void on_HelpButton_pressed();
+  void on_AboutAction_triggered();
   void on_LtrTab_currentChanged(int index);
   void trackerStateHandler(linuxtrack_state_type current_state);
   void on_LegacyPose_stateChanged(int state);

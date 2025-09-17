@@ -20,7 +20,7 @@
 WiiServerWindow::WiiServerWindow(QWidget *parent) : QWidget(parent), wii(NULL), mm(NULL), old_cmd(STOP)
 {
   ui.setupUi(this);
-  setWindowTitle(QString("Linuxtrack Wii server v")+PACKAGE_VERSION);
+  setWindowTitle(QString("Linuxtrack Wii server"));
   if(ltr_int_initWiiCom(true, &mm)){
     std::cout<<"Wii Server initialized!!!\n";
   }else{

@@ -20,7 +20,25 @@ APPDIR="$PROJECT_ROOT/AppDir_v2"
 APP_NAME="LinuxTrack-X-IR"
 APP_DISPLAY_NAME="LinuxTrack X-IR"
 APP_ID="com.linuxtrack.linuxtrackx-ir"
-VERSION="0.99.25"
+
+# Auto-extract version from configure.ac
+extract_version() {
+    local configure_ac="$PROJECT_ROOT/configure.ac"
+    if [[ -f "$configure_ac" ]]; then
+        VERSION=$(grep 'AC_INIT' "$configure_ac" | sed 's/.*\[[^]]*\],\[\([^]]*\)\],\[.*/\1/')
+        if [[ -z "$VERSION" ]]; then
+            echo "Error: Could not extract version from configure.ac" >&2
+            exit 1
+        fi
+        echo "Extracted version: $VERSION"
+    else
+        echo "Error: configure.ac not found at $configure_ac" >&2
+        exit 1
+    fi
+}
+
+# Extract version
+extract_version
 
 # Tools (expected under scripts/appimage)
 APPIMAGETOOL="$APPSCRIPTS_DIR/appimagetool-x86_64.AppImage"
