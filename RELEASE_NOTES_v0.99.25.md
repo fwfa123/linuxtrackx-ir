@@ -88,7 +88,7 @@
 ### **For New Users**
 ```bash
 # Clone and build
-git clone https://github.com/fwfa123/linuxtrackx-ir.git
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
 cd linuxtrackx-ir
 ./configure
 make
@@ -167,7 +167,8 @@ sudo make install
 
 ## 📞 **Support & Feedback**
 
-- **GitHub Issues**: Report bugs and request features at [GitHub Issues](https://github.com/fwfa123/linuxtrackx-ir/issues)
+- **GitLab Issues**: Report bugs and request features at [GitLab Issues](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues) (Primary repository)
+- **GitHub Mirror**: Also available at [GitHub](https://github.com/fwfa123/linuxtrackx-ir) (Mirror repository)
 - **Documentation**: Comprehensive guides available in `docs/` directory
 - **Troubleshooting**: Check `docs/troubleshooting/` for common issues and solutions
 
