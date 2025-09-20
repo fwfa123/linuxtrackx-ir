@@ -103,16 +103,123 @@ less reliable. Just try it out and see how does it work for you.
 <img src="Trackir.png" alt="TrackIR setup."><br>
 If you are a Mac user, you can skip to the next paragraph now...
 When you intend to use TrackIR on Linux, most probably you'll need to get access rights to the device.
-The easiest way to do that, is to install the 99-TIR.rules file (comes with Linuxtrack) to the udev rules 
-directory (on Ubuntu it is /lib/udev/rules, but other distros might differ a bit in this respect). 
+The easiest way to do that, is to install the 99-TIR.rules file (comes with LinuxTrack X-IR) to the udev rules
+directory (on Ubuntu it is /lib/udev/rules, but other distros might differ a bit in this respect).
 When the rule is there, just re-plug the TrackIR and you should be able to access it.
 <p>
-If you have never used TrackIR before, you are going to need to install the firmware. Just press the 
-<b>Install Firmware</b> button and follow the instructions. 
+If you have never used TrackIR before, you are going to need to install the firmware. Just press the
+<b>Install Firmware</b> button and follow the instructions.
 Usually just pressing <b>Download</b> button on the presented dialog is all that is needed - it downloads the
 driver package from NP and extracts firmware needed to run the device.
 <p>
 <A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
+
+<h1><A name="Gaming">Gaming Platform Integration Setup</A></h1>
+<p>
+LinuxTrack X-IR v0.99.22+ includes comprehensive gaming platform integration for seamless Wine Bridge installation across different gaming platforms. The new Gaming tab provides centralized access to all gaming-related functionality.
+</p>
+
+<h2>Prerequisites for Wine Bridge</h2>
+<p>
+Before setting up Wine Bridge integration, ensure you have the following prerequisites:
+</p>
+<ul>
+  <li><strong>TrackIR Firmware</strong>: Must be installed for Wine Bridge to function properly</li>
+  <li><strong>MFC42.dll</strong>: Required for Windows games compatibility (automatically handled by the installer)</li>
+</ul>
+
+<p>
+The Gaming tab shows live status of these prerequisites and provides one-click installation/repair options when needed.
+</p>
+
+<h2>Steam Proton Integration</h2>
+<p>
+LinuxTrack X-IR automatically detects Steam installations and Proton versions, including:
+</p>
+<ul>
+  <li>Native Steam installations</li>
+  <li>Steam Flatpak installations</li>
+  <li>Multiple Proton versions (including beta versions like Proton 9.0 Beta)</li>
+  <li>Custom Proton installations</li>
+</ul>
+
+<p>
+To set up Wine Bridge for Steam games:
+</p>
+<ol>
+  <li>Navigate to the <strong>Gaming</strong> tab</li>
+  <li>Ensure prerequisites are met (firmware + MFC42)</li>
+  <li>Select <strong>Steam</strong> from the installer targets</li>
+  <li>Click <strong>Install Wine Bridge</strong></li>
+  <li>The system will automatically detect your Steam installation and install Wine Bridge to the appropriate location</li>
+</ol>
+
+<h2>Lutris Integration</h2>
+<p>
+LinuxTrack X-IR provides complete Lutris integration with:
+</p>
+<ul>
+  <li>Automatic Lutris prefix detection</li>
+  <li>Support for custom Wine runners</li>
+  <li>Flatpak Lutris support</li>
+  <li>Enhanced Wine path resolution</li>
+</ul>
+
+<p>
+To set up Wine Bridge for Lutris games:
+</p>
+<ol>
+  <li>Navigate to the <strong>Gaming</strong> tab</li>
+  <li>Ensure prerequisites are met</li>
+  <li>Select <strong>Lutris</strong> from the installer targets</li>
+  <li>Click <strong>Install Wine Bridge</strong></li>
+  <li>The system will detect your Lutris installation and Wine prefixes automatically</li>
+</ol>
+
+<h2>Custom Wine Prefix Setup</h2>
+<p>
+For custom Wine prefixes not managed by Steam or Lutris:
+</p>
+<ol>
+  <li>Navigate to the <strong>Gaming</strong> tab</li>
+  <li>Click <strong>Advanced</strong> menu button</li>
+  <li>Select <strong>Other Platform/Wine Prefix</strong></li>
+  <li>Choose your custom Wine prefix location</li>
+  <li>Click <strong>Install Wine Bridge</strong></li>
+</ol>
+
+<h2>Testing Wine Bridge Installation</h2>
+<p>
+The Gaming tab includes comprehensive testing functionality:
+</p>
+<ul>
+  <li><strong>Auto-load Games</strong>: Automatically discovers games in your Steam/Lutris libraries</li>
+  <li><strong>Status Labels</strong>: Shows real-time status of Wine Bridge components</li>
+  <li><strong>Filter Options</strong>: Filter games by platform for easier testing</li>
+  <li><strong>Persistent Settings</strong>: Remembers your last selected platform and game</li>
+</ul>
+
+<p>
+To test Wine Bridge installation:
+</p>
+<ol>
+  <li>Ensure Wine Bridge is installed for your target platform</li>
+  <li>Navigate to the <strong>Gaming</strong> tab</li>
+  <li>Click <strong>Test Wine Bridge</strong></li>
+  <li>Select a game from the list</li>
+  <li>Launch the game to verify head tracking works</li>
+</ol>
+
+<h2>Cross-Distribution Compatibility</h2>
+<p>
+LinuxTrack X-IR v0.99.22+ includes enhanced cross-distribution support:
+</p>
+<ul>
+  <li><strong>Ubuntu/Debian/MX Linux</strong>: Optimized Wine installation with winetricks integration</li>
+  <li><strong>Fedora/Nobara</strong>: Automatic package detection and configuration</li>
+  <li><strong>Arch Linux</strong>: Enhanced Wine32 alternative sources and optimized builds</li>
+  <li><strong>Flatpak Support</strong>: Seamless integration with sandboxed gaming platforms</li>
+</ul>
 
 
 <h1><A name="JOY">HID device setup</A></h1>

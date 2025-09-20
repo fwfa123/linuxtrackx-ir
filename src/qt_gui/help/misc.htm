@@ -1,41 +1,183 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<title>Miscellaneous</title>
+<title>System</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
-<h1>Miscellaneous</h1>
-<p>This pane contains various settings and information that don't fit into other categories.</p>
+<h1>LinuxTrack X-IR System Information</h1>
+<p>This pane provides comprehensive system information and advanced troubleshooting options for LinuxTrack X-IR.</p>
 
-<img src="Misc.png" alt="Miscellaneous pane.">
+<img src="system.png" alt="System pane showing system information and troubleshooting options.">
 
-<h2>Logging</h2>
-<p>LinuxTrack can log various events to help with debugging. The log level determines how much information is recorded:</p>
+<h2>LinuxTrack System Information</h2>
+<p>This section displays detailed information about your LinuxTrack X-IR installation and system configuration.</p>
 
-<p><strong>None:</strong> No logging (fastest performance)</p>
-<p><strong>Error:</strong> Only error messages</p>
-<p><strong>Warning:</strong> Warnings and errors</p>
-<p><strong>Info:</strong> General information, warnings, and errors</p>
-<p><strong>Debug:</strong> Detailed debugging information (slowest performance)</p>
-
-<p>Higher log levels provide more detailed information but may impact performance. For normal use, "Info" or "Warning" is recommended.</p>
-
-<h2>Profile Management</h2>
-<p>Profiles allow you to save and load different configurations for different games or setups. Use the profile management buttons to:</p>
+<h3>System Information Displayed</h3>
 <ul>
-<li><strong>Save:</strong> Save current settings to a profile</li>
-<li><strong>Load:</strong> Load settings from a saved profile</li>
-<li><strong>Delete:</strong> Remove an existing profile</li>
+<li><strong>OS:</strong> Operating system and version (e.g., Debian GNU/Linux 12)</li>
+<li><strong>Arch:</strong> System architecture (x86_64, aarch64, etc.)</li>
+<li><strong>Kernel:</strong> Linux kernel version</li>
+<li><strong>LinuxTrack Version:</strong> Current version (e.g., 0.99.25)</li>
+<li><strong>Desktop:</strong> Desktop environment (XFCE, GNOME, KDE, etc.)</li>
+<li><strong>Display Server:</strong> X11 or Wayland</li>
+<li><strong>CPU:</strong> Processor information</li>
+<li><strong>etc</strong> more information</li>
 </ul>
 
-<h2>Reset Options</h2>
-<p>The reset buttons allow you to quickly restore default settings:</p>
+<h3>System Information Actions</h3>
 <ul>
-<li><strong>Reset All:</strong> Restore all settings to their default values</li>
-<li><strong>Reset Current:</strong> Reset only the current pane's settings</li>
+<li><strong>Copy System Info to Clipboard:</strong> Copies all system information to clipboard for easy sharing when reporting issues</li>
+<li><strong>Refresh:</strong> Updates the system information display with current data</li>
 </ul>
 
-<p><strong>Note:</strong> Resetting will discard any unsaved changes. Make sure to save your current configuration if needed.</p>
+<h2>Maintenance Options</h2>
+<p>These options allow you to reinstall components and access logs for troubleshooting.</p>
+
+<h3>Component Management</h3>
+<ul>
+<li><strong>Reinstall TrackIR firmware:</strong> Reinstalls TrackIR firmware components if they become corrupted</li>
+<li><strong>View logfile:</strong> Opens the LinuxTrack log file for debugging purposes</li>
+<li><strong>Package logs:</strong> Access package installation logs for troubleshooting build issues</li>
+</ul>
+
+<h2>Troubleshooting Options</h2>
+<p>Advanced options for troubleshooting tracking and performance issues.</p>
+
+<h3>Display Options</h3>
+<ul>
+<li><strong>Disable camera view:</strong> Disables the camera preview window to reduce CPU usage</li>
+<li><strong>Disable 3D tracking preview:</strong> Disables the 3D preview window to improve performance</li>
+</ul>
+
+<h3>Computation Methods</h3>
+<ul>
+<li><strong>Use legacy pose computation method (weak perspective/filter):</strong> Switches to older pose computation algorithm if newer method causes issues</li>
+<li><strong>Use legacy rotation computation method:</strong> Uses older rotation calculation method for compatibility with certain games or hardware</li>
+</ul>
+
+<h3>Alignment Options</h3>
+<ul>
+<li><strong>Disable translation/rotation alignment:</strong> Disables automatic alignment correction for advanced users</li>
+<li><strong>Focal length (pixels):</strong> Adjust camera focal length for better tracking accuracy (default: 660.0)</li>
+</ul>
+
+<h2>Utilities</h2>
+<p>Additional utility functions available in the System tab.</p>
+
+<h3>Virtual Mouse</h3>
+<ul>
+<li><strong>Launch Mickey (TrackIR):</strong> Launches the virtual mouse application that allows head tracking to control mouse cursor</li>
+</ul>
+
+<h2>System Requirements</h2>
+<p>For optimal performance, your system should meet these minimum requirements:</p>
+
+<h3>Minimum Requirements</h3>
+<ul>
+<li><strong>CPU:</strong> Dual-core processor (2.0 GHz or faster recommended)</li>
+<li><strong>RAM:</strong> 2 GB RAM (4 GB recommended)</li>
+<li><strong>Graphics:</strong> Graphics card with OpenGL support</li>
+<li><strong>USB:</strong> USB 2.0 port for TrackIR device</li>
+<li><strong>OS:</strong> Linux distribution with Qt5 support</li>
+</ul>
+
+<h3>Recommended Specifications</h3>
+<ul>
+<li><strong>CPU:</strong> Quad-core processor (3.0 GHz or faster)</li>
+<li><strong>RAM:</strong> 8 GB RAM</li>
+<li><strong>Graphics:</strong> Dedicated graphics card with recent drivers</li>
+<li><strong>USB:</strong> USB 3.0 port for better performance</li>
+<li><strong>Camera:</strong> High-quality webcam (for webcam-based tracking)</li>
+</ul>
+
+<h2>Performance Tips</h2>
+<p>To optimize LinuxTrack X-IR performance:</p>
+
+<h3>General Performance</h3>
+<ul>
+<li>Close unnecessary applications to free up system resources</li>
+<li>Use the performance troubleshooting options if experiencing lag</li>
+<li>Ensure your graphics drivers are up to date</li>
+</ul>
+
+<h3>Tracking Performance</h3>
+<ul>
+<li>Adjust focal length if tracking seems inaccurate</li>
+<li>Use legacy computation methods if experiencing issues with newer algorithms</li>
+<li>Disable preview windows if you don't need them</li>
+</ul>
+
+<h2>Log Files</h2>
+<p>LinuxTrack X-IR creates several log files for debugging:</p>
+
+<h3>Main Log Files</h3>
+<ul>
+<li><strong>~/.config/linuxtrack/linuxtrack.log:</strong> Main application log</li>
+<li><strong>~/.config/linuxtrack/tracker.log:</strong> Tracker-specific log</li>
+<li><strong>~/.config/linuxtrack/wine_bridge.log:</strong> Wine bridge log</li>
+</ul>
+
+<h3>Accessing Logs</h3>
+<p>Use the "View logfile" button to access the main log file, or navigate to the configuration directory manually.</p>
+
+<h2>Configuration Files</h2>
+<p>LinuxTrack X-IR stores configuration in:</p>
+
+<h3>Configuration Locations</h3>
+<ul>
+<li><strong>~/.config/linuxtrack/linuxtrack1.conf:</strong> Main configuration file</li>
+<li><strong>~/.config/linuxtrack/tir_firmware/:</strong> TrackIR firmware files</li>
+<li><strong>~/.config/linuxtrack/profiles/:</strong> Saved profiles</li>
+</ul>
+
+<h2>Support Information</h2>
+<p>When reporting issues, please include:</p>
+
+<h3>For Bug Reports</h3>
+<ul>
+<li>System information (use "Copy System Info to Clipboard")</li>
+<li>LinuxTrack version</li>
+<li>Description of the issue</li>
+<li>Relevant log files</li>
+<li>Steps to reproduce the problem</li>
+</ul>
+
+<h3>For Feature Requests</h3>
+<ul>
+<li>System information</li>
+<li>Description of the desired feature</li>
+<li>Use case or scenario</li>
+<li>Any relevant screenshots or examples</li>
+</ul>
+
+<h2>Keyboard Shortcuts</h2>
+<p>Common keyboard shortcuts available in LinuxTrack X-IR:</p>
+
+<h3>General Shortcuts</h3>
+<ul>
+<li><strong>Ctrl+Q:</strong> Quit application</li>
+<li><strong>Ctrl+S:</strong> Save configuration</li>
+<li><strong>Ctrl+R:</strong> Refresh system information</li>
+<li><strong>F1:</strong> Show help</li>
+<li><strong>F12:</strong> Toggle debug information</li>
+</ul>
+
+<h2>Getting Help</h2>
+<p>For additional support:</p>
+
+<h3>Documentation</h3>
+<ul>
+<li><strong>Help Menu:</strong> Access built-in help system</li>
+<li><strong>Online Wiki:</strong> Visit the GitHub/GitLab wiki for comprehensive guides</li>
+<li><strong>Community Forums:</strong> Get help from other users</li>
+</ul>
+
+<h3>Reporting Issues</h3>
+<ul>
+<li><strong>GitLab Issues:</strong> <a href="https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues">https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues</a></li>
+</ul>
+
+<p><strong>Note:</strong> When reporting issues, always include your system information by using the "Copy System Info to Clipboard" button and pasting it into your issue report.</p>
 </body>
 </html>
