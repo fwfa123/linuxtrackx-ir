@@ -8,35 +8,80 @@
 </head>
 
 <body>
-  <h1>Welcome to Linuxtrack X-IR!</h1>
-First of all, thank you for using Linuxtrack X-IR, a head-tracking software specifically tailored for Linux and supporting TrackIR devices.
+  <h1>Welcome to LinuxTrack X-IR v0.99.25!</h1>
+
+  <h2>About LinuxTrack X-IR</h2>
   <p>
-  Linuxtrack X-IR allows you to use your TrackIR device as a head-tracking device, facilitating view control
-  in simulators (flight, racing) or any other type of software.
-  <p>
-  Among applications utilizing Linuxtrack X-IR are for example X-Plane flight simulator,
-  Flight Gear flight simulator, and any TrackIR enabled game running in Wine (Condor soaring simulator,
-  Il-2, Falcon 4, Tom Clancy's H.A.W.X, ARMA GOLD, ARMA 2).
+    First of all, thank you for using LinuxTrack X-IR v0.99.25, a head-tracking software specifically tailored for Linux and supporting TrackIR devices. This is the modernized and actively maintained fork of the original LinuxTrack project, featuring Qt5 modernization, cross-distribution compatibility, and enhanced gaming platform integration.
+  </p>
 
   <p>
-  Note: While the legacy code to support web-camera, Wiimote, and Mac OS is still present within the application, it may not be fully functional or tested. Future updates might address these aspects, but currently, my focus is on ensuring full compatibility with Linux and TrackIR devices.
+    LinuxTrack X-IR allows you to use your TrackIR device as a head-tracking device, facilitating view control in simulators (flight, racing) or any other type of software. The application provides seamless integration with modern Linux distributions and gaming platforms.
+  </p>
 
-  <p>
-  Special thanks to UglyDwarf for creating Linuxtrack and making this incredible tool available.
-  I am now maintaining LiinuxtrackX-IR with the goal of keeping it functional and up-to-date on modern Linux operating systems.
-
-  <p>
-  If you want to know more, see the following pages:
+  <h2>What's New in v0.99.25</h2>
   <ul>
-    <li><a href="http://www.linuxtrack.eu" >Linuxtrack X-IR Project page</a></li>
-    <li><a href="http://forums.x-plane.org/index.php?act=idx" >X-Plane.org Forums, namely its Linux forum</a></li>
-    <li><a href="http://www.free-track.net/english/" >FreeTrack project page - the "model"
-      creation hints, tutorials and more</a></li>
+    <li><strong>Alternative MFC42.dll Sources</strong>: Added VS6SP6.EXE and VC6RedistSetup_deu.exe sources for Arch Linux users without wine32</li>
+    <li><strong>Enhanced Wine Integration</strong>: Improved Lutris Wine path resolution and version detection</li>
+    <li><strong>Automatic Installation</strong>: Streamlined installation process with automatic post-installation steps</li>
+    <li><strong>Cross-Distribution Compatibility</strong>: Full support for Fedora, Nobara, and other RPM-based distributions</li>
+    <li><strong>Flatpak Integration</strong>: Seamless support for Flatpak-managed Steam and Lutris installations</li>
+    <li><strong>Qt5 Modernization</strong>: Complete migration from Qt4 to Qt5 for modern Linux compatibility</li>
   </ul>
 
-  Should you encounter a bug, please take a few minutes and file a bug report at the project page
-  - it will allow me to fix the bug that is bothering you, and it also helps to improve LiinuxtrackX-IR itself.
-  Also any comments, ideas for improvement and constructive criticism are very welcome!
+  <h2>Supported Applications</h2>
+  <p>
+    Among applications utilizing LinuxTrack X-IR are:
+  </p>
+  <ul>
+    <li>X-Plane flight simulator (with plugin support)</li>
+    <li>Flight Gear flight simulator</li>
+    <li>Any TrackIR-enabled game running in Wine (Condor soaring simulator, Il-2, Falcon 4, etc.)</li>
+    <li>Steam Proton games with Wine Bridge support</li>
+    <li>Lutris-managed games with automatic Wine Bridge installation</li>
+    <li>Custom Wine prefixes with manual Wine Bridge setup</li>
+  </ul>
+
+  <h2>Current Development Status</h2>
+  <p>
+    <strong>Active Development</strong>: LinuxTrack X-IR is actively maintained with regular updates and improvements. The project has moved to GitLab as the primary repository while maintaining a GitHub mirror for community access.
+  </p>
+
+  <p>
+    <strong>Modern Linux Support</strong>: While legacy code for web-camera, Wiimote, and Mac OS support is still present, the primary focus is on ensuring full compatibility with modern Linux distributions (Ubuntu, Fedora, Arch Linux, Debian, MX Linux, etc.) and TrackIR devices.
+  </p>
+
+  <p>
+    <strong>Community-Driven</strong>: Special thanks to the LinuxTrack community for their contributions and feedback. The project benefits from community testing across multiple distributions and use cases.
+  </p>
+
+  <h2>Getting Help</h2>
+  <p>
+    If you want to know more, see the following resources:
+  </p>
+  <ul>
+    <li><a href="https://gitlab.com/fwfa123/linuxtrackx-ir">GitLab Project Page</a> (Primary Repository)</li>
+    <li><a href="https://github.com/fwfa123/linuxtrackx-ir">GitHub Mirror</a> (Community Access)</li>
+    <li><a href="https://forums.x-plane.org/index.php?act=idx">X-Plane.org Forums</a> (Linux forum)</li>
+  </ul>
+
+  <h2>Reporting Issues</h2>
+  <p>
+    Should you encounter a bug, please take a few minutes and file a bug report at the GitLab Issues page - it will allow the development team to fix the bug that is bothering you, and it also helps to improve LinuxTrack X-IR itself. Any comments, ideas for improvement, and constructive criticism are very welcome!
+  </p>
+
+  <p>
+    <strong>GitLab Issues</strong>: <a href="https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues">https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues</a>
+  </p>
+
+  <h2>Version Information</h2>
+  <ul>
+    <li><strong>Current Version</strong>: 0.99.25 (September 17, 2025)</li>
+    <li><strong>Codename</strong>: "Arch Linux Wine32 Alternative Sources"</li>
+    <li><strong>Framework</strong>: Qt5</li>
+    <li><strong>Build System</strong>: Modern autotools + CMake support</li>
+    <li><strong>Security Features</strong>: PIE, stack protector, fortify source enabled</li>
+  </ul>
 
 </body>
 

@@ -7,14 +7,42 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
 <body>
-<h1>Linuxtrack interface</h1>
-Linuxtrack provides an interface allowing developers to incorporate head-tracking into their applications.
+<h1>LinuxTrack X-IR Interface</h1>
 <p>
-The interface consists of two files: linuxtrack.h and linuxtrack.c; just add them to your project and you get access to the Linuxtrack's functionality.
+<strong>LinuxTrack X-IR v0.99.25</strong> provides a comprehensive interface allowing developers to incorporate head-tracking into their applications. This interface is compatible with the original LinuxTrack API and has been maintained for backward compatibility while adding modern features.
+</p>
 <p>
-The reason why the interface is not provided in the usual form of a library is the following: if you'd ship an application directly linked against Linuxtrack's interface library, it wouldn't work on a system where Linuxtrack is not installed or configured properly. Technically the Linuxtrack might be provided in a form of a static library, but there might be problems when you'd use it to build a dynamic library (say a plug-in).
+The interface consists of two files: linuxtrack.h and linuxtrack.c; just add them to your project and you get access to the LinuxTrack X-IR's functionality.
+</p>
 <p>
-The interface in its current form looks for the Linuxtrack, and when found it is used; when the Linuxtrack is not found (or not configured properly), it just indicates failure and the main application can work on.
+The reason why the interface is not provided in the usual form of a library is the following: if you'd ship an application directly linked against LinuxTrack X-IR's interface library, it wouldn't work on a system where LinuxTrack X-IR is not installed or configured properly. Technically the LinuxTrack X-IR might be provided in a form of a static library, but there might be problems when you'd use it to build a dynamic library (say a plug-in).
+</p>
+<p>
+The interface in its current form looks for the LinuxTrack X-IR, and when found it is used; when the LinuxTrack X-IR is not found (or not configured properly), it just indicates failure and the main application can work on.
+</p>
+
+<h2>Modern Development Features</h2>
+<p>
+LinuxTrack X-IR v0.99.25 includes several modern development features:
+</p>
+<ul>
+  <li><strong>Qt5 Modernization</strong>: Complete migration from Qt4 to Qt5 for modern Linux compatibility</li>
+  <li><strong>Enhanced Security</strong>: Position Independent Executables (PIE), stack protector, and fortify source enabled by default</li>
+  <li><strong>Cross-Distribution Support</strong>: Optimized builds for Ubuntu, Fedora, Arch Linux, Debian, and MX Linux</li>
+  <li><strong>Gaming Platform Integration</strong>: Steam Proton and Lutris support with Wine Bridge integration</li>
+  <li><strong>Modern Build System</strong>: Updated autotools and CMake support for flexible build configurations</li>
+</ul>
+
+<h2>API Compatibility</h2>
+<p>
+The LinuxTrack X-IR API maintains full backward compatibility with the original LinuxTrack interface. Existing applications will work without modification, while benefiting from:
+</p>
+<ul>
+  <li>Improved performance and stability</li>
+  <li>Better error handling and debugging information</li>
+  <li>Enhanced security features</li>
+  <li>Modern Linux distribution support</li>
+</ul>
 
 <h2>Interface overview</h2>
 
