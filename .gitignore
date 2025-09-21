@@ -181,6 +181,10 @@ temp/
 *.htm
 *.xml
 
+# Allow HTML files in help directory
+!src/qt_gui/help/*.html
+!src/qt_gui/help/*.htm
+
 # Local development files
 local_*
 user_*

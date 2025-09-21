@@ -1,0 +1,159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+  <title>TrackIR Permission Setup</title>
+  <meta name="generator" content="Bluefish 2.0.2" >
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h1>TrackIR Permission Setup</h1>
+<p>
+When using TrackIR devices with LinuxTrack X-IR on Linux, you need to install udev rules to grant your user account permission to access the TrackIR hardware. This guide explains the permission installation process and troubleshooting steps.
+</p>
+
+<h2>Initial Permission Setup</h2>
+<p>
+The first time you start LinuxTrack X-IR with a TrackIR device connected, you'll see a permission setup dialog if the required udev rules are not installed.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="trackir_permissions-1.png" alt="TrackIR Permission Setup dialog showing device detected but permissions missing">
+</td>
+</tr>
+</table>
+<p>
+This dialog appears when:
+</p>
+<ul>
+  <li>TrackIR device is detected by LinuxTrack X-IR</li>
+  <li>udev rules for TrackIR access are not installed</li>
+  <li>Your user account is not in the required groups</li>
+</ul>
+
+<p>
+To proceed with the installation:
+</p>
+<ol>
+  <li>Click <strong>"Install Rules & Add to Groups"</strong> (the highlighted button)</li>
+  <li>Enter your sudo password when prompted</li>
+  <li>Wait for the installation to complete</li>
+</ol>
+
+<h2>Permission Setup After Refresh</h2>
+<p>
+If you start LinuxTrack X-IR without a TrackIR device connected and then plug it in later, you can trigger the permission setup by clicking the <strong>"Refresh"</strong> button in the Device Setup tab.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="trackir_permissions-1a.png" alt="TrackIR Permission Setup dialog triggered by refresh button">
+</td>
+</tr>
+</table>
+<p>
+This will show the same permission setup dialog, allowing you to install the required udev rules and add your user to the necessary groups.
+</p>
+
+<h2>Completing the Installation</h2>
+<p>
+After successfully installing the TrackIR permissions, you'll see a completion dialog with important next steps.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="trackir_permissions-reboot.png" alt="Installation Complete dialog showing next steps">
+</td>
+</tr>
+</table>
+<p>
+The installation process will:
+</p>
+<ul>
+  <li>Install udev rules for TrackIR and Mickey devices</li>
+  <li>Add your user account to the required groups</li>
+  <li>Configure system permissions for hardware access</li>
+</ul>
+
+<h2>Required Actions After Installation</h2>
+<p>
+For the permission changes to take effect, you must:
+</p>
+<ol>
+  <li><strong>Log out and log back in</strong> to refresh your user group memberships</li>
+  <li><strong>Unplug and replug your TrackIR device</strong> to trigger the new udev rules</li>
+</ol>
+
+<p>
+You can choose to log out immediately by clicking <strong>"Yes"</strong> in the completion dialog, or click <strong>"No"</strong> to log out manually later.
+</p>
+
+<h2>Troubleshooting</h2>
+<p>
+If the permission setup dialog appears again after completing the installation and following the required steps, try these troubleshooting steps:
+</p>
+
+<h3>Step 1: Verify Installation</h3>
+<p>
+Check if the udev rules were installed correctly:
+</p>
+<pre>
+ls -la /lib/udev/rules.d/99-TIR.rules
+ls -la /lib/udev/rules.d/99-Mickey.rules
+</pre>
+
+<h3>Step 2: Check Group Membership</h3>
+<p>
+Verify your user is in the required groups:
+</p>
+<pre>
+groups $USER
+</pre>
+<p>
+You should see groups like <code>input</code>, <code>plugdev</code>, or similar hardware access groups.
+</p>
+
+<h3>Step 3: Reboot System</h3>
+<p>
+If the permission dialog continues to appear after logging out and back in, try rebooting your system:
+</p>
+<ol>
+  <li>Save any open work</li>
+  <li>Reboot your computer</li>
+  <li>After reboot, start LinuxTrack X-IR</li>
+  <li>Connect your TrackIR device</li>
+</ol>
+
+<h3>Step 4: Manual Installation</h3>
+<p>
+If automatic installation fails, you can install the udev rules manually:
+</p>
+<pre>
+sudo cp 99-TIR.rules /lib/udev/rules.d/
+sudo cp 99-Mickey.rules /lib/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+</pre>
+
+<h2>What the Installation Does</h2>
+<p>
+The TrackIR permission installation process:
+</p>
+<ul>
+  <li><strong>Installs udev rules</strong> that allow your user account to access TrackIR hardware</li>
+  <li><strong>Adds your user to hardware groups</strong> required for USB device access</li>
+  <li><strong>Configures system permissions</strong> for head tracking devices</li>
+  <li><strong>Enables automatic device detection</strong> when TrackIR is connected</li>
+</ul>
+
+<p>
+Once properly installed, you won't see the permission setup dialog again, and your TrackIR device will work seamlessly with LinuxTrack X-IR.
+</p>
+
+</body>
+</html>
