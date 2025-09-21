@@ -622,7 +622,7 @@ void LinuxtrackGui::createDockingMenu()
   menuBar()->addMenu(dockingMenu);
   
   // Create Help menu
-  QMenu *helpMenu = new QMenu(QStringLiteral("Help"), this);
+  QMenu *helpMenu = new QMenu(QStringLiteral("About"), this);
   QAction *aboutAction = helpMenu->addAction(QStringLiteral("About Linuxtrack X-IR"));
   aboutAction->setStatusTip(QStringLiteral("Show information about Linuxtrack X-IR"));
   connect(aboutAction, &QAction::triggered, this, &LinuxtrackGui::on_AboutAction_triggered);

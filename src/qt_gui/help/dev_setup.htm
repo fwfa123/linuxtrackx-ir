@@ -23,100 +23,186 @@ change the <strong>Camera Orientation</strong> to match your device's orientatio
 <p>
 Supported device types are the following:
 <p>
+<A href="#TIR">TrackIR Setup (including SmartNav devices)</A><br>
+<A href="#JOY">HID device setup</A><br>
 <A href="#Wiimote">Wiimote Setup</A><br>
 <A href="#Web-cam">Web-cam Setup</A><br>
 <A href="#Web-cam_ft">Web-cam Setup for face tracking</A><br>
-<A href="#TIR">TrackIR Setup (including SmartNav devices)</A><br>
-<A href="#JOY">HID device setup</A><br>
-
-
-<h1><A name="Wiimote">Wiimote Setup</A></h1>
-<img src="Wiimote.png" alt="Wiimote setup.">
-<p>If Wiimote is the tracking device of your choice, first of all, make sure you have the Wiimote
-server running (comes along with Linuxtrack) and connected to the Wiimote.
-<p>
-If Wiimote server is not running, then start it, press the <strong>Connect</strong> button and then 
-simultaneously press buttons "1" and "2" on the Wiimote . After a short pause, you should see the 
-state change to Connected and one of LEDs on your Wiimote should blink briefly about every 5 seconds.
-<p>
-Due to the nature of Wiimote there is no way to tweak any parameters except for which LEDs should indicate 
-running/paused tracker. Just select which LEDs should be on in the Running state and which should be on in 
-the Paused state. However, if the battery life is crucial for you, you should turn all LEDs off at least in the 
-Running state (in this state you are going to spend most of the time after all).
-<p>
-<A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
-
-
-
-<h1><A name="Web-cam">Web-cam Setup</A></h1>
-<img src="Webcam.png" alt="Webcam setup.">
-<p>To configure a web-cam, first of all you have to set the <strong>Pixel Format</strong>.
-The preferred format is YUYV (native UVC web-cam format), but you can experiment and see
-which one works the best for you (just avoid the JPEG/MJPG formats as they aren't supported).
-</p>
-<p>Continue by selecting the desired <strong>Resolution &amp; Frame rate</strong>.
-The safest bet would be something around 352x288@30; when tracking with these setting works, you can 
-experiment with different resolutions and frame rates.
-</p>
-<p>
-To ensure best frame rate (stable and high), it is recommended to turn at least the Automatic exposure off
-(better turn off the rest of Auto... features too), if possible.
-Then set the exposure manually and tweak the rest of parameters (brightness, contrast, ...) to get good picture.
-On Linux you can use the guvcview for this purpose.
-
-<p>
-<A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
-
-
-
-<h1><A name="Web-cam_ft">Web-cam Setup for face tracking</A></h1>
-<img src="Facetracker.png" alt="Facetracker setup.">
-<p>To configure a web-cam, first of all you have to set the <strong>Pixel Format</strong>.
-The preferred format is YUYV (native UVC web-cam format), but you can experiment and see
-which one works the best for you (just avoid the JPEG/MJPG formats as they aren't supported).
-</p>
-<p>Continue by selecting the desired <strong>Resolution &amp; Frame rate</strong>. <br>
-The safest bet would be something around 352x288@30; when tracking with these setting works, you can 
-experiment with different resolutions and frame rates.
-</p>
-<p>The last thing to set before the first test is the path to the cascade used to track the face.
-OpenCV Haar and LBP cascades are supported.
-If the default cascade doesn't suit you, just browse to the cascade of your choice. On Linux you can 
-find them in the following paths:
-
-<ul>
-<li>Mac: just press <b>Open</b> button and choose
-<li>Linux: <b>/opt/linuxtrack-X.X.X/share/OpenCV</b> (if you use universal package)</li>
-<li>Linux: <b>/usr/share/doc/opencv</b> (your distro's package)</li>
-<li>Linux: <b>/usr/share/doc/opencv-doc</b> (your distro's package)</li>
-<li><b>http://alereimondo.no-ip.org/OpenCV/34</b></li>
-</ul>
-You should choose a frontal face detection cascade. If you are short on CPU power, try the LBP cascade 
-<b>lbpcascade_frontalface.xml</b> - it consumes much less CPU, but the tracking is said to be a bit 
-less reliable. Just try it out and see how does it work for you.
-
-<A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
-
 
 
 <h1><A name="TIR">TrackIR/SmartNav Setup</A></h1>
-<img src="Trackir.png" alt="TrackIR setup."><br>
-If you are a Mac user, you can skip to the next paragraph now...
+<table>
+<tr>
+<td>
+<img src="Trackir.png" alt="TrackIR setup.">
+</td>
+</tr>
+</table>
 When you intend to use TrackIR on Linux, most probably you'll need to get access rights to the device.
 The easiest way to do that, is to install the 99-TIR.rules file (comes with LinuxTrack X-IR) to the udev rules
 directory (on Ubuntu it is /lib/udev/rules, but other distros might differ a bit in this respect).
 When the rule is there, just re-plug the TrackIR and you should be able to access it.
+<h1>TrackIR Permission Setup</h1>
 <p>
-If you have never used TrackIR before, you are going to need to install the firmware. Just press the
-<b>Install Firmware</b> button and follow the instructions.
-Usually just pressing <b>Download</b> button on the presented dialog is all that is needed - it downloads the
-driver package from NP and extracts firmware needed to run the device.
+When using TrackIR devices with LinuxTrack X-IR on Linux, you need to install udev rules to grant your user account permission to access the TrackIR hardware. This guide explains the permission installation process and troubleshooting steps.
+</p>
+
+<h2>Initial Permission Setup</h2>
 <p>
+The first time you start LinuxTrack X-IR with a TrackIR device connected, you'll see a permission setup dialog if the required udev rules are not installed.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="trackir_permissions-1.png" alt="TrackIR Permission Setup dialog showing device detected but permissions missing">
+</td>
+</tr>
+</table>
+<p>
+This dialog appears when:
+</p>
+<ul>
+  <li>TrackIR device is detected by LinuxTrack X-IR</li>
+  <li>udev rules for TrackIR access are not installed</li>
+  <li>Your user account is not in the required groups</li>
+</ul>
+
+<p>
+To proceed with the installation:
+</p>
+<ol>
+  <li>Click <strong>"Install Rules & Add to Groups"</strong> (the highlighted button)</li>
+  <li>Enter your sudo password when prompted</li>
+  <li>Wait for the installation to complete</li>
+</ol>
+
+<h2>Permission Setup After Refresh</h2>
+<p>
+If you start LinuxTrack X-IR without a TrackIR device connected and then plug it in later, you can trigger the permission setup by clicking the <strong>"Refresh"</strong> button in the Device Setup tab.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="trackir_permissions-1a.png" alt="TrackIR Permission Setup dialog triggered by refresh button">
+</td>
+</tr>
+</table>
+<p>
+This will show the same permission setup dialog, allowing you to install the required udev rules and add your user to the necessary groups.
+</p>
+
+<h2>Completing the Installation</h2>
+<p>
+After successfully installing the TrackIR permissions, you'll see a completion dialog with important next steps.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="trackir_permissions-reboot.png" alt="Installation Complete dialog showing next steps">
+</td>
+</tr>
+</table>
+<p>
+The installation process will:
+</p>
+<ul>
+  <li>Install udev rules for TrackIR and Mickey devices</li>
+  <li>Add your user account to the required groups</li>
+  <li>Configure system permissions for hardware access</li>
+</ul>
+
+<h2>Required Actions After Installation</h2>
+<p>
+For the permission changes to take effect, you must:
+</p>
+<ol>
+  <li><strong>Log out and log back in</strong> to refresh your user group memberships</li>
+  <li><strong>Unplug and replug your TrackIR device</strong> to trigger the new udev rules</li>
+</ol>
+
+<p>
+You can choose to log out immediately by clicking <strong>"Yes"</strong> in the completion dialog, or click <strong>"No"</strong> to log out manually later.
+</p>
+
+<h2>Troubleshooting</h2>
+<p>
+If the permission setup dialog appears again after completing the installation and following the required steps, try these troubleshooting steps:
+</p>
+
+<h3>Step 1: Verify Installation</h3>
+<p>
+Check if the udev rules were installed correctly:
+</p>
+<pre>
+ls -la /lib/udev/rules.d/99-TIR.rules
+ls -la /lib/udev/rules.d/99-Mickey.rules
+</pre>
+
+<h3>Step 2: Check Group Membership</h3>
+<p>
+Verify your user is in the required groups:
+</p>
+<pre>
+groups $USER
+</pre>
+<p>
+You should see groups like <code>input</code>, <code>plugdev</code>, or similar hardware access groups.
+</p>
+
+<h3>Step 3: Reboot System</h3>
+<p>
+If the permission dialog continues to appear after logging out and back in, try rebooting your system:
+</p>
+<ol>
+  <li>Save any open work</li>
+  <li>Reboot your computer</li>
+  <li>After reboot, start LinuxTrack X-IR</li>
+  <li>Connect your TrackIR device</li>
+</ol>
+
+<h3>Step 4: Manual Installation</h3>
+<p>
+If automatic installation fails, you can install the udev rules manually:
+</p>
+<pre>
+sudo cp 99-TIR.rules /lib/udev/rules.d/
+sudo cp 99-Mickey.rules /lib/udev/rules.d/
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+</pre>
+
+<h2>What the Installation Does</h2>
+<p>
+The TrackIR permission installation process:
+</p>
+<ul>
+  <li><strong>Installs udev rules</strong> that allow your user account to access TrackIR hardware</li>
+  <li><strong>Adds your user to hardware groups</strong> required for USB device access</li>
+  <li><strong>Configures system permissions</strong> for head tracking devices</li>
+  <li><strong>Enables automatic device detection</strong> when TrackIR is connected</li>
+</ul>
+
+<p>
+Once properly installed, you won't see the permission setup dialog again, and your TrackIR device will work seamlessly with LinuxTrack X-IR.
+</p>
 <A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
 
 <h1><A name="Gaming">Gaming Platform Integration Setup</A></h1>
+<table>
+<tr>
+<td>
+<img src="gaming_tab.png" alt="Gaming tab interface showing prerequisites, testing, and server configuration">
+</td>
+</tr>
+</table>
 <p>
 LinuxTrack X-IR v0.99.22+ includes comprehensive gaming platform integration for seamless Wine Bridge installation across different gaming platforms. The new Gaming tab provides centralized access to all gaming-related functionality.
+</p>
+<p>
+For detailed instructions on setting up TrackIR firmware and Wine integration, see the <A href="extractor.htm">TrackIR Firmware/Wine Integration Setup</A> guide.
 </p>
 
 <h2>Prerequisites for Wine Bridge</h2>
@@ -247,8 +333,101 @@ question. In the <b>3D View</b> confirm that the axis work as expected and move 
 When done with axes setup, you can jump to the <A href="axes_setup.htm">Tracking Setup</A> chapter.
 
 
+
+<h1><A name="Wiimote">Wiimote Setup</A></h1>
+<table>
+<tr>
+<td>
+<img src="Wiimote.png" alt="Wiimote setup.">
+</td>
+</tr>
+</table>
+<p>If Wiimote is the tracking device of your choice, first of all, make sure you have the Wiimote
+server running (comes along with Linuxtrack) and connected to the Wiimote.
+<p>
+If Wiimote server is not running, then start it, press the <strong>Connect</strong> button and then 
+simultaneously press buttons "1" and "2" on the Wiimote . After a short pause, you should see the 
+state change to Connected and one of LEDs on your Wiimote should blink briefly about every 5 seconds.
+<p>
+Due to the nature of Wiimote there is no way to tweak any parameters except for which LEDs should indicate 
+running/paused tracker. Just select which LEDs should be on in the Running state and which should be on in 
+the Paused state. However, if the battery life is crucial for you, you should turn all LEDs off at least in the 
+Running state (in this state you are going to spend most of the time after all).
+<p>
+<A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
+
+
+
+<h1><A name="Web-cam">Web-cam Setup</A></h1>
+<table>
+<tr>
+<td>
+<img src="Webcam.png" alt="Webcam setup.">
+</td>
+</tr>
+</table>
+<p>To configure a web-cam, first of all you have to set the <strong>Pixel Format</strong>.
+The preferred format is YUYV (native UVC web-cam format), but you can experiment and see
+which one works the best for you (just avoid the JPEG/MJPG formats as they aren't supported).
+</p>
+<p>Continue by selecting the desired <strong>Resolution &amp; Frame rate</strong>.
+The safest bet would be something around 352x288@30; when tracking with these setting works, you can 
+experiment with different resolutions and frame rates.
+</p>
+<p>
+To ensure best frame rate (stable and high), it is recommended to turn at least the Automatic exposure off
+(better turn off the rest of Auto... features too), if possible.
+Then set the exposure manually and tweak the rest of parameters (brightness, contrast, ...) to get good picture.
+On Linux you can use the guvcview for this purpose.
+
+<p>
+<A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
+
+
+
+<h1><A name="Web-cam_ft">Web-cam Setup for face tracking</A></h1>
+<table>
+<tr>
+<td>
+<img src="Facetracker.png" alt="Facetracker setup.">
+</td>
+</tr>
+</table>
+<p>To configure a web-cam, first of all you have to set the <strong>Pixel Format</strong>.
+The preferred format is YUYV (native UVC web-cam format), but you can experiment and see
+which one works the best for you (just avoid the JPEG/MJPG formats as they aren't supported).
+</p>
+<p>Continue by selecting the desired <strong>Resolution &amp; Frame rate</strong>. <br>
+The safest bet would be something around 352x288@30; when tracking with these setting works, you can 
+experiment with different resolutions and frame rates.
+</p>
+<p>The last thing to set before the first test is the path to the cascade used to track the face.
+OpenCV Haar and LBP cascades are supported.
+If the default cascade doesn't suit you, just browse to the cascade of your choice. On Linux you can 
+find them in the following paths:
+
+<ul>
+<li>Mac: just press <b>Open</b> button and choose
+<li>Linux: <b>/opt/linuxtrack-X.X.X/share/OpenCV</b> (if you use universal package)</li>
+<li>Linux: <b>/usr/share/doc/opencv</b> (your distro's package)</li>
+<li>Linux: <b>/usr/share/doc/opencv-doc</b> (your distro's package)</li>
+<li><b>http://alereimondo.no-ip.org/OpenCV/34</b></li>
+</ul>
+You should choose a frontal face detection cascade. If you are short on CPU power, try the LBP cascade 
+<b>lbpcascade_frontalface.xml</b> - it consumes much less CPU, but the tracking is said to be a bit 
+less reliable. Just try it out and see how does it work for you.
+
+<A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
+
+
 <h1><A name="StartTracking">Starting the tracking for the first time</A></h1>
-<img src="CamPreview.png" alt="Camera preview window."><br>
+<table>
+<tr>
+<td>
+<img src="CamPreview.png" alt="Camera preview window.">
+</td>
+</tr>
+</table>
 To start the tracking, switch to the <strong>Tracking window</strong>. 
 There you can start, pause and stop the tracking and there is a button to recenter the tracker
 (needed when your view is off while looking to the center of the screen).

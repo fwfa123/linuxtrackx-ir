@@ -13,7 +13,13 @@
 <p>LinuxTrack X-IR provides a streamlined process for extracting TrackIR firmware and MFC42 libraries required for Windows game compatibility. The process is divided into several steps with visual guidance.</p>
 
 <h3>Step 1: Initial Setup and TrackIR software installation</h3>
+<table>
+<tr>
+<td>
 <img src="firmware_step1.png" alt="Step 1: Initial firmware extraction setup">
+</td>
+</tr>
+</table>
 <p><strong>Action Required:</strong> The system checks for existing firmware and prepares the extraction environment.</p>
 <p><em>What happens:</em> LinuxTrack X-IR verifies that the firmware directory exists and is accessible. If this is your first time running the application, you'll see this initial setup screen.</p>
 <p><strong>Action Required:</strong> Download the latest TrackIR software from NaturalPoint's website.</p>
@@ -24,14 +30,32 @@
 </ul>
 
 <h3>Step 2: Continue the installation from the TrackIR.exe using automated process using Wine</h3>
+<table>
+<tr>
+<td>
 <img src="firmware_step2.png" alt="Step 2: Complete the installation from NaturalPoint exe file">
+</td>
+</tr>
+</table>
 
 <h3>Step 3: Continue Installation Method</h3>
+<table>
+<tr>
+<td>
 <img src="firmware_step3.png" alt="Step 3: Follow the instructions from the installer">
+</td>
+</tr>
+</table>
 <p><strong>Action Required:</strong> Choose agree and continue the installation.</p>
 
 <h3>Step 4: mfc42.dll and mfc42u.dll Installation Process</h3>
+<table>
+<tr>
+<td>
 <img src="firmware_step4.png" alt="Step 4: Winetricks MFC42 installation process">
+</td>
+</tr>
+</table>
 <p><strong>Action Required:</strong> Install MFC42 libraries using winetricks.</p>
 <p><em>What happens:</em> The system creates a temporary Wine prefix, runs winetricks mfc42 installation, and extracts the required mfc42u.dll file. This process typically takes 1-3 minutes.</p>
 <p><strong>Action Required:</strong> If the default method fails, select an alternative download source.</p>
@@ -48,22 +72,46 @@
 </p>
 
 <h3>Step 5: MFC42 Installation Options</h3>
+<table>
+<tr>
+<td>
 <img src="mfc42_install_step1.png" alt="Step 5: Alternative MFC42 installation for Arch Linux">
+</td>
+</tr>
+</table>
 
 <h3>Continue with MFC42 Installation Steps</h3>
 
 <h4>Step 2: Winetricks Automated Installation Progress</h4>
+<table>
+<tr>
+<td>
 <img src="mfc42_install_step2.png" alt="MFC42 Installation Step 2: Winetricks installation progress">
+</td>
+</tr>
+</table>
 <p><strong>Action Required:</strong> Wait for the installation to complete.</p>
 <p><em>What happens:</em> The system may appear to hang during winetricks installation, but this is normal. The process includes creating a Wine prefix, running the MFC42 installer, and copying files to the firmware directory.</p>
 
 <h4>Step 3: Installation Completion</h4>
+<table>
+<tr>
+<td>
 <img src="mfc42_install_step3.png" alt="MFC42 Installation Step 3: Completion confirmation">
+</td>
+</tr>
+</table>
 <p><strong>Action Required:</strong> Confirm successful installation.</p>
 <p><em>Result:</em> MFC42 libraries are successfully installed, and you can proceed with Wine Bridge installation for your gaming platforms.</p>
 
 <h4>Step 3: Installation Completion</h4>
+<table>
+<tr>
+<td>
 <img src="firmware_step5_mfc42_step4.png" alt="Installation completed">
+</td>
+</tr>
+</table>
 <p><strong>Action Required:</strong> Confirm successful installation.</p>
 <p><em>Result:</em> MFC42 libraries are successfully installed, and you can proceed with Wine Bridge installation for your gaming platforms.</p>
 

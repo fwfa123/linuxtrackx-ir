@@ -12,14 +12,16 @@
                 <section title="What's new" ref="help/news.htm"/>
                 <section title="Hall Of Fame" ref="help/hall_of_fame.htm"/>
                 <section title="Tracker Setup" ref="help/dev_setup.htm"/>
+                <section title="TrackIR Permissions" ref="help/trackir_permissions.htm"/>
                 <section title="Model Setup" ref="help/model_setup.htm"/>
                 <section title="Tracking Setup" ref="help/axes_setup.htm"/>
-                <section title="Miscelaneous" ref="help/misc.htm"/>
-                <section title="NP Firmware Extractor" ref="help/extractor.htm"/>
+                <section title="TrackIR firmware and Wine integration" ref="help/extractor.htm"/>
+                <section title="Gaming Tab" ref="help/gaming_tab.htm"/>
                 <section title="XPlane plugin setup" ref="help/xpl_setup.htm"/>
-                <section title="Virtual mouse setup" ref="help/mickey.htm"/>
                 <section title="Linuxtrack Interface" ref="help/interface.htm"/>
                 <section title="Wine games support" ref="help/wine.htm"/>
+                <section title="Virtual mouse setup" ref="help/mickey.htm"/>
+                <section title="System Information" ref="help/misc.htm"/>
               </section>
           </toc>
           <keywords>
