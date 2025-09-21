@@ -1,0 +1,276 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+  <title>Gaming Tab</title>
+  <meta name="generator" content="Bluefish 2.0.2" >
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h1>Gaming Tab</h1>
+<p>
+The Gaming tab provides comprehensive gaming platform integration for LinuxTrack X-IR, allowing you to set up head tracking for various gaming platforms including Steam Proton, Lutris, and custom Wine prefixes. This centralized interface manages all gaming-related functionality.
+</p>
+
+<table>
+<tr>
+<td>
+<img src="gaming_tab.png" alt="Gaming tab interface showing prerequisites, testing, and server configuration">
+</td>
+</tr>
+</table>
+
+<h2>Prerequisites Section</h2>
+<p>
+Before setting up Wine Bridge integration for any gaming platform, ensure these prerequisites are met:
+</p>
+
+<h3>TrackIR Firmware</h3>
+<p>
+<strong>Status:</strong> Shows "Installed" when TrackIR firmware is properly extracted and available.
+</p>
+<p>
+<strong>Install/Repair Button:</strong> Click this button to install or repair TrackIR firmware if it's missing or corrupted. This will launch the <A href="extractor.htm">TrackIR Firmware/Wine Integration Setup</A> process.
+</p>
+
+<h3>MFC42 Libraries</h3>
+<p>
+<strong>Status:</strong> Shows "Installed" when MFC42 libraries are properly installed for Windows game compatibility.
+</p>
+<p>
+<strong>Install/Repair Button:</strong> Click this button to install or repair MFC42 libraries if they're missing. These libraries are required for most Windows games to work with TrackIR.
+</p>
+
+<h2>Gaming Platform Installation</h2>
+<p>
+Once prerequisites are met, you can install Wine Bridge for your preferred gaming platform:
+</p>
+
+<h3>Steam (Proton)</h3>
+<p>
+<strong>Button:</strong> "Steam (Proton)" - Installs Wine Bridge for Steam games running through Proton.
+</p>
+<p>
+<strong>What it does:</strong> Automatically detects your Steam installation and Proton versions, then installs Wine Bridge to the appropriate location for seamless head tracking in Steam games.
+</p>
+
+<h3>Lutris</h3>
+<p>
+<strong>Button:</strong> "Lutris" - Installs Wine Bridge for games managed by Lutris.
+</p>
+<p>
+<strong>What it does:</strong> Detects your Lutris installation and Wine prefixes, then installs Wine Bridge to enable head tracking in Lutris-managed games.
+</p>
+
+<h3>Custom Prefix</h3>
+<p>
+<strong>Button:</strong> "Custom Prefix" - Installs Wine Bridge for custom Wine prefixes not managed by Steam or Lutris.
+</p>
+<p>
+<strong>What it does:</strong> Allows you to browse and select a custom Wine prefix directory where you want to install Wine Bridge for head tracking support.
+</p>
+
+<h3>X-Plane Plugin</h3>
+<p>
+<strong>Button:</strong> "Install Xplane plugin..." - Installs the X-Plane plugin for native Linux support.
+</p>
+<p>
+<strong>What it does:</strong> Installs the X-Plane plugin directly to your X-Plane installation directory for native head tracking support without Wine.
+</p>
+
+<h3>Advanced Options</h3>
+<p>
+<strong>Dropdown:</strong> "Advanced..." - Provides additional configuration options for advanced users.
+</p>
+<p>
+<strong>Options include:</strong>
+</p>
+<ul>
+  <li>Custom Wine prefix selection</li>
+  <li>Manual Wine Bridge installation paths</li>
+  <li>Advanced debugging options</li>
+  <li>Custom game detection settings</li>
+</ul>
+
+<h2>Testing Section</h2>
+<p>
+The Testing section allows you to verify that Wine Bridge is working correctly with your games:
+</p>
+
+<h3>Tester Selection</h3>
+<p>
+<strong>Radio Buttons:</strong>
+</p>
+<ul>
+  <li><strong>"Tester.exe (TrackIR)"</strong> - Uses the TrackIR tester application (recommended for most games)</li>
+  <li><strong>"FT_Tester (FreeTrack)"</strong> - Uses the FreeTrack tester for games that support FreeTrack protocol</li>
+</ul>
+
+<h3>Platform Selection</h3>
+<p>
+<strong>Dropdown:</strong> "Select Platform" - Choose the gaming platform you want to test.
+</p>
+<p>
+<strong>Available platforms:</strong>
+</p>
+<ul>
+  <li>Steam (Proton)</li>
+  <li>Lutris</li>
+  <li>Custom Wine Prefix</li>
+  <li>Native Linux (X-Plane)</li>
+</ul>
+
+<h3>Game Filtering</h3>
+<p>
+<strong>Text Field:</strong> "Type to filter games..." - Enter text to filter the list of available games.
+</p>
+<p>
+<strong>Purpose:</strong> Helps you quickly find specific games in large libraries by typing part of the game name.
+</p>
+
+<h3>Game Selection and Testing</h3>
+<p>
+<strong>Dropdown:</strong> "Game" - Select the specific game you want to test.
+</p>
+<p>
+<strong>Button:</strong> "Run Tester" - Launches the selected game with the tester application to verify head tracking functionality.
+</p>
+
+<h2>Linuxtrack Server Section</h2>
+<p>
+The Linuxtrack Server section controls the head tracking data output format and server status:
+</p>
+
+<h3>Output Format</h3>
+<p>
+<strong>Dropdown:</strong> "Format" - Select the output format for head tracking data.
+</p>
+<p>
+<strong>Available formats:</strong>
+</p>
+<ul>
+  <li><strong>"uinput-abs (Antimicrox)"</strong> - Absolute input format compatible with Antimicrox and similar tools</li>
+  <li><strong>"uinput-rel"</strong> - Relative input format for mouse emulation</li>
+  <li><strong>"joystick"</strong> - Joystick input format for games that support joystick head tracking</li>
+  <li><strong>"freetrack"</strong> - FreeTrack protocol for compatible games</li>
+</ul>
+
+<h3>Device Information</h3>
+<p>
+<strong>Text Field:</strong> "Device Name (Info Only)" - Shows the current device name (e.g., "tir1").
+</p>
+<p>
+<strong>Purpose:</strong> Displays the virtual device name that will be created for head tracking input.
+</p>
+
+<h3>Server Controls</h3>
+<p>
+<strong>Buttons:</strong>
+</p>
+<ul>
+  <li><strong>"Start"</strong> - Starts the Linuxtrack server to begin head tracking data output</li>
+  <li><strong>"Stop"</strong> - Stops the Linuxtrack server</li>
+  <li><strong>"Pause"</strong> - Temporarily pauses head tracking data output</li>
+</ul>
+
+<h3>Server Status</h3>
+<p>
+<strong>Status Message:</strong> Shows the current server status (e.g., "Ready", "Running", "Paused", "Stopped").
+</p>
+<p>
+<strong>Purpose:</strong> Provides real-time feedback about the Linuxtrack server state.
+</p>
+
+<h2>Server Workflow Example</h2>
+<p>
+Here's a comprehensive example workflow for setting up head tracking using the Linuxtrack server with various gaming scenarios:
+</p>
+
+<h3>Linuxtrack to AntiMicroX Integration</h3>
+<p>
+LinuxTrack includes a powerful feature that allows you to use head tracking with games that don't natively support TrackIR by using AntiMicroX to translate head movements into keyboard, mouse, or joystick inputs.
+</p>
+
+<h4>Prerequisites for AntiMicroX Integration</h4>
+<p>
+<strong>Install AntiMicroX:</strong> Most Linux distributions include AntiMicroX in their software repositories. Install it using your package manager or visit <a href="https://antimicrox.github.io/">https://antimicrox.github.io/</a> for more information.
+</p>
+
+<h4>Configure Linuxtrack Server</h4>
+<p>
+<strong>Launch Linuxtrack GUI:</strong> Start the Linuxtrack GUI application first.</p>
+<p>
+<strong>Set Output Format:</strong> In the Gaming Tab, set the Format to "uinput-abs (Antimicrox)" in the Linuxtrack Server section.</p>
+<p>
+<strong>Start Server:</strong> Click "Start" in the Linuxtrack Server section to begin joystick emulation mode.</p>
+
+<h4>Configure AntiMicroX</h4>
+<p>
+<strong>Launch AntiMicroX:</strong> Start AntiMicroX. You should see "LinuxTrack uinput-abs (Joystick 1)" appear in the device list.</p>
+
+<table>
+<tr>
+<td>
+<img src="Antimicrox1.png" alt="AntiMicroX interface showing Linuxtrack detected as joystick with unconfigured axes">
+</td>
+</tr>
+</table>
+
+<p>
+<strong>Axis Mapping:</strong> AntiMicroX will recognize the following Linuxtrack axes:
+</p>
+<ul>
+  <li><strong>Axis 1:</strong> Yaw (left/right head movement)</li>
+  <li><strong>Axis 2:</strong> Pitch (up/down head movement)</li>
+  <li><strong>Axis 3:</strong> Roll (head tilt)</li>
+  <li><strong>Axis 4:</strong> Move left/right</li>
+  <li><strong>Axis 5:</strong> Move up/down</li>
+  <li><strong>Axis 6:</strong> Move backwards/forwards</li>
+</ul>
+
+<h4>Gaming Examples</h4>
+<p>
+<strong>Jane's Longbow 2 (PCEM):</strong> Map Yaw and Pitch axes to number keypad keys (KP_4/KP_6 for yaw, KP_8/KP_2 for pitch). Adjust head movement speed in the game's ca.ini file.</p>
+<p>
+<strong>MechWarrior 2 (DOSBox):</strong> Map Pitch and Yaw axes to mouse movement for torso view and targeting reticle control.</p>
+<p>
+<strong>Flight Simulators:</strong> Map axes to joystick inputs for realistic flight control.</p>
+
+<h4>AntiMicroX Configuration Tips</h4>
+<p>
+<strong>Dead Zone:</strong> Set appropriate dead zones to prevent unwanted movement from small head motions.</p>
+<p>
+<strong>Max Zone:</strong> Adjust maximum zone to control the sensitivity of head movements.</p>
+<p>
+<strong>Profiles:</strong> Save different profiles for different games to quickly switch between configurations.</p>
+
+<table>
+<tr>
+<td>
+<img src="Antimicrox2.png" alt="AntiMicroX axis configuration dialog showing YAW axis setup with dead zone and mapping options">
+</td>
+</tr>
+</table>
+
+<p>
+<strong>Axis Configuration:</strong> Click on any axis to open the configuration dialog. Here you can set dead zones, maximum zones, and map the axis to keyboard keys, mouse movements, or other joystick inputs. The example shows YAW axis configuration with number keypad mapping (KP_8/KP_2 for up/down movement).</p>
+
+<h2>Troubleshooting</h2>
+<p>
+<strong>If prerequisites show "Not Installed":</strong> Click the "Install/Repair" buttons to install missing components.</p>
+<p>
+<strong>If Wine Bridge installation fails:</strong> Check that Wine is properly installed and your gaming platform is correctly detected.</p>
+<p>
+<strong>If testing fails:</strong> Ensure the Linuxtrack server is running and the correct output format is selected.</p>
+<p>
+<strong>If games don't detect head tracking:</strong> Verify that the game supports TrackIR or FreeTrack, and that Wine Bridge is properly installed for your platform.</p>
+
+<h2>Advanced Configuration</h2>
+<p>
+For advanced users, the Gaming tab provides additional configuration options through the "Advanced..." dropdown. These options allow for custom Wine prefix management, manual installation paths, and debugging settings that can help resolve complex setup issues.</p>
+<p>
+For detailed information about TrackIR firmware extraction and Wine integration, see the <A href="extractor.htm">TrackIR Firmware/Wine Integration Setup</A> guide.</p>
+
+</body>
+</html>
