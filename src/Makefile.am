@@ -212,3 +212,36 @@ uninstall-hook:
 	  echo "Removed /etc/ld.so.conf.d/linuxtrack.conf"; \
 	  ldconfig; \
 	fi
+
+if DARWIN
+  SLEOPARD_LDFLAG = -headerpad_max_install_names
+  DARWINFLAGS = -undefined dynamic_lookup
+  SYSFLAGS = -DIBM=0 -DAPL=1 -DLIN=0
+  XLINUXTRACK_CFLAGS = -arch i386 -arch x86_64
+  XLINUXTRACK_LDFLAGS = -Wl,-no_arch_warnings -arch i386 -arch x86_64
+else
+  LINUXFLAGS = '-DLIB_PATH="$(pkglibdir)/"'
+  LINUXLDLFAGS = '-Wl,-rpath,$(pkglibdir)'
+  SYSFLAGS = -DIBM=0 -DAPL=0 -DLIN=1
+  XLINUXTRACK_CFLAGS =
+  XLINUXTRACK_LDFLAGS =  -L/lib32 -L/usr/lib32 -Wl,--no-warn-search-mismatch
+endif
+
+if XPLANE_PLUGIN
+pkglib_LTLIBRARIES += xlinuxtrack9.la
+if LTR32ON64
+  pkglib_LTLIBRARIES += xlinuxtrack9_32.la
+  xlinuxtrack9_32_la_SOURCES = xlinuxtrack9.c linuxtrack.c linuxtrack.h
+  xlinuxtrack9_32_la_CFLAGS = ${XPL_CPPFLAGS} $(SYSFLAGS) \
+    -fPIC -m32 $(DARWINCFLAGS) ${AM_CFLAGS} $(LINUXFLAGS) ${XLINUXTRACK_CFLAGS}
+  xlinuxtrack9_32_la_LDFLAGS = -module -shared -fPIC -m32 $(DARWINFLAGS) -dynamiclib \
+    -export-symbols "${srcdir}/xlinuxtrack.sym" $(LINUXLDFLAGS) ${SLEOPARD_LDFLAG} ${XLINUXTRACK_LDFLAGS}
+  xlinuxtrack9_32_la_LIBADD = -lm -ldl
+endif
+xlinuxtrack9_la_SOURCES = xlinuxtrack9.c linuxtrack.c linuxtrack.h
+xlinuxtrack9_la_CFLAGS = ${XPL_CPPFLAGS} $(SYSFLAGS) \
+  -fPIC $(DARWINCFLAGS) ${AM_CFLAGS} $(LINUXFLAGS) ${XLINUXTRACK_CFLAGS}
+xlinuxtrack9_la_LDFLAGS = -module -shared -fPIC $(DARWINFLAGS) -dynamiclib \
+  -export-symbols "${srcdir}/xlinuxtrack.sym" $(LINUXLDFLAGS) ${SLEOPARD_LDFLAG} ${XLINUXTRACK_LDFLAGS}
+xlinuxtrack9_la_LIBADD = -lm -ldl
+endif
