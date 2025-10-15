@@ -1,11 +1,10 @@
-# LinuxTrack X-IR v0.99.24 - Modern Head Tracking for Linux (Now on GitLab)
+# LinuxTrack X-IR - Modern Head Tracking for Linux (Now on GitLab)
 
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 
 > ⚠️ Repository migrated to GitLab: [GitLab: fwfa123/linuxtrackx-ir](https://gitlab.com/fwfa123/linuxtrackx-ir). All new issues and feature requests should be opened on GitLab.
-
 
 LinuxTrack X-IR is a modern fork of the original LinuxTrack project, providing enhanced head tracking support for Linux systems with TrackIR devices.
 
@@ -15,7 +14,10 @@ reamains embedded.
 
 Lots left TODO  (https://github.com/fwfa123/linuxtrackx-ir/blob/main/docs/progress/TODO_FUTURE_DEVELOPMENT.md)
 ## 🚀 Quick Start
+
+## Wiki
 https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/home
+
 ### **Recommended: AppImage Installation (Easiest)**
 ```bash
 # Download and run the latest AppImage
