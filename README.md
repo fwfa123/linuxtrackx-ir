@@ -6,22 +6,6 @@
 
 > ⚠️ Repository migrated to GitLab: [GitLab: fwfa123/linuxtrackx-ir](https://gitlab.com/fwfa123/linuxtrackx-ir). All new issues and feature requests should be opened on GitLab.
 
-> **Note**: This version (0.99.24) continues development on GitLab. Please file issues and feature requests on GitLab.
-
-### Important upgrade notice for v0.99.24
-- Due to significant updates to the testers and Wine Bridge runtime, you should:
-  - Reinstall TrackIR firmware and MFC42 runtime
-  - Reinstall the Wine Bridge into every Wine/Proton prefix where you previously installed it
-
-Steps (recommended via GUI):
-- Open LinuxTrack X-IR v0.99.23 → Gaming tab
-- Under Prerequisites: click Install/Repair for TrackIR firmware and MFC42
-- Reinstall Wine Bridge per platform:
-  - Steam (Proton): click Steam (Proton) and follow the installer
-  - Lutris: click Lutris and follow the installer
-  - Custom Prefix: click Custom Prefix, select your WINEPREFIX, and follow the installer
-
-This ensures updated testers and runtime files are deployed in each prefix.
 
 LinuxTrack X-IR is a modern fork of the original LinuxTrack project, providing enhanced head tracking support for Linux systems with TrackIR devices.
 
@@ -31,7 +15,7 @@ reamains embedded.
 
 Lots left TODO  (https://github.com/fwfa123/linuxtrackx-ir/blob/main/docs/progress/TODO_FUTURE_DEVELOPMENT.md)
 ## 🚀 Quick Start
-
+https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/home
 ### **Recommended: AppImage Installation (Easiest)**
 ```bash
 # Download and run the latest AppImage
