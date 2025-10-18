@@ -134,6 +134,7 @@ doc/html/
 doc/latex/
 *.pdf
 *.ps
+BUILD_OPTIONS.md
 
 # Package manager files
 node_modules/
