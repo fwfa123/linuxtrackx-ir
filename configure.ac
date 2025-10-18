@@ -516,6 +516,12 @@ build_osc_support=no
 wiimote_support=no
 trackir_support=no
 
+AC_ARG_ENABLE([webcam],
+    [AS_HELP_STRING([--disable-webcam], [Do not build the webcam driver])],
+    [],
+    [enable_webcam=no]
+)
+
 # Check for 64-bit Wine support based on library availability
 wine64_lib_dir=`echo "$WINE64_LIBS_DEFAULT" | sed 's/^-L//'`
 AS_IF([test -d "$wine64_lib_dir"],
