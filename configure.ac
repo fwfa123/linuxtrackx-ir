@@ -547,6 +547,7 @@ AS_IF([(test "x$webcam_support" = xyes) &&
 # Webcam support (V4L2 or Darwin)
 AS_IF([(test "x$with_libv4l2" = xyes) || (test "x$with_darwin" = xyes)],
     [webcam_support=yes], [webcam_support=no])
+AC_DEFINE_UNQUOTED([WEBCAM_SUPPORT], [${webcam_support}], [Webcam support enabled])
 
 # Check conditions for building components
 AM_CONDITIONAL(XPLANE_PLUGIN, [test x$build_xplane_plugin = xyes])
