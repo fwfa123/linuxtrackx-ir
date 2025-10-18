@@ -64,7 +64,11 @@ AC_DEFUN([CHECK_CWIID_LIB], [
                 break
             fi
         done
-        AS_IF([test "$libcwiid_found" != "yes"], [AC_MSG_FAILURE([libcwiid not found! Please install libcwiid package or from Arch AUR])])
+        AS_IF([test "$libcwiid_found" != "yes"], [
+            AC_MSG_WARN([libcwiid not found! Wiimote support will be disabled.])
+            AC_MSG_WARN([To enable Wiimote support, install libcwiid package or from Arch AUR])
+            libcwiid_found=no
+        ])
     ], [-pthread])
 ])
 
@@ -79,8 +83,8 @@ CHECK_LIBRARY_WITH_PATHS([usb-1.0], [libusb_init], [libusb10_found], [libusb-1.0
 # Used to communicate with a Wiimote
 # Note: Already checked above, removing duplicate check
 
-# Used by the osc frontend
-CHECK_LIBRARY_WITH_PATHS([lo], [lo_send_bundle], [liblo_found], [liblo not found!])
+# Used by the osc frontend (optional)
+AC_CHECK_LIB([lo], [lo_send_bundle], [liblo_found=yes], [liblo_found=no], [-pthread])
 
 AS_IF([test "$liblo_found" = "yes"], [
     AC_CHECK_LIB([lo], [lo_bundle_free_recursive], [
@@ -100,7 +104,11 @@ AC_DEFUN([CHECK_LIBLO_LIB], [
                 break
             fi
         done
-        AS_IF([test "$liblo_found" != "yes"], [AC_MSG_FAILURE([liblo not found! Please install liblo package])])
+        AS_IF([test "$liblo_found" != "yes"], [
+            AC_MSG_WARN([liblo not found! OSC support will be disabled.])
+            AC_MSG_WARN([To enable OSC support, install liblo package])
+            liblo_found=no
+        ])
     ])
 ])
 
