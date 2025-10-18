@@ -31,6 +31,14 @@
 /stamp-h1
 Makefile
 Makefile.in
+INSTALL
+config.h.in
+m4/
+src/linuxtrack.pc
+src/mickey/mickey.pro
+src/pathconfig.h
+src/qt_gui/ltr_gui.pro
+src/wii_server/wii_server.pro
 
 # Build directories
 build/
@@ -56,11 +64,14 @@ ltr_gui
 ltr_gui_qt5_debug
 ltr_gui_qt5_standalone_debug
 ltr_server
+ltr_server1
 ltr_extractor
 ltr_pipe
 ltr_recenter
 osc_server
 test_*
+src/mickey/mickey
+src/wii_server/wii_server
 
 # Allow source files that match ltr_server* pattern
 !src/ltr_server1.c
