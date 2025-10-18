@@ -29,6 +29,7 @@
 
 #ifdef WEBCAM_SUPPORT
 #include <libv4l2.h>
+#endif
 
 #define NUM_OF_BUFFERS 8
 typedef struct {
