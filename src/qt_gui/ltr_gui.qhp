@@ -8,7 +8,7 @@
       <filterSection>
           <filterAttribute>linuxtrack</filterAttribute>
           <toc>
-              <section title="Linuxtrack Manual" ref="help/welcome.htm">
+              <section title="Linuxtrack X-IRManual" ref="help/welcome.htm">
                 <section title="What's new" ref="help/news.htm"/>
                 <section title="Hall Of Fame" ref="help/hall_of_fame.htm"/>
                 <section title="Tracker Setup" ref="help/dev_setup.htm"/>
