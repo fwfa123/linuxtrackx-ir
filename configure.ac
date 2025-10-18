@@ -11,6 +11,7 @@ AC_CONFIG_SRCDIR([src/tir4_driver.h])
 AC_CONFIG_HEADERS([config.h])
 AC_PROG_CXX
 AC_PROG_OBJC
+
 # Set basic CFLAGS/CXXFLAGS
 AS_IF([test "$debug" != "no"],
       [CFLAGS+=" -g -O2 -Wall -Wextra -Wformat -Wformat-security "
@@ -20,113 +21,96 @@ AS_IF([test "$debug" != "no"],
 # Checks for programs.
 AC_CHECK_PROG(BISON, [bison], [yes], )
 AS_IF([test x$BISON = x],
- [AC_MSG_FAILURE([bison not found!])]
+ [AC_MSG_FAILURE([bison not found! Please install bison package (e.g., sudo apt install bison)])]
 )
 AC_PROG_YACC
 AC_PROG_CC
 AC_PROG_LEX(noyywrap)
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 LT_INIT
-LT_INIT
 AC_CONFIG_MACRO_DIR([m4])
 AM_PROG_CC_C_O
 PKG_PROG_PKG_CONFIG
 
+# Helper function for library checking
+AC_DEFUN([CHECK_LIBRARY_WITH_PATHS], [
+    AC_CHECK_LIB([$1], [$2], [$3=yes], [AC_MSG_FAILURE([$4])], [$5])
+])
+
+# Helper function for header checking
+AC_DEFUN([CHECK_HEADER_WITH_ERROR], [
+    AC_CHECK_HEADER([$1], [], [AC_MSG_FAILURE([$2])])
+])
+
 # Checks for libraries.
-# need math
-AC_CHECK_LIB([m], [sqrt], [LIBM=true], [AC_MSG_FAILURE([I need libm!])])
-# server is multithreaded, so we need this
-AC_CHECK_LIB([pthread], [pthread_create], [LIBPTHREAD=true], [AC_MSG_FAILURE([libpthread not found!])])
-# needed to extract the game data from the NP's software
-AC_CHECK_LIB([mxml], [mxmlNewXML], [LIBMXML=true], [AC_MSG_FAILURE([libmxml not found!])], [-pthread])
-AC_CHECK_HEADER([mxml.h], [], [AC_MSG_FAILURE([mxml.h is needed for ltr_gui compilation!])])
+# Need math library
+CHECK_LIBRARY_WITH_PATHS([m], [sqrt], [libm_found], [I need libm!])
 
-# Note: Qt5 headers will be checked during compilation, qmake version check is sufficient here
-# Qt5 header check - try multiple possible paths for Qt5 headers
-AC_MSG_CHECKING([for Qt5 development headers])
-QT5_HEADERS_FOUND=no
-for qt5_include_path in "/usr/include/x86_64-linux-gnu/qt5" "/usr/include/qt5" "/usr/include/qt" "/opt/qt5/include"; do
-  if test -d "$qt5_include_path/QtCore" && test -d "$qt5_include_path/QtWidgets"; then
-    QT5_HEADERS_FOUND=yes
-    AC_MSG_RESULT([found in $qt5_include_path])
-    break
-  fi
-done
-if test "$QT5_HEADERS_FOUND" = "no"; then
-  AC_MSG_RESULT([not found - will check during compilation])
-fi
+# Server is multithreaded, so we need pthread
+CHECK_LIBRARY_WITH_PATHS([pthread], [pthread_create], [libpthread_found], [libpthread not found!])
 
-# Qt5 is needed for the GUI
-AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qt5-qmake qmake5 qmake])
-
-# Verify that the found qmake is Qt5 by checking its version
-AS_IF([test -n "$QMAKE_PATH"],
-      [AC_MSG_CHECKING([if $QMAKE_PATH is Qt5])
-       QT5_VERSION=`$QMAKE_PATH -query QT_VERSION 2>/dev/null`
-       AS_IF([test -n "$QT5_VERSION" && test "$QT5_VERSION" != "unknown"],
-             [AC_MSG_RESULT([yes - Qt $QT5_VERSION])],
-             [AC_MSG_RESULT([no - Qt5 not found])
-              AC_MSG_ERROR([Qt5 qmake not found. Please install qt5-qmake or qtbase5-dev.])])],
-      [AC_MSG_ERROR([qmake not found. Please install Qt5 development packages.])])
-
-# Detect Qt5 help generator (optional)
-AC_PATH_PROGS(QT5_QHELPGENERATOR, [qhelpgenerator-qt5 qhelpgenerator], [qhelpgenerator-qt5])
-AC_SUBST([QT5_QHELPGENERATOR])
-
-# Detect Qt5 qmake (for compatibility)
-AC_PATH_PROGS(QT5_QMAKE, [qmake-qt5 qt5-qmake qmake5 qmake], [qmake-qt5])
-AC_SUBST([QT5_QMAKE])
-
-# used to decompress the TrackIR firmware, if necessary
-AC_CHECK_LIB([z], [gzopen], [LIBZ=true])
-# necessary for TrackIR
-AC_CHECK_LIB([usb-1.0], [libusb_init], [LIBUSB10=true])
-# used to communicate with a Wiimote
-AC_CHECK_LIB([cwiid], [cwiid_open], [LIBCWIID=true])
+# Needed to extract game data from NP's software
+CHECK_LIBRARY_WITH_PATHS([mxml], [mxmlNewXML], [libmxml_found], [libmxml not found!], [-pthread])
+CHECK_HEADER_WITH_ERROR([mxml.h], [mxml.h is needed for ltr_gui compilation!])
 
 # Enhanced cwiid detection for Arch Linux
-# Check for cwiid in common Arch Linux locations
-if test "$LIBCWIID" != "true"; then
-    # Try to find cwiid in Arch Linux specific paths
-    for cwiid_path in "/usr/lib/libcwiid.so" "/usr/lib/libcwiid.so.0" "/usr/lib32/libcwiid.so" "/usr/lib32/libcwiid.so.0"; do
-        if test -f "$cwiid_path"; then
-            AC_MSG_NOTICE([Found cwiid library: $cwiid_path])
-            LIBCWIID=true
-            break
-        fi
-    done
-fi
-# used by the osc frontend
-AC_CHECK_LIB([lo], [lo_send_bundle], [LIBLO=true])
-AC_CHECK_LIB([lo], [lo_bundle_free_recursive], [AC_DEFINE([HAVE_NEW_LIBLO], [1],
-      [New version of liblo containing lo_bundle_free_recursive available])])
+AC_DEFUN([CHECK_CWIID_LIB], [
+    AC_CHECK_LIB([cwiid], [cwiid_open], [libcwiid_found=yes], [
+        # Try to find cwiid in Arch Linux specific paths
+        for cwiid_path in "/usr/lib/libcwiid.so" "/usr/lib/libcwiid.so.0" "/usr/lib32/libcwiid.so" "/usr/lib32/libcwiid.so.0"; do
+            if test -f "$cwiid_path"; then
+                AC_MSG_NOTICE([Found cwiid library: $cwiid_path])
+                libcwiid_found=yes
+                break
+            fi
+        done
+        AS_IF([test "$libcwiid_found" != "yes"], [AC_MSG_FAILURE([libcwiid not found! Please install libcwiid package or from Arch AUR])])
+    ], [-pthread])
+])
+
+CHECK_CWIID_LIB
+
+# Used to decompress the TrackIR firmware, if necessary
+CHECK_LIBRARY_WITH_PATHS([z], [gzopen], [libz_found], [libz not found!])
+
+# Necessary for TrackIR
+CHECK_LIBRARY_WITH_PATHS([usb-1.0], [libusb_init], [libusb10_found], [libusb-1.0 not found!])
+
+# Used to communicate with a Wiimote
+# Note: Already checked above, removing duplicate check
+
+# Used by the osc frontend
+CHECK_LIBRARY_WITH_PATHS([lo], [lo_send_bundle], [liblo_found], [liblo not found!])
+
+AS_IF([test "$liblo_found" = "yes"], [
+    AC_CHECK_LIB([lo], [lo_bundle_free_recursive], [
+        AC_DEFINE([HAVE_NEW_LIBLO], [1],
+            [New version of liblo containing lo_bundle_free_recursive available])
+    ])
+])
 
 # Enhanced liblo detection for Arch Linux
-# Check for liblo in common Arch Linux locations
-if test "$LIBLO" != "true"; then
-    # Try to find liblo in Arch Linux specific paths
-    for liblo_path in "/usr/lib/liblo.so" "/usr/lib/liblo.so.7" "/usr/lib32/liblo.so" "/usr/lib32/liblo.so.7"; do
-        if test -f "$liblo_path"; then
-            AC_MSG_NOTICE([Found liblo library: $liblo_path])
-            LIBLO=true
-            break
-        fi
-    done
-fi
+AC_DEFUN([CHECK_LIBLO_LIB], [
+    AS_IF([test "$liblo_found" != "yes"], [
+        # Try to find liblo in Arch Linux specific paths
+        for liblo_path in "/usr/lib/liblo.so" "/usr/lib/liblo.so.7" "/usr/lib32/liblo.so" "/usr/lib32/liblo.so.7"; do
+            if test -f "$liblo_path"; then
+                AC_MSG_NOTICE([Found liblo library: $liblo_path])
+                liblo_found=yes
+                break
+            fi
+        done
+        AS_IF([test "$liblo_found" != "yes"], [AC_MSG_FAILURE([liblo not found! Please install liblo package])])
+    ])
+])
 
+CHECK_LIBLO_LIB
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h assert.h])
-AC_CHECK_HEADERS([stdlib.h unistd.h netdb.h sys/socket.h fcntl.h sys/ioctl.h])
+AC_CHECK_HEADERS([stdint.h assert.h stdlib.h unistd.h netdb.h sys/socket.h fcntl.h sys/ioctl.h])
 
 # Checks for library functions.
-AC_CHECK_FUNCS([atexit])
-AC_CHECK_FUNCS([memset])
-AC_CHECK_FUNCS([select])
-AC_CHECK_FUNCS([socket])
-AC_CHECK_FUNCS([strerror])
-AC_CHECK_FUNCS([gettimeofday])
-
+AC_CHECK_FUNCS([atexit memset select socket strerror gettimeofday])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -140,26 +124,26 @@ AC_C_INLINE
 
 AC_CANONICAL_HOST
 
-# used by the webcam driver on Linux
+# Used by the webcam driver on Linux
 AC_CHECK_TYPE([struct v4l2_frmsizeenum],
-  [
-    AC_DEFINE([V4L2], [],[Use videodev2.h (V4L2)])
-    with_v4l2=yes
-  ], [],
-  [[#include  <linux/videodev2.h>
-  ]]
+    [
+        AC_DEFINE([V4L2], [],[Use videodev2.h (V4L2)])
+        with_v4l2=yes
+    ], [],
+    [[#include  <linux/videodev2.h>
+    ]]
 )
 
 AC_CHECK_HEADER([libv4l2.h],
-  [
-    AC_DEFINE([LIBV4L2], [],[Use libv4l2.h (V4L2)])
-    with_libv4l2=yes
-  ], [], []
+    [
+        AC_DEFINE([LIBV4L2], [],[Use libv4l2.h (V4L2)])
+        with_libv4l2=yes
+    ], [], []
 )
 
 AC_CHECK_HEADER([linux/uinput.h], [build_mickey=yes], [build_mickey=no])
 
-# if wine64 is present, try building the 64bit binaries too
+# If wine64 is present, try building the 64bit binaries too
 AC_CHECK_PROG([with_wine64], [wine64], [yes])
 
 # Always test 64-bit winegcc compilation on x86_64 systems
@@ -168,19 +152,18 @@ AS_IF([test "x$host_cpu" = xx86_64],
       [with_wine64=yes],
       [])
 
-#needed to create an installer for the linuxtrack-wine
+# Needed to create an installer for the linuxtrack-wine
 AC_CHECK_PROG([with_makensis], [makensis], [yes])
 
-XPL_CPPFLAGS=
-AC_ARG_WITH([xplane_sdk],
-            [AS_HELP_STRING([--with-xplane-sdk],
-              [specify path to XPlane SDK @<:@default=/opt/xplane-sdk/CHeaders@:>@])],
-            [XPL_CPPFLAGS=" -I${with_xplane_sdk}/XPLM -I${with_xplane_sdk}/Widgets "],
-            [XPL_CPPFLAGS=" -I/opt/xplane-sdk/CHeaders/XPLM -I/opt/xplane-sdk/CHeaders/Widgets "]
+# X-Plane SDK configuration
+AC_ARG_WITH([xplane-sdk],
+    [AS_HELP_STRING([--with-xplane-sdk],
+        [specify path to XPlane SDK @<:@default=/opt/xplane-sdk/CHeaders@:>@])],
+    [XPL_CPPFLAGS=" -I${with_xplane_sdk}/XPLM -I${with_xplane_sdk}/Widgets "],
+    [XPL_CPPFLAGS=" -I/opt/xplane-sdk/CHeaders/XPLM -I/opt/xplane-sdk/CHeaders/Widgets "]
 )
 
 # Enhanced X-Plane SDK detection for Arch Linux
-# Check for X-Plane SDK in common locations
 AC_MSG_CHECKING([for X-Plane SDK])
 xplane_sdk_found=no
 for sdk_path in "/opt/xplane-sdk/CHeaders" "/usr/include/xplane_sdk" "/usr/local/include/xplane_sdk" "$HOME/xplane-sdk/CHeaders"; do
@@ -206,10 +189,10 @@ CPPFLAGS="$BCK_CPPFLAGS"
 AC_SUBST([XPL_CPPFLAGS])
 
 AC_ARG_ENABLE([ltr_32lib_on_x64],
-		[AS_HELP_STRING([--enable-ltr-32lib-on-x64],
-				[build 32bit linuxtrack library on 64bit host @<:@default=yes@:>@])],
-		[with_ltr_32lib_on_x64=$enableval],
-		[with_ltr_32lib_on_x64=yes]
+    [AS_HELP_STRING([--enable-ltr-32lib-on-x64],
+        [build 32bit linuxtrack library on 64bit host @<:@default=yes@:>@])],
+    [with_ltr_32lib_on_x64=$enableval],
+    [with_ltr_32lib_on_x64=yes]
 )
 
 # Check for 32-bit development headers before enabling 32-bit library build
@@ -230,108 +213,100 @@ AS_IF([test "x$with_ltr_32lib_on_x64" = xyes],
          with_ltr_32lib_on_x64=no
        fi])
 
-# needed to have the right libraries to link against
-WINE_LIBS=
-WINE_LIBS_DEFAULT=""
+# Wine library paths detection
+AC_DEFUN([DETECT_WINE_LIBS], [
+    case "$host_os" in
+      linux*)
+        # Arch Linux with wine32 from AUR
+        if test -d "/usr/lib32/wine/i386-unix"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib32/wine/i386-unix"
+          AC_MSG_NOTICE([Found Arch Linux wine32 installation in /usr/lib32/wine/i386-unix])
+        elif test -d "/usr/lib32/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib32/wine"
+          AC_MSG_NOTICE([Found Arch Linux wine32 installation in /usr/lib32/wine])
+        # Modern Ubuntu/Debian (22.04+)
+        elif test -d "/usr/lib/i386-linux-gnu/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib/i386-linux-gnu/wine"
+        elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+        # Modern Fedora (38+)
+        elif test -d "/usr/lib/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+        # Arch Linux standard wine
+        elif test -d "/usr/lib/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+        # OpenSUSE
+        elif test -d "/usr/lib/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+        # Legacy paths for older distributions
+        elif test -d "/usr/lib/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+        elif test -d "/usr/local/lib/wine"; then
+          WINE_LIBS_DEFAULT="-L/usr/local/lib/wine"
+        else
+          WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+        fi
+        ;;
+      *)
+        WINE_LIBS_DEFAULT="-L/usr/lib/wine"
+        ;;
+    esac
+])
 
-# Enhanced wine library path detection for modern distributions
-case "$host_os" in
-  linux*)
-    # Arch Linux with wine32 from AUR
-    if test -d "/usr/lib32/wine/i386-unix"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib32/wine/i386-unix"
-      AC_MSG_NOTICE([Found Arch Linux wine32 installation in /usr/lib32/wine/i386-unix])
-    elif test -d "/usr/lib32/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib32/wine"
-      AC_MSG_NOTICE([Found Arch Linux wine32 installation in /usr/lib32/wine])
-    # Modern Ubuntu/Debian (22.04+)
-    elif test -d "/usr/lib/i386-linux-gnu/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib/i386-linux-gnu/wine"
-    elif test -d "/usr/lib/x86_64-linux-gnu/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
-    # Modern Fedora (38+)
-    elif test -d "/usr/lib/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    # Arch Linux standard wine
-    elif test -d "/usr/lib/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    # OpenSUSE
-    elif test -d "/usr/lib/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    # Legacy paths for older distributions
-    elif test -d "/usr/lib/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    elif test -d "/usr/local/lib/wine"; then
-      WINE_LIBS_DEFAULT="-L/usr/local/lib/wine"
-    else
-      WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    fi
-    ;;
-  *)
-    WINE_LIBS_DEFAULT="-L/usr/lib/wine"
-    ;;
-esac
+AC_DEFUN([DETECT_WINE64_LIBS], [
+    case "$host_os" in
+      linux*)
+        # Modern Ubuntu/Debian (22.04+) - prioritize architecture-specific paths
+        if test -d "/usr/lib/x86_64-linux-gnu/wine"; then
+          WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+          AC_MSG_NOTICE([Found Ubuntu/Debian wine64 libraries in /usr/lib/x86_64-linux-gnu/wine])
+        # Arch Linux with wine64
+        elif test -d "/usr/lib/wine/x86_64-unix"; then
+          WINE64_LIBS_DEFAULT="-L/usr/lib/wine/x86_64-unix"
+          AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine/x86_64-unix])
+        # Modern Fedora (38+) - check for x86_64 specific paths first
+        elif test -d "/usr/lib64/wine"; then
+          WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+          AC_MSG_NOTICE([Found Fedora wine64 libraries in /usr/lib64/wine])
+        # Generic /usr/lib/wine (contains binaries, not libraries - use as last resort)
+        elif test -d "/usr/lib/wine"; then
+          WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+          AC_MSG_NOTICE([Using generic wine path /usr/lib/wine])
+        # OpenSUSE
+        elif test -d "/usr/lib64/wine"; then
+          WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
+          AC_MSG_NOTICE([Found OpenSUSE wine64 libraries in /usr/lib64/wine])
+        # Legacy paths for older distributions
+        elif test -d "/usr/local/lib64/wine"; then
+          WINE64_LIBS_DEFAULT="-L/usr/local/lib64/wine"
+          AC_MSG_NOTICE([Found legacy wine64 libraries in /usr/local/lib64/wine])
+        else
+          WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
+          AC_MSG_NOTICE([Using default Ubuntu/Debian path for wine64 libraries])
+        fi
+        ;;
+      *)
+        WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
+        ;;
+    esac
+])
+
+# Call the detection functions
+DETECT_WINE_LIBS
+DETECT_WINE64_LIBS
 
 AC_ARG_WITH([wine-libs],
-            [AS_HELP_STRING([--with-wine-libs],
-              [specify Wine libraries to link against @<:@default=auto-detect@:>@])],
-            [WINE_LIBS=${with_wine_libs}],
-            [WINE_LIBS=${WINE_LIBS_DEFAULT}]
+    [AS_HELP_STRING([--with-wine-libs],
+        [specify Wine libraries to link against @<:@default=auto-detect@:>@])],
+    [WINE_LIBS=${with_wine_libs}],
+    [WINE_LIBS=${WINE_LIBS_DEFAULT}]
 )
 
-# Enhanced wine64 library path detection for modern distributions
-WINE64_LIBS=
-WINE64_LIBS_DEFAULT=""
-
-# Enhanced wine64 library path detection for modern distributions
-case "$host_os" in
-  linux*)
-    # Modern Ubuntu/Debian (22.04+) - prioritize architecture-specific paths
-    if test -d "/usr/lib/x86_64-linux-gnu/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
-      AC_MSG_NOTICE([Found Ubuntu/Debian wine64 libraries in /usr/lib/x86_64-linux-gnu/wine])
-    # Arch Linux with wine64
-    elif test -d "/usr/lib/wine/x86_64-unix"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine/x86_64-unix"
-      AC_MSG_NOTICE([Found Arch Linux wine64 installation in /usr/lib/wine/x86_64-unix])
-    # Modern Fedora (38+) - check for x86_64 specific paths first
-    elif test -d "/usr/lib64/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
-      AC_MSG_NOTICE([Found Fedora wine64 libraries in /usr/lib64/wine])
-    # Generic /usr/lib/wine (contains binaries, not libraries - use as last resort)
-    elif test -d "/usr/lib/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
-      AC_MSG_NOTICE([Using generic wine path /usr/lib/wine])
-    # OpenSUSE
-    elif test -d "/usr/lib64/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/lib64/wine"
-      AC_MSG_NOTICE([Found OpenSUSE wine64 libraries in /usr/lib64/wine])
-    # Legacy paths for older distributions
-    elif test -d "/usr/local/lib64/wine"; then
-      WINE64_LIBS_DEFAULT="-L/usr/local/lib64/wine"
-      AC_MSG_NOTICE([Found legacy wine64 libraries in /usr/local/lib64/wine])
-    else
-      WINE64_LIBS_DEFAULT="-L/usr/lib/x86_64-linux-gnu/wine"
-      AC_MSG_NOTICE([Using default Ubuntu/Debian path for wine64 libraries])
-    fi
-    ;;
-  *)
-    WINE64_LIBS_DEFAULT="-L/usr/lib/wine"
-    ;;
-esac
-
-# Check for 64-bit Wine support based on library availability
-# Since 64-bit libraries are available and 32-bit works, enable 64-bit support
-# Extract directory path from WINE64_LIBS_DEFAULT (remove -L prefix)
-wine64_lib_dir=`echo "$WINE64_LIBS_DEFAULT" | sed 's/^-L//'`
-AS_IF([test -d "$wine64_lib_dir"],
-      [build_wine64_plugin=yes], [build_wine64_plugin=no])
-
 AC_ARG_WITH([wine64-libs],
-            [AS_HELP_STRING([--with-wine64-libs],
-              [specify Wine64 libraries to link against @<:@default=auto-detect@:>@])],
-            [WINE64_LIBS=${with_wine64_libs}],
-            [WINE64_LIBS=${WINE64_LIBS_DEFAULT}]
+    [AS_HELP_STRING([--with-wine64-libs],
+        [specify Wine64 libraries to link against @<:@default=auto-detect@:>@])],
+    [WINE64_LIBS=${with_wine64_libs}],
+    [WINE64_LIBS=${WINE64_LIBS_DEFAULT}]
 )
 
 # Multi-distribution wine32 detection and setup
@@ -366,27 +341,50 @@ else
   AC_MSG_RESULT([not found])
 fi
 
-# NOTE: Removed global 32-bit compilation flags for --enable-ltr-32lib-on-x64
-# The -m32 flag should only be applied to Wine bridge components in their Makefiles,
-# not globally to all LinuxTrack components. This was breaking Debian builds.
-# Wine bridge Makefiles (ft_client, ft_tester, views) already explicitly use -m32
-# in their compilation rules where needed.
-# AS_IF([test "x$with_ltr_32lib_on_x64" = xyes],
-#       [CFLAGS+=" -m32"
-#        CXXFLAGS+=" -m32"
-#        LDFLAGS+=" -m32 -L/usr/lib -L/usr/lib/gcc/x86_64-redhat-linux/15/32"
-#        AC_MSG_NOTICE([32-bit compilation flags enabled for cross-compilation (-m32)])])
+# Check for Qt5 headers and qmake
+AC_MSG_CHECKING([for Qt5 development headers])
+QT5_HEADERS_FOUND=no
+for qt5_include_path in "/usr/include/x86_64-linux-gnu/qt5" "/usr/include/qt5" "/usr/include/qt" "/opt/qt5/include"; do
+  if test -d "$qt5_include_path/QtCore" && test -d "$qt5_include_path/QtWidgets"; then
+    QT5_HEADERS_FOUND=yes
+    AC_MSG_RESULT([found in $qt5_include_path])
+    break
+  fi
+done
+if test "$QT5_HEADERS_FOUND" = "no"; then
+  AC_MSG_RESULT([not found - will check during compilation])
+fi
+
+# Qt5 is needed for the GUI
+AC_PATH_PROGS(QMAKE_PATH, [qmake-qt5 qt5-qmake qmake5 qmake])
+
+# Verify that the found qmake is Qt5 by checking its version
+AS_IF([test -n "$QMAKE_PATH"],
+      [AC_MSG_CHECKING([if $QMAKE_PATH is Qt5])
+       QT5_VERSION=`$QMAKE_PATH -query QT_VERSION 2>/dev/null`
+       AS_IF([test -n "$QT5_VERSION" && test "$QT5_VERSION" != "unknown"],
+             [AC_MSG_RESULT([yes - Qt $QT5_VERSION])],
+             [AC_MSG_RESULT([no - Qt5 not found])
+              AC_MSG_ERROR([Qt5 qmake not found. Please install qt5-qmake or qtbase5-dev.])])],
+      [AC_MSG_ERROR([qmake not found. Please install Qt5 development packages.])])
+
+# Detect Qt5 help generator (optional)
+AC_PATH_PROGS(QT5_QHELPGENERATOR, [qhelpgenerator-qt5 qhelpgenerator], [qhelpgenerator-qt5])
+AC_SUBST([QT5_QHELPGENERATOR])
+
+# Detect Qt5 qmake (for compatibility)
+AC_PATH_PROGS(QT5_QMAKE, [qmake-qt5 qt5-qmake qmake5 qmake], [qmake-qt5])
+AC_SUBST([QT5_QMAKE])
 
 # is this needed anymore?
 LIB32DIR="lib32"
 AC_ARG_WITH([lib32-dir],
-            [AS_HELP_STRING([--with-lib32-dir],
-              [specify 32bit library directory (usually needed only on amd64 arch.)])],
-            [LIB32DIR=${with_lib32_dir}]
+    [AS_HELP_STRING([--with-lib32-dir],
+        [specify 32bit library directory (usually needed only on amd64 arch.)])],
+    [LIB32DIR=${with_lib32_dir}]
 )
 
-
-# checking that winegcc works...
+# Checking that winegcc works...
 BCK_CC="$CC"
 BCK_CFLAGS="$CFLAGS"
 BCK_CPPFLAGS="$CPPFLAGS"
@@ -443,6 +441,7 @@ CPPFLAGS="$BCK_CPPFLAGS"
 CFLAGS="$BCK_CFLAGS"
 CC="$BCK_CC"
 
+# Darwin specific
 AS_IF([case $host_os in darwin*) true;; *) false;; esac],
   [
     AC_DEFINE([DARWIN], [], [We are on Darwin])
@@ -464,7 +463,6 @@ AS_IF([case $host_os in darwin*) true;; *) false;; esac],
 
 m4_ifdef([PKG_CHECK_MODULES], [PKG_CHECK_MODULES([OPENCV], [opencv4 >= 0.29.0], [], [AC_MSG_RESULT([Opencl not present.])])])
 
-
 AC_SUBST([OPENCV_CFLAGS])
 AC_SUBST([OPENCV_LIBS])
 AC_SUBST([WINE_LIBS])
@@ -477,17 +475,6 @@ i[[3456]]86) with_64_bit=no ;;
 x86_64) with_64_bit=yes ;;
 *) AC_MSG_ERROR([unsupported CPU type]) ;;
 esac
-
-AS_IF([(test  "x$with_libv4l2" = xyes) || (test  "x$with_darwin" = xyes)],
-				[webcam_support=yes], [webcam_support=yes])
-
-AS_IF([(test "x$webcam_support" = xyes) &&
-       (((test "x$pkg_cv_OPENCV_CFLAGS" != x) && (test "x$pkg_cv_OPENCV_LIBS" != x)) ||
-       ((test "x$OPENCV_CFLAGS" != x) && (test "x$OPENCV_LIBS" != x)))],
-                                [build_face_tracker=yes], [build_face_tracker=no])
-
-AS_IF([(test "x$WINEGCC32_COMPILES" = xyes) && (test "x$WINEGPP32_COMPILES" = xyes) &&
-  (test "x$with_makensis" = xyes) ], [build_wine_plugin=yes], [build_wine_plugin=no])
 
 # Add configure option to disable PIE for native builds
 AC_ARG_ENABLE([pie],
@@ -510,18 +497,52 @@ AS_IF([test "x$enable_pie" = xyes],
        AC_MSG_NOTICE([PIE enabled for native Linux builds (security feature)])],
       [AC_MSG_NOTICE([PIE disabled by user request])])
 
-AS_IF([test  "x$ac_cv_lib_lo_lo_send_bundle" = xyes],
-                                [build_osc_support=yes], [buildt_osc_support=no])
+# Set default support flags - Basic build philosophy:
+# TrackIR and Wine components enabled by default (core functionality)
+# Optional components disabled by default (OSC, Wiimote, Face-tracker, X-Plane, Webcam)
+webcam_support=no
+build_face_tracker=no
+build_wine_plugin=no
+build_wine64_plugin=no
+build_osc_support=no
+wiimote_support=no
+trackir_support=no
 
-AS_IF([(test  "x$ac_cv_lib_cwiid_cwiid_open" = xyes) || (test  "x$with_darwin" = xyes)],
-                                [wiimote_support=yes], [wiimote_support=no])
+# Check for 64-bit Wine support based on library availability
+wine64_lib_dir=`echo "$WINE64_LIBS_DEFAULT" | sed 's/^-L//'`
+AS_IF([test -d "$wine64_lib_dir"],
+      [build_wine64_plugin=yes], [build_wine64_plugin=no])
 
-AS_IF([(test  "x$ac_cv_lib_usb_1_0_libusb_init" = xyes) &&
-       (test "x$ac_cv_lib_z_gzopen" = xyes)], 
-       [trackir_support=yes], [trackir_support=no])
+# Enable Wine plugins if winegcc compilation works
+AS_IF([(test "x$WINEGCC32_COMPILES" = xyes) && (test "x$WINEGPP32_COMPILES" = xyes) &&
+  (test "x$with_makensis" = xyes) ], [build_wine_plugin=yes], [build_wine_plugin=no])
 
+# Enable TrackIR support if dependencies are found (core functionality)
+AS_IF([(test "x$libusb10_found" = xyes) && (test "x$libz_found" = xyes)],
+    [trackir_support=yes])
+
+# Optional components - only enable if explicitly requested or dependencies found
+# OSC support
+AS_IF([test "x$liblo_found" = xyes],
+    [build_osc_support=yes])
+
+# Wiimote support  
+AS_IF([(test "x$libcwiid_found" = xyes) || (test "x$with_darwin" = xyes)],
+    [wiimote_support=yes])
+
+# Face tracker support
+AS_IF([(test "x$webcam_support" = xyes) &&
+       (((test "x$pkg_cv_OPENCV_CFLAGS" != x) && (test "x$pkg_cv_OPENCV_LIBS" != x)) ||
+       ((test "x$OPENCV_CFLAGS" != x) && (test "x$OPENCV_LIBS" != x)))],
+                                [build_face_tracker=yes], [build_face_tracker=no])
+
+# Webcam support (V4L2 or Darwin)
+AS_IF([(test "x$with_libv4l2" = xyes) || (test "x$with_darwin" = xyes)],
+    [webcam_support=yes], [webcam_support=no])
+
+# Check conditions for building components
 AM_CONDITIONAL(XPLANE_PLUGIN, [test x$build_xplane_plugin = xyes])
-AM_CONDITIONAL(CWIID, [test  "x$ac_cv_lib_cwiid_cwiid_open" = xyes])
+AM_CONDITIONAL(CWIID, [test  "x$wiimote_support" = xyes])
 AM_CONDITIONAL(OSC_SUPPORT, [test "x$build_osc_support" = xyes])
 AM_CONDITIONAL(WEBCAM_SUPPORT, [test x$webcam_support = xyes])
 AM_CONDITIONAL(DARWIN, [test x$with_darwin = xyes])
@@ -564,6 +585,7 @@ AC_OUTPUT
 AC_MSG_NOTICE([===============================================================]);
 AC_MSG_NOTICE([===                         Summary                         ===]);
 AC_MSG_NOTICE([===============================================================]);
+
 AC_MSG_CHECKING([Webcam support])
 AS_IF([(test  "x$webcam_support" = xyes)], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
 
@@ -592,6 +614,3 @@ AC_MSG_CHECKING([PIE support for native builds])
 AS_IF([test "x$enable_pie" = xyes],
       [AC_MSG_RESULT([enabled (security feature)])],
       [AC_MSG_RESULT([disabled by user])])
-
-
-
