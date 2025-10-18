@@ -87,9 +87,10 @@ sudo dnf groupinstall "Development Tools"
 sudo dnf install autoconf automake libtool pkg-config
 sudo dnf install libusb1-devel zlib-devel
 sudo dnf install bison flex
-sudo dnf install qt5-qtbase-devel qt5-qmake
-sudo dnf install libmxml-devel
+sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel
+sudo dnf install mxml-devel
 ```
+
 ### Configure Command
 ```bash
 autoreconf -fiv
@@ -504,10 +505,11 @@ sudo pacman -S libv4l v4l-utils opencv liblo libcwiid
 sudo dnf groupinstall "Development Tools"
 sudo dnf install autoconf automake libtool pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
-sudo dnf install qt5-qtbase-devel qt5-qmake libmxml-devel
+sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel
 sudo dnf install wine-core wine-tools wine-core.i686 wine-tools.i686 nsis
 sudo dnf install glibc-devel.i686 gcc.i686
 sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
+sudo dnf install mxml-devel
 ```
 
 ---

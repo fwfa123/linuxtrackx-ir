@@ -27,6 +27,7 @@
 #include "facetrack.h"
 #endif
 
+#ifdef WEBCAM_SUPPORT
 #include <libv4l2.h>
 
 #define NUM_OF_BUFFERS 8
