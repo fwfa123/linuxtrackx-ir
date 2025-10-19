@@ -104,7 +104,7 @@ autoreconf -fiv
 
 ### Build Command
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
 
@@ -180,6 +180,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 ```
@@ -254,6 +255,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 ```
@@ -314,6 +316,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 ```
@@ -369,6 +372,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 ```
@@ -424,6 +428,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 ```
@@ -472,6 +477,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 ```
@@ -676,6 +682,7 @@ autoreconf -fiv
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
 
 # Build with parallel compilation
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 
 # Install
@@ -730,6 +737,7 @@ sudo pacman -S wine-gecko
 # Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
 sudo ldconfig
@@ -1058,6 +1066,7 @@ flatpak-spawn --host which winetricks
 
 # Then build LinuxTrack with explicit 64-bit flags
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
 
@@ -1155,6 +1164,7 @@ If you encounter "skipping incompatible" errors for `liblo` or `mxml`, these 32-
 
 # Then try building LinuxTrack again
 ./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
 
@@ -1242,6 +1252,7 @@ LinuxTrack is an open-source project that welcomes contributions:
 git clone <repository-url>
 cd linuxtrackx-ir
 ./configure --prefix=/usr/local --enable-debug
+export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
 
