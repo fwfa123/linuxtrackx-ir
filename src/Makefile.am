@@ -1,6 +1,6 @@
 # QMake-based GUI integration (ltr_gui.pro generated from ltr_gui.pro.in by configure)
 # Keep Automake conservative: delegate GUI build to qmake without trying to compile C sources here.
-
+ACLOCAL_AMFLAGS = -I m4
 # Install-time library path define used by runtime to locate drivers
 AM_CPPFLAGS = -DLIB_PATH=\"$(pkglibdir)/\"
 
@@ -20,10 +20,18 @@ bin_PROGRAMS = \
 pkglib_LTLIBRARIES = \
   liblinuxtrack.la \
   libltr.la \
-  libwc.la \
   libtir.la \
   libjoy.la \
   libltusb1.la
+
+# Conditionally add the webcam driver
+if WEBCAM_SUPPORT
+pkglib_LTLIBRARIES += libwc.la
+endif
+# Also declare libwc.la as an extra library that might be built,
+# so Automake is aware of it even when the conditional is false.
+EXTRA_pkglibdir = $(pkglibdir)
+EXTRA_pkglib_LTLIBRARIES = libwc.la
 
 # liblinuxtrack: small public shim used by client utilities
 liblinuxtrack_la_SOURCES = \
@@ -31,7 +39,7 @@ liblinuxtrack_la_SOURCES = \
   utils.c utils.h \
   ipc_utils.c ipc_utils.h \
   linuxtrack.h
-liblinuxtrack_la_LIBADD = 
+liblinuxtrack_la_LIBADD =
 liblinuxtrack_la_LDFLAGS = -export-symbols "${srcdir}/liblt.sym"
 
 # libltr: main engine
@@ -60,11 +68,17 @@ libltr_la_LIBADD = -lm -lpthread -ldl
 libltr_la_LDFLAGS = -export-symbols-regex '^ltr_int'
 
 # libwc: V4L2 webcam/face-tracking driver
+if WEBCAM_SUPPORT
 libwc_la_SOURCES = \
   webcam_driver.c \
   runloop.c
 libwc_la_LIBADD = libltr.la -lv4l2
 libwc_la_LDFLAGS = -export-symbols "${srcdir}/webcam_driver.sym"
+else
+libwc_la_SOURCES =
+libwc_la_LIBADD =
+libwc_la_LDFLAGS =
+endif
 
 # libtir: TrackIR USB driver
 libtir_la_SOURCES = \
@@ -135,10 +149,13 @@ WII_PRO = $(WII_DIR)/wii_server.pro
 WII_MAKEFILE = $(WII_DIR)/Makefile
 
 # Generate qmake Makefiles then build as part of 'all'
-all-local: $(GUI_MAKEFILE) $(MICKEY_MAKEFILE) $(WII_MAKEFILE)
+all-local: $(GUI_MAKEFILE) $(MICKEY_MAKEFILE)
 	$(MAKE) -C $(GUI_DIR)
 	$(MAKE) -C $(MICKEY_DIR)
+if CWIID
+all-local: $(WII_MAKEFILE)
 	$(MAKE) -C $(WII_DIR)
+endif
 
 $(GUI_MAKEFILE): $(GUI_PRO)
 	cd $(GUI_DIR) && $(QMAKE) -spec linux-g++ "LIBDIR=$(libdir)/linuxtrack" ltr_gui.pro
@@ -153,7 +170,9 @@ $(WII_MAKEFILE): $(WII_PRO)
 install-exec-local: all-local
 	$(MAKE) -C $(GUI_DIR) INSTALL_ROOT="$(DESTDIR)" install
 	$(MAKE) -C $(MICKEY_DIR) INSTALL_ROOT="$(DESTDIR)" install
+if CWIID
 	$(MAKE) -C $(WII_DIR) INSTALL_ROOT="$(DESTDIR)" install
+endif
 
 # Data files installed under $(datadir)/linuxtrack for runtime use
 pkgdatadir = $(datadir)/linuxtrack
@@ -171,8 +190,10 @@ dist_pkgdata_DATA = \
 desktopdir = /usr/share/applications
 dist_desktop_DATA = \
   linuxtrack.desktop \
-  mickey.desktop \
-  linuxtrack-wii.desktop
+  mickey.desktop
+if CWIID
+dist_desktop_DATA += linuxtrack-wii.desktop
+endif
 
 # Refresh desktop database after installation (best-effort)
 install-data-hook:
@@ -182,15 +203,22 @@ install-data-hook:
 uninstall-local:
 	- $(MAKE) -C $(GUI_DIR) uninstall || true
 	- $(MAKE) -C $(MICKEY_DIR) uninstall || true
+if CWIID
 	- $(MAKE) -C $(WII_DIR) uninstall || true
+endif
 
 clean-local:
 	- test -f $(GUI_MAKEFILE) && $(MAKE) -C $(GUI_DIR) clean || true
 	- test -f $(MICKEY_MAKEFILE) && $(MAKE) -C $(MICKEY_DIR) clean || true
+if CWIID
 	- test -f $(WII_MAKEFILE) && $(MAKE) -C $(WII_DIR) clean || true
+endif
 
 distclean-local: clean-local
-	- rm -f $(GUI_MAKEFILE) $(MICKEY_MAKEFILE) $(WII_MAKEFILE)
+	- rm -f $(GUI_MAKEFILE) $(MICKEY_MAKEFILE)
+if CWIID
+	- rm -f $(WII_MAKEFILE)
+endif
 
 # Configure library path for dynamic loading
 install-exec-hook:
