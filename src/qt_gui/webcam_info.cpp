@@ -40,9 +40,13 @@ WebcamLibProxy WebcamLibProxy::wcl;
 bool webcamInfoOk = false;
 
 WebcamLibProxy::WebcamLibProxy(){
+#ifdef WEBCAM_SUPPORT
   if((libhandle = ltr_int_load_library((char *)"libwc", functions)) != NULL){
     webcamInfoOk = true;
   }
+#else
+  webcamInfoOk = false;
+#endif
 }
 
 WebcamLibProxy::~WebcamLibProxy(){
