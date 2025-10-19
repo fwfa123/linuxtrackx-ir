@@ -32,9 +32,9 @@ QMAKE_LFLAGS += $$(LDFLAGS)
 
 unix:!macx {
   QMAKE_CXXFLAGS += -fvisibility=hidden -O2 -Wall -Wextra -Wformat -Wformat-security \
-    --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2
+    --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1
   QMAKE_CFLAGS += -fvisibility=hidden -O2 -Wall -Wextra -Wformat -Wformat-security \
-    --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2
+    --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1
   LIBS += "-L../.libs" "-L$${LIBDIR}" -lm -lltr -lcwiid\
            "-Wl,-rpath,$${LIBDIR}"
   

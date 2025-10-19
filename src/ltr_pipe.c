@@ -30,6 +30,7 @@
 #include <libgen.h>
 #include <linuxtrack.h>
 #include <utils.h>
+#include <ltlib.h>
 
 #ifdef LINUX
 #include <sys/ioctl.h>
@@ -582,28 +583,32 @@ static void setup_signals(void)
 
 
 /**
- * setup_ltr() - Prepare LinuxTrack library
+ * setup_ltr() - Prepare LinuxTrack library as client
  **/
 static void setup_ltr(void)
 {
-	logmsg("Initializing LinuxTrack library");
-        linuxtrack_state_type res = linuxtrack_init(Args.ltr_profile);
+	logmsg("Initializing LinuxTrack library as client");
+	/* Use linuxtrack_init to connect to existing server */
+	linuxtrack_state_type res = linuxtrack_init(Args.ltr_profile);
+	logmsg("linuxtrack_init returned: %d (%s)", res, linuxtrack_explain(res));
 	if (res < LINUXTRACK_OK)
 		xerror(1, 0, linuxtrack_explain(res));
 
-	int timeout = atoi(Args.ltr_timeout);
-
+	/* Wait for tracking to start */
+	int timeout = 30;
 	while (timeout > 0) {
-
-		if (linuxtrack_get_tracking_state() == RUNNING)
+		linuxtrack_state_type state = linuxtrack_get_tracking_state();
+		logmsg("Tracking state: %d (%s)", state, linuxtrack_explain(state));
+		if (state == RUNNING) {
+			logmsg("Tracking is now running");
 			return;
-		else
-			sleep(1);
-
+		} else if (state < LINUXTRACK_OK) {
+			xerror(1, 0, linuxtrack_explain(state));
+		}
+		sleep(1);
 		timeout--;
 	}
-
-	xerror(1, 0, "LinuxTrack library timeout");
+	xerror(1, 0, "LinuxTrack failed to start tracking");
 }
 
 

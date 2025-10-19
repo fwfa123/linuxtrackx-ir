@@ -71,6 +71,7 @@ sudo apt install qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-de
 sudo apt install libmxml-dev
 sudo apt install libx11-dev libxrandr-dev
 sudo apt install libgl1-mesa-dev libglu1-mesa-dev
+sudo apt install libqt5opengl5-dev
 ```
 
 #### Arch Linux:

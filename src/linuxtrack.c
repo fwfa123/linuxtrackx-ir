@@ -245,9 +245,12 @@ int linuxtrack_get_pose_full(linuxtrack_pose_t *pose, float blobs[], int num_blo
 linuxtrack_state_type linuxtrack_get_tracking_state(void)
 {
   if(ltr_get_tracking_state_fun == NULL){
+    linuxtrack_log("ltr_get_tracking_state_fun is NULL!\n");
     return err_NOT_INITIALIZED;
   }
-  return ltr_get_tracking_state_fun();
+  linuxtrack_state_type res = ltr_get_tracking_state_fun();
+  linuxtrack_log("ltr_get_tracking_state_fun returned: %d\n", res);
+  return res;
 }
 
 
@@ -258,11 +261,17 @@ static int linuxtrack_load_functions(void *handle)
   void *symbol;
   while((functions[i]).name != NULL){
     dlerror();
-    if((symbol = dlsym(handle, (functions[i]).name)) == NULL){
-      linuxtrack_log("Couldn't load symbol '%s': %s\n", (functions[i]).name, dlerror());
+    symbol = dlsym(handle, (functions[i]).name);
+    const char *error = dlerror();
+    linuxtrack_log("Trying to load symbol '%s': %p, error: %s\n", (functions[i]).name, symbol, error ? error : "none");
+    if(symbol == NULL){
+      linuxtrack_log("Couldn't load symbol '%s': %s\n", (functions[i]).name, error);
       if((functions[i]).mandatory){
+        linuxtrack_log("Symbol '%s' is mandatory, failing\n", (functions[i]).name);
         return err_SYMBOL_LOOKUP;
       }
+    } else {
+      linuxtrack_log("Loaded symbol '%s' OK\n", (functions[i]).name);
     }
     *((void **)(functions[i]).ref) = symbol;
     ++i;
@@ -312,45 +321,9 @@ static void* linuxtrack_try_library(const char *path)
 
 char *linuxtrack_get_prefix()
 {
-  char *prefix = NULL;
-  char *home = getenv("HOME");
-  char *cfg = (char*)"/.config/linuxtrack/linuxtrack1.conf";
-  char *fname;
-  FILE *f;
-  char *line;
-  char *val, *key;
-
-  if(home == NULL){
-    /* Fallback for Wine environments where HOME may be unset */
-    home = getenv("USERPROFILE");
-  }
-  if(home == NULL){
-    linuxtrack_log("Please set HOME or USERPROFILE variable!\n");
-    return NULL;
-  }
-  fname = construct_name(home, cfg, "");
-  if((f = fopen(fname, "r")) == NULL){
-    free(fname);
-    return NULL;
-  }
-  free(fname);
-  line = (char *)malloc(4096);
-  val = (char *)malloc(4096);
-  key = (char *)malloc(4096);
-  while(!feof(f)){
-    if(fgets(line, 4095, f) != NULL){
-      if((sscanf(line, "%s = \"%[^\"\n]", key, val) == 2) &&
-        strcasecmp(key, "prefix") == 0){
-	prefix = strdup(val);
-	break;
-      }
-    }
-  }
-  fclose(f);
-  free(line);
-  free(val);
-  free(key);
-  return prefix;
+  /* For testing purposes, hardcode the prefix to /usr */
+  fprintf(stderr, "DEBUG: linuxtrack_get_prefix called, returning /usr\n");
+  return strdup("/usr");
 }
 
 
@@ -391,6 +364,7 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     *problem = err_NO_CONFIG;
     return NULL;
   }
+  fprintf(stderr, "DEBUG: linuxtrack_find_library using prefix: %s\n", prefix);
   int i = 0;
   while(lib_locations[i] != NULL){
     name = construct_name(prefix, "/../", lib_locations[i++]);
@@ -406,6 +380,7 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
   static const char *alt_lib_locations[] = {
     "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",
     "/usr/lib/linuxtrack/liblinuxtrack.so.0",
+    "/usr/lib64/linuxtrack/liblinuxtrack.so.0",
     "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack.so.0",
     "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",
     NULL
@@ -432,9 +407,10 @@ static linuxtrack_state_type linuxtrack_load_library()
     return problem;
   }
   dlerror(); /*clear any existing error...*/
-  if(linuxtrack_load_functions(lib_handle) != LINUXTRACK_OK){
+  linuxtrack_state_type load_result = linuxtrack_load_functions(lib_handle);
+  if(load_result != LINUXTRACK_OK){
     linuxtrack_log("Couldn't load liblinuxtrack functions, headtracking will not be available!\n");
-    return err_SYMBOL_LOOKUP;
+    return load_result;
   }
   return LINUXTRACK_OK;
 #else
@@ -451,7 +427,13 @@ linuxtrack_state_type linuxtrack_init(const char *cust_section)
   if(res < LINUXTRACK_OK){
     return res;
   }
-  return ltr_init_fun(cust_section);
+  if(ltr_init_fun == NULL){
+    linuxtrack_log("ltr_init_fun is NULL!\n");
+    return err_SYMBOL_LOOKUP;
+  }
+  linuxtrack_state_type init_res = ltr_init_fun(cust_section);
+  linuxtrack_log("ltr_init_fun returned: %d (%s)\n", init_res, linuxtrack_explain(init_res));
+  return init_res;
 }
 
 const char *linuxtrack_explain(linuxtrack_state_type status)

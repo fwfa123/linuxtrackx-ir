@@ -52,16 +52,36 @@ int ltr_int_cal_run(struct camera_control_block *ccb, frame_callback_fun cbk)
       libname = "libtir4";
       break;
     case webcam:
+#ifdef WEBCAM_SUPPORT
       libname = "libwc";
+#else
+      ltr_int_cal_set_state(ERROR);
+      return LTR_ERROR;
+#endif
       break;
     case mac_webcam:
+#ifdef WEBCAM_SUPPORT
       libname = "libmacwc";
+#else
+      ltr_int_cal_set_state(ERROR);
+      return LTR_ERROR;
+#endif
       break;
     case webcam_ft:
+#ifdef WEBCAM_SUPPORT
       libname = "libft";
+#else
+      ltr_int_cal_set_state(ERROR);
+      return LTR_ERROR;
+#endif
       break;
     case mac_webcam_ft:
+#ifdef WEBCAM_SUPPORT
       libname = "libmacwc";
+#else
+      ltr_int_cal_set_state(ERROR);
+      return LTR_ERROR;
+#endif
       break;
     case wiimote:
       libname = "libmacwii";
