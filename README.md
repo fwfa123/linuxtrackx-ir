@@ -114,6 +114,8 @@ make -j$(nproc)
 sudo make install
 ```
 
+**Note**: If you see a warning about `ldconfig` failing, run `sudo ldconfig` manually after installation to update the library cache.
+
 ### Verification
 ```bash
 # Check installed components
