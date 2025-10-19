@@ -227,9 +227,19 @@ install-exec-hook:
 	  echo "Created /etc/ld.so.conf.d/linuxtrack.conf"; \
 	fi
 	@echo "Running ldconfig to update library cache..."
-	@ldconfig
+	@ldconfig || echo "Warning: ldconfig failed - you may need to run 'sudo ldconfig' manually"
 	@sleep 1
-	@ldconfig -p | grep -q "libwc.so.0" && echo "✅ Library cache updated successfully" || (echo "❌ Library cache update failed" && exit 1)
+	@if ldconfig -p | grep -q "liblinuxtrack.so.0"; then \
+	  echo "✅ Core libraries installed successfully"; \
+	else \
+	  echo "❌ Core library installation verification failed"; \
+	  exit 1; \
+	fi
+	@if ldconfig -p | grep -q "libwc.so.0"; then \
+	  echo "✅ Webcam libraries installed successfully"; \
+	else \
+	  echo "ℹ️  Webcam libraries not installed (minimal build)"; \
+	fi
 	@echo "LinuxTrack installation completed successfully"
 
 # Clean up library configuration on uninstall
