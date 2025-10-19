@@ -87,15 +87,17 @@ sudo dnf groupinstall "Development Tools"
 sudo dnf install autoconf automake libtool pkg-config
 sudo dnf install libusb1-devel zlib-devel
 sudo dnf install bison flex
-sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel
-sudo dnf install mxml-devel
+sudo dnf install qt5-qtbase-devel qt5-qmake
+sudo dnf install libmxml-devel
 ```
-
 ### Configure Command
 ```bash
 autoreconf -fiv
 ./configure --prefix=/usr
 ```
+
+**Note**: Webcam support is disabled by default in minimal builds. To enable webcam support, add `--enable-webcam` to the configure command.
+
 ### Build and Install
 ```bash
 make -j$(nproc)
@@ -270,6 +272,8 @@ QT_QPA_PLATFORM=xcb ltr_gui NOTE That this may not be needed. As of late I have 
 - ✅ V4L2 webcam support
 - ✅ Alternative tracking when TrackIR unavailable
 
+**Note**: Webcam support is **disabled by default** in minimal builds. You must explicitly enable it with `--enable-webcam`.
+
 ### Additional Libraries (beyond Level 3)
 
 #### Debian/Ubuntu/MX Linux:
@@ -293,7 +297,7 @@ sudo dnf install opencv-devel  # For face tracking
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64
+./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 ### Build and Install
 ```bash
@@ -348,7 +352,7 @@ sudo dnf install liblo-devel
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64
+./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 ### Build and Install
 ```bash
@@ -403,7 +407,7 @@ sudo dnf install libcwiid-devel
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64
+./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 ### Build and Install
 ```bash
@@ -451,7 +455,7 @@ sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64 --with-xplane-sdk=/opt/xplane-sdk/CHeaders
+./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam --with-xplane-sdk=/opt/xplane-sdk/CHeaders
 ```
 ### Build and Install
 ```bash
@@ -505,11 +509,15 @@ sudo pacman -S libv4l v4l-utils opencv liblo libcwiid
 sudo dnf groupinstall "Development Tools"
 sudo dnf install autoconf automake libtool pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
-sudo dnf install qt5-qtbase-devel qt5-qttools-devel qt5-qtx11extras-devel
+sudo dnf install qt5-qtbase-devel qt5-qmake libmxml-devel
 sudo dnf install wine-core wine-tools wine-core.i686 wine-tools.i686 nsis
 sudo dnf install glibc-devel.i686 gcc.i686
 sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
-sudo dnf install mxml-devel
+```
+
+**Note**: For complete builds with all features, use:
+```bash
+./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 
 ---
