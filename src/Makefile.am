@@ -28,10 +28,6 @@ pkglib_LTLIBRARIES = \
 if WEBCAM_SUPPORT
 pkglib_LTLIBRARIES += libwc.la
 endif
-# Also declare libwc.la as an extra library that might be built,
-# so Automake is aware of it even when the conditional is false.
-EXTRA_pkglibdir = $(pkglibdir)
-EXTRA_pkglib_LTLIBRARIES = libwc.la
 
 # liblinuxtrack: small public shim used by client utilities
 liblinuxtrack_la_SOURCES = \
@@ -149,12 +145,15 @@ WII_PRO = $(WII_DIR)/wii_server.pro
 WII_MAKEFILE = $(WII_DIR)/Makefile
 
 # Generate qmake Makefiles then build as part of 'all'
+if CWIID
+all-local: $(GUI_MAKEFILE) $(MICKEY_MAKEFILE) $(WII_MAKEFILE)
+	$(MAKE) -C $(GUI_DIR)
+	$(MAKE) -C $(MICKEY_DIR)
+	$(MAKE) -C $(WII_DIR)
+else
 all-local: $(GUI_MAKEFILE) $(MICKEY_MAKEFILE)
 	$(MAKE) -C $(GUI_DIR)
 	$(MAKE) -C $(MICKEY_DIR)
-if CWIID
-all-local: $(WII_MAKEFILE)
-	$(MAKE) -C $(WII_DIR)
 endif
 
 $(GUI_MAKEFILE): $(GUI_PRO)
