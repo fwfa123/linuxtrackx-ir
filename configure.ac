@@ -517,7 +517,7 @@ wiimote_support=no
 trackir_support=no
 
 AC_ARG_ENABLE([webcam],
-    [AS_HELP_STRING([--disable-webcam], [Do not build the webcam driver])],
+    [AS_HELP_STRING([--enable-webcam], [Enable webcam driver support @<:@default=no@:>@])],
     [],
     [enable_webcam=no]
 )
@@ -550,9 +550,11 @@ AS_IF([(test "x$webcam_support" = xyes) &&
        ((test "x$OPENCV_CFLAGS" != x) && (test "x$OPENCV_LIBS" != x)))],
                                 [build_face_tracker=yes], [build_face_tracker=no])
 
-# Webcam support (V4L2 or Darwin)
-AS_IF([(test "x$with_libv4l2" = xyes) || (test "x$with_darwin" = xyes)],
-    [webcam_support=yes], [webcam_support=no])
+# Webcam support (V4L2 or Darwin) - only if explicitly enabled
+AS_IF([test "x$enable_webcam" = xyes],
+    [AS_IF([(test "x$with_libv4l2" = xyes) || (test "x$with_darwin" = xyes)],
+        [webcam_support=yes], [webcam_support=no])],
+    [webcam_support=no])
 AC_DEFINE_UNQUOTED([WEBCAM_SUPPORT], [${webcam_support}], [Webcam support enabled])
 
 # Check conditions for building components
@@ -602,7 +604,7 @@ AC_MSG_NOTICE([===                         Summary                         ===])
 AC_MSG_NOTICE([===============================================================]);
 
 AC_MSG_CHECKING([Webcam support])
-AS_IF([(test  "x$webcam_support" = xyes)], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
+AS_IF([(test  "x$webcam_support" = xyes)], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no - disabled by default])])
 
 AC_MSG_CHECKING([Wiimote support])
 AS_IF([(test  "x$wiimote_support" = xyes)], [AC_MSG_RESULT([yes])], [AC_MSG_RESULT([no])])
