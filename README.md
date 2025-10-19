@@ -69,7 +69,8 @@ sudo apt install libusb-1.0-0-dev zlib1g-dev
 sudo apt install bison flex
 sudo apt install qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev
 sudo apt install libmxml-dev
-sudo apt install libx11-dev libxrandr-dev 
+sudo apt install libx11-dev libxrandr-dev
+sudo apt install libgl1-mesa-dev libglu1-mesa-dev
 ```
 
 #### Arch Linux:
@@ -79,6 +80,7 @@ sudo pacman -S libusb zlib
 sudo pacman -S bison flex
 sudo pacman -S qt5-base qt5-tools
 sudo pacman -S libmxml
+sudo pacman -S mesa glu
 ```
 
 #### Fedora/RHEL:
@@ -87,8 +89,9 @@ sudo dnf groupinstall "Development Tools"
 sudo dnf install autoconf automake libtool pkg-config
 sudo dnf install libusb1-devel zlib-devel
 sudo dnf install bison flex
-sudo dnf install qt5-qtbase-devel qt5-qmake
+sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
 sudo dnf install libmxml-devel
+sudo dnf install mesa-libGL-devel mesa-libGLU-devel
 ```
 ### Configure Command
 ```bash
@@ -98,9 +101,16 @@ autoreconf -fiv
 
 **Note**: Webcam support is disabled by default in minimal builds. To enable webcam support, add `--enable-webcam` to the configure command.
 
-### Build and Install
+### Build Command
 ```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"
 make -j$(nproc)
+```
+
+**Note**: On Fedora/RHEL, Qt tools like `qhelpgenerator` are located in `/usr/lib64/qt5/bin/` and may not be in the default PATH. The export command above adds this directory to your PATH for the build process.
+
+### Install
+```bash
 sudo make install
 ```
 
