@@ -380,8 +380,8 @@ AS_IF([test -n "$QMAKE_PATH"],
 AC_PATH_PROGS(QT5_QHELPGENERATOR, [qhelpgenerator-qt5 qhelpgenerator], [qhelpgenerator-qt5])
 AC_SUBST([QT5_QHELPGENERATOR])
 
-# Detect Qt5 qmake (for compatibility)
-AC_PATH_PROGS(QT5_QMAKE, [qmake-qt5 qt5-qmake qmake5 qmake], [qmake-qt5])
+# Detect Qt5 qmake (for compatibility) - use the same path as QMAKE_PATH
+QT5_QMAKE="$QMAKE_PATH"
 AC_SUBST([QT5_QMAKE])
 
 # is this needed anymore?
@@ -492,9 +492,9 @@ AC_ARG_ENABLE([pie],
               [enable_pie=yes])
 
 # Add stack protector and fortify source for native builds
-CFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
-CXXFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=2 "
-CPPFLAGS+=" -D_FORTIFY_SOURCE=2 -O2 "
+CFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1 "
+CXXFLAGS+=" --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1 "
+CPPFLAGS+=" -D_FORTIFY_SOURCE=1 -O2 "
 
 # Add PIE support for native Linux builds
 # PIE is enabled by default for security on modern Linux distributions
