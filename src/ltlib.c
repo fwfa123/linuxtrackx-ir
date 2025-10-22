@@ -39,7 +39,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
   char pipe1[16];
   int fd[2];
   bool is_child;
-  if(initialized) return mmm.fname;
+  // Don't return early if we're in client mode - we may need to reconnect
+  if(initialized && standalone) return mmm.fname;
   if(make_mmap() != 0) return NULL;
   struct ltr_comm *com = mmm.data;
   com->state = INITIALIZING;
@@ -72,7 +73,24 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
     close(fd[1]);
     notify_pipe = fd[0];
     fcntl(notify_pipe, F_SETFL, fcntl(notify_pipe, F_GETFL) | O_NONBLOCK);
-  }
+      } else {
+        // Client mode: establish connection to existing server
+        int socket_fd = ltr_int_connect_to_socket("/tmp/ltr_m_sock");
+        if(socket_fd >= 0){
+          // In client mode, we don't need to spawn a server or set up pipes
+          // The server is already running and we just need to communicate with it
+          // Set up the communication state for client mode
+          com->state = RUNNING; // Server is already running, so we're ready
+          com->preparing_start = false; // Client mode doesn't prepare start
+          close(socket_fd); // Close the test connection
+          // In client mode, we don't call ltr_wakeup() because we don't have a slave process
+          // The server is already running and we just need to connect to it
+          return mmm.fname;
+        } else {
+          com->state = err_NOT_INITIALIZED;
+          return NULL;
+        }
+      }
   ltr_wakeup();
   return mmm.fname;
 }
@@ -81,10 +99,29 @@ linuxtrack_state_type ltr_get_tracking_state(void);
 
 linuxtrack_state_type ltr_init(const char *cust_section)
 {
-  if(ltr_int_init_helper(cust_section, true) != NULL){
-    return ltr_get_tracking_state();
+  // Check if a server is already running by testing if we can connect to the socket
+  // This is more reliable than lock file detection
+  int socket_fd = ltr_int_connect_to_socket("/tmp/ltr_m_sock");
+  bool server_running = (socket_fd >= 0);
+  if(socket_fd >= 0){
+    close(socket_fd); // Close the test connection
+  }
+  
+  if(server_running){
+    // Server is running, use client mode
+    char *result = ltr_int_init_helper(cust_section, false);
+    if(result != NULL){
+      return ltr_get_tracking_state();
+    }else{
+      return INITIALIZING;
+    }
   }else{
-    return INITIALIZING;
+    // No server running, use standalone mode
+    if(ltr_int_init_helper(cust_section, true) != NULL){
+      return ltr_get_tracking_state();
+    }else{
+      return INITIALIZING;
+    }
   }
 }
 
