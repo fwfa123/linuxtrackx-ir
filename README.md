@@ -97,7 +97,7 @@ sudo dnf install mesa-libGL-devel mesa-libGLU-devel
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr
+./configure --prefix=/usr/local
 ```
 
 **Note**: Webcam support is disabled by default in minimal builds. To enable webcam support, add `--enable-webcam` to the configure command.
@@ -176,7 +176,7 @@ cd scripts/dev && ./wine_dev_setup.sh && cd ../..
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr
+./configure --prefix=/usr/local
 ```
 ### Build and Install
 ```bash
@@ -251,7 +251,7 @@ After installation, LinuxTrack will automatically handle MFC42 installation via 
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
 ```
 ### Build and Install
 ```bash
@@ -312,7 +312,7 @@ sudo dnf install opencv-devel  # For face tracking
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 ### Build and Install
 ```bash
@@ -368,7 +368,7 @@ sudo dnf install liblo-devel
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 ### Build and Install
 ```bash
@@ -424,7 +424,7 @@ sudo dnf install libcwiid-devel
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 ### Build and Install
 ```bash
@@ -473,7 +473,7 @@ sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ### Configure Command
 ```bash
 autoreconf -fiv
-./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam --with-xplane-sdk=/opt/xplane-sdk/CHeaders
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam --with-xplane-sdk=/opt/xplane-sdk/CHeaders
 ```
 ### Build and Install
 ```bash
@@ -536,7 +536,7 @@ sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
 
 **Note**: For complete builds with all features, use:
 ```bash
-./configure --prefix=/usr --enable-ltr-32lib-on-x64 --enable-webcam
+./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 
 ---
@@ -679,7 +679,7 @@ cd linuxtrackx-ir
 autoreconf -fiv
 
 # Configure with explicit 64-bit flags to prevent 32-bit compilation issues
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
 
 # Build with parallel compilation
 export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
@@ -736,7 +736,7 @@ sudo pacman -S wine-gecko
 ```bash
 # Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
 export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 sudo make install
@@ -1065,7 +1065,7 @@ flatpak-spawn --host which winetricks
 ./scripts/build_32bit_libs.sh
 
 # Then build LinuxTrack with explicit 64-bit flags
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
 export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
@@ -1107,7 +1107,7 @@ ls -l squashfs-root/usr/lib/i386-linux-gnu/linuxtrack/ 2>/dev/null || true
 **Problem:** Configure script sets 32-bit flags even when disabled
 **Solution:** Use explicit 64-bit flags during configure:
 ```bash
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --disable-ltr-32lib-on-x64
+CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
 ```
 
 **Problem:** Qt5 Makefile not generated automatically
@@ -1163,7 +1163,7 @@ If you encounter "skipping incompatible" errors for `liblo` or `mxml`, these 32-
 ./scripts/build_32bit_libs.sh
 
 # Then try building LinuxTrack again
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
+./configure --prefix=/usr/local/local --enable-ltr-32lib-on-x64
 export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
@@ -1251,7 +1251,7 @@ LinuxTrack is an open-source project that welcomes contributions:
 ```bash
 git clone <repository-url>
 cd linuxtrackx-ir
-./configure --prefix=/usr/local --enable-debug
+./configure --prefix=/usr/local/local --enable-debug
 export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
 make -j$(nproc)
 ```
