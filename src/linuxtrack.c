@@ -35,6 +35,7 @@ THE SOFTWARE.
 #include <unistd.h>
 #include <string.h>
 #include "linuxtrack.h"
+#include "utils.h"
 
 #ifdef HAVE_CONFIG_H
   #include <config.h>
@@ -263,19 +264,24 @@ static int linuxtrack_load_functions(void *handle)
     dlerror();
     symbol = dlsym(handle, (functions[i]).name);
     const char *error = dlerror();
+    fprintf(stderr, "DEBUG: Trying to load symbol '%s': %p, error: %s\n", (functions[i]).name, symbol, error ? error : "none");
     linuxtrack_log("Trying to load symbol '%s': %p, error: %s\n", (functions[i]).name, symbol, error ? error : "none");
     if(symbol == NULL){
+      fprintf(stderr, "DEBUG: Couldn't load symbol '%s': %s\n", (functions[i]).name, error);
       linuxtrack_log("Couldn't load symbol '%s': %s\n", (functions[i]).name, error);
       if((functions[i]).mandatory){
+        fprintf(stderr, "DEBUG: Symbol '%s' is mandatory, failing\n", (functions[i]).name);
         linuxtrack_log("Symbol '%s' is mandatory, failing\n", (functions[i]).name);
         return err_SYMBOL_LOOKUP;
       }
     } else {
+      fprintf(stderr, "DEBUG: Loaded symbol '%s' OK\n", (functions[i]).name);
       linuxtrack_log("Loaded symbol '%s' OK\n", (functions[i]).name);
     }
     *((void **)(functions[i]).ref) = symbol;
     ++i;
   }
+  fprintf(stderr, "DEBUG: All symbols processed, ltr_init_fun = %p\n", ltr_init_fun);
   return LINUXTRACK_OK;
 #else
   (void)handle; // Suppress unused parameter warning
@@ -299,18 +305,23 @@ static void* linuxtrack_try_library(const char *path)
 {
 #ifndef __MINGW32__
   void *handle = NULL;
+  fprintf(stderr, "DEBUG: Trying library: %s\n", path);
   linuxtrack_log("Trying to load '%s'... ", path);
   if(access(path, F_OK) != 0){
+    fprintf(stderr, "DEBUG: Library not found: %s\n", path);
     linuxtrack_log("Not found.\n");
     return NULL;
   }
   dlerror();
   handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
   if(handle != NULL){
+    fprintf(stderr, "DEBUG: Library loaded successfully: %s\n", path);
     linuxtrack_log("Loaded OK.\n");
     return handle;
   }
-  linuxtrack_log("Couldn't load library - %s!\n", dlerror());
+  char *dlerr = dlerror();
+  fprintf(stderr, "DEBUG: Failed to load library %s: %s\n", path, dlerr ? dlerr : "unknown error");
+  linuxtrack_log("Couldn't load library - %s!\n", dlerr);
   return NULL;
 #else
   (void)path; // Suppress unused parameter warning
@@ -321,8 +332,34 @@ static void* linuxtrack_try_library(const char *path)
 
 char *linuxtrack_get_prefix()
 {
-  /* For testing purposes, hardcode the prefix to /usr */
-  fprintf(stderr, "DEBUG: linuxtrack_get_prefix called, returning /usr\n");
+  /* Try to read prefix from config file first */
+  char *fname = ltr_int_get_default_file_name(NULL);
+  if(fname != NULL){
+    FILE *f = fopen(fname, "r");
+    if(f != NULL){
+      char key[2048];
+      char val[2048];
+      while(!feof(f)){
+        if(fscanf(f, "%2040s", key) == 1){
+          if(strcasecmp(key, "PREFIX") == 0){
+            if(fgets(key, 2040, f) != NULL){
+              if(sscanf(key, " = \"%[^\"\n]", val) > 0){
+                fprintf(stderr, "DEBUG: linuxtrack_get_prefix read from config: %s\n", val);
+                fclose(f);
+                free(fname);
+                return strdup(val);
+              }
+            }
+          }
+        }
+      }
+      fclose(f);
+    }
+    free(fname);
+  }
+  
+  /* Fallback to hardcoded /usr if config reading fails */
+  fprintf(stderr, "DEBUG: linuxtrack_get_prefix using fallback: /usr\n");
   return strdup("/usr");
 }
 
@@ -344,6 +381,7 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
   /*Look for LINUXTRACK_LIBS*/
   char *lp = getenv("LINUXTRACK_LIBS");
   if(lp != NULL){
+    fprintf(stderr, "DEBUG: Found LINUXTRACK_LIBS environment variable: %s\n", lp);
     char *path = strdup(lp);
     char *part = path;
     while(1){
@@ -355,8 +393,12 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     }
     free(path);
     if(handle != NULL){
+      fprintf(stderr, "DEBUG: Successfully loaded library from LINUXTRACK_LIBS\n");
       return handle;
     }
+    fprintf(stderr, "DEBUG: Failed to load library from LINUXTRACK_LIBS\n");
+  } else {
+    fprintf(stderr, "DEBUG: LINUXTRACK_LIBS environment variable not set\n");
   }
 
   prefix = linuxtrack_get_prefix();
@@ -378,19 +420,25 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
   free(prefix);
   /* Absolute fallbacks independent of prefix to support common distro layouts */
   static const char *alt_lib_locations[] = {
-    "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",
-    "/usr/lib/linuxtrack/liblinuxtrack.so.0",
-    "/usr/lib64/linuxtrack/liblinuxtrack.so.0",
-    "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack.so.0",
-    "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",
+    "/usr/local/lib64/linuxtrack/liblinuxtrack.so.0",  /* Fedora local installs */
+    "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",     /* Arch/Debian local installs */
+    "/usr/lib64/linuxtrack/liblinuxtrack.so.0",        /* Fedora/RHEL 64-bit */
+    "/usr/lib/linuxtrack/liblinuxtrack.so.0",          /* Arch/Debian */
+    "/lib64/linuxtrack/liblinuxtrack.so.0",            /* Alternative Fedora location */
+    "/lib/linuxtrack/liblinuxtrack.so.0",              /* Alternative Arch/Debian location */
+    "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack.so.0", /* Debian/Ubuntu 64-bit */
+    "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",  /* Debian/Ubuntu 32-bit */
     NULL
   };
+  fprintf(stderr, "DEBUG: Trying fallback library locations...\n");
   i = 0;
   while(alt_lib_locations[i] != NULL){
     if((handle = linuxtrack_try_library((char*)alt_lib_locations[i++])) != NULL){
+      fprintf(stderr, "DEBUG: Successfully loaded library from fallback location\n");
       return handle;
     }
   }
+  fprintf(stderr, "DEBUG: All library search attempts failed\n");
   *problem = err_NOT_FOUND;
   return NULL;
 }
@@ -400,18 +448,25 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
 static linuxtrack_state_type linuxtrack_load_library()
 {
 #ifndef __MINGW32__
+  fprintf(stderr, "DEBUG: linuxtrack_load_library called\n");
   linuxtrack_state_type problem;
   lib_handle = linuxtrack_find_library(&problem);
   if(lib_handle == NULL){
+    fprintf(stderr, "DEBUG: linuxtrack_find_library failed with problem: %d\n", problem);
     linuxtrack_log("Couldn't load liblinuxtrack, headtracking will not be available!\n");
     return problem;
   }
+  fprintf(stderr, "DEBUG: Library handle obtained: %p\n", lib_handle);
   dlerror(); /*clear any existing error...*/
+  fprintf(stderr, "DEBUG: About to call linuxtrack_load_functions\n");
   linuxtrack_state_type load_result = linuxtrack_load_functions(lib_handle);
+  fprintf(stderr, "DEBUG: linuxtrack_load_functions returned: %d\n", load_result);
   if(load_result != LINUXTRACK_OK){
+    fprintf(stderr, "DEBUG: Function loading failed\n");
     linuxtrack_log("Couldn't load liblinuxtrack functions, headtracking will not be available!\n");
     return load_result;
   }
+  fprintf(stderr, "DEBUG: All functions loaded successfully\n");
   return LINUXTRACK_OK;
 #else
   // For MinGW builds, dynamic loading is not supported
@@ -423,15 +478,20 @@ static linuxtrack_state_type linuxtrack_load_library()
 
 linuxtrack_state_type linuxtrack_init(const char *cust_section)
 {
+  fprintf(stderr, "DEBUG: linuxtrack_init called with section: %s\n", cust_section ? cust_section : "NULL");
   linuxtrack_state_type res = linuxtrack_load_library();
   if(res < LINUXTRACK_OK){
+    fprintf(stderr, "DEBUG: linuxtrack_load_library failed: %d\n", res);
     return res;
   }
   if(ltr_init_fun == NULL){
+    fprintf(stderr, "DEBUG: ltr_init_fun is NULL!\n");
     linuxtrack_log("ltr_init_fun is NULL!\n");
     return err_SYMBOL_LOOKUP;
   }
+  fprintf(stderr, "DEBUG: About to call ltr_init_fun\n");
   linuxtrack_state_type init_res = ltr_init_fun(cust_section);
+  fprintf(stderr, "DEBUG: ltr_init_fun returned: %d\n", init_res);
   linuxtrack_log("ltr_init_fun returned: %d (%s)\n", init_res, linuxtrack_explain(init_res));
   return init_res;
 }
