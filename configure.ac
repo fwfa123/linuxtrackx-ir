@@ -522,6 +522,12 @@ AC_ARG_ENABLE([webcam],
     [enable_webcam=no]
 )
 
+AC_ARG_ENABLE([ldconfig],
+    [AS_HELP_STRING([--disable-ldconfig], [Disable automatic ldconfig configuration @<:@default=enable@:>@])],
+    [],
+    [enable_ldconfig=yes]
+)
+
 # Check for 64-bit Wine support based on library availability
 wine64_lib_dir=`echo "$WINE64_LIBS_DEFAULT" | sed 's/^-L//'`
 AS_IF([test -d "$wine64_lib_dir"],
@@ -570,6 +576,7 @@ AM_CONDITIONAL(FACE_TRACKER, [test x$build_face_tracker = xyes])
 AM_CONDITIONAL(MICKEY, [test x$build_mickey = xyes])
 AM_CONDITIONAL(WINE_PLUGIN, [test x$build_wine_plugin = xyes])
 AM_CONDITIONAL(WINE64, [test x$build_wine64_plugin = xyes])
+AM_CONDITIONAL(LDCONFIG_SUPPORT, [test x$enable_ldconfig = xyes])
 
 AC_CONFIG_FILES([
  Makefile
