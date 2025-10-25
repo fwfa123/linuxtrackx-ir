@@ -48,6 +48,39 @@ LinuxTrack uses a **basic build philosophy** where:
 
 ---
 
+## Configure Options
+
+LinuxTrack provides several configure options to customize your build:
+
+### **Core Options**
+- `--prefix=PATH` - Installation prefix (default: `/opt`)
+- `--enable-webcam` - Enable webcam/face tracking support (disabled by default)
+- `--enable-ltr-32lib-on-x64` - Enable 32-bit library building for Wine compatibility
+- `--disable-pie` - Disable Position Independent Executable (not recommended)
+
+### **Library Configuration**
+- `--disable-ldconfig` - Disable automatic ldconfig configuration (useful for packaging systems)
+
+**When to use `--disable-ldconfig`:**
+- Building packages for distribution (RPM, DEB, etc.)
+- Staging installations with `DESTDIR`
+- Systems where package managers handle library paths automatically
+- Docker containers or chroot environments
+
+### **Example Commands**
+```bash
+# Minimal build for packaging
+./configure --prefix=/usr/local --disable-ldconfig
+
+# Full build with manual library management
+./configure --prefix=/usr/local --enable-webcam --enable-ltr-32lib-on-x64 --disable-ldconfig
+
+# Standard user installation
+./configure --prefix=/usr/local --enable-webcam --enable-ltr-32lib-on-x64
+```
+
+---
+
 ## Level 1: TrackIR Only (Minimal Build)
 
 **Use Case**: Native Linux games and applications only. No Wine/Steam support.
@@ -135,7 +168,7 @@ make -j$(nproc)
 sudo make install
 ```
 
-**Note**: If you see a warning about `ldconfig` failing, run `sudo ldconfig` manually after installation to update the library cache.
+**Note**: If you see a warning about `ldconfig` failing, run `sudo ldconfig` manually after installation to update the library cache. For packaging systems or staging installations, use `--disable-ldconfig` during configure to skip automatic library configuration.
 
 ### Verification
 ```bash
@@ -587,6 +620,7 @@ ls /opt/lib/linuxtrack/libwc.so*
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `Couldn't load library 'libwc.so.0'` | Library cache not updated. Run: `sudo ldconfig` then restart LinuxTrack |
+| `ldconfig permission denied during install` | Use `--disable-ldconfig` during configure for packaging systems or staging installations |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
@@ -1003,6 +1037,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 - ✅ **OSC Network Support**: Open Sound Control for network-based head tracking
 - ✅ **X-Plane Plugin**: Complete X-Plane plugin development support
 - ✅ **Automated Build Scripts**: One-command installation for Arch Linux (WORK IN PROGRESS)
+- ✅ **Packaging Support**: Improved DESTDIR support and `--disable-ldconfig` option for distribution maintainers
 
 ### **Wine Integration**
 LinuxTrack now supports building Windows compatibility components using winegcc:
@@ -1063,6 +1098,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `Couldn't load library 'libwc.so.0'` | Library cache not updated. Run: `sudo ldconfig` then restart LinuxTrack |
+| `ldconfig permission denied during install` | Use `--disable-ldconfig` during configure for packaging systems or staging installations |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | MFC42 installation fails | Use the built-in MFC42 installer in the GUI, or manually run `winetricks mfc42`. The enhanced debugging will show detailed output and automatically try `winetricks vcrun6` as fallback |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
@@ -1269,6 +1305,44 @@ QT_DEBUG_PLUGINS=1 ltr_gui 2>&1 | head -20
 4. **Check logs** - Look for error messages in terminal output
 5. **Distribution guides** - See the `docs/` directory for detailed guides
 6. **MFC42 debugging** - Use the enhanced debugging output to troubleshoot winetricks installation
+
+## 📦 Package Maintainers & Distribution Builders
+
+LinuxTrack now includes improved support for packaging systems and distribution maintainers:
+
+### **DESTDIR Support**
+The build system now properly respects `DESTDIR` for staging installations:
+```bash
+# Package building example
+./configure --prefix=/usr/local --disable-ldconfig
+make -j$(nproc)
+make install DESTDIR=/tmp/package-staging
+```
+
+### **Library Configuration Control**
+Use `--disable-ldconfig` to prevent automatic library cache updates:
+- **RPM packages**: Let the package manager handle `ldconfig` via `%post` scripts
+- **DEB packages**: Use `dh_makeshlibs` and `dh_shlibdeps` instead
+- **Staging builds**: Avoid permission issues during `DESTDIR` installations
+
+### **Recommended Package Configuration**
+```bash
+# For most distributions
+./configure --prefix=/usr/local --disable-ldconfig --enable-ltr-32lib-on-x64
+
+# For minimal packages (TrackIR only)
+./configure --prefix=/usr/local --disable-ldconfig
+
+# For full-featured packages
+./configure --prefix=/usr/local --disable-ldconfig --enable-webcam --enable-ltr-32lib-on-x64
+```
+
+### **Package Dependencies**
+- **Core**: `libusb-1.0`, `zlib`, `libmxml`, `qt5-base`
+- **Optional**: `libv4l2` (webcam), `libcwiid` (Wiimote), `liblo` (OSC)
+- **Wine**: `wine` or `wine-staging` for Windows game support
+
+---
 
 ## 📖 Documentation
 

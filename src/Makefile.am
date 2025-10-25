@@ -220,35 +220,51 @@ if CWIID
 endif
 
 # Configure library path for dynamic loading
+if LDCONFIG_SUPPORT
 install-exec-hook:
 	@echo "Configuring LinuxTrack library path..."
-	@if [ ! -f /etc/ld.so.conf.d/linuxtrack.conf ]; then \
-	  echo "$(pkglibdir)" > /etc/ld.so.conf.d/linuxtrack.conf; \
-	  echo "Created /etc/ld.so.conf.d/linuxtrack.conf"; \
+	@mkdir -p $(DESTDIR)/etc/ld.so.conf.d
+	@if [ ! -f $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf ]; then \
+	  echo "$(pkglibdir)" > $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf; \
+	  echo "Created $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf"; \
 	fi
-	@echo "Running ldconfig to update library cache..."
-	@ldconfig || echo "Warning: ldconfig failed - you may need to run 'sudo ldconfig' manually"
-	@sleep 1
-	@if ldconfig -p | grep -q "liblinuxtrack.so.0"; then \
-	  echo "✅ Core libraries installed successfully"; \
+	@if [ -z "$(DESTDIR)" ]; then \
+	  echo "Running ldconfig to update library cache..."; \
+	  ldconfig || echo "Warning: ldconfig failed - you may need to run 'sudo ldconfig' manually"; \
+	  sleep 1; \
+	  if ldconfig -p | grep -q "liblinuxtrack.so.0"; then \
+	    echo "✅ Core libraries installed successfully"; \
+	  else \
+	    echo "❌ Core library installation verification failed"; \
+	    exit 1; \
+	  fi; \
+	  if ldconfig -p | grep -q "libwc.so.0"; then \
+	    echo "✅ Webcam libraries installed successfully"; \
+	  else \
+	    echo "ℹ️  Webcam libraries not installed (minimal build)"; \
+	  fi; \
+	  echo "LinuxTrack installation completed successfully"; \
 	else \
-	  echo "❌ Core library installation verification failed"; \
-	  exit 1; \
+	  echo "ℹ️  Staging installation - ldconfig will be run by package manager"; \
+	  echo "✅ Library configuration files installed to staging directory"; \
 	fi
-	@if ldconfig -p | grep -q "libwc.so.0"; then \
-	  echo "✅ Webcam libraries installed successfully"; \
-	else \
-	  echo "ℹ️  Webcam libraries not installed (minimal build)"; \
-	fi
-	@echo "LinuxTrack installation completed successfully"
 
 # Clean up library configuration on uninstall
 uninstall-hook:
-	@if [ -f /etc/ld.so.conf.d/linuxtrack.conf ]; then \
-	  rm -f /etc/ld.so.conf.d/linuxtrack.conf; \
-	  echo "Removed /etc/ld.so.conf.d/linuxtrack.conf"; \
-	  ldconfig; \
+	@if [ -f $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf ]; then \
+	  rm -f $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf; \
+	  echo "Removed $(DESTDIR)/etc/ld.so.conf.d/linuxtrack.conf"; \
+	  if [ -z "$(DESTDIR)" ]; then \
+	    ldconfig; \
+	  fi; \
 	fi
+else
+install-exec-hook:
+	@echo "ℹ️  ldconfig configuration disabled - package manager will handle library paths"
+
+uninstall-hook:
+	@echo "ℹ️  ldconfig configuration disabled - no cleanup needed"
+endif
 
 if DARWIN
   SLEOPARD_LDFLAG = -headerpad_max_install_names
