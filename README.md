@@ -164,10 +164,6 @@ sudo dnf install wine-core wine-tools
 sudo dnf install nsis  # For installer creation
 ```
 
-#### OPTIONAL for distros:
-# Set up Wine development environment (optional)
-cd scripts/dev && ./wine_dev_setup.sh && cd ../..
-
 ### Wine Configuration Notes:
 - **Wine Bridge Components**: Builds NPClient64.dll.so for 64-bit TrackIR API compatibility
 - **Steam Proton**: Compatible with Steam's Proton for Windows games
@@ -232,9 +228,6 @@ sudo pacman -S lib32-glibc lib32-gcc-libs
 sudo dnf install wine-core.i686 wine-tools.i686
 sudo dnf install glibc-devel.i686 gcc.i686
 ```
-#### OPTIONAL for distros:
-# Set up Wine development environment (optional)
-cd scripts/dev && ./wine_dev_setup.sh && cd ../..
 
 ### Wine Configuration Notes:
 - **Complete Wine Support**: Builds both NPClient.dll.so (32-bit) and NPClient64.dll.so (64-bit)
