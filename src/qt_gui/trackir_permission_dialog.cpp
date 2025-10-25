@@ -40,10 +40,10 @@ void TrackIRPermissionDialog::setupUI()
         "<p><b>What this will do:</b></p>"
         "<ul>"
         "<li>Install udev rules to allow access to TrackIR devices</li>"
-        "<li>Add your user to the 'plugdev' group</li>"
+        "<li>Add your user to the required groups (plugdev, input, uinput)</li>"
         "<li>Reload udev rules to apply changes</li>"
         "</ul>"
-        "<p><b>Note:</b> You will need to log out and log back in for group changes to take effect.</p>"
+        "<p><b>Note:</b> You will need to <b>reboot your system</b> for group changes to take effect.</p>"
     ));
     messageLabel->setWordWrap(true);
     messageLabel->setOpenExternalLinks(true);
@@ -138,11 +138,13 @@ void TrackIRPermissionDialog::onHelpClicked()
            "<p><b>1. Install udev rules:</b></p>"
            "<pre>sudo cp /path/to/linuxtrack/src/99-TIR.rules /lib/udev/rules.d/\n"
            "sudo udevadm control --reload-rules</pre>"
-           "<p><b>2. Add user to plugdev group:</b></p>"
-           "<pre>sudo usermod -a -G plugdev,input $USER</pre>"
-           "<p><b>3. Log out and log back in</b></p>"
+           "<p><b>2. Add user to required groups:</b></p>"
+           "<pre>sudo usermod -a -G plugdev,input,uinput $USER</pre>"
+           "<p><b>3. Reboot your system</b></p>"
            "<p><b>4. Test TrackIR access:</b></p>"
            "<pre>lsusb | grep 131d</pre>"
+           "<p><b>Note:</b> You may need to create a 99-TIR.rules file with the content:</p>"
+           "<pre>SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"</pre>"
            "<p>For more detailed help, see the LinuxTrack documentation."));
 }
 
@@ -212,19 +214,53 @@ bool TrackIRPermissionDialog::installUdevRules()
 
 bool TrackIRPermissionDialog::installUdevRulesAndGroups()
 {
-    QProcess process;
-    
+    // Show custom sudo dialog with manual instructions
+    QString instructions = tr(
+        "TrackIR Setup Instructions:\n\n"
+        "The automatic installation will:\n"
+        "• Install udev rules for TrackIR devices\n"
+        "• Add your user to required groups (plugdev, input, uinput)\n"
+        "• Reload udev rules to apply changes\n\n"
+        "If you prefer to do this manually, you can:\n\n"
+        "1. Install udev rules:\n"
+        "   sudo cp /path/to/linuxtrack/src/99-TIR.rules /lib/udev/rules.d/\n"
+        "   sudo udevadm control --reload-rules\n\n"
+        "2. Add user to groups:\n"
+        "   sudo usermod -a -G plugdev,input,uinput $USER\n\n"
+        "3. <b>Reboot your system</b> for changes to take effect\n\n"
+        "4. Test TrackIR access:\n"
+        "   lsusb | grep 131d\n\n"
+        "Note: You may need to create a 99-TIR.rules file with the content:\n"
+        "   SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"\n\n"
+        "For more help, see the LinuxTrack documentation."
+    );
+
+    SudoPasswordDialog dialog(tr("TrackIR Setup"), instructions, this);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        // User chose to cancel and do it manually
+        showInstallationResult(false, tr("Installation cancelled. Please follow the manual instructions shown in the dialog above."));
+        return false;
+    }
+
+    if (!dialog.shouldInstallAutomatically()) {
+        // User wants to do it manually but confirmed they saw instructions
+        showInstallationResult(false, tr("Please follow the manual instructions to complete the setup."));
+        return false;
+    }
+
     // Get current user
     QString currentUser = QString::fromUtf8(qgetenv("USER"));
     if (currentUser.isEmpty()) {
         currentUser = QString::fromUtf8(qgetenv("USERNAME"));
     }
-    
+
     if (currentUser.isEmpty()) {
         qDebug() << "Could not determine current user";
+        showInstallationResult(false, tr("Could not determine current user. Please try manual installation."));
         return false;
     }
-    
+
     // Create a temporary script that does everything in one sudo session
     QString scriptContent = QString::fromUtf8(
         "#!/bin/bash\n"
@@ -283,26 +319,28 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "\n"
         "echo \"Installation completed successfully\"\n"
     ).arg(currentUser);
-    
+
     // Write script to a temporary file
     QString tempScriptFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString::fromUtf8("/install_trackir_rules.sh");
     QFile tempScript(tempScriptFile);
     if (!tempScript.open(QIODevice::WriteOnly | QIODevice::Text)) {
         qDebug() << "Failed to create temporary script file:" << tempScript.errorString();
+        showInstallationResult(false, tr("Failed to create installation script. Please try manual installation."));
         return false;
     }
-    
+
     QTextStream out(&tempScript);
     out << scriptContent;
     tempScript.close();
-    
+
     // Make script executable
     QFile::setPermissions(tempScriptFile, QFile::permissions(tempScriptFile) | QFile::ExeOwner);
-    
-    // Run the script with sudo (single password prompt)
+
+    // Run the script with sudo using the provided password
+    QProcess process;
     QStringList arguments;
     arguments << tempScriptFile;
-    
+
     qDebug() << "Running installation script with pkexec:" << tempScriptFile;
     process.start(QString::fromUtf8("pkexec"), arguments);
     if (!process.waitForFinished(60000)) { // 60 second timeout
@@ -311,20 +349,22 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         if (!process.waitForFinished(60000)) {
             qDebug() << "sudo also failed";
             QFile::remove(tempScriptFile);
+            showInstallationResult(false, tr("Both pkexec and sudo failed. Please try manual installation."));
             return false;
         }
     }
-    
+
     // Clean up temp script
     QFile::remove(tempScriptFile);
-    
+
     if (process.exitCode() != 0) {
         qDebug() << "Failed to install rules and add user to groups:" << process.errorString();
         qDebug() << "Process output:" << QString::fromUtf8(process.readAllStandardOutput());
         qDebug() << "Process error:" << QString::fromUtf8(process.readAllStandardError());
+        showInstallationResult(false, tr("Installation failed. Please try manual installation."));
         return false;
     }
-    
+
     return true;
 }
 
@@ -400,19 +440,19 @@ void TrackIRPermissionDialog::showLogoutDialog()
         tr("<h3>TrackIR permissions have been successfully configured!</h3>"
            "<p>The TrackIR and Mickey udev rules have been installed and your user has been added to the required groups.</p>"
            "<p><b>For these changes to take effect, you need to:</b></p>"
-           "<p>1. Log out and log back in</p>"
+           "<p>1. <b>Reboot your system</b></p>"
            "<p>2. Unplug and replug your TrackIR device</p>"
-           "<p>Would you like to log out now?</p>"),
+           "<p>Would you like to reboot now?</p>"),
         QMessageBox::Yes | QMessageBox::No,
         QMessageBox::Yes);
-    
+
     if (reply == QMessageBox::Yes) {
-        // Log out the user
-        QProcess::startDetached(QString::fromUtf8("loginctl"), QStringList() << QString::fromUtf8("terminate-user") << QString::fromUtf8(qgetenv("USER")));
-        
-        // Fallback methods if loginctl fails
-        QProcess::startDetached(QString::fromUtf8("pkill"), QStringList() << QString::fromUtf8("-u") << QString::fromUtf8(qgetenv("USER")));
-        QProcess::startDetached(QString::fromUtf8("killall"), QStringList() << QString::fromUtf8("-u") << QString::fromUtf8(qgetenv("USER")));
+        // Reboot the system
+        QProcess::startDetached(QString::fromUtf8("systemctl"), QStringList() << QString::fromUtf8("reboot"));
+
+        // Fallback methods if systemctl reboot fails
+        QProcess::startDetached(QString::fromUtf8("reboot"), QStringList());
+        QProcess::startDetached(QString::fromUtf8("shutdown"), QStringList() << QString::fromUtf8("-r") << QString::fromUtf8("now"));
     }
 }
 
@@ -427,5 +467,79 @@ void TrackIRPermissionDialog::setDialogShown()
     QSettings settings(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QString::fromUtf8("/linuxtrack/") + CONFIG_FILE, QSettings::IniFormat);
     settings.setValue(DONT_SHOW_KEY, true);
     settings.sync();
+}
+
+// SudoPasswordDialog implementation
+SudoPasswordDialog::SudoPasswordDialog(const QString &title, const QString &instructions, QWidget *parent)
+    : QDialog(parent)
+    , instructionsText(nullptr)
+    , installCheckBox(nullptr)
+    , okButton(nullptr)
+    , cancelButton(nullptr)
+    , installAutomatically(false)
+{
+    setupUI(title, instructions);
+    setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
+    setWindowTitle(title);
+    setModal(true);
+    setFixedSize(600, 500);
+}
+
+SudoPasswordDialog::~SudoPasswordDialog()
+{
+}
+
+void SudoPasswordDialog::setupUI(const QString &title, const QString &instructions)
+{
+    QVBoxLayout *mainLayout = new QVBoxLayout(this);
+
+    // Title
+    QLabel *titleLabel = new QLabel(QStringLiteral("<h3>%1</h3>").arg(title));
+    titleLabel->setAlignment(Qt::AlignCenter);
+    mainLayout->addWidget(titleLabel);
+
+    // Instructions text (read-only)
+    instructionsText = new QTextEdit();
+    instructionsText->setPlainText(instructions);
+    instructionsText->setReadOnly(true);
+    instructionsText->setMaximumHeight(300);
+    mainLayout->addWidget(instructionsText);
+
+    // Checkbox for automatic installation
+    installCheckBox = new QCheckBox(tr("I understand and want to proceed with automatic installation"));
+    installCheckBox->setChecked(false);
+    mainLayout->addWidget(installCheckBox);
+
+    // Buttons
+    QHBoxLayout *buttonLayout = new QHBoxLayout();
+
+    okButton = new QPushButton(tr("Proceed with Automatic Installation"));
+    okButton->setDefault(true);
+    okButton->setEnabled(false); // Disabled until checkbox is checked
+    connect(okButton, &QPushButton::clicked, this, &SudoPasswordDialog::onOkClicked);
+    buttonLayout->addWidget(okButton);
+
+    cancelButton = new QPushButton(tr("Cancel - I'll do it manually"));
+    connect(cancelButton, &QPushButton::clicked, this, &SudoPasswordDialog::onCancelClicked);
+    buttonLayout->addWidget(cancelButton);
+
+    mainLayout->addLayout(buttonLayout);
+
+    // Connect checkbox to enable/disable OK button
+    connect(installCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+        okButton->setEnabled(state == Qt::Checked);
+    });
+}
+
+void SudoPasswordDialog::onOkClicked()
+{
+    installAutomatically = installCheckBox->isChecked();
+    accept();
+}
+
+void SudoPasswordDialog::onCancelClicked()
+{
+    installAutomatically = false;
+    reject();
 }
 
