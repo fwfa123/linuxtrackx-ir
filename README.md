@@ -94,6 +94,26 @@ sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
 sudo dnf install libmxml-devel
 sudo dnf install mesa-libGL-devel mesa-libGLU-devel
 ```
+
+#### **Fedora/RHEL Qt5 Tools PATH Fix (IMPORTANT)**
+On Fedora/RHEL systems, Qt5 tools like `qhelpgenerator` are installed in `/usr/lib64/qt5/bin/` which may not be in your default PATH. This can cause build failures at the final step.
+
+**Before building, add Qt5 tools to your PATH:**
+```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"
+```
+
+**To make this permanent, add to your `~/.bashrc`:**
+```bash
+echo 'export PATH="/usr/lib64/qt5/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Verify Qt5 tools are accessible:**
+```bash
+which qhelpgenerator qmake moc
+# Should show: /usr/lib64/qt5/bin/qhelpgenerator, etc.
+```
 ### Configure Command
 ```bash
 autoreconf -fiv
@@ -104,7 +124,7 @@ autoreconf -fiv
 
 ### Build Command
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 ```
 
@@ -176,7 +196,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 ```
@@ -248,7 +268,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 ```
@@ -309,7 +329,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 ```
@@ -365,7 +385,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 ```
@@ -421,7 +441,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 ```
@@ -470,7 +490,7 @@ autoreconf -fiv
 ```
 ### Build and Install
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 ```
@@ -532,6 +552,11 @@ sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
 ./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
 ```
 
+**Important**: On Fedora/RHEL, add Qt5 tools to PATH before building:
+```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"
+```
+
 ---
 
 ## Build Verification
@@ -582,6 +607,9 @@ ls /opt/lib/linuxtrack/libwc.so*
 #### **Fedora/RHEL**
 | Problem | Solution |
 |---------|----------|
+| `qhelpgenerator: command not found` | Add Qt5 tools to PATH: `export PATH="/usr/lib64/qt5/bin:$PATH"` |
+| Build fails at help generation step | Qt5 tools not in PATH. Run: `export PATH="/usr/lib64/qt5/bin:$PATH" && make -j$(nproc)` |
+| `qmake: command not found` | Qt5 tools not in PATH. Add `/usr/lib64/qt5/bin` to PATH |
 | `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development packages: `sudo dnf install gcc-c++.i686` |
 | `cannot find -lz: No such file or directory` | Install 32-bit zlib development: `sudo dnf install zlib-ng-compat-devel.i686` |
 | `cannot find -lmxml: No such file or directory` | Install 32-bit mxml development: `sudo dnf install mxml-devel.i686` |
@@ -594,6 +622,30 @@ ls /opt/lib/linuxtrack/libwc.so*
 - **Qt5 Path Issues**: If you encounter Qt5 path errors, the symlink `/usr/lib/qt5/bin/qmake -> /usr/lib64/qt5/bin/qmake` may need to be created
 - **Wine Bridge**: The Wine bridge components may show compilation warnings but don't affect core LinuxTrack functionality
 - **Package Updates**: Fedora package names may change between versions - use `dnf search` to find current package names if installation fails
+
+#### **Qt5 Tools PATH Issues (Other Distributions)**
+
+**Arch Linux Qt5 Tools PATH Fix:**
+On some Arch Linux installations, Qt5 tools might be in `/usr/lib/qt5/bin/`:
+
+```bash
+export PATH="/usr/lib/qt5/bin:$PATH"
+```
+
+**OpenSUSE Qt5 Tools PATH Fix:**
+On OpenSUSE, Qt5 tools are typically in `/usr/lib64/qt5/bin/`:
+
+```bash
+export PATH="/usr/lib64/qt5/bin:$PATH"
+```
+
+**General Qt5 Tools Verification:**
+To check if Qt5 tools are accessible on any distribution:
+
+```bash
+which qhelpgenerator qmake moc
+# Should show paths to Qt5 tools, not "not found"
+```
 
 #### **Fedora-Specific Troubleshooting**
 
@@ -675,7 +727,7 @@ autoreconf -fiv
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
 
 # Build with parallel compilation
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 
 # Install
@@ -730,7 +782,7 @@ sudo pacman -S wine-gecko
 # Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 sudo make install
 sudo ldconfig
@@ -1059,7 +1111,7 @@ flatpak-spawn --host which winetricks
 
 # Then build LinuxTrack with explicit 64-bit flags
 CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 ```
 
@@ -1157,7 +1209,7 @@ If you encounter "skipping incompatible" errors for `liblo` or `mxml`, these 32-
 
 # Then try building LinuxTrack again
 ./configure --prefix=/usr/local/local --enable-ltr-32lib-on-x64
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 ```
 
@@ -1245,7 +1297,7 @@ LinuxTrack is an open-source project that welcomes contributions:
 git clone <repository-url>
 cd linuxtrackx-ir
 ./configure --prefix=/usr/local/local --enable-debug
-export PATH="/usr/lib64/qt5/bin:$PATH"  #(This command is options and may be needed)
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
 make -j$(nproc)
 ```
 
