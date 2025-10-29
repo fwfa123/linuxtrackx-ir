@@ -77,15 +77,36 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
         // Client mode: establish connection to existing server
         int socket_fd = ltr_int_connect_to_socket("/tmp/ltr_m_sock");
         if(socket_fd >= 0){
-          // In client mode, we don't need to spawn a server or set up pipes
-          // The server is already running and we just need to communicate with it
-          // Set up the communication state for client mode
-          com->state = RUNNING; // Server is already running, so we're ready
-          com->preparing_start = false; // Client mode doesn't prepare start
           close(socket_fd); // Close the test connection
-          // In client mode, we don't call ltr_wakeup() because we don't have a slave process
-          // The server is already running and we just need to connect to it
-          return mmm.fname;
+          // Master server is running, spawn slave process to connect to it
+          // The slave will receive pose data from master and write to shared memory
+          if(pipe(fd) < 0){
+            fd[0] = fd[1] = -1;
+          }
+          char *server = ltr_int_get_app_path("/ltr_server1");
+          if(cust_section == NULL){
+            cust_section = "Default";
+          }
+          char *section = ltr_int_my_strdup(cust_section);
+          ltr_int_sanitize_name(section);
+          snprintf(pid, sizeof(pid), "%lu", (unsigned long)getpid());
+          snprintf(pipe0, sizeof(pipe0), "%d", fd[0]);
+          snprintf(pipe1, sizeof(pipe1), "%d", fd[1]);
+          char *args[] = {server, section, mmm.fname, pid, pipe0, pipe1, NULL};
+          if(!ltr_int_fork_child(args, &is_child)){
+            com->state = err_NOT_INITIALIZED;
+            free(server);
+            free(section);
+            if(is_child){
+              exit(1);
+            }
+            return NULL;
+          }
+          free(server);
+          free(section);
+          close(fd[1]);
+          notify_pipe = fd[0];
+          fcntl(notify_pipe, F_SETFL, fcntl(notify_pipe, F_GETFL) | O_NONBLOCK);
         } else {
           com->state = err_NOT_INITIALIZED;
           return NULL;
