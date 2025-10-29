@@ -284,14 +284,14 @@ if XPLANE_PLUGIN
 pkglib_LTLIBRARIES += xlinuxtrack9.la
 if LTR32ON64
   pkglib_LTLIBRARIES += xlinuxtrack9_32.la
-  xlinuxtrack9_32_la_SOURCES = xlinuxtrack9.c linuxtrack.c linuxtrack.h
+  xlinuxtrack9_32_la_SOURCES = xlinuxtrack9.c linuxtrack.c linuxtrack.h utils.c utils.h
   xlinuxtrack9_32_la_CFLAGS = ${XPL_CPPFLAGS} $(SYSFLAGS) \
     -fPIC -m32 $(DARWINCFLAGS) ${AM_CFLAGS} $(LINUXFLAGS) ${XLINUXTRACK_CFLAGS}
   xlinuxtrack9_32_la_LDFLAGS = -module -shared -fPIC -m32 $(DARWINFLAGS) -dynamiclib \
     -export-symbols "${srcdir}/xlinuxtrack.sym" $(LINUXLDFLAGS) ${SLEOPARD_LDFLAG} ${XLINUXTRACK_LDFLAGS}
   xlinuxtrack9_32_la_LIBADD = -lm -ldl
 endif
-xlinuxtrack9_la_SOURCES = xlinuxtrack9.c linuxtrack.c linuxtrack.h
+xlinuxtrack9_la_SOURCES = xlinuxtrack9.c linuxtrack.c linuxtrack.h utils.c utils.h
 xlinuxtrack9_la_CFLAGS = ${XPL_CPPFLAGS} $(SYSFLAGS) \
   -fPIC $(DARWINCFLAGS) ${AM_CFLAGS} $(LINUXFLAGS) ${XLINUXTRACK_CFLAGS}
 xlinuxtrack9_la_LDFLAGS = -module -shared -fPIC $(DARWINFLAGS) -dynamiclib \

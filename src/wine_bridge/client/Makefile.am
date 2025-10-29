@@ -25,10 +25,10 @@ SUFFIXES = .o .cpp .c .rc 64.o
 	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 .cpp64.o :
-	$(CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CXX) -c $(CXXFLAGS_PRE) $(CXXFLAGS) $(CPPFLAGS) -fPIC -o $@ $<
 
 .c64.o :
-	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -fPIC -o $@ $<
 
 .rc.o :
 	wrc -o $@ $(RCFLAGS) $<
@@ -45,10 +45,10 @@ vpath %.c @srcdir@/../..
 check_data.exe.so : check_data.o rest.o
 	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ $^
 
-NPClient.dll.so : NPClient.spec NPClient_main.o linuxtrack.o rest.o
+NPClient.dll.so : NPClient.spec NPClient_main.o linuxtrack.o utils.o rest.o
 	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared $^ -ldl
 
-NPClient64.dll.so : NPClient.spec NPClient_main64.o linuxtrack64.o rest64.o
+NPClient64.dll.so : NPClient.spec NPClient_main64.o linuxtrack64.o utils64.o rest64.o
 	winegcc $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra -g -o $@ -shared $^ -ldl
 
 check_data.o : check_data.c rest.h
@@ -60,6 +60,13 @@ NPClient_main64.o : NPClient_main.c NPClient_dll.h
 linuxtrack.o : linuxtrack.c config.h
 
 linuxtrack64.o : linuxtrack.c config.h
+	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -fPIC -o $@ $<
+
+utils.o : ../../utils.c ../../utils.h config.h
+	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
+
+utils64.o : ../../utils.c ../../utils.h config.h
+	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -fPIC -o $@ $<
 
 rest.o : rest.c rest.h config.h
 
