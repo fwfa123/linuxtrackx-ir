@@ -84,6 +84,18 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
             fd[0] = fd[1] = -1;
           }
           char *server = ltr_int_get_app_path("/ltr_server1");
+          if(server == NULL){
+            ltr_int_log_message("Client mode: Could not find ltr_server1 path!\n");
+            com->state = err_NOT_INITIALIZED;
+            return NULL;
+          }
+          // Verify the server executable exists and is executable before forking
+          if(access(server, F_OK | X_OK) != 0){
+            ltr_int_log_message("Client mode: ltr_server1 not found or not executable at: %s\n", server);
+            com->state = err_NOT_INITIALIZED;
+            free(server);
+            return NULL;
+          }
           if(cust_section == NULL){
             cust_section = "Default";
           }
@@ -93,7 +105,9 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
           snprintf(pipe0, sizeof(pipe0), "%d", fd[0]);
           snprintf(pipe1, sizeof(pipe1), "%d", fd[1]);
           char *args[] = {server, section, mmm.fname, pid, pipe0, pipe1, NULL};
+          ltr_int_log_message("Client mode: Spawning slave process: %s %s %s\n", server, section, mmm.fname);
           if(!ltr_int_fork_child(args, &is_child)){
+            ltr_int_log_message("Client mode: Failed to fork slave process!\n");
             com->state = err_NOT_INITIALIZED;
             free(server);
             free(section);

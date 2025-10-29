@@ -38,6 +38,19 @@ liblinuxtrack_la_SOURCES = \
 liblinuxtrack_la_LIBADD =
 liblinuxtrack_la_LDFLAGS = -export-symbols "${srcdir}/liblt.sym"
 
+# 32-bit version of liblinuxtrack for Wine bridge compatibility
+if LTR32ON64
+pkglib_LTLIBRARIES += liblinuxtrack32.la
+liblinuxtrack32_la_SOURCES = \
+  ltlib.c ltlib.h \
+  utils.c utils.h \
+  ipc_utils.c ipc_utils.h \
+  linuxtrack.h
+liblinuxtrack32_la_CFLAGS = -m32 $(AM_CFLAGS) $(LINUXFLAGS)
+liblinuxtrack32_la_LDFLAGS = -m32 -export-symbols "${srcdir}/liblt.sym" $(LINUXLDLFAGS)
+liblinuxtrack32_la_LIBADD =
+endif
+
 # libltr: main engine
 libltr_la_SOURCES = \
   cal.c cal.h \
@@ -248,6 +261,7 @@ install-exec-hook:
 	  echo "ℹ️  Staging installation - ldconfig will be run by package manager"; \
 	  echo "✅ Library configuration files installed to staging directory"; \
 	fi
+	@$(MAKE) install-32bit-lib || true
 
 # Clean up library configuration on uninstall
 uninstall-hook:
@@ -258,12 +272,51 @@ uninstall-hook:
 	    ldconfig; \
 	  fi; \
 	fi
+	@$(MAKE) uninstall-32bit-lib || true
 else
 install-exec-hook:
 	@echo "ℹ️  ldconfig configuration disabled - package manager will handle library paths"
+	@$(MAKE) install-32bit-lib || true
 
 uninstall-hook:
 	@echo "ℹ️  ldconfig configuration disabled - no cleanup needed"
+	@$(MAKE) uninstall-32bit-lib || true
+endif
+
+# Install 32-bit library to multiarch directory if LIB32DIR is set
+# This follows the approach documented in README.md for Debian/Ubuntu with --with-lib32-dir=i386-linux-gnu
+if LTR32ON64
+.PHONY: install-32bit-lib uninstall-32bit-lib
+
+install-32bit-lib:
+	@if [ -n "$(LIB32DIR)" ] && [ "$(LIB32DIR)" != "lib32" ]; then \
+	  echo "Installing 32-bit liblinuxtrack to multiarch directory: $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack/"; \
+	  mkdir -p $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack; \
+	  if [ -f .libs/liblinuxtrack32.so.0.0.0 ]; then \
+	    cp -f .libs/liblinuxtrack32.so.0.0.0 $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack/liblinuxtrack.so.0.0.0; \
+	    cd $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack && \
+	    ln -sf liblinuxtrack.so.0.0.0 liblinuxtrack.so.0 && \
+	    ln -sf liblinuxtrack.so.0 liblinuxtrack.so; \
+	    echo "✅ 32-bit library installed to $(prefix)/lib/$(LIB32DIR)/linuxtrack/liblinuxtrack.so.0"; \
+	  else \
+	    echo "⚠️  32-bit library not found at .libs/liblinuxtrack32.so.0.0.0"; \
+	  fi; \
+	  echo "ℹ️  Removing 32-bit library from standard location to avoid conflicts..."; \
+	  rm -f $(DESTDIR)$(pkglibdir)/liblinuxtrack32.so*; \
+	else \
+	  echo "ℹ️  LIB32DIR not set - 32-bit library installed to standard location: $(pkglibdir)"; \
+	  echo "ℹ️  For Debian/Ubuntu multiarch support, use: --with-lib32-dir=i386-linux-gnu"; \
+	fi
+
+uninstall-32bit-lib:
+	@if [ -n "$(LIB32DIR)" ] && [ "$(LIB32DIR)" != "lib32" ]; then \
+	  echo "Removing 32-bit liblinuxtrack from multiarch directory..."; \
+	  rm -f $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack/liblinuxtrack.so.0.0.0; \
+	  rm -f $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack/liblinuxtrack.so.0; \
+	  rm -f $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack/liblinuxtrack.so; \
+	  rmdir $(DESTDIR)$(prefix)/lib/$(LIB32DIR)/linuxtrack 2>/dev/null || true; \
+	  rmdir $(DESTDIR)$(prefix)/lib/$(LIB32DIR) 2>/dev/null || true; \
+	fi
 endif
 
 if DARWIN
