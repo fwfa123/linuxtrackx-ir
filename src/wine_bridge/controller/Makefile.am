@@ -35,13 +35,16 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-Controller.exe.so : main.o resources.o dinput.o linuxtrack.o
+Controller.exe.so : main.o resources.o dinput.o linuxtrack.o utils.o
 	winegcc -o Controller.exe.so $(LDFLAGS) -m32 \
            $^ -ldxguid -ldinput -ldinput8 -lstdc++ -lshell32
 
 main.o : main.cpp @top_builddir@/config.h
 
 linuxtrack.o : linuxtrack.c linuxtrack.h config.h 
+
+utils.o : ../../utils.c ../../utils.h config.h
+	$(WINE_CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 dinput.o : dinput.cpp kbi_interface.h
 
