@@ -30,12 +30,15 @@ vpath %.h @top_builddir@
 vpath %.c @srcdir@
 vpath %.c @srcdir@/../..
 
-FreeTrackClient.dll.so : FreeTrackClient.spec FreeTrackClient_main.o linuxtrack.o
+FreeTrackClient.dll.so : FreeTrackClient.spec FreeTrackClient_main.o linuxtrack.o utils.o
 	winegcc $(WINE_LIBS) $(LDFLAGS) -m32 -Wall -Wextra -g -o $@ -shared $^ -ldl
 
 FreeTrackClient_main.o : FreeTrackClient_main.c FreeTrackClient_dll.h
 
 linuxtrack.o : linuxtrack.c linuxtrack.h
+
+utils.o : ../../utils.c ../../utils.h
+	$(CC) -c $(CFLAGS_PRE) $(CFLAGS) $(CPPFLAGS) -m32 -o $@ $<
 
 
 clean-local: clean-local-check

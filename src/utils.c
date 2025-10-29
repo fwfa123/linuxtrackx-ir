@@ -339,7 +339,59 @@ char *ltr_int_get_lib_path(const char *libname)
   free(lib_path1);
   return lib_path;
 #else
-  // On Linux, just return the library name with .so.0 so dlopen uses the system path
+  // On Linux, try to construct full path for file operations (like installer)
+  // First try to get prefix from config and construct path
+  char *lib_dir = ltr_int_get_app_path("/lib/linuxtrack/");
+  if(lib_dir != NULL){
+    // If prefix was something like "/usr/local/bin", normalize it
+    size_t dir_len = strlen(lib_dir);
+    if(dir_len > 4 && strcmp(lib_dir + dir_len - 4, "/bin") == 0){
+      // Replace /bin with /lib/linuxtrack/
+      lib_dir[dir_len - 4] = '\0';
+      char *normalized = ltr_int_my_strcat(lib_dir, "/lib/linuxtrack/");
+      free(lib_dir);
+      lib_dir = normalized;
+    }
+    
+    char *lib_path1 = ltr_int_my_strcat(lib_dir, libname);
+    char *lib_path = ltr_int_my_strcat(lib_path1, LIB_SUFFIX);
+    free(lib_dir);
+    free(lib_path1);
+    
+    // Verify file exists
+    FILE *f = fopen(lib_path, "rb");
+    if(f != NULL){
+      fclose(f);
+      return lib_path;
+    }
+    // File doesn't exist at that path, free and try fallback
+    free(lib_path);
+  }
+  
+  // Fallback: try standard installation paths
+  const char *standard_paths[] = {
+    "/usr/local/lib/linuxtrack/",
+    "/opt/lib/linuxtrack/",
+    "/usr/lib/linuxtrack/",
+    "/usr/lib64/linuxtrack/",
+    NULL
+  };
+  
+  for(int i = 0; standard_paths[i] != NULL; i++){
+    size_t len = strlen(standard_paths[i]) + strlen(libname) + strlen(LIB_SUFFIX) + 1;
+    char *lib_path = (char *)malloc(len);
+    if(lib_path){
+      snprintf(lib_path, len, "%s%s%s", standard_paths[i], libname, LIB_SUFFIX);
+      FILE *f = fopen(lib_path, "rb");
+      if(f != NULL){
+        fclose(f);
+        return lib_path;
+      }
+      free(lib_path);
+    }
+  }
+  
+  // Final fallback: return just library name for dlopen compatibility (runtime loading)
   size_t len = strlen(libname) + strlen(LIB_SUFFIX) + 1;
   char *lib_path = (char *)malloc(len);
   if (lib_path) {
