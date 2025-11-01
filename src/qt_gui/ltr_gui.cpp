@@ -1034,7 +1034,6 @@ QString LinuxtrackGui::getSystemInformation()
     info += getMemoryInfo();
     info += getGraphicsInfo();
     info += getLinuxTrackInfo();
-    info += getDeviceSupportInfo();
     
     return info;
 }
@@ -1163,12 +1162,20 @@ QString LinuxtrackGui::getMemoryInfo()
             if (line.startsWith(QStringLiteral("MemTotal:"))) {
                 QStringList parts = line.split(QChar::fromLatin1(':'));
                 if (parts.size() > 1) {
-                    totalRam = parts.last().trimmed().toULongLong();
+                    QString valuePart = parts.last().trimmed();
+                    QStringList valueTokens = valuePart.split(QChar::fromLatin1(' '), Qt::SkipEmptyParts);
+                    if (!valueTokens.isEmpty()) {
+                        totalRam = valueTokens.first().toULongLong();
+                    }
                 }
             } else if (line.startsWith(QStringLiteral("SwapTotal:"))) {
                 QStringList parts = line.split(QChar::fromLatin1(':'));
                 if (parts.size() > 1) {
-                    totalSwap = parts.last().trimmed().toULongLong();
+                    QString valuePart = parts.last().trimmed();
+                    QStringList valueTokens = valuePart.split(QChar::fromLatin1(' '), Qt::SkipEmptyParts);
+                    if (!valueTokens.isEmpty()) {
+                        totalSwap = valueTokens.first().toULongLong();
+                    }
                 }
             }
         }
@@ -1261,53 +1268,60 @@ QString LinuxtrackGui::getLinuxTrackInfo()
 {
     QString info = QStringLiteral("=== LinuxTrack Components ===\n");
     
-    // Check LinuxTrack support status
+    // Check LinuxTrack support status from actual build configuration
+#if defined(WEBCAM_SUPPORT) && WEBCAM_SUPPORT
     info += QStringLiteral("Webcam support: YES\n");
-    info += QStringLiteral("Wiimote support: YES\n");
-    info += QStringLiteral("TrackIR support: YES\n");
-    info += QStringLiteral("Facetracker support: NO\n");
-    info += QStringLiteral("XPlane plugin: YES\n");
-    info += QStringLiteral("Mickey: YES\n");
-    info += QStringLiteral("Wine plugin: YES\n");
-    info += QStringLiteral("OSC support: YES\n");
-    info += QStringLiteral("PIE support for native builds: enabled (security feature)\n");
-    
-    info += QStringLiteral("\n");
-    return info;
-}
+#else
+    info += QStringLiteral("Webcam support: NO\n");
+#endif
 
-QString LinuxtrackGui::getDeviceSupportInfo()
-{
-    QString info = QStringLiteral("=== Device Support ===\n");
-    
-    // Check for USB devices
-    QProcess lsusb;
-    lsusb.start(QStringLiteral("lsusb"), QStringList());
-    lsusb.waitForFinished();
-    QString usbOutput = QString::fromUtf8(lsusb.readAllStandardOutput());
-    
-    if (!usbOutput.isEmpty()) {
-        QStringList lines = usbOutput.split(QChar::fromLatin1('\n'));
-        for (const QString &line : lines) {
-            if (line.contains(QStringLiteral("NaturalPoint")) || line.contains(QStringLiteral("TrackIR"))) {
-                info += QStringLiteral("TrackIR Device: %1\n").arg(line.trimmed());
-            }
-        }
-    }
-    
-    // Check for webcam devices
-    QProcess lsVideo;
-    lsVideo.start(QStringLiteral("ls"), QStringList() << QStringLiteral("/dev/video*"));
-    lsVideo.waitForFinished();
-    QString videoOutput = QString::fromUtf8(lsVideo.readAllStandardOutput());
-    
-    if (!videoOutput.isEmpty()) {
-        QStringList devices = videoOutput.split(QChar::fromLatin1('\n'), Qt::SkipEmptyParts);
-        info += QStringLiteral("Webcam devices: %1\n").arg(devices.size());
-        for (const QString &device : devices) {
-            info += QStringLiteral("  %1\n").arg(device.trimmed());
-        }
-    }
+#if defined(WIIMOTE_SUPPORT) && WIIMOTE_SUPPORT
+    info += QStringLiteral("Wiimote support: YES\n");
+#else
+    info += QStringLiteral("Wiimote support: NO\n");
+#endif
+
+#if defined(TRACKIR_SUPPORT) && TRACKIR_SUPPORT
+    info += QStringLiteral("TrackIR support: YES\n");
+#else
+    info += QStringLiteral("TrackIR support: NO\n");
+#endif
+
+#if defined(FACE_TRACKER_SUPPORT) && FACE_TRACKER_SUPPORT
+    info += QStringLiteral("Facetracker support: YES\n");
+#else
+    info += QStringLiteral("Facetracker support: NO\n");
+#endif
+
+#if defined(XPLANE_PLUGIN_SUPPORT) && XPLANE_PLUGIN_SUPPORT
+    info += QStringLiteral("XPlane plugin: YES\n");
+#else
+    info += QStringLiteral("XPlane plugin: NO\n");
+#endif
+
+#if defined(MICKEY_SUPPORT) && MICKEY_SUPPORT
+    info += QStringLiteral("Mickey: YES\n");
+#else
+    info += QStringLiteral("Mickey: NO\n");
+#endif
+
+#if defined(WINE_PLUGIN_SUPPORT) && WINE_PLUGIN_SUPPORT
+    info += QStringLiteral("Wine plugin: YES\n");
+#else
+    info += QStringLiteral("Wine plugin: NO\n");
+#endif
+
+#if defined(OSC_SUPPORT) && OSC_SUPPORT
+    info += QStringLiteral("OSC support: YES\n");
+#else
+    info += QStringLiteral("OSC support: NO\n");
+#endif
+
+#if defined(PIE_SUPPORT) && PIE_SUPPORT
+    info += QStringLiteral("PIE support for native builds: enabled (security feature)\n");
+#else
+    info += QStringLiteral("PIE support for native builds: disabled\n");
+#endif
     
     info += QStringLiteral("\n");
     return info;
