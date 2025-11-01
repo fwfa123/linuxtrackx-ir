@@ -561,7 +561,26 @@ AS_IF([test "x$enable_webcam" = xyes],
     [AS_IF([(test "x$with_libv4l2" = xyes) || (test "x$with_darwin" = xyes)],
         [webcam_support=yes], [webcam_support=no])],
     [webcam_support=no])
-AC_DEFINE_UNQUOTED([WEBCAM_SUPPORT], [${webcam_support}], [Webcam support enabled])
+# Convert yes/no values to 1/0 for C preprocessor
+AS_IF([test "x$webcam_support" = xyes], [webcam_support_num=1], [webcam_support_num=0])
+AS_IF([test "x$trackir_support" = xyes], [trackir_support_num=1], [trackir_support_num=0])
+AS_IF([test "x$wiimote_support" = xyes], [wiimote_support_num=1], [wiimote_support_num=0])
+AS_IF([test "x$build_face_tracker" = xyes], [face_tracker_support_num=1], [face_tracker_support_num=0])
+AS_IF([test "x$build_xplane_plugin" = xyes], [xplane_plugin_support_num=1], [xplane_plugin_support_num=0])
+AS_IF([test "x$build_mickey" = xyes], [mickey_support_num=1], [mickey_support_num=0])
+AS_IF([test "x$build_wine_plugin" = xyes], [wine_plugin_support_num=1], [wine_plugin_support_num=0])
+AS_IF([test "x$build_osc_support" = xyes], [osc_support_num=1], [osc_support_num=0])
+AS_IF([test "x$enable_pie" = xyes], [pie_support_num=1], [pie_support_num=0])
+
+AC_DEFINE_UNQUOTED([WEBCAM_SUPPORT], [${webcam_support_num}], [Webcam support enabled])
+AC_DEFINE_UNQUOTED([TRACKIR_SUPPORT], [${trackir_support_num}], [TrackIR support enabled])
+AC_DEFINE_UNQUOTED([WIIMOTE_SUPPORT], [${wiimote_support_num}], [Wiimote support enabled])
+AC_DEFINE_UNQUOTED([FACE_TRACKER_SUPPORT], [${face_tracker_support_num}], [Face tracker support enabled])
+AC_DEFINE_UNQUOTED([XPLANE_PLUGIN_SUPPORT], [${xplane_plugin_support_num}], [X-Plane plugin enabled])
+AC_DEFINE_UNQUOTED([MICKEY_SUPPORT], [${mickey_support_num}], [Mickey support enabled])
+AC_DEFINE_UNQUOTED([WINE_PLUGIN_SUPPORT], [${wine_plugin_support_num}], [Wine plugin enabled])
+AC_DEFINE_UNQUOTED([OSC_SUPPORT], [${osc_support_num}], [OSC support enabled])
+AC_DEFINE_UNQUOTED([PIE_SUPPORT], [${pie_support_num}], [PIE support enabled])
 
 # Check conditions for building components
 AM_CONDITIONAL(XPLANE_PLUGIN, [test x$build_xplane_plugin = xyes])
