@@ -97,7 +97,6 @@ class LinuxtrackGui : public QMainWindow
   QString getMemoryInfo();
   QString getGraphicsInfo();
   QString getLinuxTrackInfo();
-  QString getDeviceSupportInfo();
   
   // Docking slots
   void dockTrackingWindow();
