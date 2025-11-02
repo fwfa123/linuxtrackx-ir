@@ -8,113 +8,126 @@
 </head>
 <body>
 <h1>X-Plane plug-in setup</h1>
-When you have the X-Plane plug-in installed according to the <A href="misc.htm#XplInstall">X-Plane plug-in 
-installation</A>, a short setup is needed in order to use it - keys or joystick buttons have to be bound 
+When you have the X-Plane plug-in installed according to the <A href="gaming_tab.htm">X-Plane plug-in 
+installation</A>, a short setup is needed in order to use it - keyboard keys have to be bound 
 in order to start, stop, recenter and pause the
 tracking. Please note, that the setup of tracking parameters (sensitivities, ...) is done in the Linuxtrack GUI, 
 X-Plane plug-in doesn't have any means to do that.
-
-<h1>Joystick buttons setup</h1>
-Joystick buttons are setup using Buttons : Adv pane in the Joystick &amp; Equipment window, that is accessible 
-through Settings / Joystick, Keys &amp; Equipment menu in X-Plane.
-
-<table>
-<tr>
-<td>
-<img src="JoyButtonsSetup1.png" alt="Joystick button setup dialog.">
-</td>
-</tr>
-</table>
 <p>
-Press the desired joystick button, then check the check-box next to the tabs (under the mouse pointer 
-in the screen-shot above) and the following dialog will appear.
+<strong>Note:</strong> For X-Plane 12.0 with the latest SDK installed, there is no need for the PilotView plugin. 
+Linuxtrack works directly with X-Plane's native head tracking interface.
+
+<h1>Before You Begin</h1>
+
+<h2>Start Linuxtrack First</h2>
+<p>
+Before launching X-Plane, you should open the Linuxtrack GUI and start the tracking server. This ensures that 
+the tracking daemon is running and ready when the X-Plane plugin loads. Verify that tracking is working 
+properly in the Linuxtrack interface before starting X-Plane.
+</p>
+
+<h2>Disable TrackIR in X-Plane</h2>
+<p>
+X-Plane has built-in TrackIR support that must be disabled for Linuxtrack to work properly. To disable it:
+</p>
+<ol>
+  <li>Launch X-Plane and navigate to <strong>Settings</strong></li>
+  <li>Click on the <strong>Graphics</strong> tab</li>
+  <li>Scroll down to the <strong>Visual Settings</strong> section</li>
+  <li>Uncheck <strong>"Enable TrackIR &amp; TrackHat view tracking in 3-D cockpit"</strong></li>
+</ol>
+
 <table>
 <tr>
 <td>
-<img src="JoyButtonsSetup2.png" alt="Joystick button sectionopen dialog.">
+<img src="Xplane_1-Settings.png" alt="X-Plane Settings menu">
 </td>
 </tr>
 </table>
 
-Click the combo-box in the upper part of the dialog and select X System folder.
 <table>
 <tr>
 <td>
-<img src="JoyButtonsSetup3.png" alt="Linuxtrack section selected.">
-</td>
-</tr>
-</table>
-Select the linuxtrack line in the lower part of the dialog. 
-<table>
-<tr>
-<td>
-<img src="JoyButtonsSetup4.png" alt="Command selection.">
-</td>
-</tr>
-</table>
-Finally select the desired command (ltr_run, ltr_pause or ltr_recenter).
-<table>
-<tr>
-<td>
-<img src="JoyButtonsSetup5.png" alt="Joystick button set.">
+<img src="Xplane_2-Graphics_Tab.png" alt="Graphics tab with TrackIR option unchecked">
 </td>
 </tr>
 </table>
 
-Repeat those steps for other actions (pause, recenter) and when done, just close the window and now you 
-can control Linuxtrack using the new bindings.
-
-
+<p>
+If this option is enabled, it will interfere with Linuxtrack's head tracking. Make sure it is unchecked before 
+proceeding with the setup.
+</p>
 
 <h1>Keyboard bindings setup</h1>
 
-Keyboard bindings are setup pretty much in the same way - use Keys pane in the Joystick &amp; Equipment window, 
-that is accessible through Settings / Joystick, Keys &amp; Equipment menu.
+<p>
+In X-Plane 12, keyboard bindings are configured through the Keyboard tab in Settings. Follow these steps to 
+assign keys to Linuxtrack commands:
+</p>
+
+<ol>
+  <li>Navigate to <strong>Settings</strong> → <strong>Keyboard</strong> tab</li>
+  <li>Use the search field or scroll down to find the <strong>linuxtrack</strong> section in the command list</li>
+  <li>Expand the linuxtrack section if it's collapsed (click the "-" or "+" icon)</li>
+  <li>Click the "+" button next to the command you want to assign</li>
+  <li>Press the key or key combination you want to use for that command</li>
+</ol>
+
 <table>
 <tr>
 <td>
-<img src="KeysSetup1.png" alt="Keyboard binding setup.">
+<img src="Xplane_3-Keyboard_Tab.png" alt="Keyboard tab showing linuxtrack commands">
 </td>
 </tr>
 </table>
-When you create or select a key binding, use the check-box next to the tabs and continue the same way as for 
-joystick bindings.
+
 <p>
-You can also press Add new key assignment button in the middle bottom, that will create new key position - 
-just press the newly created button and then press the key (or key combination) that you want to assign to it. 
-Then again select the desired binding.
-
-<h1>Pilot View interface</h1>
-
-Recent Linuxtrack versions contain an interface, allowing Linuxtrack's X-Plane plug-in to communicate with 
-Pilot View plug-in(version 1.7+) by Sandy Barbour.
-<p>
-To enable the Pilot View interface, open the Pilot View.ini file (located in Resources/plugins/Pilot View 
-directory in your X-Plane installation folder) in your favorite text editor and add a 
-line "EnableExternalData = 1" to the CONFIG section, so the result reads like this:
-
-<p><b>
-[CONFIG]<br>
-EnableExternalData = 1<br>
-AutoStart = 0<br>
-EngineVibration = 1<br>
-...<br>
-</b></p>
-<p>
-When done, start X-Plane and start the tracking - now, when Pilot View plug-in is enabled, the tracking should work.
-
-<h2>Troubleshooting Pilot View interface</h2>
-
-Should you encounter any problems, please follow these steps:
+<strong>Critical Commands:</strong> The most important commands to assign are:
+</p>
 <ul>
-    <li>Verify you have Pilot View 1.7 or higher (see the title-bar of its Config window)</li>
-    <li>If you installed Pilot View plug-in before May 19th 2013, please download the fresh version and try 
-    again (don't forget the required modification of the .ini file!)</li>
-    <li>If you didn't reinstall the Linuxtrack plug-in, please do so in the ltr_gui (Misc. pane)</li>
-    <li>In the plug-ins menu inside X-Plane, open Linuxtrack and Linuxtrack Setup menu - 
-    there should be a line saying: "Pilot View plug-in found, channeling head-tracking data through it!". </li>
+  <li><strong>Start/stop tracking</strong> - Toggles head tracking on and off (most important)</li>
+  <li><strong>Recenter tracking</strong> - Resets the tracking center position (most important)</li>
 </ul>
-Should you encounter any problems getting this to work, please contact me first, so I can determine where 
-the problem is.
+
+<p>
+<strong>Optional Commands:</strong> You may also want to assign:
+</p>
+<ul>
+  <li><strong>Pause tracking</strong> - Temporarily pauses tracking</li>
+  <li><strong>Start tracking</strong> - Starts tracking (if you prefer separate start/stop)</li>
+  <li><strong>Stop tracking</strong> - Stops tracking (if you prefer separate start/stop)</li>
+</ul>
+
+<p>
+When you're done assigning keys, click <strong>Done</strong> to save your changes and close the Settings window.
+</p>
+
+<p>
+<strong>Important:</strong> After starting a flight in X-Plane, you will most likely need to use your assigned 
+hotkey to start tracking manually. The plugin does not always start tracking automatically.
+</p>
+
+<h1>Complete Setup Workflow</h1>
+
+<p>
+For a successful Linuxtrack setup in X-Plane 12, follow these steps in order:
+</p>
+
+<ol>
+  <li><strong>Start Linuxtrack:</strong> Open the Linuxtrack GUI application and start the tracking server. 
+      Verify that head tracking is working properly before proceeding.</li>
+  <li><strong>Launch X-Plane:</strong> Start X-Plane 12</li>
+  <li><strong>Disable TrackIR:</strong> Go to Settings → Graphics tab → Uncheck "Enable TrackIR &amp; TrackHat 
+      view tracking in 3-D cockpit"</li>
+  <li><strong>Configure Keyboard:</strong> Go to Settings → Keyboard tab → Find the "linuxtrack" section → 
+      Assign keys to "Start/stop tracking" and "Recenter tracking" commands (at minimum)</li>
+  <li><strong>Start a Flight:</strong> Begin a flight in X-Plane</li>
+  <li><strong>Activate Tracking:</strong> Use your assigned hotkey to start tracking (if it doesn't start automatically)</li>
+</ol>
+
+<p>
+Once setup is complete, you can control head tracking using your assigned keyboard shortcuts during flight. 
+Use the recenter command whenever you need to reset your head position.
+</p>
 
 
