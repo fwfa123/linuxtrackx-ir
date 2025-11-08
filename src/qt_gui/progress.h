@@ -3,6 +3,7 @@
 
 #include "ui_progress.h"
 #include <QDialog>
+#include <QIcon>
 
 class Progress: public QDialog
 {
