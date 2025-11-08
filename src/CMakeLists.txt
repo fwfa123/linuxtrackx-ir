@@ -514,6 +514,36 @@ if(WIIMOTE_SUPPORT)
     )
 endif()
 
+# Install application icons
+# Install PNG icon (48x48 is standard for desktop entries)
+install(FILES
+    linuxtrack.png
+    DESTINATION share/icons/hicolor/48x48/apps
+)
+
+# Install SVG icon (scalable)
+if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/linuxtrack.svg)
+    install(FILES
+        linuxtrack.svg
+        DESTINATION share/icons/hicolor/scalable/apps
+    )
+endif()
+
+# Install Wiimote icon if Wiimote support is enabled
+if(WIIMOTE_SUPPORT AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/linuxtrack-wii.png)
+    install(FILES
+        linuxtrack-wii.png
+        DESTINATION share/icons/hicolor/48x48/apps
+    )
+endif()
+
+if(WIIMOTE_SUPPORT AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/linuxtrack-wii.svg)
+    install(FILES
+        linuxtrack-wii.svg
+        DESTINATION share/icons/hicolor/scalable/apps
+    )
+endif()
+
 # Build Qt GUI after core libraries
 if(TARGET ltr_gui_qmake)
     add_dependencies(ltr_gui_qmake ltr tir)
