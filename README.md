@@ -81,6 +81,16 @@ cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_WEBCAM=ON -DENABLE_LTR_32LIB
 
 # Standard user installation
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_WEBCAM=ON -DENABLE_LTR_32LIB_ON_X64=ON
+
+# Configure with CMake (X-Plane SDK path)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+
+# Build and install for any of the examples shown above
+cmake --build . -j$(nproc)
+sudo cmake --install .
+# Later, to uninstall
+cd build
+sudo make uninstall
 ```
 
 ---
@@ -109,6 +119,7 @@ sudo apt install libmxml-dev
 sudo apt install libx11-dev libxrandr-dev
 sudo apt install libgl1-mesa-dev libglu1-mesa-dev
 sudo apt install libqt5opengl5-dev
+sudo apt install sqlite3  # Required for Qt help system path fixes
 ```
 
 #### Arch Linux:
@@ -119,6 +130,7 @@ sudo pacman -S bison flex
 sudo pacman -S qt5-base qt5-tools
 sudo pacman -S libmxml
 sudo pacman -S mesa glu
+sudo pacman -S sqlite  # Required for Qt help system path fixes
 ```
 
 #### Fedora/RHEL:
@@ -130,6 +142,7 @@ sudo dnf install bison flex
 sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
 sudo dnf install libmxml-devel
 sudo dnf install mesa-libGL-devel mesa-libGLU-devel
+sudo dnf install sqlite  # Required for Qt help system path fixes
 ```
 
 #### **Fedora/RHEL Qt5 Tools PATH Fix (IMPORTANT)**
@@ -599,6 +612,7 @@ sudo apt install wine wine-staging wine64 wine64-tools wine32 wine32-tools libwi
 sudo apt install gcc-multilib libc6-dev-i386
 sudo apt install libv4l-dev v4l-utils libopencv-dev
 sudo apt install liblo-dev libcwiid-dev
+sudo apt install sqlite3  # Required for Qt help system path fixes
 ```
 
 ### Arch Linux (Complete Build):
@@ -608,6 +622,7 @@ sudo pacman -S libusb zlib bison flex qt5-base qt5-tools libmxml
 sudo pacman -S wine-staging wine32 nsis
 sudo pacman -S lib32-glibc lib32-gcc-libs
 sudo pacman -S libv4l v4l-utils opencv liblo libcwiid
+sudo pacman -S sqlite  # Required for Qt help system path fixes
 ```
 
 ### Fedora/RHEL (Complete Build):
@@ -619,6 +634,7 @@ sudo dnf install qt5-qtbase-devel qt5-qmake libmxml-devel
 sudo dnf install wine-core wine-tools wine-core.i686 wine-tools.i686 nsis
 sudo dnf install glibc-devel.i686 gcc.i686
 sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
+sudo dnf install sqlite  # Required for Qt help system path fixes
 ```
 
 **Note**: For complete builds with all features, use:
