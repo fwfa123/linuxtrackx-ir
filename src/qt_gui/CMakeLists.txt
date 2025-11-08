@@ -15,9 +15,9 @@ add_custom_target(ltr_gui_qmake ALL
     COMMAND ${QMAKE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.pro LIBDIR=${CMAKE_BINARY_DIR}/src -o ${QMAKE_MAKEFILE}
     COMMAND ${CMAKE_MAKE_PROGRAM} -f ${QMAKE_MAKEFILE}
     # Fix help.qhc path after generation (before installation)
-    COMMAND ${CMAKE_COMMAND} -E echo "Fixing help.qhc path reference..."
-    COMMAND ${CMAKE_COMMAND} -E chmod u+w ${CMAKE_CURRENT_BINARY_DIR}/help.qhc || true
-    COMMAND ${CMAKE_COMMAND} -DHELP_QHC_FILE="${CMAKE_CURRENT_BINARY_DIR}/help.qhc" -DHELP_QCH_FILE="${CMAKE_CURRENT_BINARY_DIR}/help.qch" -P "${CMAKE_SOURCE_DIR}/cmake/fix_help_qhc.cmake" || ${CMAKE_COMMAND} -E echo "Warning: Could not fix help.qhc path"
+    # Make help.qhc writable using chmod (file should already be writable, but ensure it)
+    COMMAND chmod u+w ${CMAKE_CURRENT_BINARY_DIR}/help.qhc
+    COMMAND ${CMAKE_COMMAND} -DHELP_QHC_FILE="${CMAKE_CURRENT_BINARY_DIR}/help.qhc" -DHELP_QCH_FILE="${CMAKE_CURRENT_BINARY_DIR}/help.qch" -P "${CMAKE_SOURCE_DIR}/cmake/fix_help_qhc.cmake"
     COMMENT "Building Qt GUI with qmake and fixing help paths"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
