@@ -10,7 +10,7 @@ find_program(QMAKE_EXECUTABLE
 # Build Qt GUI using qmake
 set(QMAKE_MAKEFILE ${CMAKE_CURRENT_BINARY_DIR}/qmake_Makefile)
 
-add_custom_target(ltr_gui_qmake
+add_custom_target(ltr_gui_qmake ALL
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/config.h ${CMAKE_CURRENT_BINARY_DIR}/config.h
     COMMAND ${QMAKE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.pro LIBDIR=${CMAKE_BINARY_DIR}/src -o ${QMAKE_MAKEFILE}
     COMMAND ${CMAKE_MAKE_PROGRAM} -f ${QMAKE_MAKEFILE}
