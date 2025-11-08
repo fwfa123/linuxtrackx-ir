@@ -536,7 +536,7 @@ void TirFwExtractor::enableButtons(bool enable)
 
 
 // MFC42 Winetricks Extractor Implementation
-Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extractor(parent), cabextract(NULL), stage(0)
+Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extractor(parent), stage(0), cabextract(NULL)
 {
   cabextract = new QProcess(this);
   QObject::connect(cabextract, SIGNAL(finished(int, QProcess::ExitStatus)),

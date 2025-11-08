@@ -1,0 +1,56 @@
+# Uninstall script for CMake
+# This file is generated from cmake_uninstall.cmake.in during CMake configuration
+
+if(NOT EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: '@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt'")
+    message(FATAL_ERROR "This file is generated during installation. You must install before uninstalling.")
+endif()
+
+file(STRINGS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt" files)
+list(REVERSE files)
+
+message(STATUS "Uninstalling LinuxTrack...")
+
+foreach(file ${files})
+    if(EXISTS "${file}")
+        message(STATUS "Removing ${file}")
+        execute_process(
+            COMMAND "@CMAKE_COMMAND@" -E remove "${file}"
+            OUTPUT_VARIABLE rm_out
+            RESULT_VARIABLE rm_retval
+        )
+        if(NOT "${rm_retval}" STREQUAL "0")
+            message(FATAL_ERROR "Problem when removing ${file}")
+        endif()
+    else()
+        message(STATUS "File ${file} does not exist, skipping")
+    endif()
+endforeach()
+
+# Remove empty directories
+message(STATUS "Cleaning up empty directories...")
+execute_process(
+    COMMAND "@CMAKE_COMMAND@" -E remove_directory "@CMAKE_INSTALL_PREFIX@/lib/linuxtrack"
+    OUTPUT_QUIET
+    ERROR_QUIET
+    RESULT_VARIABLE rm_dir_retval
+)
+
+# Remove ld.so.conf.d file if it exists
+if(EXISTS "/etc/ld.so.conf.d/linuxtrack.conf")
+    message(STATUS "Removing /etc/ld.so.conf.d/linuxtrack.conf")
+    execute_process(
+        COMMAND "@CMAKE_COMMAND@" -E remove "/etc/ld.so.conf.d/linuxtrack.conf"
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    # Run ldconfig if we removed the conf file
+    execute_process(
+        COMMAND ldconfig
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+endif()
+
+message(STATUS "LinuxTrack uninstalled successfully")
+
