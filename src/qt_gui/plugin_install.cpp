@@ -17,13 +17,14 @@
 #endif
 
 PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):QObject(parent),
-  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc42(NULL), lutrisIntegration(NULL), steamIntegration(NULL),
-  isTirMfcOnlyInstallation(false),
+  state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc42(NULL),
   poem1(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem1.txt")),
   poem2(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem2.txt")),
   gameData(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/gamedata.txt")),
   mfc42u(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/mfc42u.dll")),
-  tirViews(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/TIRViews.dll"))
+  tirViews(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/TIRViews.dll")),
+  lutrisIntegration(NULL), steamIntegration(NULL),
+  isTirMfcOnlyInstallation(false)
 {
 #ifndef DARWIN
   // Check for wine installer in common locations and warn/disable legacy buttons if not found
