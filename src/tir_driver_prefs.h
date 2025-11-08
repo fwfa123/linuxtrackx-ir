@@ -30,6 +30,9 @@ bool ltr_int_tir_set_status_indication(bool ind);
 bool ltr_int_tir_set_use_grayscale(bool gs);
 bool ltr_int_tir_get_use_grayscale();
 
+int ltr_int_tir_get_video_on_delay();
+bool ltr_int_tir_set_video_on_delay(int val);
+
 #ifdef __cplusplus
 }
 #endif

@@ -94,6 +94,7 @@ bool TirPrefs::Activate(const QString &ID, bool init)
       PREF.addKeyVal(sec, QString::fromUtf8("Ir-led-brightness"), QString::number(7));
       PREF.addKeyVal(sec, QString::fromUtf8("Status-signals"), QString::fromUtf8("on"));
       PREF.addKeyVal(sec, QString::fromUtf8("Grayscale"), QString::fromUtf8("on"));
+      PREF.addKeyVal(sec, QString::fromUtf8("Video-on-delay"), QString::number(0));
       PREF.activateDevice(sec);
     }else{
       return false;

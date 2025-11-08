@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>527</width>
-    <height>102</height>
+    <height>130</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,6 +64,61 @@
           </property>
          </widget>
         </item>
+        <item row="2" column="0">
+         <widget class="QLabel" name="VideoOnDelayLabel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string>Video_on Delay Timing</string>
+          </property>
+         </widget>
+        </item>
+        <item row="2" column="1">
+         <layout class="QHBoxLayout" name="horizontalLayout_VideoOnDelay">
+          <item>
+           <widget class="QComboBox" name="VideoOnDelayMode">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="VideoOnDelayValue">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="visible">
+             <bool>false</bool>
+            </property>
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>500000</number>
+            </property>
+            <property name="singleStep">
+             <number>1000</number>
+            </property>
+            <property name="value">
+             <number>120000</number>
+            </property>
+            <property name="suffix">
+             <string> μs</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
         <item row="0" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
@@ -102,6 +157,8 @@
   <tabstop>DeviceSelector</tabstop>
   <tabstop>RefreshDevices</tabstop>
   <tabstop>CameraOrientation</tabstop>
+  <tabstop>VideoOnDelayMode</tabstop>
+  <tabstop>VideoOnDelayValue</tabstop>
  </tabstops>
  <resources/>
  <connections/>
