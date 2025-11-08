@@ -50,10 +50,10 @@ This directory contains user-facing guides for LinuxTrack Qt5 modernization, inc
 - Comprehensive package support
 
 **Installation Steps:**
-1. Install dependencies: `sudo apt install build-essential qtbase5-dev mingw-w64`
-2. Build system: `autoreconf -fiv && ./configure --prefix=/opt`
-3. Compile: `make -j$(nproc)`
-4. Install: `sudo make install`
+1. Install dependencies: `sudo apt install build-essential cmake qtbase5-dev mingw-w64`
+2. Build system: `mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt`
+3. Compile: `cmake --build . -j$(nproc)`
+4. Install: `sudo cmake --install .`
 
 #### Ubuntu/Debian
 **Key Requirements:**
@@ -69,7 +69,7 @@ This directory contains user-facing guides for LinuxTrack Qt5 modernization, inc
 #### Fedora/RHEL
 **Package Installation:**
 ```bash
-sudo dnf install gcc gcc-c++ make autoconf automake libtool
+sudo dnf install gcc gcc-c++ make cmake
 sudo dnf install qt5-qtbase-devel qt5-qttools-devel
 sudo dnf install mingw64-gcc mingw64-gcc-c++
 ```
@@ -77,7 +77,7 @@ sudo dnf install mingw64-gcc mingw64-gcc-c++
 #### Arch Linux
 **Package Installation:**
 ```bash
-sudo pacman -S --needed base-devel autoconf automake libtool
+sudo pacman -S --needed base-devel cmake
 sudo pacman -S qt5-base qt5-tools mingw-w64-gcc
 ```
 
