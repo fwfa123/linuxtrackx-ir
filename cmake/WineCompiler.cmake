@@ -127,11 +127,12 @@ function(add_wine_executable target)
     set(multiValueArgs SOURCES)
     cmake_parse_arguments(WINE_EXE "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
     
-    # Create object files
+    # Create object files - use target name prefix to avoid conflicts
     set(OBJECTS)
     foreach(src ${WINE_EXE_SOURCES})
         get_filename_component(src_name ${src} NAME_WE)
-        set(obj ${CMAKE_CURRENT_BINARY_DIR}/${src_name}.o)
+        # Prefix object file name with target to avoid conflicts when same source used in multiple targets
+        set(obj ${CMAKE_CURRENT_BINARY_DIR}/${target}_${src_name}.o)
         list(APPEND OBJECTS ${obj})
         wine_compile_source(${src} ${obj} FALSE)
     endforeach()
@@ -180,7 +181,8 @@ function(add_wine_library target)
     
     foreach(src ${WINE_LIB_SOURCES})
         get_filename_component(src_name ${src} NAME_WE)
-        set(obj ${CMAKE_CURRENT_BINARY_DIR}/${src_name}.o)
+        # Prefix object file name with target to avoid conflicts when same source used in multiple targets
+        set(obj ${CMAKE_CURRENT_BINARY_DIR}/${target}_${src_name}.o)
         list(APPEND OBJECTS ${obj})
         wine_compile_source(${src} ${obj} FALSE)
     endforeach()
@@ -234,7 +236,8 @@ function(add_wine64_library target)
     
     foreach(src ${WINE_LIB_SOURCES})
         get_filename_component(src_name ${src} NAME_WE)
-        set(obj ${CMAKE_CURRENT_BINARY_DIR}/${src_name}64.o)
+        # Prefix object file name with target to avoid conflicts when same source used in multiple targets
+        set(obj ${CMAKE_CURRENT_BINARY_DIR}/${target}64_${src_name}.o)
         list(APPEND OBJECTS ${obj})
         wine_compile_source(${src} ${obj} TRUE)
     endforeach()
