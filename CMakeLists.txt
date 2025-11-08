@@ -237,18 +237,34 @@ if(WINEGCC_EXECUTABLE AND WINEGPP_EXECUTABLE AND MAKENSIS_EXECUTABLE)
     set(WINE_PLUGIN TRUE)
     message(STATUS "Wine plugin: enabled")
     
-    # Check for wine64
-    find_program(WINE64_EXECUTABLE wine64)
-    if(WINE64_EXECUTABLE OR X64)
+    # Wine library paths detection (must be done before setting WINE64/WINE32)
+    include(cmake/FindWineLibs.cmake)
+    detect_wine_libs()
+    
+    # 64-bit components are ALWAYS built when WINE_PLUGIN is enabled (if 64-bit libs found)
+    # 64-bit Wine is easier to install, so we prioritize it
+    if(WINE64_FOUND)
         set(WINE64 TRUE)
-        message(STATUS "Wine64 plugin: enabled")
+        message(STATUS "Wine64 plugin: enabled (64-bit components will be built)")
     else()
         set(WINE64 FALSE)
-        message(STATUS "Wine64 plugin: disabled")
+        message(WARNING "Wine64 libraries not found - 64-bit components will not be built")
+        message(WARNING "Install wine64 package to enable 64-bit Wine bridge components")
+    endif()
+    
+    # 32-bit components are only built if 32-bit Wine libraries are available
+    if(WINE32_FOUND)
+        set(WINE32 TRUE)
+        message(STATUS "Wine32 plugin: enabled (32-bit components will be built)")
+    else()
+        set(WINE32 FALSE)
+        message(STATUS "Wine32 libraries not found - 32-bit components will not be built")
+        message(STATUS "Install wine32 package to enable 32-bit Wine bridge components")
     endif()
 else()
     set(WINE_PLUGIN FALSE)
     set(WINE64 FALSE)
+    set(WINE32 FALSE)
     message(STATUS "Wine plugin: disabled (winegcc/wineg++/makensis not found)")
 endif()
 
@@ -316,11 +332,7 @@ else()
     message(STATUS "Mickey support: disabled (uinput not found)")
 endif()
 
-# Wine library paths detection (multi-distribution support)
-if(WINE_PLUGIN)
-    include(cmake/FindWineLibs.cmake)
-    detect_wine_libs()
-endif()
+# Wine library paths detection is now done earlier when WINE_PLUGIN is enabled
 
 # Set config.h defines (matching config.h.in template)
 if(WEBCAM_SUPPORT)
