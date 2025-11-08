@@ -313,21 +313,20 @@ verify_wine32() {
 
 # Function to configure build
 configure_build() {
-    print_status "Configuring build..."
+    print_status "Configuring build with CMake..."
     
-    # Set environment variables for Arch Linux
-    export CFLAGS="-m32 -O2"
-    export CXXFLAGS="-m32 -O2"
-    export LDFLAGS="-m32"
+    # Create build directory
+    mkdir -p build
+    cd build
     
-    # Run autoreconf
-    autoreconf -fiv
+    # Configure with CMake
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt \
+        -DENABLE_LTR_32LIB_ON_X64=ON \
+        -DWINE_LIBS_PATH="/usr/lib32/wine/i386-unix" \
+        -DWINE64_LIBS_PATH="/usr/lib/wine/x86_64-unix"
     
-    # Configure with Arch Linux specific options
-    ./configure --prefix=/opt \
-                --enable-ltr-32lib-on-x64 \
-                --with-wine-libs="-L/usr/lib32/wine/i386-unix" \
-                --with-wine64-libs="-L/usr/lib/wine/x86_64-unix"
+    cd ..
     
     print_success "Build configured successfully"
 }
@@ -338,7 +337,9 @@ build_project() {
     
     # Build with all available cores
     local cores=$(nproc)
-    make -j$cores
+    cd build
+    cmake --build . -j$cores
+    cd ..
     
     print_success "Build completed successfully"
 }
@@ -347,7 +348,9 @@ build_project() {
 install_project() {
     print_status "Installing LinuxTrack X-IR..."
     
-    sudo make install
+    cd build
+    sudo cmake --install .
+    cd ..
     
     # Add user to plugdev group
     sudo usermod -a -G plugdev,input $USER
@@ -464,7 +467,7 @@ main() {
     done
     
     # Check if we're in the right directory
-    if [ ! -f "configure.ac" ]; then
+    if [ ! -f "CMakeLists.txt" ]; then
         print_error "This script must be run from the LinuxTrack X-IR source directory"
         exit 1
     fi
