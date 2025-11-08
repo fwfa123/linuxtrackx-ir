@@ -522,8 +522,14 @@ endif()
 # ldconfig integration
 if(ENABLE_LDCONFIG)
     install(CODE "
+        # Only create ld.so.conf.d file if DESTDIR is set (staging installation)
+        # For system installations, this should be handled by package managers
+        if(NOT \"\$ENV{DESTDIR}\" STREQUAL \"\")
+            # Staging installation - write to DESTDIR
         file(WRITE \"\$ENV{DESTDIR}/etc/ld.so.conf.d/linuxtrack.conf\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
-        if(\"\$ENV{DESTDIR}\" STREQUAL \"\")
+        else()
+            # System installation - only run ldconfig, don't create conf file
+            # Package managers should handle /etc/ld.so.conf.d/ files
             execute_process(
                 COMMAND ldconfig
                 OUTPUT_QUIET

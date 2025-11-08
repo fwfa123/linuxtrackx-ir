@@ -44,39 +44,43 @@ LinuxTrack uses a **basic build philosophy** where:
 **PIE (Position Independent Executable)** is enabled by default for security:
 - Randomizes memory addresses to prevent buffer overflow attacks
 - Required by modern Linux distributions
-- Only disable if you encounter compatibility issues: `./configure --disable-pie`
+- Only disable if you encounter compatibility issues: `cmake .. -DENABLE_PIE=OFF`
 
 ---
 
-## Configure Options
+## CMake Build Options
 
-LinuxTrack provides several configure options to customize your build:
+LinuxTrack uses CMake for building. Configure your build with CMake options:
 
 ### **Core Options**
-- `--prefix=PATH` - Installation prefix (default: `/opt`)
-- `--enable-webcam` - Enable webcam/face tracking support (disabled by default)
-- `--enable-ltr-32lib-on-x64` - Enable 32-bit library building for Wine compatibility
-- `--disable-pie` - Disable Position Independent Executable (not recommended)
+- `-DCMAKE_INSTALL_PREFIX=PATH` - Installation prefix (default: `/opt`)
+- `-DENABLE_WEBCAM=ON` - Enable webcam/face tracking support (disabled by default)
+- `-DENABLE_LTR_32LIB_ON_X64=ON` - Enable 32-bit library building for Wine compatibility (enabled by default)
+- `-DENABLE_PIE=OFF` - Disable Position Independent Executable (not recommended, enabled by default)
 
 ### **Library Configuration**
-- `--disable-ldconfig` - Disable automatic ldconfig configuration (useful for packaging systems)
+- `-DENABLE_LDCONFIG=OFF` - Disable automatic ldconfig configuration (useful for packaging systems)
 
-**When to use `--disable-ldconfig`:**
+**When to use `-DENABLE_LDCONFIG=OFF`:**
 - Building packages for distribution (RPM, DEB, etc.)
 - Staging installations with `DESTDIR`
 - Systems where package managers handle library paths automatically
 - Docker containers or chroot environments
+- AppImage builds (self-contained, no system-wide configuration needed)
 
 ### **Example Commands**
 ```bash
+# Standard CMake build process
+mkdir build && cd build
+
 # Minimal build for packaging
-./configure --prefix=/usr/local --disable-ldconfig
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LDCONFIG=OFF
 
 # Full build with manual library management
-./configure --prefix=/usr/local --enable-webcam --enable-ltr-32lib-on-x64 --disable-ldconfig
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_WEBCAM=ON -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_LDCONFIG=OFF
 
 # Standard user installation
-./configure --prefix=/usr/local --enable-webcam --enable-ltr-32lib-on-x64
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_WEBCAM=ON -DENABLE_LTR_32LIB_ON_X64=ON
 ```
 
 ---
@@ -97,7 +101,7 @@ LinuxTrack provides several configure options to customize your build:
 #### Debian/Ubuntu/MX Linux:
 ```bash
 sudo apt update
-sudo apt install build-essential autoconf automake libtool pkg-config
+sudo apt install build-essential cmake pkg-config
 sudo apt install libusb-1.0-0-dev zlib1g-dev
 sudo apt install bison flex
 sudo apt install qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev
@@ -109,7 +113,7 @@ sudo apt install libqt5opengl5-dev
 
 #### Arch Linux:
 ```bash
-sudo pacman -S base-devel autoconf automake libtool pkg-config
+sudo pacman -S base-devel cmake pkg-config
 sudo pacman -S libusb zlib
 sudo pacman -S bison flex
 sudo pacman -S qt5-base qt5-tools
@@ -120,7 +124,7 @@ sudo pacman -S mesa glu
 #### Fedora/RHEL:
 ```bash
 sudo dnf groupinstall "Development Tools"
-sudo dnf install autoconf automake libtool pkg-config
+sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel
 sudo dnf install bison flex
 sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
@@ -147,28 +151,29 @@ source ~/.bashrc
 which qhelpgenerator qmake moc
 # Should show: /usr/lib64/qt5/bin/qhelpgenerator, etc.
 ```
-### Configure Command
-```bash
-autoreconf -fiv
-./configure --prefix=/usr/local
-```
-
-**Note**: Webcam support is disabled by default in minimal builds. To enable webcam support, add `--enable-webcam` to the configure command.
-
 ### Build Command
 ```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ```
+
+**Note**: Webcam support is disabled by default in minimal builds. To enable webcam support, add `-DENABLE_WEBCAM=ON` to the cmake command.
 
 **Note**: On Fedora/RHEL, Qt tools like `qhelpgenerator` are located in `/usr/lib64/qt5/bin/` and may not be in the default PATH. The export command above adds this directory to your PATH for the build process.
 
 ### Install
 ```bash
-sudo make install
+sudo cmake --install .
 ```
 
-**Note**: If you see a warning about `ldconfig` failing, run `sudo ldconfig` manually after installation to update the library cache. For packaging systems or staging installations, use `--disable-ldconfig` during configure to skip automatic library configuration.
+**Note**: If you see a warning about `ldconfig` failing, run `sudo ldconfig` manually after installation to update the library cache. For packaging systems or staging installations, use `-DENABLE_LDCONFIG=OFF` during cmake configuration to skip automatic library configuration.
 
 ### Verification
 ```bash
@@ -222,16 +227,22 @@ sudo dnf install nsis  # For installer creation
 - **Steam Proton**: Compatible with Steam's Proton for Windows games
 - **Modern Games**: Supports 64-bit Windows games running under Wine
 
-### Configure Command
+### Build Command
 ```bash
-autoreconf -fiv
-./configure --prefix=/usr/local
-```
-### Build and Install
-```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+cmake --build . -j$(nproc)
+```
+
+### Install
+```bash
+sudo cmake --install .
 ```
 
 ### Verification
@@ -294,16 +305,22 @@ After installation, LinuxTrack will automatically handle MFC42 installation via 
 - **Automatic Fallback**: Falls back to `winetricks vcrun6` if MFC42 fails
 - **32-bit Wine Prefix**: Forces `WINEARCH=win32` for optimal compatibility
 
-### Configure Command
+### Build Command
 ```bash
-autoreconf -fiv
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64
-```
-### Build and Install
-```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (32-bit library enabled by default)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+cmake --build . -j$(nproc)
+```
+
+### Install
+```bash
+sudo cmake --install .
 ```
 
 ### Verification
@@ -333,7 +350,7 @@ QT_QPA_PLATFORM=xcb ltr_gui NOTE That this may not be needed. As of late I have 
 - ✅ V4L2 webcam support
 - ✅ Alternative tracking when TrackIR unavailable
 
-**Note**: Webcam support is **disabled by default** in minimal builds. You must explicitly enable it with `--enable-webcam`.
+**Note**: Webcam support is **disabled by default** in minimal builds. You must explicitly enable it with `-DENABLE_WEBCAM=ON`.
 
 ### Additional Libraries (beyond Level 3)
 
@@ -355,16 +372,22 @@ sudo dnf install libv4l-devel v4l-utils
 sudo dnf install opencv-devel  # For face tracking
 ```
 
-### Configure Command
+### Build Command
 ```bash
-autoreconf -fiv
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
-```
-### Build and Install
-```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (enable webcam support)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+cmake --build . -j$(nproc)
+```
+
+### Install
+```bash
+sudo cmake --install .
 ```
 
 ### Verification
@@ -411,16 +434,22 @@ sudo pacman -S liblo
 sudo dnf install liblo-devel
 ```
 
-### Configure Command
+### Build Command
 ```bash
-autoreconf -fiv
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
-```
-### Build and Install
-```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (OSC support auto-enabled if liblo found)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+cmake --build . -j$(nproc)
+```
+
+### Install
+```bash
+sudo cmake --install .
 ```
 
 ### Verification
@@ -467,16 +496,22 @@ sudo pacman -S libcwiid  # From AUR: yay -S libcwiid
 sudo dnf install libcwiid-devel
 ```
 
-### Configure Command
+### Build Command
 ```bash
-autoreconf -fiv
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
-```
-### Build and Install
-```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (Wiimote support auto-enabled if libcwiid found)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+cmake --build . -j$(nproc)
+```
+
+### Install
+```bash
+sudo cmake --install .
 ```
 
 ### Verification
@@ -516,16 +551,22 @@ sudo mkdir -p /opt/xplane-sdk
 sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ```
 
-### Configure Command
+### Build Command
 ```bash
-autoreconf -fiv
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam --with-xplane-sdk=/opt/xplane-sdk/CHeaders
-```
-### Build and Install
-```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (X-Plane SDK path)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+
+# Build (export PATH for Fedora/RHEL Qt5 tools if needed)
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+cmake --build . -j$(nproc)
+```
+
+### Install
+```bash
+sudo cmake --install .
 ```
 
 ### Verification
@@ -550,7 +591,7 @@ QT_QPA_PLATFORM=xcb ltr_gui NOTE That this may not be needed. As of late I have 
 ### Debian/Ubuntu/MX Linux (Complete Build):
 ```bash
 sudo apt update
-sudo apt install build-essential autoconf automake libtool pkg-config
+sudo apt install build-essential cmake pkg-config
 sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
 sudo apt install qt5-qmake qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libmxml-dev
 sudo apt install libx11-dev libxrandr-dev
@@ -562,7 +603,7 @@ sudo apt install liblo-dev libcwiid-dev
 
 ### Arch Linux (Complete Build):
 ```bash
-sudo pacman -S base-devel autoconf automake libtool pkg-config
+sudo pacman -S base-devel cmake pkg-config
 sudo pacman -S libusb zlib bison flex qt5-base qt5-tools libmxml
 sudo pacman -S wine-staging wine32 nsis
 sudo pacman -S lib32-glibc lib32-gcc-libs
@@ -572,7 +613,7 @@ sudo pacman -S libv4l v4l-utils opencv liblo libcwiid
 ### Fedora/RHEL (Complete Build):
 ```bash
 sudo dnf groupinstall "Development Tools"
-sudo dnf install autoconf automake libtool pkg-config
+sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt5-qtbase-devel qt5-qmake libmxml-devel
 sudo dnf install wine-core wine-tools wine-core.i686 wine-tools.i686 nsis
@@ -582,7 +623,8 @@ sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
 
 **Note**: For complete builds with all features, use:
 ```bash
-./configure --prefix=/usr/local --enable-ltr-32lib-on-x64 --enable-webcam
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
 ```
 
 **Important**: On Fedora/RHEL, add Qt5 tools to PATH before building:
@@ -620,11 +662,11 @@ ls /opt/lib/linuxtrack/libwc.so*
 |---------|----------|
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` (Debian/Ubuntu) or `sudo dnf install wine-devel` (Fedora) or `sudo pacman -S wine` (Arch) |
 | `Couldn't load library 'libwc.so.0'` | Library cache not updated. Run: `sudo ldconfig` then restart LinuxTrack |
-| `ldconfig permission denied during install` | Use `--disable-ldconfig` during configure for packaging systems or staging installations |
+| `ldconfig permission denied during install` | Use `-DENABLE_LDCONFIG=OFF` during cmake configuration for packaging systems or staging installations |
 | `bits/libc-header-start.h: No such file or directory` | Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` (Debian/Ubuntu) or `sudo dnf install glibc-devel.i686 libstdc++-devel.i686` (Fedora) or `sudo pacman -S lib32-glibc lib32-gcc-libs` (Arch) |
 | GUI not displaying on Wayland | Force X11 compatibility: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to required groups: `sudo usermod -a -G plugdev,input $USER` |
-| Application not appearing in launcher | Use `--prefix=/usr/local` instead of `/opt` during installation |
+| Application not appearing in launcher | Use `-DCMAKE_INSTALL_PREFIX=/usr/local` instead of `/opt` during installation |
 | Firmware extraction fails | Run `./scripts/wine_check.sh` to diagnose Wine issues |
 
 ### Distribution-Specific Issues:
@@ -632,8 +674,8 @@ ls /opt/lib/linuxtrack/libwc.so*
 #### **Debian/Ubuntu/MX Linux**
 | Problem | Solution |
 |---------|----------|
-| `configure: error: Qt5 development headers not found` | Install: `sudo apt install qtbase5-dev qttools5-dev libqt5x11extras5-dev` |
-| `configure: opencv4 >= 0.29.0... no` | This is normal - OpenCV detection issue but build succeeds. Install: `sudo apt install libopencv-dev` |
+| `CMake Error: Could not find Qt5` | Install: `sudo apt install qtbase5-dev qttools5-dev libqt5x11extras5-dev` |
+| `Package 'opencv4' not found` | This is normal - OpenCV detection issue but build succeeds. Install: `sudo apt install libopencv-dev` |
 | `qmake: command not found` | Install: `sudo apt install qttools5-dev-tools` |
 | 32-bit build fails | This is normal if OpenCV detection failed. Core functionality still works. |
 | Wine bridge compilation errors | These don't affect core LinuxTrack functionality |
@@ -740,7 +782,7 @@ This method addresses the common 32-bit library issues on Arch Linux:
 **Step 1: Install Dependencies**
 ```bash
 # Install build dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils multilib-devel
+sudo pacman -S --needed base-devel cmake qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils multilib-devel
 yay -S nsis cwiid liblo-ipv6
 ```
 
@@ -752,21 +794,21 @@ yay -S nsis cwiid liblo-ipv6
 
 **Step 3: Build LinuxTrack**
 ```bash
-# Clone and configure
+# Clone repository
 git clone <repository-url>
 cd linuxtrackx-ir
-autoreconf -fiv
 
-# Configure with explicit 64-bit flags to prevent 32-bit compilation issues
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (disable 32-bit library if not needed)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=OFF
 
 # Build with parallel compilation
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
+cmake --build . -j$(nproc)
 
 # Install
-sudo make install
-
+sudo cmake --install .
 ```
 
 #### **Method 4: Optimized Wine Installation (Recommended for TrackIR)**
@@ -815,10 +857,18 @@ sudo pacman -S wine-gecko
 ```bash
 # Build LinuxTrack with Wine support (after building 32-bit libraries)
 cd linuxtrackx-ir
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local --with-lib32-dir=lib32 --enable-ltr-32lib-on-x64
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
-sudo make install
+
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (32-bit library enabled)
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DLIB32DIR=lib32
+
+# Build with parallel compilation
+cmake --build . -j$(nproc)
+
+# Install
+sudo cmake --install .
 sudo ldconfig
 ```
 
@@ -868,7 +918,7 @@ QT_QPA_PLATFORM=xcb ltr_gui NOTE That this may not be needed. As of late I have 
 ```
 
 ### Build Summary:
-After running `./configure`, check the build summary for enabled components:
+After running `cmake ..`, check the build summary for enabled components:
 - ✅ Webcam support: yes/no
 - ✅ Wiimote support: yes/no  
 - ✅ TrackIR support: yes/no
@@ -933,7 +983,7 @@ For optimal AppImage creation with enhanced Qt5 support and Wayland compatibilit
 
 ```bash
 # Essential build dependencies
-sudo apt-get install -y build-essential autoconf automake libtool
+sudo apt-get install -y build-essential cmake
 
 # Qt5 development dependencies (enhanced)
 sudo apt-get install -y qtbase5-dev qtwayland5-dev libqt5waylandclient5 libqt5x11extras5-dev
@@ -1145,10 +1195,11 @@ flatpak-spawn --host which winetricks
 # Run the automated script to build and install missing 32-bit libraries
 ./scripts/build_32bit_libs.sh
 
-# Then build LinuxTrack with explicit 64-bit flags
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
+# Then build LinuxTrack with CMake
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=OFF
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ```
 
 **What the script does:**
@@ -1185,10 +1236,11 @@ ls -l squashfs-root/usr/lib/i386-linux-gnu/linuxtrack/ 2>/dev/null || true
 
 #### **Build System Issues:**
 
-**Problem:** Configure script sets 32-bit flags even when disabled
-**Solution:** Use explicit 64-bit flags during configure:
+**Problem:** CMake may detect 32-bit toolchain when not needed
+**Solution:** Use CMake with explicit options:
 ```bash
-CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64" ./configure --prefix=/usr/local/local --disable-ltr-32lib-on-x64
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=OFF
 ```
 
 **Problem:** Qt5 Makefile not generated automatically
@@ -1244,9 +1296,10 @@ If you encounter "skipping incompatible" errors for `liblo` or `mxml`, these 32-
 ./scripts/build_32bit_libs.sh
 
 # Then try building LinuxTrack again
-./configure --prefix=/usr/local/local --enable-ltr-32lib-on-x64
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ```
 
 This script will:
@@ -1314,27 +1367,30 @@ LinuxTrack now includes improved support for packaging systems and distribution 
 The build system now properly respects `DESTDIR` for staging installations:
 ```bash
 # Package building example
-./configure --prefix=/usr/local --disable-ldconfig
-make -j$(nproc)
-make install DESTDIR=/tmp/package-staging
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LDCONFIG=OFF
+cmake --build . -j$(nproc)
+DESTDIR=/tmp/package-staging cmake --install .
 ```
 
 ### **Library Configuration Control**
-Use `--disable-ldconfig` to prevent automatic library cache updates:
+Use `-DENABLE_LDCONFIG=OFF` to prevent automatic library cache updates:
 - **RPM packages**: Let the package manager handle `ldconfig` via `%post` scripts
 - **DEB packages**: Use `dh_makeshlibs` and `dh_shlibdeps` instead
 - **Staging builds**: Avoid permission issues during `DESTDIR` installations
 
 ### **Recommended Package Configuration**
 ```bash
+mkdir build && cd build
+
 # For most distributions
-./configure --prefix=/usr/local --disable-ldconfig --enable-ltr-32lib-on-x64
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LDCONFIG=OFF -DENABLE_LTR_32LIB_ON_X64=ON
 
 # For minimal packages (TrackIR only)
-./configure --prefix=/usr/local --disable-ldconfig
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LDCONFIG=OFF
 
 # For full-featured packages
-./configure --prefix=/usr/local --disable-ldconfig --enable-webcam --enable-ltr-32lib-on-x64
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LDCONFIG=OFF -DENABLE_WEBCAM=ON -DENABLE_LTR_32LIB_ON_X64=ON
 ```
 
 ### **Package Dependencies**
@@ -1370,9 +1426,10 @@ LinuxTrack is an open-source project that welcomes contributions:
 ```bash
 git clone <repository-url>
 cd linuxtrackx-ir
-./configure --prefix=/usr/local/local --enable-debug
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_DEBUG=ON
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools on Fedora/RHEL
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ```
 
 ## 📜 License

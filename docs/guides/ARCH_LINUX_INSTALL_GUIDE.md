@@ -55,7 +55,7 @@ For users who prefer manual control:
 sudo pacman -Syu
 
 # Install core build tools
-sudo pacman -S --needed base-devel autoconf automake libtool
+sudo pacman -S --needed base-devel cmake
 
 # Install Qt5 dependencies
 sudo pacman -S --needed qt5-base qt5-tools qt5-x11extras
@@ -102,20 +102,20 @@ yay -S nsis
 git clone <repository-url>
 cd linuxtrackx-ir
 
-# Configure build system
-autoreconf -fiv
+# Create build directory
+mkdir build && cd build
 
-# Configure with Arch Linux specific options
-./configure --prefix=/opt \
-            --enable-ltr-32lib-on-x64 \
-            --with-wine-libs="-L/usr/lib32/wine/i386-unix" \
-            --with-wine64-libs="-L/usr/lib/wine/x86_64-unix"
+# Configure with CMake (Arch Linux specific options)
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt \
+         -DENABLE_LTR_32LIB_ON_X64=ON \
+         -DWINE_LIBS_PATH=/usr/lib32/wine/i386-unix \
+         -DWINE64_LIBS_PATH=/usr/lib/wine/x86_64-unix
 
 # Build
-make -j$(nproc)
+cmake --build . -j$(nproc)
 
 # Install
-sudo make install
+sudo cmake --install .
 
 # Add user to required groups
 sudo usermod -a -G plugdev,input $USER
@@ -290,17 +290,21 @@ echo $XPLANE_SDK_INCLUDE
 
 #### Plugin Development
 ```bash
-# Configure build with X-Plane SDK
-./configure --prefix=/opt \
-            --enable-ltr-32lib-on-x64 \
-            --with-wine-libs="-L/usr/lib32/wine/i386-unix" \
-            --with-xplane-sdk="/opt/xplane-sdk/CHeaders"
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake (X-Plane SDK)
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt \
+         -DENABLE_LTR_32LIB_ON_X64=ON \
+         -DWINE_LIBS_PATH=/usr/lib32/wine/i386-unix \
+         -DENABLE_XPLANE=ON \
+         -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Build with X-Plane plugin support
-make -j$(nproc)
+cmake --build . -j$(nproc)
 
 # Install
-sudo make install
+sudo cmake --install .
 ```
 
 #### Plugin Packaging
@@ -467,24 +471,27 @@ ltr_gui
 If you have wine installed in a custom location:
 
 ```bash
-./configure --prefix=/opt \
-            --with-wine-libs="-L/custom/path/to/wine32" \
-            --with-wine64-libs="-L/custom/path/to/wine64"
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt \
+         -DWINE_LIBS_PATH=/custom/path/to/wine32 \
+         -DWINE64_LIBS_PATH=/custom/path/to/wine64
 ```
 
 ### Build Options
 
-Available configure options:
+Available CMake options:
 
 ```bash
-./configure --help | grep -E "(wine|32|64)"
+cmake .. -LAH | grep -E "(WINE|32|64|XPLANE|WEBCAM)"
 ```
 
 Common options:
-- `--enable-ltr-32lib-on-x64`: Enable 32-bit library on 64-bit host
-- `--with-wine-libs`: Specify 32-bit wine libraries path
-- `--with-wine64-libs`: Specify 64-bit wine libraries path
-- `--disable-pie`: Disable Position Independent Executable
+- `-DENABLE_LTR_32LIB_ON_X64=ON`: Enable 32-bit library on 64-bit host
+- `-DWINE_LIBS_PATH=/path`: Specify 32-bit wine libraries path
+- `-DWINE64_LIBS_PATH=/path`: Specify 64-bit wine libraries path
+- `-DENABLE_PIE=OFF`: Disable Position Independent Executable
+- `-DENABLE_WEBCAM=ON`: Enable webcam support
+- `-DENABLE_XPLANE=ON`: Enable X-Plane plugin support
 
 ### Environment Variables
 
@@ -500,7 +507,7 @@ export LDFLAGS="-m32"
 
 ### Core Dependencies
 - **`base-devel`**: Essential build tools (gcc, make, etc.)
-- **`autoconf automake libtool`**: Autotools for build system
+- **`cmake`**: CMake build system (minimum version 3.16)
 - **`bison flex`**: Parser generators
 
 ### Qt5 Dependencies

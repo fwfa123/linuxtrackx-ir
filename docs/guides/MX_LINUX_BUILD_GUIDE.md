@@ -18,15 +18,15 @@ cd linuxtrack-clean-june14
 
 # Install minimal dependencies
 sudo apt update
-sudo apt install -y build-essential autoconf automake libtool
+sudo apt install -y build-essential cmake
 sudo apt install -y qtbase5-dev qttools5-dev-tools
 sudo apt install -y libopencv-dev libusb-1.0-0-dev libmxml-dev
 sudo apt install -y mingw-w64 gcc-mingw-w64 g++-mingw-w64
 
 # Build LinuxTrack
-autoreconf -fiv
-./configure --prefix=/opt
-make -j$(nproc)
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
 ```
 
 ### Method 2: Automated Build Script
@@ -44,7 +44,7 @@ cd linuxtrack-clean-june14
 ### Core Dependencies (Required)
 ```bash
 sudo apt update
-sudo apt install -y build-essential autoconf automake libtool
+sudo apt install -y build-essential cmake
 sudo apt install -y qtbase5-dev qttools5-dev-tools qt5-qmake
 sudo apt install -y libopencv-dev libusb-1.0-0-dev libmxml-dev
 sudo apt install -y libx11-dev libxrandr-dev
@@ -105,17 +105,17 @@ sudo ln -sf /usr/bin/aclocal-1.16 /usr/bin/aclocal-1.17 2>/dev/null || true
 
 ### Step 3: Configure and Build
 ```bash
-# Regenerate build system
-autoreconf -fiv
+# Create build directory
+mkdir build && cd build
 
-# Configure with MinGW (recommended)
-./configure --prefix=/opt
+# Configure with CMake (MinGW support)
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 
 # Or configure with specific options
-# ./configure --prefix=/opt --enable-debug
+# cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_DEBUG=ON
 
 # Build
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ```
 
 ## 🎮 Windows Game Compatibility
@@ -158,16 +158,18 @@ which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc
 sudo apt install -y mingw-w64 gcc-mingw-w64 g++-mingw-w64
 
 # Reconfigure and rebuild
-./configure --prefix=/opt
-make clean && make -j$(nproc)
+rm -rf build && mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
 ```
 
 ### Problem: Qt5 not found
 **Solution**:
 ```bash
 sudo apt install -y qtbase5-dev qttools5-dev-tools qt5-qmake libqt5x11extras5-dev
-# Reconfigure with explicit Qt5 path if needed
-./configure --prefix=/opt QMAKE=/usr/bin/qmake-qt5
+# Reconfigure with CMake (Qt5 auto-detected)
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 ```
 
 ### Problem: OpenCV not found
@@ -182,22 +184,27 @@ pkg-config --modversion opencv4
 
 ### Standard Build
 ```bash
-./configure --prefix=/opt
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 ```
 
 ### Debug Build
 ```bash
-./configure --prefix=/opt --enable-debug
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_DEBUG=ON
 ```
 
 ### Disable Wine Components (Linux-only)
 ```bash
-./configure --prefix=/opt --disable-wine-bridge
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+# Wine bridge is auto-detected, but can be disabled by not installing wine development tools
 ```
 
 ### Custom Qt5 Path
 ```bash
-./configure --prefix=/opt QMAKE=/usr/bin/qmake-qt5
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DQt5_DIR=/path/to/qt5
 ```
 
 ## 📦 Installation
@@ -274,11 +281,12 @@ uname -a
 cat /etc/os-release
 
 # Build environment
-which gcc g++ make autoconf automake libtool
+which gcc g++ make cmake
 which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc || echo "MinGW not installed"
 
-# Configure output
-./configure --prefix=/opt 2>&1 | tail -20
+# CMake configuration output
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt 2>&1 | tail -20
 ```
 
 ---
