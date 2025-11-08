@@ -1,7 +1,7 @@
 #define NEWS_SERIAL 2
 
 #ifdef HAVE_CONFIG_H
-  #include "../../config.h"
+  #include "config.h"
 #endif
 
 #include <QFileDialog>
@@ -19,6 +19,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QProcess>
+#include <QMenuBar>
 #include <iostream>
 #include "ltr_gui.h"
 #include "ltr_gui_prefs.h"

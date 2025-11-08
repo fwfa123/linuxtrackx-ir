@@ -21,18 +21,25 @@ APP_NAME="LinuxTrack-X-IR"
 APP_DISPLAY_NAME="LinuxTrack X-IR"
 APP_ID="com.linuxtrack.linuxtrackx-ir"
 
-# Auto-extract version from configure.ac
+# Auto-extract version from CMakeLists.txt
 extract_version() {
-    local configure_ac="$PROJECT_ROOT/configure.ac"
-    if [[ -f "$configure_ac" ]]; then
-        VERSION=$(grep 'AC_INIT' "$configure_ac" | sed 's/.*\[[^]]*\],\[\([^]]*\)\],\[.*/\1/')
+    local cmake_lists="$PROJECT_ROOT/CMakeLists.txt"
+    if [[ -f "$cmake_lists" ]]; then
+        VERSION=$(grep 'project.*VERSION' "$cmake_lists" | sed 's/.*VERSION[[:space:]]*\([0-9.]*\).*/\1/')
         if [[ -z "$VERSION" ]]; then
-            echo "Error: Could not extract version from configure.ac" >&2
+            # Fallback to configure.ac if CMakeLists.txt doesn't have version
+            local configure_ac="$PROJECT_ROOT/configure.ac"
+            if [[ -f "$configure_ac" ]]; then
+                VERSION=$(grep 'AC_INIT' "$configure_ac" | sed 's/.*\[[^]]*\],\[\([^]]*\)\],\[.*/\1/')
+            fi
+        fi
+        if [[ -z "$VERSION" ]]; then
+            echo "Error: Could not extract version from CMakeLists.txt or configure.ac" >&2
             exit 1
         fi
         echo "Extracted version: $VERSION"
     else
-        echo "Error: configure.ac not found at $configure_ac" >&2
+        echo "Error: CMakeLists.txt not found at $cmake_lists" >&2
         exit 1
     fi
 }

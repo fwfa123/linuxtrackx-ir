@@ -14,19 +14,21 @@ fi
 ensure_dir "$APPDIR"
 
 pushd "$PROJECT_ROOT" >/dev/null
-    require_cmd autoreconf
+    require_cmd cmake
     require_cmd make
     require_cmd qhelpgenerator
 
-    print_status "Regenerating build system"
-    make distclean >/dev/null 2>&1 || true
-    autoreconf -fiv
+    print_status "Preparing CMake build"
+    rm -rf build
+    mkdir -p build
 
-    print_status "Configuring"
-    ./configure --prefix=/usr
+    print_status "Configuring with CMake"
+    cd build
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr
 
     print_status "Building"
-    make -j"$JOBS"
+    cmake --build . -j"$JOBS"
+    cd ..
 
     print_status "Qt Help artifacts: decide whether to regenerate"
 
@@ -180,7 +182,9 @@ pushd "$PROJECT_ROOT" >/dev/null
     print_success "All Qt Help files generated and validated"
 
     print_status "Installing to AppDir"
-    make install DESTDIR="$APPDIR"
+    cd build
+    cmake --install . --prefix "$APPDIR/usr"
+    cd ..
 popd >/dev/null
 
 write_minimal_apprun

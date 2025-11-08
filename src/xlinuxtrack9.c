@@ -17,7 +17,7 @@
 #include <stdbool.h>
 #include "linuxtrack.h"
 #ifdef HAVE_CONFIG_H
-  #include "../config.h"
+  #include "config.h"
 #endif
 
 #define MSG_ADD_DATAREF 0x01000000

@@ -2,7 +2,7 @@
 #define WII_SERVER__H
 
 #ifdef HAVE_CONFIG_H
-  #include "../../config.h"
+  #include "config.h"
 #endif
 
 #include <wii_com.h>

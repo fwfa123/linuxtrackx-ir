@@ -163,26 +163,25 @@ build_linuxtrack() {
     cd "$PROJECT_ROOT"
     
     # Clean previous builds
-    make distclean 2>/dev/null || true
+    rm -rf build
+    mkdir -p build
+    cd build
     
-    # Regenerate build system
-    autoreconf -fiv || {
-        print_error "Failed to regenerate build system"
-        return 1
-    }
-    
-    # Configure with prebuilt support
-    ./configure --prefix=/opt || {
+    # Configure with CMake
+    cmake .. -DCMAKE_INSTALL_PREFIX=/opt || {
         print_error "Failed to configure build"
+        cd ..
         return 1
     }
     
     # Build
-    make -j$(nproc) || {
+    cmake --build . -j$(nproc) || {
         print_error "Failed to build LinuxTrack"
+        cd ..
         return 1
     }
     
+    cd ..
     print_success "LinuxTrack built successfully"
     return 0
 }
@@ -191,12 +190,15 @@ build_linuxtrack() {
 install_linuxtrack() {
     print_status "Installing LinuxTrack..."
     
-    cd "$PROJECT_ROOT"
+    cd "$PROJECT_ROOT/build"
     
-    sudo make install || {
+    sudo cmake --install . || {
         print_error "Failed to install LinuxTrack"
+        cd ..
         return 1
     }
+    
+    cd ..
     
     # Add user to required groups
     sudo usermod -a -G plugdev,input "$USER" 2>/dev/null || true
