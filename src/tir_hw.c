@@ -729,6 +729,12 @@ static bool start_camera_tir5()
 {
   stop_camera_tir();
   ltr_int_send_data(out_ep, Video_on,sizeof(Video_on));
+  {
+    int delay = ltr_int_tir_get_video_on_delay();
+    if(delay > 0){
+      ltr_int_usleep(delay);
+    }
+  }
   if(ir_on){
     control_ir_led_tir(true);
   }else{
@@ -958,6 +964,12 @@ static bool init_camera_tir5(bool force_fw_load, bool p_ir_on)
   ltr_int_send_data(out_ep, Camera_stop,sizeof(Camera_stop));
   control_ir_led_tir(true);
   ltr_int_send_data(out_ep, Video_on,sizeof(Video_on));
+  {
+    int delay = ltr_int_tir_get_video_on_delay();
+    if(delay > 0){
+      ltr_int_usleep(delay);
+    }
+  }
   return true;
 }
 

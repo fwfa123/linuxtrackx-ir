@@ -188,6 +188,51 @@ The TrackIR permission installation process:
 <p>
 Once properly installed, you won't see the permission setup dialog again, and your TrackIR device will work seamlessly with LinuxTrack X-IR.
 </p>
+
+<h2>Video_on Delay Timing</h2>
+<p>
+The <strong>Video_on Delay Timing</strong> option allows you to configure a delay after the Video_on command is sent to the TrackIR device during initialization. This setting should be left at <strong>Default</strong> (0 microseconds) unless you are experiencing issues with TrackIR camera LEDs not turning on properly.
+</p>
+<p>
+<strong>Important:</strong> Only use the Manual delay setting if you are having specific LED issues where the green LEDs turn on but the red sensor LEDs do not activate, or if you see timeout errors in the logs.
+</p>
+
+<h3>Default Mode</h3>
+<p>
+In Default mode, no delay is applied after the Video_on command. This is the recommended setting for most users and should work correctly with the majority of TrackIR devices.
+</p>
+<table>
+<tr>
+<td>
+<img src="device_setup_delay1.png" alt="Video_on Delay Timing set to Default mode">
+</td>
+</tr>
+</table>
+
+<h3>Manual Mode</h3>
+<p>
+If you are experiencing timeout issues or LED activation problems (particularly with TrackIR 5 v2 devices), you can switch to Manual mode and set a custom delay value. The suggested value is <strong>120000 microseconds</strong> (120 milliseconds), which has been found to resolve timeout issues on some TrackIR 5 v2 devices.
+</p>
+<p>
+To use Manual mode:
+</p>
+<ol>
+  <li>Select <strong>Manual</strong> from the Video_on Delay Timing dropdown</li>
+  <li>A spinbox will appear allowing you to enter a delay value in microseconds</li>
+  <li>Enter the delay value (120000 is suggested for TIR5V2 devices)</li>
+  <li>The setting will be saved automatically when you save your configuration</li>
+</ol>
+<table>
+<tr>
+<td>
+<img src="device_setup_delay2.png" alt="Video_on Delay Timing set to Manual mode with 120000 microseconds">
+</td>
+</tr>
+</table>
+<p>
+<strong>Note:</strong> This setting applies to all TrackIR devices. If you only experience issues with a specific TrackIR model, you may need to adjust the delay value accordingly. Values can range from 0 to 500000 microseconds.
+</p>
+
 <A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>
 
 <h1><A name="Gaming">Gaming Platform Integration Setup</A></h1>
