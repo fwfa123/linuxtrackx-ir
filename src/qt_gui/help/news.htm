@@ -10,6 +10,16 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the LinuxTrack X-IR software.
 
+<h2>LinuxTrack X-IR v0.99.27 - Build System Reliability & Cross-Distribution Compatibility</h2>
+<h3>Build System & Compatibility</h3>
+Enhanced cross-distribution support with improved compatibility for Fedora 42, Debian 12, Arch Linux, and other distributions. Properly implemented minimal build philosophy where optional components gracefully disable instead of failing. Added full DESTDIR support for staging installations in packaging systems. Fixed compatibility issues with glibc 2.38+ functions.
+
+<h3>Critical Bug Fixes</h3>
+Fixed 32-bit liblinuxtrack library build and installation issues for Wine bridge. Restored slave process spawning in client mode, fixing tracking data communication in Wine bridge. Resolved undefined symbol errors and library path lookup issues in X-Plane plugin. Fixed memory parsing and build components display in System Tab to show actual values.
+
+<h3>User Experience Improvements</h3>
+Eliminated redundant password prompts in TrackIR permission dialog. Added comprehensive documentation for Qt5 tools PATH fixes across distributions. Improved error messages and installation verification throughout the application.
+
 <h2>LinuxTrack X-IR v0.99.26 - Comprehensive Help System Overhaul & AntiMicroX Integration (December 2024)</h2>
 <h3>Complete Help System Modernization</h3>
 Completely overhauled the Qt help system with comprehensive documentation updates. All help files now feature proper image alignment, consistent formatting, and enhanced readability across all supported platforms.
