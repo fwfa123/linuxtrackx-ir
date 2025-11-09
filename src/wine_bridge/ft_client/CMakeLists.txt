@@ -4,12 +4,12 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 
-# 32-bit FreeTrackClient DLL (only built if 32-bit Wine libraries are available)
+# 32-bit FreeTrackClient DLL (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: FreeTrackClient.dll.so : FreeTrackClient.spec FreeTrackClient_main.o linuxtrack.o utils.o
 # Note: utils.c is from ../../utils.c, linuxtrack.c is from current directory
 
-# Only build if 32-bit Wine libraries are available
-if(WINE32)
+# Build when WINE_PLUGIN is enabled (matching Autotools behavior)
+if(WINE_PLUGIN)
 # Compile utils.c from parent directory (special handling per Makefile.am)
 set(utils_obj ${CMAKE_CURRENT_BINARY_DIR}/FreeTrackClient_utils.o)
 add_custom_command(
@@ -62,7 +62,6 @@ add_custom_target(FreeTrackClient ALL
 
 set_target_properties(FreeTrackClient PROPERTIES
         OUTPUT_NAME "FreeTrackClient.dll.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/FreeTrackClient.dll.so
     )
 
     # Installation

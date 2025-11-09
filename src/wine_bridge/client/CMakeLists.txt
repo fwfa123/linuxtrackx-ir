@@ -16,8 +16,8 @@ if(WINE64)
     )
 endif()
 
-# 32-bit NPClient DLL (only built if 32-bit Wine libraries are available)
-if(WINE32)
+# 32-bit NPClient DLL (built when WINE_PLUGIN is enabled, matching Autotools behavior)
+if(WINE_PLUGIN)
     add_wine_library(NPClient
         SOURCES
             NPClient_main.c
@@ -29,7 +29,7 @@ if(WINE32)
 endif()
 
 # check_data executable (32-bit only - no 64-bit version exists)
-if(WINE32)
+if(WINE_PLUGIN)
     add_wine_executable(check_data
         SOURCES
             check_data.c
@@ -46,7 +46,7 @@ if(WINE64)
     )
 endif()
 
-if(WINE32)
+if(WINE_PLUGIN)
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/NPClient.dll.so
         DESTINATION lib/linuxtrack/wine_bridge
@@ -54,7 +54,7 @@ if(WINE32)
     )
 endif()
 
-if(WINE32)
+if(WINE_PLUGIN)
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/check_data.exe.so
         DESTINATION lib/linuxtrack/wine_bridge
