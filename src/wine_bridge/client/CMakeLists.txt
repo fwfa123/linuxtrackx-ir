@@ -17,6 +17,8 @@ if(WINE64)
 endif()
 
 # 32-bit NPClient DLL (built when WINE_PLUGIN is enabled, matching Autotools behavior)
+# NOTE: 32-bit development headers are REQUIRED when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
+# This is a critical component for Wine plugin functionality
 if(WINE_PLUGIN)
     add_wine_library(NPClient
         SOURCES
@@ -29,6 +31,8 @@ if(WINE_PLUGIN)
 endif()
 
 # check_data executable (32-bit only - no 64-bit version exists)
+# NOTE: This is a CRITICAL 32-bit only component. 32-bit development headers are REQUIRED
+# when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
 if(WINE_PLUGIN)
     add_wine_executable(check_data
         SOURCES
