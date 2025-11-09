@@ -232,7 +232,7 @@ QString TesterLauncher::findAppropriateTester(const QString &prefixPath, WineArc
     return QString();
 }
 
-bool TesterLauncher::isTesterCompatible(const QString &testerPath, const QString &prefixPath, WineArchitecture arch)
+bool TesterLauncher::isTesterCompatible(const QString &testerPath, const QString &/*prefixPath*/, WineArchitecture arch)
 {
     QFileInfo testerFile(testerPath);
     if (!testerFile.exists() || !testerFile.isFile() || !testerFile.isExecutable()) {
