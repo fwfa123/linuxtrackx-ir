@@ -37,8 +37,8 @@ if(WINE_PLUGIN)
             list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/tester/Tester64.exe.so)
         endif()
         
-        # 32-bit components (only built if 32-bit Wine libraries are available)
-        if(WINE32)
+        # 32-bit components (built when WINE_PLUGIN is enabled, matching Autotools behavior)
+        if(WINE_PLUGIN)
             list(APPEND INSTALLER_TARGET_DEPS NPClient check_data)
             list(APPEND INSTALLER_FILE_DEPS 
                 ${CMAKE_CURRENT_BINARY_DIR}/client/NPClient.dll.so
@@ -96,10 +96,10 @@ fi
 ")
         endif()
         
-        # Add 32-bit components if available
-        if(WINE32)
+        # Add 32-bit components if available (built when WINE_PLUGIN is enabled)
+        if(WINE_PLUGIN)
             file(APPEND ${INSTALLER_STAGING_SCRIPT} "
-# Copy 32-bit components (only if 32-bit Wine libraries are available)
+# Copy 32-bit components (built when WINE_PLUGIN is enabled)
 if [ -f \"\${BUILD_DIR}/client/NPClient.dll.so\" ]; then
     cp \"\${BUILD_DIR}/client/NPClient.dll.so\" \"\${STAGING_DIR}/client/NPClient.dll.so\"
 fi
@@ -113,7 +113,7 @@ fi
         endif()
         
         # Add other 32-bit components if they exist
-        if(WINE32)
+        if(WINE_PLUGIN)
             file(APPEND ${INSTALLER_STAGING_SCRIPT} "
 if [ -f \"\${BUILD_DIR}/controller/Controller.exe.so\" ]; then
     cp \"\${BUILD_DIR}/controller/Controller.exe.so\" \"\${STAGING_DIR}/controller/Controller.exe.so\"

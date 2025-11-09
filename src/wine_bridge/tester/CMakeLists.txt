@@ -74,13 +74,12 @@ if(WINE64)
     
     set_target_properties(Tester64 PROPERTIES
         OUTPUT_NAME "Tester64.exe.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/Tester64.exe.so
     )
 endif()
 
-# 32-bit Tester executable (only built if 32-bit Wine libraries are available)
+# 32-bit Tester executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: Tester.exe.so : main.o npview.o rest.o npifc.o
-if(WINE32)
+if(WINE_PLUGIN)
     add_wine_executable(Tester
         SOURCES
             main.cpp
@@ -99,7 +98,7 @@ if(WINE64)
     )
 endif()
 
-if(WINE32)
+if(WINE_PLUGIN)
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/Tester.exe.so
         DESTINATION lib/linuxtrack/wine_bridge

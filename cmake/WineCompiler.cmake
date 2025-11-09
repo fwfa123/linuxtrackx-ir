@@ -148,7 +148,6 @@ function(add_wine_executable target)
     
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME "${target}.exe.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${target}.exe.so
     )
 endfunction()
 
@@ -203,7 +202,6 @@ function(add_wine_library target)
     
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME "${target}.dll.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${target}.dll.so
     )
 endfunction()
 
@@ -258,7 +256,6 @@ function(add_wine64_library target)
     
     set_target_properties(${target}64 PROPERTIES
         OUTPUT_NAME "${target}64.dll.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/${target}64.dll.so
     )
 endfunction()
 

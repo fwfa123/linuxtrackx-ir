@@ -4,12 +4,12 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 
-# 32-bit Controller executable (only built if 32-bit Wine libraries are available)
+# 32-bit Controller executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: Controller.exe.so : main.o resources.o dinput.o linuxtrack.o utils.o
 # Note: utils.c is from ../../utils.c, linuxtrack.c is from current directory
 
-# Only build if 32-bit Wine libraries are available
-if(WINE32)
+# Build when WINE_PLUGIN is enabled (matching Autotools behavior)
+if(WINE_PLUGIN)
 # Compile utils.c from parent directory (special handling per Makefile.am)
 set(utils_obj ${CMAKE_CURRENT_BINARY_DIR}/Controller_utils.o)
 add_custom_command(
@@ -92,7 +92,6 @@ add_custom_target(Controller ALL
 
 set_target_properties(Controller PROPERTIES
         OUTPUT_NAME "Controller.exe.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/Controller.exe.so
     )
 
     # Installation
