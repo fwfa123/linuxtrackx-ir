@@ -4,12 +4,12 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 
-# 32-bit ftc executable (only built if 32-bit Wine libraries are available)
+# 32-bit ftc executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: ftc.exe.so : main.o fttester.o ../client/rest.o
 # Note: rest.c is from ../client/rest.c, needs special include paths
 
-# Only build if 32-bit Wine libraries are available
-if(WINE32)
+# Build when WINE_PLUGIN is enabled (matching Autotools behavior)
+if(WINE_PLUGIN)
 # Compile rest.c from client directory (special handling per Makefile.am)
 set(rest_obj ${CMAKE_CURRENT_BINARY_DIR}/ftc_rest.o)
 add_custom_command(
@@ -58,7 +58,6 @@ add_custom_target(ftc ALL
 
 set_target_properties(ftc PROPERTIES
         OUTPUT_NAME "ftc.exe.so"
-        LOCATION ${CMAKE_CURRENT_BINARY_DIR}/ftc.exe.so
     )
 
     # Installation

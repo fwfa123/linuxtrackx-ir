@@ -4,9 +4,9 @@
 
 include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 
-# 32-bit TrackIR executable (only built if 32-bit Wine libraries are available)
+# 32-bit TrackIR executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: TrackIR.exe.so : main.o rest.o
-if(WINE32)
+if(WINE_PLUGIN)
     add_wine_executable(TrackIR
         SOURCES
             main.cpp
@@ -15,7 +15,7 @@ if(WINE32)
 endif()
 
 # Installation
-if(WINE32)
+if(WINE_PLUGIN)
     install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/TrackIR.exe.so
         DESTINATION lib/linuxtrack/wine_bridge

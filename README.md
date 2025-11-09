@@ -231,8 +231,8 @@ sudo pacman -S nsis  # For installer creation
 
 #### Fedora/RHEL:
 ```bash
-sudo dnf install wine-core wine-tools
-sudo dnf install nsis  # For installer creation
+sudo dnf install wine-devel  # Provides winegcc, wineg++, wrc
+sudo dnf install mingw-nsis-base  # Provides makensis for installer creation
 ```
 
 ### Wine Configuration Notes:
@@ -302,7 +302,7 @@ sudo pacman -S lib32-glibc lib32-gcc-libs
 
 #### Fedora/RHEL:
 ```bash
-sudo dnf install wine-core.i686 wine-tools.i686
+sudo dnf install wine-devel.i686  # 32-bit Wine development tools
 sudo dnf install glibc-devel.i686 gcc.i686
 ```
 
@@ -631,7 +631,7 @@ sudo dnf groupinstall "Development Tools"
 sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt5-qtbase-devel qt5-qmake libmxml-devel
-sudo dnf install wine-core wine-tools wine-core.i686 wine-tools.i686 nsis
+sudo dnf install wine-devel wine-devel.i686 mingw-nsis-base  # Wine development tools and NSIS
 sudo dnf install glibc-devel.i686 gcc.i686
 sudo dnf install libv4l-devel v4l-utils opencv-devel liblo-devel libcwiid-devel
 sudo dnf install sqlite  # Required for Qt help system path fixes
