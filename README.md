@@ -28,7 +28,9 @@ Choose the level that matches your needs. Each level includes all features from 
 | Level | Use Case | Features |
 |-------|----------|----------|
 | **1: TrackIR Only** | Linux native games only | TrackIR hardware, LinuxTrack server |
-| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility |
+| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires 32-bit Wine**) |
+
+> **⚠️ Important**: Level 2 requires 32-bit Wine support for MFC42 library installation. See your distribution's guide for specific installation commands.
 | **3: + Webcam** | Alternative face tracking | Level 2 + webcam/OpenCV support |
 | **4: + OSC** | External applications/MIDI | Level 3 + Open Sound Control |
 | **5: + Wiimote** | Nintendo Wii Remote | Level 4 + Wiimote support |
@@ -60,7 +62,7 @@ ltr_gui
 | Level | CMake Command | Description |
 |-------|---------------|-------------|
 | 1 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local` | TrackIR only |
-| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON` | + Wine support |
+| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON` | + Wine support (**requires 32-bit Wine installed**) |
 | 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON` | + Webcam |
 | 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
 | 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON` | + Wiimote |
@@ -147,7 +149,7 @@ groups $USER
 | Permission denied | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
 | Library not found | Run: `sudo ldconfig` |
 | TrackIR not detected | Check USB: `lsusb \| grep Track` |
-| Wine bridge fails | Check Wine installation and MFC42 setup |
+| Wine bridge fails | Check Wine 32-bit installation and MFC42 setup |
 
 **[Detailed troubleshooting guide](docs/readme/troubleshooting.md)** - Distribution-specific issues and advanced diagnostics.
 
