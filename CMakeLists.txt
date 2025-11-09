@@ -237,6 +237,37 @@ if(WINEGCC_EXECUTABLE AND WINEGPP_EXECUTABLE AND MAKENSIS_EXECUTABLE)
     set(WINE_PLUGIN TRUE)
     message(STATUS "Wine plugin: enabled")
     
+    # 32-bit development headers are REQUIRED for Wine plugin
+    # Critical 32-bit components (check_data.exe.so, NPClient.dll.so 32-bit, etc.) must be built
+    set(HAS_32BIT_HEADERS FALSE)
+    foreach(header_path
+        "/usr/include/i386-linux-gnu/bits/libc-header-start.h"
+        "/usr/include/bits/libc-header-start.h"
+        "/usr/include/i386-linux-gnu/stdlib.h"
+        "/usr/include/stdlib.h"
+    )
+        if(EXISTS "${header_path}")
+            set(HAS_32BIT_HEADERS TRUE)
+            break()
+        endif()
+    endforeach()
+    
+    if(NOT HAS_32BIT_HEADERS)
+        message(FATAL_ERROR "\n"
+            "32-bit development headers are REQUIRED for Wine plugin support.\n"
+            "Critical 32-bit Wine bridge components cannot be built without them.\n\n"
+            "Install 32-bit development headers for your distribution:\n"
+            "  Debian/Ubuntu/MX Linux: sudo apt install gcc-multilib libc6-dev-i386\n"
+            "  Fedora/RHEL/CentOS:     sudo dnf install glibc-devel.i686 gcc.i686\n"
+            "  Arch Linux/Manjaro:     sudo pacman -S lib32-glibc lib32-gcc-libs\n"
+            "                          (Ensure multilib repository is enabled in /etc/pacman.conf)\n"
+            "  openSUSE:               sudo zypper install glibc-devel-32bit libstdc++6-devel-32bit\n"
+        )
+    endif()
+    
+    set(WINE32_BUILD_ENABLED TRUE)
+    message(STATUS "32-bit development headers: found (32-bit Wine components will be built)")
+    
     # Wine library paths detection (must be done before setting WINE64/WINE32)
     include(cmake/FindWineLibs.cmake)
     detect_wine_libs()
@@ -252,14 +283,16 @@ if(WINEGCC_EXECUTABLE AND WINEGPP_EXECUTABLE AND MAKENSIS_EXECUTABLE)
         message(WARNING "Install wine64 package to enable 64-bit Wine bridge components")
     endif()
     
-    # 32-bit components are only built if 32-bit Wine libraries are available
+    # Note: 32-bit Wine bridge components are built when WINE_PLUGIN is enabled (see above)
+    # WINE32 detection indicates if 32-bit Wine libraries are available (informational only)
+    # 32-bit components are ALREADY being built (required when WINE_PLUGIN is enabled)
     if(WINE32_FOUND)
         set(WINE32 TRUE)
-        message(STATUS "Wine32 plugin: enabled (32-bit components will be built)")
+        message(STATUS "Wine32 libraries: found (32-bit Wine libraries detected)")
     else()
         set(WINE32 FALSE)
-        message(STATUS "Wine32 libraries not found - 32-bit components will not be built")
-        message(STATUS "Install wine32 package to enable 32-bit Wine bridge components")
+        message(STATUS "Wine32 libraries: not found (32-bit components still built - libraries not required)")
+        message(STATUS "Note: 32-bit Wine bridge components are built regardless of Wine32 library detection")
     endif()
 else()
     set(WINE_PLUGIN FALSE)

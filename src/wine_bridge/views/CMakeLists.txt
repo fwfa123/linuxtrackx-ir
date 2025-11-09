@@ -6,6 +6,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 
 # 32-bit TrackIR executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: TrackIR.exe.so : main.o rest.o
+# NOTE: This is a CRITICAL 32-bit only component. 32-bit development headers are REQUIRED
+# when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
 if(WINE_PLUGIN)
     add_wine_executable(TrackIR
         SOURCES

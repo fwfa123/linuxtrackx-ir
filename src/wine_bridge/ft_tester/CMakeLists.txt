@@ -7,6 +7,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 # 32-bit ftc executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: ftc.exe.so : main.o fttester.o ../client/rest.o
 # Note: rest.c is from ../client/rest.c, needs special include paths
+# NOTE: This is a CRITICAL 32-bit only component. 32-bit development headers are REQUIRED
+# when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
 
 # Build when WINE_PLUGIN is enabled (matching Autotools behavior)
 if(WINE_PLUGIN)

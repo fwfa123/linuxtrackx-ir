@@ -7,6 +7,8 @@ include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
 # 32-bit FreeTrackClient DLL (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: FreeTrackClient.dll.so : FreeTrackClient.spec FreeTrackClient_main.o linuxtrack.o utils.o
 # Note: utils.c is from ../../utils.c, linuxtrack.c is from current directory
+# NOTE: This is a CRITICAL 32-bit only component. 32-bit development headers are REQUIRED
+# when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
 
 # Build when WINE_PLUGIN is enabled (matching Autotools behavior)
 if(WINE_PLUGIN)

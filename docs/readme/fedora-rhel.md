@@ -15,7 +15,7 @@ sudo dnf install sqlite  # Required for Qt help system
 ### Wine Support (Level 2+)
 ```bash
 sudo dnf install wine-devel wine-devel.i686  # Wine development tools (32-bit and 64-bit)
-sudo dnf install glibc-devel.i686 gcc.i686  # REQUIRED: 32-bit development headers
+sudo dnf install glibc-devel.i686 libstdc++-devel.i686  # REQUIRED: 32-bit development headers (C and C++)
 ```
 
 ### Webcam Support (Level 3+)

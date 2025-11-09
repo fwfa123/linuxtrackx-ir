@@ -38,6 +38,8 @@ if(WINE_PLUGIN)
         endif()
         
         # 32-bit components (built when WINE_PLUGIN is enabled, matching Autotools behavior)
+        # NOTE: 32-bit development headers are REQUIRED when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
+        # These are critical components for Wine plugin functionality
         if(WINE_PLUGIN)
             list(APPEND INSTALLER_TARGET_DEPS NPClient check_data)
             list(APPEND INSTALLER_FILE_DEPS 
