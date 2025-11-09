@@ -79,6 +79,8 @@ endif()
 
 # 32-bit Tester executable (built when WINE_PLUGIN is enabled, matching Autotools behavior)
 # Matches: Tester.exe.so : main.o npview.o rest.o npifc.o
+# NOTE: 32-bit development headers are REQUIRED when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
+# This is a critical component for Wine plugin functionality
 if(WINE_PLUGIN)
     add_wine_executable(Tester
         SOURCES
