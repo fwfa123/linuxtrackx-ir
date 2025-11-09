@@ -16,6 +16,7 @@ sudo dnf install sqlite  # Required for Qt help system
 ```bash
 sudo dnf install wine-devel wine-devel.i686  # Wine development tools (32-bit and 64-bit)
 sudo dnf install glibc-devel.i686 libstdc++-devel.i686  # REQUIRED: 32-bit development headers (C and C++)
+sudo dnf install mingw32-nsis  # REQUIRED: NSIS installer (includes stub files for building Windows installers)
 ```
 
 ### Webcam Support (Level 3+)
@@ -170,6 +171,8 @@ sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
 |---------|----------|
 | `winegcc: command not found` | Install Wine development: `sudo dnf install wine-devel` |
 | 32-bit build fails | Install 32-bit headers: `sudo dnf install glibc-devel.i686 gcc.i686` |
+| `Error: reading stub "/usr/share/nsis/Stubs/zlib-x86-unicode"` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
+| `Error initializing CEXEBuild: error setting default stub` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
 
 ### Common Issues
 
