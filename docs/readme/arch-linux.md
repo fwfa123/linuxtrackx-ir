@@ -12,11 +12,18 @@ sudo pacman -S libmxml mesa glu sqlite  # Required for Qt help system
 
 ### Wine Support (Level 2+)
 ```bash
+# Enable multilib repository for 32-bit support (edit /etc/pacman.conf)
+# Uncomment the [multilib] section and include line
+
 # Use wine-stable for best TrackIR compatibility (avoid wine-staging)
 sudo pacman -S wine-stable wine-stable-mono wine-stable-gecko
-# For 32-bit support (if multilib enabled)
-sudo pacman -S lib32-glibc lib32-gcc-libs
+# For 32-bit support (requires multilib repository enabled)
+sudo pacman -S lib32-wine-stable lib32-glibc lib32-gcc-libs
+# REQUIRED: For MFC42 library installation
+sudo pacman -S winetricks cabextract wget
 ```
+
+**IMPORTANT**: Arch Linux requires the multilib repository to be enabled in `/etc/pacman.conf` for 32-bit Wine support. The error "WINEARCH is set to 'win32' but this is not supported in wow64 mode" indicates multilib is not enabled or 32-bit Wine packages are missing.
 
 ### Webcam Support (Level 3+)
 ```bash
@@ -113,7 +120,7 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 
 | Problem | Solution |
 |---------|----------|
-| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | **Use wine-stable instead of wine-staging** - wine-staging doesn't support pure 32-bit prefixes |
+| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | **Enable multilib and install 32-bit Wine**: Enable multilib in `/etc/pacman.conf` and install `lib32-wine-stable` |
 | `wine-staging` conflicts | Remove conflicting packages: `sudo pacman -R wine-staging wine-gecko wine-mono winetricks` |
 | Missing 32-bit libraries | **Use the automated build script**: `./scripts/build_32bit_libs.sh` |
 | 32-bit/64-bit compilation conflicts | Use explicit 64-bit flags: `CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"` |

@@ -14,10 +14,16 @@ sudo dnf install sqlite  # Required for Qt help system
 
 ### Wine Support (Level 2+)
 ```bash
+# Install full Wine with 32-bit support (CRITICAL for MFC42)
+sudo dnf install wine wine.i686
 sudo dnf install wine-devel wine-devel.i686  # Wine development tools (32-bit and 64-bit)
 sudo dnf install glibc-devel.i686 libstdc++-devel.i686  # REQUIRED: 32-bit development headers (C and C++)
 sudo dnf install mingw32-nsis  # REQUIRED: NSIS installer (includes stub files for building Windows installers)
+sudo dnf install winetricks  # REQUIRED: For MFC42 library installation
+sudo dnf install cabextract wget  # REQUIRED: For alternative installation methods
 ```
+
+**IMPORTANT**: The full `wine` and `wine.i686` packages are required for 32-bit Wine prefix creation. The error "WINEARCH is set to 'win32' but this is not supported in wow64 mode" indicates missing 32-bit Wine support. Wine mono and gecko components are downloaded automatically when needed.
 
 ### Webcam Support (Level 3+)
 ```bash
@@ -171,6 +177,7 @@ sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
 |---------|----------|
 | `winegcc: command not found` | Install Wine development: `sudo dnf install wine-devel` |
 | 32-bit build fails | Install 32-bit headers: `sudo dnf install glibc-devel.i686 gcc.i686` |
+| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | **Install full 32-bit Wine**: `sudo dnf install wine wine.i686` |
 | `Error: reading stub "/usr/share/nsis/Stubs/zlib-x86-unicode"` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
 | `Error initializing CEXEBuild: error setting default stub` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
 
