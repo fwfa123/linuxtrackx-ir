@@ -30,7 +30,7 @@ static void ltr_int_sanitize_name(char *name)
   name[len] = '\0';
 }
 
-int ltr_wakeup(void);
+linuxtrack_state_type ltr_wakeup(void);
 
 static char *ltr_int_init_helper(const char *cust_section, bool standalone)
 {

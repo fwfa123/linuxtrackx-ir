@@ -368,10 +368,11 @@ endif()
 # Wine library paths detection is now done earlier when WINE_PLUGIN is enabled
 
 # Set config.h defines (matching config.h.in template)
+# Use separate variable to avoid overwriting boolean WEBCAM_SUPPORT used in conditions
 if(WEBCAM_SUPPORT)
-    set(WEBCAM_SUPPORT "#define WEBCAM_SUPPORT 1")
+    set(WEBCAM_SUPPORT_DEFINE "#define WEBCAM_SUPPORT 1")
 else()
-    set(WEBCAM_SUPPORT "/* #undef WEBCAM_SUPPORT */")
+    set(WEBCAM_SUPPORT_DEFINE "/* #undef WEBCAM_SUPPORT */")
 endif()
 
 if(TRACKIR_SUPPORT)
@@ -380,10 +381,11 @@ else()
     set(TRACKIR_SUPPORT "/* #undef TRACKIR_SUPPORT */")
 endif()
 
+# Use separate variable to avoid overwriting boolean WIIMOTE_SUPPORT used in conditions
 if(WIIMOTE_SUPPORT)
-    set(WIIMOTE_SUPPORT "#define WIIMOTE_SUPPORT 1")
+    set(WIIMOTE_SUPPORT_DEFINE "#define WIIMOTE_SUPPORT 1")
 else()
-    set(WIIMOTE_SUPPORT "/* #undef WIIMOTE_SUPPORT */")
+    set(WIIMOTE_SUPPORT_DEFINE "/* #undef WIIMOTE_SUPPORT */")
 endif()
 
 if(FACE_TRACKER_SUPPORT)
@@ -444,11 +446,20 @@ else()
 endif()
 
 # Configure header file using template
+# Temporarily set variables to strings for config.h generation
+# Store original boolean values
+set(WEBCAM_SUPPORT_BOOL ${WEBCAM_SUPPORT})
+set(WIIMOTE_SUPPORT_BOOL ${WIIMOTE_SUPPORT})
+set(WEBCAM_SUPPORT ${WEBCAM_SUPPORT_DEFINE})
+set(WIIMOTE_SUPPORT ${WIIMOTE_SUPPORT_DEFINE})
 configure_file(
     ${CMAKE_SOURCE_DIR}/config.h.in
     ${CMAKE_BINARY_DIR}/config.h
     @ONLY
 )
+# Restore boolean values for use in src/CMakeLists.txt (called after this)
+set(WEBCAM_SUPPORT ${WEBCAM_SUPPORT_BOOL})
+set(WIIMOTE_SUPPORT ${WIIMOTE_SUPPORT_BOOL})
 
 # Set library path define
 set(LIB_PATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack")

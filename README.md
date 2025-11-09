@@ -45,7 +45,7 @@ mkdir build && cd build
 cmake .. [OPTIONS]
 
 # Build
-
+cmake --build . -j$(nproc)
 
 # Install
 sudo cmake --install .
