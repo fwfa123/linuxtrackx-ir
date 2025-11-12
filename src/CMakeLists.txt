@@ -545,8 +545,8 @@ if(WIIMOTE_SUPPORT AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/linuxtrack-wii.svg)
 endif()
 
 # Build Qt GUI after core libraries
-if(TARGET ltr_gui_qmake)
-    add_dependencies(ltr_gui_qmake ltr tir)
+if(TARGET ltr_gui)
+    add_dependencies(ltr_gui ltr tir)
 endif()
 
 # ldconfig integration
