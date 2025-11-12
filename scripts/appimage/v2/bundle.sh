@@ -29,6 +29,12 @@ pushd "$APPDIR" >/dev/null
         --plugin qt \
         || print_warning "linuxdeploy returned non-zero; continuing"
 
+    # Ensure desktop file is at AppDir root (required by appimagetool)
+    if [[ -f "$DESKTOP_FILE" && ! -f "$(basename "$DESKTOP_FILE")" ]]; then
+        print_status "Copying desktop file to AppDir root for appimagetool"
+        cp "$DESKTOP_FILE" "$(basename "$DESKTOP_FILE")"
+    fi
+
     # Qt plugin to collect Qt libs/plugins
     if [[ -x "$LINUXDEPLOY_QT" && -f usr/bin/ltr_gui ]]; then
         print_status "Running linuxdeploy-plugin-qt"
