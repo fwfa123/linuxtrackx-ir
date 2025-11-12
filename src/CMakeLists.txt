@@ -262,6 +262,13 @@ target_link_libraries(ltr_server1
     ${PTHREAD_LIBRARY}
 )
 
+# Set RPATH so ltr_server1 can find libltr.so at runtime
+# This is critical when the slave process is spawned from Wine context
+set_target_properties(ltr_server1 PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
+
 # ltr_pipe CLI
 add_executable(ltr_pipe
     ltr_pipe.c
