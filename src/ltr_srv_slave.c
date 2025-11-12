@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <string.h>
+#include <errno.h>
 #include <ipc_utils.h>
 #include <ltlib.h>
 #include <utils.h>
@@ -80,21 +82,27 @@ static bool start_master()
 static bool open_master_comms(int *l_master_uplink)
 {
   ltr_int_log_message("Opening master comms!\n");
+  const char *socket_name = ltr_int_master_socket_name();
+  ltr_int_log_message("Slave: Connecting to master socket: %s\n", socket_name);
   //printf("open_master_comms\n");
-  *l_master_uplink = ltr_int_connect_to_socket(ltr_int_master_socket_name());
+  *l_master_uplink = ltr_int_connect_to_socket(socket_name);
   //printf("====================");
   if(*l_master_uplink <= 0){
-    ltr_int_log_message("Couldn't connect to master's socket!\n");
+    ltr_int_log_message("Slave: Couldn't connect to master's socket! (fd=%d, errno=%d: %s)\n", 
+                       *l_master_uplink, errno, strerror(errno));
     return false;
   }
 
-  ltr_int_log_message("Master comms opened => u -> %d\n", *l_master_uplink);
+  ltr_int_log_message("Slave: Master comms opened => u -> %d\n", *l_master_uplink);
+  ltr_int_log_message("Slave: Profile name: %s\n", profile_name ? profile_name : "(null)");
 
-  if(ltr_int_send_message_w_str(*l_master_uplink, CMD_NEW_SOCKET, 0, profile_name) != 0){
-    ltr_int_log_message("Master uplink doesn't seem to be working!\n");
+  int send_result = ltr_int_send_message_w_str(*l_master_uplink, CMD_NEW_SOCKET, 0, profile_name);
+  if(send_result != 0){
+    ltr_int_log_message("Slave: Master uplink doesn't seem to be working! (send_result=%d, errno=%d: %s)\n", 
+                       send_result, errno, strerror(errno));
     return false;
   }
-  ltr_int_log_message("Notification of the '%s' client sent to master!\n", profile_name);
+  ltr_int_log_message("Slave: Notification of the '%s' client sent to master! (CMD_NEW_SOCKET)\n", profile_name);
 
   return true;
 }
@@ -326,6 +334,14 @@ static void ltr_int_slave_main_loop()
 bool ltr_int_slave(const char *c_profile, const char *c_com_file, const char *ppid_str,
                    const char *close_pipe_str, const char *notify_pipe_str)
 {
+  ltr_int_log_message("Slave: ltr_int_slave() entry point called!\n");
+  ltr_int_log_message("Slave: Profile: %s, com_file: %s, ppid: %s, close_pipe: %s, notify_pipe: %s\n",
+                      c_profile ? c_profile : "(null)",
+                      c_com_file ? c_com_file : "(null)",
+                      ppid_str ? ppid_str : "(null)",
+                      close_pipe_str ? close_pipe_str : "(null)",
+                      notify_pipe_str ? notify_pipe_str : "(null)");
+  
   unsigned long tmp_ppid;
   profile_name = ltr_int_my_strdup(c_profile);
   sscanf(ppid_str, "%lu", &tmp_ppid);
@@ -338,7 +354,7 @@ bool ltr_int_slave(const char *c_profile, const char *c_com_file, const char *pp
   if(notify_pipe > 0){
     fcntl(notify_pipe, F_SETFL, fcntl(notify_pipe, F_GETFL) | O_NONBLOCK);
   }
-  //printf("Going to monitor parent %lu!\n", tmp_ppid);
+  ltr_int_log_message("Slave: Going to monitor parent %lu! (notify_pipe=%d)\n", tmp_ppid, notify_pipe);
   ppid = (pid_t)tmp_ppid;
   if(!ltr_int_read_prefs(NULL, false)){
     ltr_int_log_message("Couldn't load preferences!\n");
