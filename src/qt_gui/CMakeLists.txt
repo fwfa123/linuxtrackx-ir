@@ -1,156 +1,359 @@
 # src/qt_gui/CMakeLists.txt
-# Qt5 GUI application - using qmake like Autotools does
+# Qt5 GUI application - native CMake Qt integration
 
-# Find qmake
-find_program(QMAKE_EXECUTABLE
-    NAMES qmake-qt5 qt5-qmake qmake5 qmake
-    REQUIRED
-)
+# Enable Qt5 automatic processing
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
 
-# Find qhelpgenerator and get its directory for PATH
-# This ensures qhelpgenerator is found when qmake-generated Makefile runs
+# Find qhelpgenerator for help file generation
 find_program(QT5_QHELPGENERATOR
     NAMES qhelpgenerator-qt5 qhelpgenerator
 )
 
-# Enhanced cross-distro Qt5 bin directory detection
-if(NOT QT5_BIN_DIR)
-    # Method 1: Get Qt5 bin directory from qmake (most reliable cross-distro method)
-    execute_process(
-        COMMAND ${QMAKE_EXECUTABLE} -query QT_INSTALL_BINS
-        OUTPUT_VARIABLE QT5_BINS_QUERY
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if(QT5_BINS_QUERY AND EXISTS "${QT5_BINS_QUERY}")
-        set(QT5_BIN_DIR "${QT5_BINS_QUERY}")
-        message(STATUS "Qt5 bin directory found via qmake query: ${QT5_BIN_DIR}")
-    endif()
-endif()
-
-if(NOT QT5_BIN_DIR AND QT5_QHELPGENERATOR)
-    # Method 2: Get directory from found qhelpgenerator (works across all distros)
-    get_filename_component(QT5_BIN_DIR ${QT5_QHELPGENERATOR} DIRECTORY)
-    message(STATUS "Qt5 bin directory found via qhelpgenerator location: ${QT5_BIN_DIR}")
-endif()
-
-if(NOT QT5_BIN_DIR)
-    # Method 3: Get directory from qmake executable itself
-    get_filename_component(QMAKE_DIR ${QMAKE_EXECUTABLE} DIRECTORY)
-    if(EXISTS "${QMAKE_DIR}/qhelpgenerator" OR EXISTS "${QMAKE_DIR}/qhelpgenerator-qt5")
-        set(QT5_BIN_DIR "${QMAKE_DIR}")
-        message(STATUS "Qt5 bin directory found via qmake location: ${QT5_BIN_DIR}")
-    endif()
-endif()
-
-if(NOT QT5_BIN_DIR)
-    # Method 4: Try common distribution-specific paths
-    # These are used as fallback when automatic detection fails
-    foreach(COMMON_PATH
-        "/usr/lib64/qt5/bin"      # Fedora/RHEL 64-bit
-        "/usr/lib/qt5/bin"        # Fedora/RHEL 32-bit, Arch Linux, openSUSE
-        "/usr/lib/x86_64-linux-gnu/qt5/bin"  # Debian/Ubuntu 64-bit
-        "/usr/lib/i386-linux-gnu/qt5/bin"    # Debian/Ubuntu 32-bit
-        "/opt/qt5/bin"             # Some custom installations
-        "/usr/local/lib/qt5/bin"   # Local Qt5 installations
-    )
-        if(EXISTS "${COMMON_PATH}/qhelpgenerator" OR EXISTS "${COMMON_PATH}/qhelpgenerator-qt5")
-            set(QT5_BIN_DIR "${COMMON_PATH}")
-            message(STATUS "Qt5 bin directory found via common path fallback: ${QT5_BIN_DIR}")
-            break()
-        endif()
-    endforeach()
-endif()
-
-# Verify qhelpgenerator exists in the detected directory
-if(QT5_BIN_DIR)
-    if(EXISTS "${QT5_BIN_DIR}/qhelpgenerator-qt5")
-        set(QT5_QHELPGENERATOR "${QT5_BIN_DIR}/qhelpgenerator-qt5")
-    elseif(EXISTS "${QT5_BIN_DIR}/qhelpgenerator")
-        set(QT5_QHELPGENERATOR "${QT5_BIN_DIR}/qhelpgenerator")
-    endif()
-endif()
-
-# Report Qt5 tool detection results
 if(QT5_QHELPGENERATOR)
     message(STATUS "Qt5 qhelpgenerator found: ${QT5_QHELPGENERATOR}")
 else()
     message(WARNING "Qt5 qhelpgenerator not found. Help file generation will fail. Install qt5-qttools or qt5-tools package.")
 endif()
 
-# Build Qt GUI using qmake
-set(QMAKE_MAKEFILE ${CMAKE_CURRENT_BINARY_DIR}/qmake_Makefile)
+# Copy config.h to build directory (needed for HAVE_CONFIG_H)
+set(LOCAL_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+add_custom_command(
+    OUTPUT ${LOCAL_CONFIG_H}
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BINARY_DIR}/config.h ${LOCAL_CONFIG_H}
+    DEPENDS ${CMAKE_BINARY_DIR}/config.h
+    COMMENT "Copying config.h to qt_gui build directory"
+)
 
-# Prepare environment for qmake/make execution
-# Pass QT5_QHELPGENERATOR as environment variable so .pro file can use it via $$(QT5_QHELPGENERATOR)
-# Also ensure PATH includes Qt5 bin directory for all subprocesses
-set(QMAKE_ENV_VARS "")
+# Common source files (all platforms)
+set(LTR_GUI_HEADERS
+    ltr_gui.h
+    ltr_show.h
+    ltr_dev_help.h
+    help_view.h
+    ltr_gui_prefs.h
+    prefs_link.h
+    tir_prefs.h
+    device_setup.h
+    ltr_model.h
+    window.h
+    glwidget.h
+    objreader.h
+    ltr_profiles.h
+    log_view.h
+    ltr_state.h
+    scp_form.h
+    buffering.h
+    progress.h
+    scurve.h
+    scview.h
+    wiimote_prefs.h
+    tracker.h
+    plugin_install.h
+    profile_setup.h
+    profile_selector.h
+    guardian.h
+    xplugin.h
+    wine_warn.h
+    extractor.h
+    ../game_data.h
+    hashing.h
+    downloading.h
+    wine_launcher.h
+    macps3eye_prefs.h
+    macwebcam_info.h
+    ../ps3_prefs.h
+    macps3eyeft_prefs.h
+    help_viewer.h
+    ../extract.h
+    ../digest.h
+    trackir_permission_dialog.h
+    lutris_integration.h
+    steam_integration.h
+    testing_section.h
+    tester_launcher.h
+    flatpak_detector.h
+    installer_paths.h
+    about_dialog.h
+)
+
+set(LTR_GUI_FORMS
+    ltr_gui.ui
+    dev_help.ui
+    ltr.ui
+    model_creation.ui
+    scurve.ui
+    scp_form.ui
+    logview.ui
+    wii_setup.ui
+    tir_setup.ui
+    cap_edit.ui
+    clip_edit.ui
+    single_edit.ui
+    model_edit.ui
+    device_setup.ui
+    profile_setup.ui
+    profile_selector.ui
+    cap_tweaking.ui
+    clip_tweaking.ui
+    extractor.ui
+    progress.ui
+    xplugin.ui
+    wine_warn.ui
+    m_ps3eye_setup.ui
+    m_ps3eye_ft_setup.ui
+)
+
+set(LTR_GUI_SOURCES
+    main.cpp
+    ltr_gui.cpp
+    ltr_show.cpp
+    ltr_dev_help.cpp
+    ltr_gui_prefs.cpp
+    tir_prefs.cpp
+    help_view.cpp
+    buffering.cpp
+    ltr_model.cpp
+    window.cpp
+    glwidget.cpp
+    objreader.cpp
+    ltr_profiles.cpp
+    log_view.cpp
+    ltr_state.cpp
+    scp_form.cpp
+    guardian.cpp
+    scurve.cpp
+    scview.cpp
+    wiimote_prefs.cpp
+    ../ltr_srv_master.cpp
+    device_setup.cpp
+    ../ltr_srv_slave.c
+    ../ltr_srv_comm.c
+    plugin_install.cpp
+    profile_setup.cpp
+    profile_selector.cpp
+    xplugin.cpp
+    wine_warn.cpp
+    progress.cpp
+    extractor.cpp
+    ../game_data.c
+    hashing.cpp
+    downloading.cpp
+    wine_launcher.cpp
+    macps3eye_prefs.cpp
+    macwebcam_info.cpp
+    macps3eyeft_prefs.cpp
+    help_viewer.cpp
+    ../extract.c
+    ../digest.c
+    trackir_permission_dialog.cpp
+    lutris_integration.cpp
+    steam_integration.cpp
+    testing_section.cpp
+    tester_launcher.cpp
+    flatpak_detector.cpp
+    installer_paths.cpp
+    about_dialog.cpp
+)
+
+# Platform-specific files
+if(NOT APPLE)
+    # Linux-specific files
+    list(APPEND LTR_GUI_HEADERS
+        webcam_prefs.h
+        webcam_info.h
+        webcam_ft_prefs.h
+        joy_prefs.h
+    )
+    list(APPEND LTR_GUI_FORMS
+        l_wc_setup.ui
+        l_wcft_setup.ui
+        joy_setup.ui
+    )
+    list(APPEND LTR_GUI_SOURCES
+        webcam_info.cpp
+        webcam_prefs.cpp
+        webcam_ft_prefs.cpp
+        joy_prefs.cpp
+    )
+else()
+    # macOS-specific files
+    list(APPEND LTR_GUI_HEADERS
+        macwebcam_prefs.h
+        macwebcamft_prefs.h
+    )
+    list(APPEND LTR_GUI_FORMS
+        m_wc_setup.ui
+        m_wcft_setup.ui
+    )
+    list(APPEND LTR_GUI_SOURCES
+        macwebcamft_prefs.cpp
+        macwebcam_prefs.cpp
+    )
+endif()
+
+# Create executable
+add_executable(ltr_gui
+    ${LOCAL_CONFIG_H}
+    ${LTR_GUI_HEADERS}
+    ${LTR_GUI_FORMS}
+    ${LTR_GUI_SOURCES}
+    ltr_rc.qrc
+    precomp_headers.h
+)
+
+# Link Qt5 libraries
+target_link_libraries(ltr_gui
+    Qt5::Core
+    Qt5::Widgets
+    Qt5::OpenGL
+    Qt5::Network
+    Qt5::Help
+    Qt5::Concurrent
+    Qt5::Sql
+    ltr
+    ${MXML_LIBRARIES}
+    ${MATH_LIBRARY}
+)
+
+# Link OpenGL and GLU libraries (for OpenGL utilities)
+find_library(OPENGL_LIBRARY OpenGL)
+find_library(GLU_LIBRARY GLU)
+if(OPENGL_LIBRARY)
+    target_link_libraries(ltr_gui ${OPENGL_LIBRARY})
+else()
+    message(WARNING "OpenGL library not found - some OpenGL features may not work")
+endif()
+if(GLU_LIBRARY)
+    target_link_libraries(ltr_gui ${GLU_LIBRARY})
+else()
+    message(WARNING "GLU library not found - some OpenGL features may not work")
+endif()
+
+# Platform-specific linking
+if(NOT APPLE)
+    target_link_libraries(ltr_gui
+        Qt5::X11Extras
+        X11
+    )
+endif()
+
+# Compile definitions
+target_compile_definitions(ltr_gui PRIVATE
+    QT_NO_CAST_FROM_ASCII
+    QT_NO_CAST_TO_ASCII
+    HAVE_CONFIG_H
+    HELP_BASE="ltr_gui/"
+)
+
+# Platform-specific compile definitions
+if(NOT APPLE)
+    target_compile_definitions(ltr_gui PRIVATE
+        LTR_GUI
+    )
+endif()
+
+# Include directories
+target_include_directories(ltr_gui PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src
+)
+
+# Compile options
+target_compile_options(ltr_gui PRIVATE
+    -Wall
+    -Wextra
+)
+
+# Platform-specific compile options
+if(NOT APPLE)
+    target_compile_options(ltr_gui PRIVATE
+        -fvisibility=hidden
+        -Wformat
+        -Wformat-security
+        --param ssp-buffer-size=4
+        -fstack-protector
+        -D_FORTIFY_SOURCE=1
+    )
+endif()
+
+# Set RPATH
+set_target_properties(ltr_gui PROPERTIES
+    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
+    BUILD_WITH_INSTALL_RPATH TRUE
+)
+
+# Precompiled header support
+# Note: CMake 3.16+ supports target_precompile_headers, but we'll handle it manually
+# for compatibility. The precomp_headers.h file will be included in sources.
+
+# ============================================================================
+# Qt Help System Generation
+# ============================================================================
+
+# Help file generation targets
+set(HELP_QCH_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qch)
+set(HELP_QHC_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qhc)
+
 if(QT5_QHELPGENERATOR)
-    set(QMAKE_ENV_VARS "QT5_QHELPGENERATOR=${QT5_QHELPGENERATOR}")
-endif()
-
-# Always include Qt5 bin directory in PATH if found, even as fallback
-if(QT5_BIN_DIR)
-    if(QMAKE_ENV_VARS)
-        set(QMAKE_ENV_VARS "${QMAKE_ENV_VARS};PATH=${QT5_BIN_DIR}:$ENV{PATH}")
-    else()
-        set(QMAKE_ENV_VARS "PATH=${QT5_BIN_DIR}:$ENV{PATH}")
-    endif()
-    # Create a PATH prefix that can be used with bash -c to ensure subprocesses inherit the PATH
-    set(QT5_PATH_PREFIX "PATH=${QT5_BIN_DIR}:$ENV{PATH} ")
-    message(STATUS "Qt5 tools PATH configured: ${QT5_BIN_DIR}")
-else()
-    set(QT5_PATH_PREFIX "")
-    if(NOT QT5_QHELPGENERATOR)
-        message(WARNING "Qt5 bin directory not found. Qt5 tools may not be accessible during build.")
-    endif()
-endif()
-
-# Build Qt GUI using qmake
-# Commands run in sequence: copy config.h -> run qmake -> run make -> fix help files
-add_custom_target(ltr_gui_qmake ALL
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/config.h ${CMAKE_CURRENT_BINARY_DIR}/config.h
-    COMMAND ${CMAKE_COMMAND} -E echo "Running qmake to generate Makefile..."
-)
-
-# Run qmake (after config.h is copied)
-# Always set environment variables to ensure Qt5 tools are accessible
-add_custom_command(TARGET ltr_gui_qmake POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E env ${QMAKE_ENV_VARS} ${QMAKE_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.pro LIBDIR=${CMAKE_BINARY_DIR}/src -o ${QMAKE_MAKEFILE}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Generating Makefile with qmake"
-)
-
-# Run make (after qmake generates Makefile)
-# Use env command to ensure environment variables are properly inherited by all subprocesses
-if(QMAKE_ENV_VARS)
-    add_custom_command(TARGET ltr_gui_qmake POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E env ${QMAKE_ENV_VARS} ${CMAKE_MAKE_PROGRAM} -f ${QMAKE_MAKEFILE}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Building Qt GUI with make"
+    # Generate help.qch from ltr_gui.qhp
+    add_custom_command(
+        OUTPUT ${HELP_QCH_FILE}
+        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp -o ${HELP_QCH_FILE}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating Qt Help file (help.qch)"
+    )
+    
+    # Generate help.qhc from ltr_gui.qhcp
+    add_custom_command(
+        OUTPUT ${HELP_QHC_FILE}
+        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp -o ${HELP_QHC_FILE}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp ${HELP_QCH_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating Qt Help collection (help.qhc)"
+    )
+    
+    # Fix help.qhc path after generation (modifies file in place)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
+        COMMAND chmod u+w ${HELP_QHC_FILE}
+        COMMAND ${CMAKE_COMMAND} -DHELP_QHC_FILE="${HELP_QHC_FILE}" -DHELP_QCH_FILE="${HELP_QCH_FILE}" -P "${CMAKE_SOURCE_DIR}/cmake/fix_help_qhc.cmake"
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
+        DEPENDS ${HELP_QHC_FILE}
+        COMMENT "Fixing help.qhc path references"
+    )
+    
+    # Custom target for help generation
+    add_custom_target(ltr_gui_help ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
     )
 else()
-    add_custom_command(TARGET ltr_gui_qmake POST_BUILD
-        COMMAND ${CMAKE_MAKE_PROGRAM} -f ${QMAKE_MAKEFILE}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Building Qt GUI with make"
+    message(WARNING "Qt5 qhelpgenerator not found - help files will not be generated")
+    # Create empty files to avoid installation errors
+    add_custom_command(
+        OUTPUT ${HELP_QCH_FILE} ${HELP_QHC_FILE}
+        COMMAND ${CMAKE_COMMAND} -E touch ${HELP_QCH_FILE} ${HELP_QHC_FILE}
+        COMMENT "Creating placeholder help files (qhelpgenerator not found)"
+    )
+    add_custom_target(ltr_gui_help ALL
+        DEPENDS ${HELP_QCH_FILE} ${HELP_QHC_FILE}
     )
 endif()
 
-# Fix help.qhc path after generation (after make completes)
-add_custom_command(TARGET ltr_gui_qmake POST_BUILD
-    COMMAND chmod u+w ${CMAKE_CURRENT_BINARY_DIR}/help.qhc
-    COMMAND ${CMAKE_COMMAND} -DHELP_QHC_FILE="${CMAKE_CURRENT_BINARY_DIR}/help.qhc" -DHELP_QCH_FILE="${CMAKE_CURRENT_BINARY_DIR}/help.qch" -P "${CMAKE_SOURCE_DIR}/cmake/fix_help_qhc.cmake"
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "Fixing help file paths"
+# ============================================================================
+# Installation
+# ============================================================================
+
+# Install executable
+install(TARGETS ltr_gui
+    RUNTIME DESTINATION bin
 )
 
-# Install Qt GUI executable
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ltr_gui
-    DESTINATION bin
-)
-
-# Install Qt GUI data files
+# Install data files
 install(FILES
     sparow_opaq.obj
     sparow_glass.obj
@@ -167,14 +370,9 @@ install(FILES
 )
 
 # Install help files if they exist
-# Note: We install both files, then fix the path in help.qhc after installation
 install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/help.qhc
-    ${CMAKE_CURRENT_BINARY_DIR}/help.qch
+    ${HELP_QHC_FILE}
+    ${HELP_QCH_FILE}
     DESTINATION share/linuxtrack/help/ltr_gui
     OPTIONAL
 )
-
-# Note: help.qhc path is fixed during build (in ltr_gui_qmake target)
-# No need to fix during installation since it's already corrected
-
