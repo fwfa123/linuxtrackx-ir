@@ -4,10 +4,12 @@
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #include "ltlib_int.h"
 #include "ipc_utils.h"
 #include "utils.h"
+#include "pref.h"
 
 static struct mmap_s mmm;
 static bool initialized = false;
@@ -30,6 +32,62 @@ static void ltr_int_sanitize_name(char *name)
   name[len] = '\0';
 }
 
+// Helper function to search for an executable in PATH
+static char *ltr_int_find_in_path(const char *executable)
+{
+  char *path_env = getenv("PATH");
+  if(path_env == NULL){
+    return NULL;
+  }
+  
+  // Make a copy of PATH since strtok_r will modify it
+  char *path_copy = ltr_int_my_strdup(path_env);
+  if(path_copy == NULL){
+    return NULL;
+  }
+  
+  char *saveptr = NULL;
+  char *dir;
+  char *full_path = NULL;
+  
+  // Iterate through each directory in PATH using strtok_r (portable)
+  dir = strtok_r(path_copy, ":", &saveptr);
+  while(dir != NULL){
+    if(*dir == '\0'){
+      // Empty directory means current directory
+      dir = ".";
+    }
+    
+    // Construct full path: dir/executable
+    size_t dir_len = strlen(dir);
+    size_t exec_len = strlen(executable);
+    size_t total_len = dir_len + 1 + exec_len + 1; // dir + '/' + executable + '\0'
+    
+    full_path = (char *)malloc(total_len);
+    if(full_path == NULL){
+      free(path_copy);
+      return NULL;
+    }
+    
+    snprintf(full_path, total_len, "%s/%s", dir, executable);
+    
+    // Check if file exists and is executable
+    if(access(full_path, F_OK | X_OK) == 0){
+      free(path_copy);
+      return full_path;
+    }
+    
+    free(full_path);
+    full_path = NULL;
+    
+    // Get next directory
+    dir = strtok_r(NULL, ":", &saveptr);
+  }
+  
+  free(path_copy);
+  return NULL;
+}
+
 linuxtrack_state_type ltr_wakeup(void);
 
 static char *ltr_int_init_helper(const char *cust_section, bool standalone)
@@ -39,13 +97,61 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
   char pipe1[16];
   int fd[2];
   bool is_child;
-  // Don't return early if we're in client mode - we may need to reconnect
-  if(initialized && standalone) return mmm.fname;
-  if(make_mmap() != 0) return NULL;
+  bool created_new_mmap = false;
+  
+  // If already initialized, check if we should reuse or create new
+  // Don't create a new one as that would lose the connection to the original
+  if(initialized){
+    if(standalone){
+      // Already initialized in standalone mode, just return
+      return mmm.fname;
+    }
+    // Already initialized, but switching to/checking client mode
+    // Check if the existing mmap is in an error state - if so, create a new one
+    struct ltr_comm *com_check = mmm.data;
+    ltr_int_lockSemaphore(mmm.sem);
+    linuxtrack_state_type current_state = com_check->state;
+    ltr_int_unlockSemaphore(mmm.sem);
+    
+    // If state is err_NOT_INITIALIZED, the previous initialization failed
+    // Create a new mmap instead of reusing the broken one
+    if(current_state == err_NOT_INITIALIZED){
+      ltr_int_log_message("Existing mmap is in error state, creating new shared memory region\n");
+      ltr_int_unmap_file(&mmm);
+      initialized = false;
+      // Fall through to create new mmap
+    } else {
+      // Reuse existing mmm - don't create a new one
+      // Return immediately to avoid creating duplicate slave connections
+      // and leaking the existing notify_pipe file descriptor
+      ltr_int_log_message("Already initialized, reusing existing shared memory region (state: %d)\n", current_state);
+      return mmm.fname;
+    }
+  }
+  
+  // Create new shared memory region if not initialized or if previous one was in error state
+  if(!initialized){
+    if(make_mmap() != 0) return NULL;
+    initialized = true;
+    created_new_mmap = true;  // Track that we created it in this call
+  }
+  
   struct ltr_comm *com = mmm.data;
-  com->state = INITIALIZING;
-  com->preparing_start = true;
-  initialized = true;
+  // Acquire semaphore before modifying shared memory state to prevent data races
+  ltr_int_lockSemaphore(mmm.sem);
+  // Only reset state to INITIALIZING if it's currently in an error state
+  // Preserve valid running states (RUNNING, PAUSED, INITIALIZING, STOPPED)
+  if(com->state < 0 || com->state == STOPPED){
+    com->state = INITIALIZING;
+    com->preparing_start = true;
+  } else {
+    // State is already valid (RUNNING, PAUSED, or INITIALIZING), preserve it
+    // Only set preparing_start if we're creating a new mmap
+    if(created_new_mmap){
+      com->preparing_start = true;
+    }
+  }
+  ltr_int_unlockSemaphore(mmm.sem);
   if(standalone){
     if(pipe(fd) < 0){
       fd[0] = fd[1] = -1;
@@ -61,8 +167,20 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
     snprintf(pipe1, sizeof(pipe1), "%d", fd[1]);
     char *args[] = {server, section, mmm.fname, pid, pipe0, pipe1, NULL};
     if(!ltr_int_fork_child(args, &is_child)){
+      // Acquire semaphore before modifying shared memory state
+      ltr_int_lockSemaphore(mmm.sem);
       com->state = err_NOT_INITIALIZED;
+      ltr_int_unlockSemaphore(mmm.sem);
       free(server);
+      free(section);
+      // Close pipe file descriptors before returning
+      if(fd[0] >= 0) close(fd[0]);
+      if(fd[1] >= 0) close(fd[1]);
+      // Clean up if we created the mmap in this call
+      if(created_new_mmap){
+        ltr_int_unmap_file(&mmm);
+        initialized = false;
+      }
       if(is_child){
         exit(1);
       }
@@ -82,20 +200,118 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
           // The slave will receive pose data from master and write to shared memory
           if(pipe(fd) < 0){
             fd[0] = fd[1] = -1;
+            ltr_int_log_message("Client mode: Failed to create pipe! (errno: %d, %s)\n", errno, strerror(errno));
+            // Acquire semaphore before modifying shared memory state
+            ltr_int_lockSemaphore(mmm.sem);
+            com->state = err_NOT_INITIALIZED;
+            ltr_int_unlockSemaphore(mmm.sem);
+            // Only unmap if we created the mmap in this call
+            // If reusing existing mmap, keep initialized=true and state=error
+            // The next call will detect err_NOT_INITIALIZED and create a new mmap
+            if(created_new_mmap){
+              ltr_int_unmap_file(&mmm);
+              initialized = false;
+            } else {
+              // Reusing existing mmap - keep initialized=true to prevent leak
+              // State is already set to err_NOT_INITIALIZED above
+              // Next call will detect the error state and create a new mmap
+            }
+            return NULL;
           }
+          
+          // Note: We don't call ltr_int_get_key() here because preferences haven't been loaded
+          // in the parent process yet. Preferences are only loaded in the slave process.
+          // The diagnostic logging below via ltr_int_get_app_path() will show the path being used.
+          
           char *server = ltr_int_get_app_path("/ltr_server1");
           if(server == NULL){
-            ltr_int_log_message("Client mode: Could not find ltr_server1 path!\n");
-            com->state = err_NOT_INITIALIZED;
-            return NULL;
+            ltr_int_log_message("Client mode: Could not find ltr_server1 path via ltr_int_get_app_path!\n");
+            
+            // Fallback path resolution
+            ltr_int_log_message("Client mode: Attempting fallback path resolution...\n");
+            const char *fallback_paths[] = {
+              "/usr/local/bin/ltr_server1",
+              "/opt/linuxtrack/bin/ltr_server1",
+              "/usr/bin/ltr_server1",
+              NULL  // Placeholder for PATH lookup (handled separately)
+            };
+            
+            server = NULL;
+            // First try the hardcoded paths
+            for(int i = 0; i < 3; i++){
+              ltr_int_log_message("Client mode: Trying fallback path %d: %s\n", i, fallback_paths[i]);
+              if(access(fallback_paths[i], F_OK | X_OK) == 0){
+                server = ltr_int_my_strdup(fallback_paths[i]);
+                ltr_int_log_message("Client mode: Found ltr_server1 at fallback path: %s\n", server);
+                break;
+              }
+            }
+            
+            // If not found in hardcoded paths, search PATH
+            if(server == NULL){
+              ltr_int_log_message("Client mode: Searching PATH for ltr_server1...\n");
+              server = ltr_int_find_in_path("ltr_server1");
+              if(server != NULL){
+                ltr_int_log_message("Client mode: Found ltr_server1 in PATH: %s\n", server);
+              } else {
+                ltr_int_log_message("Client mode: ltr_server1 not found in PATH\n");
+              }
+            }
+            
+            if(server == NULL){
+              ltr_int_log_message("Client mode: All path resolution attempts failed!\n");
+              // Acquire semaphore before modifying shared memory state
+              ltr_int_lockSemaphore(mmm.sem);
+              com->state = err_NOT_INITIALIZED;
+              ltr_int_unlockSemaphore(mmm.sem);
+              // Close pipe file descriptors before returning
+              if(fd[0] >= 0) close(fd[0]);
+              if(fd[1] >= 0) close(fd[1]);
+              // Only unmap if we created the mmap in this call
+              // If reusing existing mmap, keep initialized=true and state=error
+              // The next call will detect err_NOT_INITIALIZED and create a new mmap
+              if(created_new_mmap){
+                ltr_int_unmap_file(&mmm);
+                initialized = false;
+              } else {
+                // Reusing existing mmap - keep initialized=true to prevent leak
+                // State is already set to err_NOT_INITIALIZED above
+                // Next call will detect the error state and create a new mmap
+              }
+              return NULL;
+            }
+          } else {
+            ltr_int_log_message("Client mode: ltr_int_get_app_path returned: %s\n", server);
           }
+          
           // Verify the server executable exists and is executable before forking
-          if(access(server, F_OK | X_OK) != 0){
+          int access_result = access(server, F_OK | X_OK);
+          if(access_result != 0){
+            ltr_int_log_message("Client mode: access() check failed for %s (errno: %d, %s)\n", 
+                               server, errno, strerror(errno));
             ltr_int_log_message("Client mode: ltr_server1 not found or not executable at: %s\n", server);
+            // Acquire semaphore before modifying shared memory state
+            ltr_int_lockSemaphore(mmm.sem);
             com->state = err_NOT_INITIALIZED;
+            ltr_int_unlockSemaphore(mmm.sem);
             free(server);
+            // Close pipe file descriptors before returning
+            if(fd[0] >= 0) close(fd[0]);
+            if(fd[1] >= 0) close(fd[1]);
+            // Only unmap if we created the mmap in this call
+            // If reusing existing mmap, keep initialized=true and state=error
+            // The next call will detect err_NOT_INITIALIZED and create a new mmap
+            if(created_new_mmap){
+              ltr_int_unmap_file(&mmm);
+              initialized = false;
+            } else {
+              // Reusing existing mmap - keep initialized=true to prevent leak
+              // State is already set to err_NOT_INITIALIZED above
+              // Next call will detect the error state and create a new mmap
+            }
             return NULL;
           }
+          ltr_int_log_message("Client mode: access() check passed for: %s\n", server);
           if(cust_section == NULL){
             cust_section = "Default";
           }
@@ -106,23 +322,61 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
           snprintf(pipe1, sizeof(pipe1), "%d", fd[1]);
           char *args[] = {server, section, mmm.fname, pid, pipe0, pipe1, NULL};
           ltr_int_log_message("Client mode: Spawning slave process: %s %s %s\n", server, section, mmm.fname);
+          ltr_int_log_message("Client mode: Slave process arguments: [0]=%s [1]=%s [2]=%s [3]=%s [4]=%s [5]=%s\n",
+                             args[0], args[1], args[2], args[3], args[4], args[5]);
           if(!ltr_int_fork_child(args, &is_child)){
-            ltr_int_log_message("Client mode: Failed to fork slave process!\n");
+            ltr_int_log_message("Client mode: Failed to fork slave process! (is_child=%d, errno=%d: %s)\n", 
+                               is_child, errno, strerror(errno));
+            // Acquire semaphore before modifying shared memory state
+            ltr_int_lockSemaphore(mmm.sem);
             com->state = err_NOT_INITIALIZED;
+            ltr_int_unlockSemaphore(mmm.sem);
             free(server);
             free(section);
+            // Close pipe file descriptors before returning
+            if(fd[0] >= 0) close(fd[0]);
+            if(fd[1] >= 0) close(fd[1]);
+            // Only unmap if we created the mmap in this call
+            // If reusing existing mmap, keep initialized=true and state=error
+            // The next call will detect err_NOT_INITIALIZED and create a new mmap
+            if(created_new_mmap){
+              ltr_int_unmap_file(&mmm);
+              initialized = false;
+            } else {
+              // Reusing existing mmap - keep initialized=true to prevent leak
+              // State is already set to err_NOT_INITIALIZED above
+              // Next call will detect the error state and create a new mmap
+            }
             if(is_child){
               exit(1);
             }
             return NULL;
           }
+          ltr_int_log_message("Client mode: Slave process forked successfully (is_child=%d)\n", is_child);
           free(server);
           free(section);
           close(fd[1]);
           notify_pipe = fd[0];
           fcntl(notify_pipe, F_SETFL, fcntl(notify_pipe, F_GETFL) | O_NONBLOCK);
         } else {
+          // Socket connection failed - no pipe was created in this path
+          ltr_int_log_message("Client mode: Could not connect to master socket /tmp/ltr_m_sock (errno: %d, %s)\n", 
+                             errno, strerror(errno));
+          // Acquire semaphore before modifying shared memory state
+          ltr_int_lockSemaphore(mmm.sem);
           com->state = err_NOT_INITIALIZED;
+          ltr_int_unlockSemaphore(mmm.sem);
+          // Only unmap if we created the mmap in this call
+          // If reusing existing mmap, keep initialized=true and state=error
+          // The next call will detect err_NOT_INITIALIZED and create a new mmap
+          if(created_new_mmap){
+            ltr_int_unmap_file(&mmm);
+            initialized = false;
+          } else {
+            // Reusing existing mmap - keep initialized=true to prevent leak
+            // State is already set to err_NOT_INITIALIZED above
+            // Next call will detect the error state and create a new mmap
+          }
           return NULL;
         }
       }
@@ -167,9 +421,7 @@ static float ltr_int_extrapolation_factor(int t1, int t2, int now)
 {
   int dt12 = ltr_int_ts_diff(t1, t2);
   int dt = ltr_int_ts_diff(t2, now);
-  printf("TSdiff: (%d, %d -> %d) -> (%d, %d -> %d)\n", t1, t2, dt12, t2, now, dt);
   if(dt == 0){
-    printf("  ext = 0.0\n");
     return 0.0f;
   }
   float ext = (float)dt / dt12;
@@ -185,7 +437,6 @@ static float ltr_int_extrapolation_factor(int t1, int t2, int now)
     ext = c_EXT_ASYMPTOTE - 
          (c_EXT_LIMIT * (c_EXT_ASYMPTOTE - c_EXT_LIMIT)) / ext;
   }
-  printf("  ext = %g\n", ext);
   return ext;
 }
 
