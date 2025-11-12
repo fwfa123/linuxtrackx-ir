@@ -203,23 +203,11 @@ endif()
 find_package(Qt5 COMPONENTS Core Widgets OpenGL REQUIRED)
 find_package(Qt5 QUIET COMPONENTS X11Extras Help Sql Concurrent Network)
 
-# Find qmake
-find_program(QMAKE_EXECUTABLE 
-    NAMES qmake-qt5 qt5-qmake qmake5 qmake
-    REQUIRED
-)
-
-# Verify Qt5 version
-execute_process(
-    COMMAND ${QMAKE_EXECUTABLE} -query QT_VERSION
-    OUTPUT_VARIABLE QT5_VERSION
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    ERROR_QUIET
-)
-if(QT5_VERSION)
-    message(STATUS "Qt5 version: ${QT5_VERSION}")
+# Get Qt5 version from CMake (no longer need qmake)
+if(Qt5Core_VERSION)
+    message(STATUS "Qt5 version: ${Qt5Core_VERSION}")
 else()
-    message(FATAL_ERROR "Qt5 qmake not found or invalid")
+    message(WARNING "Qt5 version could not be determined")
 endif()
 
 # Find qhelpgenerator
