@@ -37,77 +37,81 @@ report_action() {
 }
 
 # Check if we're in the right directory
-if [ ! -f "src/qt_gui/ltr_gui.pro" ] && [ ! -f "configure.ac" ]; then
+if [ ! -f "CMakeLists.txt" ] && [ ! -f "src/qt_gui/CMakeLists.txt" ]; then
     report_action "ERROR" "Not in LinuxTrack project directory. Please run from project root."
     exit 1
 fi
 
 report_action "INFO" "Starting LinuxTrack automatic recovery sequence..."
 
-# Step 1: Force Qt5 environment
-report_action "ACTION" "Setting up Qt5 environment..."
+# Step 1: Verify CMake and Qt5 availability
+report_action "ACTION" "Verifying build tools..."
 export QT_SELECT=qt5
 export PATH="/usr/bin:$PATH"
 
-# Verify Qt5 availability
-if command -v qmake-qt5 >/dev/null 2>&1; then
-    QT5_VERSION=$(qmake-qt5 --version | head -n1)
-    report_action "SUCCESS" "Qt5 confirmed available: $QT5_VERSION"
-else
-    report_action "ERROR" "Qt5 qmake not found. Cannot proceed with recovery."
+# Check for CMake
+if ! command -v cmake >/dev/null 2>&1; then
+    report_action "ERROR" "CMake not found. Please install cmake package."
     exit 1
+fi
+
+CMAKE_VERSION=$(cmake --version | head -n1)
+report_action "SUCCESS" "CMake confirmed available: $CMAKE_VERSION"
+
+# Check for Qt5 (CMake will find it, but verify qhelpgenerator for help files)
+if command -v qhelpgenerator-qt5 >/dev/null 2>&1 || command -v qhelpgenerator >/dev/null 2>&1; then
+    report_action "SUCCESS" "Qt5 tools available"
+else
+    report_action "INFO" "Qt5 qhelpgenerator not found (help files may not be generated)"
 fi
 
 # Step 2: Clean previous build artifacts
 report_action "ACTION" "Cleaning previous build artifacts..."
+if [ -d "build" ]; then
+    rm -rf build
+    report_action "SUCCESS" "Previous build directory removed"
+fi
+
+# Also clean any legacy autotools artifacts
 if [ -d "src/qt_gui" ]; then
     cd src/qt_gui
-    
-    # Remove potentially problematic files
-    rm -f Makefile
-    rm -f ltr_gui
-    rm -f ltr_gui_qt5_debug
-    rm -f *.o
-    rm -f moc_*.cpp
-    rm -f qrc_*.cpp
-    
-    report_action "SUCCESS" "Qt GUI directory cleaned"
+    rm -f Makefile ltr_gui ltr_gui_qt5_debug *.o moc_*.cpp qrc_*.cpp 2>/dev/null || true
     cd ../..
+fi
+
+# Step 3: Configure build with CMake
+report_action "ACTION" "Configuring build with CMake..."
+mkdir -p build
+cd build
+
+# Configure with CMake (use default prefix /opt, can be overridden)
+if cmake .. -DCMAKE_INSTALL_PREFIX=/opt; then
+    report_action "SUCCESS" "CMake configuration completed successfully"
 else
-    report_action "ERROR" "Qt GUI source directory not found"
+    report_action "ERROR" "Failed to configure build with CMake"
+    cd ..
     exit 1
 fi
 
-# Step 3: Regenerate build system with Qt5
-report_action "ACTION" "Regenerating build system with Qt5..."
-cd src/qt_gui
-
-# Use Qt5 qmake explicitly
-if qmake-qt5 ltr_gui.pro; then
-    report_action "SUCCESS" "Qt5 Makefile generated successfully"
-else
-    report_action "ERROR" "Failed to generate Qt5 Makefile"
-    exit 1
-fi
-
-# Step 4: Build Qt5 GUI
-report_action "ACTION" "Building Qt5 GUI executable..."
-make clean >/dev/null 2>&1 || true  # Clean quietly, ignore errors
-
-if make -j$(nproc); then
-    if [ -f "ltr_gui" ]; then
-        EXECUTABLE_SIZE=$(ls -lh ltr_gui | awk '{print $5}')
-        report_action "SUCCESS" "Qt5 GUI built successfully ($EXECUTABLE_SIZE)"
+# Step 4: Build project
+report_action "ACTION" "Building LinuxTrack with CMake..."
+if cmake --build . -j$(nproc); then
+    # Check for built executables
+    if [ -f "src/qt_gui/ltr_gui" ]; then
+        EXECUTABLE_SIZE=$(ls -lh src/qt_gui/ltr_gui | awk '{print $5}')
+        report_action "SUCCESS" "LinuxTrack built successfully (ltr_gui: $EXECUTABLE_SIZE)"
     else
-        report_action "ERROR" "Build completed but executable not found"
+        report_action "ERROR" "Build completed but ltr_gui executable not found"
+        cd ..
         exit 1
     fi
 else
-    report_action "ERROR" "Failed to build Qt5 GUI"
+    report_action "ERROR" "Failed to build LinuxTrack"
+    cd ..
     exit 1
 fi
 
-cd ../..
+cd ..
 
 # Step 5: Verify and fix launch script
 report_action "ACTION" "Verifying launch script..."
@@ -127,20 +131,30 @@ else
     report_action "ACTION" "Creating missing launch script..."
     cat > run_qt5_gui.sh << 'EOF'
 #!/bin/bash
+# Get script directory (project root)
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+
 echo "🚀 Starting LinuxTrack Qt5 GUI (Auto-recovered)"
-echo "📍 Working directory: $(pwd)"
+echo "📍 Working directory: $SCRIPT_DIR"
 
 # Set library path and Qt5 environment
-export LD_LIBRARY_PATH="$(pwd)/src/.libs:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH="$SCRIPT_DIR/build/src:$LD_LIBRARY_PATH"
 export QT_SELECT=qt5
 echo "🔧 Library path: $LD_LIBRARY_PATH"
 
-# Launch Qt5 GUI
-echo "📂 GUI directory: $(pwd)/src/qt_gui"
-cd src/qt_gui
-echo "✨ Launching Qt5 GUI..."
-./ltr_gui
-echo "🏁 Qt5 GUI closed."
+# Launch Qt5 GUI from build directory
+GUI_EXECUTABLE="$SCRIPT_DIR/build/src/qt_gui/ltr_gui"
+echo "📂 GUI executable: $GUI_EXECUTABLE"
+if [ -f "$GUI_EXECUTABLE" ]; then
+    echo "✨ Launching Qt5 GUI..."
+    "$GUI_EXECUTABLE"
+    echo "🏁 Qt5 GUI closed."
+else
+    echo "❌ Error: ltr_gui executable not found. Please build the project first."
+    echo "   Expected location: $GUI_EXECUTABLE"
+    exit 1
+fi
 EOF
     chmod +x run_qt5_gui.sh
     report_action "SUCCESS" "Launch script created"
@@ -185,23 +199,51 @@ fi
 
 # Step 7: Check required libraries
 report_action "ACTION" "Verifying required libraries..."
-REQUIRED_LIBS=("libltr.so" "libtir.so" "libwc.so" "libjoy.so" "libltusb1.so")
+
+# Core libraries (always built)
+REQUIRED_LIBS=("libltr.so" "libtir.so" "libjoy.so" "libltusb1.so")
+
+# Check if webcam support is enabled (libwc.so is conditional)
+# libwc.so is only built when ENABLE_WEBCAM=ON AND WITH_LIBV4L2=TRUE
+if [ -f "build/CMakeCache.txt" ]; then
+    # Check if ENABLE_WEBCAM is ON in CMake cache
+    if grep -q "^ENABLE_WEBCAM:BOOL=ON" build/CMakeCache.txt 2>/dev/null; then
+        # Note: libwc also requires WITH_LIBV4L2, but we check ENABLE_WEBCAM as the primary indicator
+        # If ENABLE_WEBCAM is ON but libwc.so doesn't exist, it may be due to missing libv4l2,
+        # which is still worth checking/reporting
+        REQUIRED_LIBS+=("libwc.so")
+        report_action "INFO" "Webcam support enabled - checking for libwc.so"
+    else
+        report_action "INFO" "Webcam support disabled - skipping libwc.so check"
+    fi
+elif [ -d "build/src" ]; then
+    # If build exists but no cache (unlikely), check if libwc.so was built
+    # If it exists, include it in checks; if not, assume webcam is disabled
+    if find build/src -name "libwc.so*" -type f >/dev/null 2>&1; then
+        REQUIRED_LIBS+=("libwc.so")
+        report_action "INFO" "libwc.so found in build - including in checks"
+    fi
+fi
+
 MISSING_LIBS=()
 
+# Check for libraries in build directory (CMake output location)
 for lib in "${REQUIRED_LIBS[@]}"; do
-    if ! ls src/.libs/${lib}* >/dev/null 2>&1; then
+    if ! find build/src -name "${lib}*" -type f >/dev/null 2>&1; then
         MISSING_LIBS+=("$lib")
     fi
 done
 
 if [ ${#MISSING_LIBS[@]} -gt 0 ]; then
-    report_action "ACTION" "Missing libraries detected, rebuilding core libraries..."
-    if make -j$(nproc) >/dev/null 2>&1; then
-        report_action "SUCCESS" "Core libraries rebuilt"
+    report_action "ACTION" "Missing libraries detected, rebuilding project..."
+    cd build
+    if cmake --build . -j$(nproc) >/dev/null 2>&1; then
+        report_action "SUCCESS" "Project rebuilt successfully"
     else
-        report_action "ERROR" "Failed to rebuild core libraries"
+        report_action "ERROR" "Failed to rebuild project"
         RECOVERY_SUCCESS=false
     fi
+    cd ..
 else
     report_action "SUCCESS" "All required libraries present"
 fi
