@@ -1,6 +1,20 @@
 #define _GNU_SOURCE
 #include <features.h>
 #include <stdio.h>
+#include <linux/videodev2.h>
+#ifdef WEBCAM_SUPPORT
+/* Include libv4l2.h while _GNU_SOURCE is still defined for proper function declarations */
+#include <libv4l2.h>
+#else
+/* Forward declarations for v4l2 functions to avoid implicit declaration warnings */
+/* These match the declarations in libv4l2.h */
+#include <stdint.h>
+int v4l2_open(const char *file, int oflag, ...);
+int v4l2_close(int fd);
+int v4l2_ioctl(int fd, unsigned long int request, ...);
+void *v4l2_mmap(void *start, size_t length, int prot, int flags, int fd, int64_t offset);
+int v4l2_munmap(void *start, size_t length);
+#endif
 #undef _GNU_SOURCE
 
 #include <unistd.h>
@@ -9,7 +23,6 @@
 #include <dirent.h>
 #include <stdbool.h>
 #include <fcntl.h>
-#include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <errno.h>
@@ -25,10 +38,6 @@
 #include "image_process.h"
 #else
 #include "facetrack.h"
-#endif
-
-#ifdef WEBCAM_SUPPORT
-#include <libv4l2.h>
 #endif
 
 #define NUM_OF_BUFFERS 8
