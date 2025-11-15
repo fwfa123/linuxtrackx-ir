@@ -80,7 +80,8 @@ PrefProxy::PrefProxy()
 
 bool PrefProxy::checkPrefix(bool save)
 {
-  QString appPath = QApplication::applicationDirPath();
+  QString appPathRaw = QApplication::applicationDirPath();
+  QString appPath = appPathRaw;
   appPath.prepend(QStringLiteral("\"")).append(QStringLiteral("\""));
   char *tmp_prefix = ltr_int_get_key("Global", "Prefix");
   bool found = false;
@@ -90,9 +91,42 @@ bool PrefProxy::checkPrefix(bool save)
   }else{
     prefix = QStringLiteral("");
   }
-  if(found && (prefix == appPath)){
-    // Intentionally left empty
-  }else{
+  
+  // Normalize prefix for comparison by removing quotes if present
+  QString prefixPath = prefix;
+  if(prefixPath.startsWith(QStringLiteral("\"")) && prefixPath.endsWith(QStringLiteral("\""))){
+    prefixPath = prefixPath.mid(1, prefixPath.length() - 2);
+  }
+  
+  // Check if app is running from a build directory (using unquoted path)
+  bool runningFromBuildDir = appPathRaw.contains(QStringLiteral("/build/")) ||
+                             appPathRaw.contains(QStringLiteral("/src/"));
+  
+  // If Prefix is already set and we're running from a build directory,
+  // check if existing Prefix is a valid installation path (not a build dir)
+  if(found && !prefixPath.isEmpty() && runningFromBuildDir){
+    // Check if the existing Prefix looks like a build directory
+    bool looksLikeBuildDir = prefixPath.contains(QStringLiteral("/build/")) || 
+                             prefixPath.contains(QStringLiteral("/src/")) ||
+                             prefixPath.endsWith(QStringLiteral("/build")) ||
+                             prefixPath.endsWith(QStringLiteral("/src"));
+    
+    // If existing Prefix is a valid installation path (not a build dir),
+    // don't overwrite it when running from build directory
+    if(!looksLikeBuildDir){
+      // Keep the valid installed Prefix - don't overwrite with build directory path
+      return true;
+    }
+    
+    // If existing Prefix is also a build directory, fall through to update logic below
+    // This ensures outdated build directory paths are updated to reflect current app location
+  }
+  
+  // Compare unquoted paths to avoid quote mismatch issues
+  // Update Prefix if it's not set, or if it doesn't match app path (and we're not protecting a valid installed Prefix)
+  // Note: If both stored prefix and current app path are build directories, update if they differ
+  if(!found || prefixPath.isEmpty() || prefixPath != appPathRaw){
+    // Save with quotes as expected by config format
     prefix = appPath;
     bool changed = ltr_int_change_key("Global", "Prefix", appPath.toUtf8().constData());
     if(save){
@@ -100,6 +134,7 @@ bool PrefProxy::checkPrefix(bool save)
     }
     return changed;
   }
+  
   return true;
 }
 
