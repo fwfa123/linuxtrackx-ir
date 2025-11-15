@@ -529,13 +529,13 @@ void LinuxtrackGui::on_LaunchMickeyButton_pressed()
                                  "- AppImage internal path (for AppImage distribution)\n"
                                  "- /opt/bin/mickey\n"
                                  "- /usr/local/bin/mickey\n"
-                                 "- /usr/bin/mickey"));
+                                 "- /usr/bin/mickey\n"
+                                 "- ~/.local/bin/mickey"));
     return;
   }
   
   // Launch mickey
   QProcess::startDetached(mickeyPath, QStringList());
-  infoMessage(QStringLiteral("Mickey (TrackIR) launched successfully!"));
 }
 
 void LinuxtrackGui::logsPackaged(int exitCode, QProcess::ExitStatus exitStatus)
