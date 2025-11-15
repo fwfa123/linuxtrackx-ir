@@ -663,13 +663,15 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     qDebug() << "Arguments:" << arguments;
                     qDebug() << "Working directory:" << prefixPath;
                     
-                    process.start(protonBinaryPath, arguments);
+                    process.setProgram(protonBinaryPath);
+                    process.setArguments(arguments);
                     
-                    if (process.waitForStarted(5000)) {
+                    qint64 pid = 0;
+                    bool started = process.startDetached(&pid);
+                    
+                    if (started) {
                         qDebug() << "Tester launched successfully:" << testerPath;
-                        qDebug() << "Process ID:" << process.processId();
-                        QMessageBox::information(nullptr, tr("Tester Launched"), 
-                                                 tr("Tester has been launched successfully through Steam Proton."));
+                        qDebug() << "Process ID:" << pid;
                     } else {
                         qDebug() << "Failed to launch tester:" << process.errorString();
                         QMessageBox::warning(nullptr, tr("Launch Failed"), 
@@ -742,13 +744,15 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     qDebug() << "Wine version:" << wineVersion;
                     qDebug() << "Game slug:" << gameSlug;
                     
-                    process.start(winePath, arguments);
+                    process.setProgram(winePath);
+                    process.setArguments(arguments);
                     
-                    if (process.waitForStarted(5000)) {
+                    qint64 pid = 0;
+                    bool started = process.startDetached(&pid);
+                    
+                    if (started) {
                         qDebug() << "Tester launched successfully:" << testerPath;
-                        qDebug() << "Process ID:" << process.processId();
-                    QMessageBox::information(nullptr, tr("Tester Launched"), 
-                                             tr("Tester has been launched successfully through Lutris Wine."));
+                        qDebug() << "Process ID:" << pid;
                     } else {
                         qDebug() << "Failed to launch tester:" << process.errorString();
                         QMessageBox::warning(nullptr, tr("Launch Failed"), 
@@ -797,13 +801,15 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
         
         qDebug() << "Launching tester with system Wine";
         
-        process.start(QString::fromUtf8("wine"), arguments);
+        process.setProgram(QString::fromUtf8("wine"));
+        process.setArguments(arguments);
         
-        if (process.waitForStarted(5000)) {
+        qint64 pid = 0;
+        bool started = process.startDetached(&pid);
+        
+        if (started) {
             qDebug() << "Tester launched successfully:" << testerPath;
-            qDebug() << "Process ID:" << process.processId();
-        QMessageBox::information(nullptr, tr("Tester Launched"), 
-                                 tr("Tester has been launched successfully through system Wine."));
+            qDebug() << "Process ID:" << pid;
         } else {
             qDebug() << "Failed to launch tester:" << process.errorString();
             QMessageBox::warning(nullptr, tr("Launch Failed"), 
