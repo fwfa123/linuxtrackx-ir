@@ -428,6 +428,15 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     "/lib/linuxtrack/liblinuxtrack.so.0",              /* Alternative Arch/Debian location */
     "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack.so.0", /* Debian/Ubuntu 64-bit */
     "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",  /* Debian/Ubuntu 32-bit */
+    /* 32-bit library paths for wine bridge compatibility */
+    "/usr/local/lib64/linuxtrack/liblinuxtrack32.so.0",  /* Fedora local installs 32-bit */
+    "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",     /* Arch/Debian local installs 32-bit */
+    "/usr/lib64/linuxtrack/liblinuxtrack32.so.0",        /* Fedora/RHEL 32-bit */
+    "/usr/lib/linuxtrack/liblinuxtrack32.so.0",          /* Arch/Debian 32-bit */
+    "/lib64/linuxtrack/liblinuxtrack32.so.0",            /* Alternative Fedora location 32-bit */
+    "/lib/linuxtrack/liblinuxtrack32.so.0",              /* Alternative Arch/Debian location 32-bit */
+    "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack32.so.0", /* Debian/Ubuntu 32-bit */
+    "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack32.so.0",  /* Debian/Ubuntu 32-bit */
     NULL
   };
   fprintf(stderr, "DEBUG: Trying fallback library locations...\n");
