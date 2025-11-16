@@ -8,6 +8,7 @@
 #include "ltr_gui_prefs.h"
 #include "utils.h"
 #include "tracker.h"
+#include <QTimer>
 #include <iostream>
 
 ProfileSelector::ProfileSelector(QWidget *parent) : QWidget(parent), ps(NULL), initializing(true)
@@ -24,16 +25,18 @@ ProfileSelector::ProfileSelector(QWidget *parent) : QWidget(parent), ps(NULL), i
   QStringList profiles;
   ui.Profiles->addItems(Profile::getProfiles().getProfileNames());
   initializing = false;
-  // Initialize to "Default" profile - check if signal will be emitted
+  // Qt6: Defer ProfileSetup creation to avoid layout crashes during widget initialization
+  // Initialize to "Default" profile after a short delay
   int targetIndex = ui.Profiles->findText(QString::fromUtf8("Default"));
   if (targetIndex != -1) {
-    if (ui.Profiles->currentIndex() == targetIndex) {
-      // Already at target index, signal won't be emitted - call slot explicitly
-      profilesCurrentTextChanged(QString::fromUtf8("Default"));
-    } else {
-      // Index will change, signal will be emitted - just set the profile
-      setCurrentProfile(QString::fromUtf8("Default"));
-    }
+    // Set the current index first
+    ui.Profiles->setCurrentIndex(targetIndex);
+    // Defer ProfileSetup creation to avoid crashes
+    QTimer::singleShot(50, this, [this]() {
+      if (ui.Profiles->currentText() == QString::fromUtf8("Default")) {
+        profilesCurrentTextChanged(QString::fromUtf8("Default"));
+      }
+    });
   }
 }
 
@@ -87,7 +90,9 @@ void ProfileSelector::profilesCurrentTextChanged(const QString &text)
 
 void ProfileSelector::on_CopyFromDefault_pressed()
 {
-  ps->copyFromDefault();
+  if (ps != NULL) {
+    ps->copyFromDefault();
+  }
 }
 
 void ProfileSelector::on_ImportProfile_pressed()
@@ -117,7 +122,9 @@ int ccc = PROFILE.isProfile(newName);
     refresh();
   }
   setCurrentProfile(newName);
-  ps->importProfile(tf);
+  if (ps != NULL) {
+    ps->importProfile(tf);
+  }
   refresh();
 }
 
@@ -140,12 +147,17 @@ void ProfileSelector::on_ExportProfile_pressed()
   }
   QTextStream tf(&f);
 
-  ps->exportProfile(tf);
+  if (ps != NULL) {
+    ps->exportProfile(tf);
+  }
 }
 
 bool ProfileSelector::close()
 {
-  ps->close();
+  // Guard against null pointer - ProfileSetup may not be created yet
+  if (ps != NULL) {
+    ps->close();
+  }
   return QWidget::close();
 }
 

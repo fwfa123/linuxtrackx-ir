@@ -11,6 +11,7 @@
 #include <glu.h>
 #endif
 #include <map>
+#include <set>
 #include <cmath>
 #include "objreader.h"
 #include "glwidget.h"
@@ -81,6 +82,17 @@ GLWidget::GLWidget(QWidget *parent)
      for(i = objects.begin(); i != objects.end(); ++i){
        glDeleteLists(*i, 1);
      }
+     // Clean up textures - use set to avoid deleting same texture multiple times
+     // Multiple display lists from same object share the same texture
+     std::set<GLuint> deletedTextures;
+     std::vector<GLuint>::iterator texIt;
+     for(texIt = objectTextures.begin(); texIt != objectTextures.end(); ++texIt){
+       if(*texIt != 0 && deletedTextures.find(*texIt) == deletedTextures.end()){
+         glDeleteTextures(1, &(*texIt));
+         deletedTextures.insert(*texIt);
+       }
+     }
+     objectTextures.clear();
      delete rt;
  }
 
@@ -153,8 +165,19 @@ void GLWidget::paintGL()
      
      glPushMatrix();
      glTranslated(0.0, -0.7, -2.265);
+     
+     // Qt6/QOpenGLWidget: Bind textures during rendering, not during display list compilation
+     // This ensures texture state is correct when display lists are executed
      std::vector<GLuint>::const_iterator i;
-     for(i = objects.begin(); i != objects.end(); ++i){
+     std::vector<GLuint>::const_iterator texIt = objectTextures.begin();
+     for(i = objects.begin(); i != objects.end(); ++i, ++texIt){
+       // Bind texture before calling display list
+       if(texIt != objectTextures.end() && *texIt != 0){
+         glBindTexture(GL_TEXTURE_2D, *texIt);
+       } else {
+         // No texture for this display list
+         glBindTexture(GL_TEXTURE_2D, 0);
+       }
        glCallList(*i);
      }
      glPopMatrix();
@@ -194,66 +217,85 @@ static void make_triangle(int index1, int index2, int index3)
 bool GLWidget::makeObjects()
  {
    int triangles = 0;
-   int cntr;
    int objectsNumber = object_table.size();
-   bool textureChanged = false;
-   QString currentTexture;
    
-     std::vector<object_t>::const_iterator obj_index;
-     std::vector<tri_t>::const_iterator tris_index;
-     GLuint *textures = (GLuint*)malloc(objectsNumber * sizeof(GLuint));
-     cntr = -1;
-     for(obj_index = object_table.begin(); obj_index != object_table.end(); ++obj_index){
-       obj = *obj_index;
-       //GLuint texture;
-       GLuint list = glGenLists(obj.tris_table.size());
-       
-       if(obj.texture.isEmpty()){
-         textured = false;
-         currentTexture = QString::fromUtf8("");
-       }else{
-         textured = true;
-       }
-       textureChanged = false;
-       if(textured && (currentTexture != QString(obj.texture))){
-         cntr += 1;
-         //std::cout<<"binding texture "<<obj.texture<<"\n";
-         textures[cntr] = createTextureFromImage(QImage(QString(obj.texture)));
-         textureChanged = true;
-         currentTexture = QString(obj.texture);
-       }
-       for(tris_index = obj.tris_table.begin(); 
-           tris_index != obj.tris_table.end(); ++tris_index){
-         glNewList(list, GL_COMPILE);
-         if(textured && textureChanged){
-           glBindTexture(GL_TEXTURE_2D, textures[cntr]);
-         }
-	 if(tris_index->glass){
-           glEnable (GL_BLEND); 
-           glDepthMask (GL_FALSE);
-           glBlendFunc (GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-	 }
-         glBegin(GL_TRIANGLES);
-         
-	 int offset = tris_index->offset;
-	 int count = tris_index->count;
-         for(int i = 0; i < count; i+=3){
-           make_triangle(obj.vtx_indices[offset + i], obj.vtx_indices[offset + i + 1], 
-                     obj.vtx_indices[offset + i + 2]);
-           triangles++;
-	 }
-         glEnd();
-	 if(tris_index->glass){
-           glDepthMask (GL_TRUE);
-           glDisable(GL_BLEND);
-         }
-         glEndList();
-	 objects.push_back(list);
-         ++list;
-       }
+   // Clear existing objects and textures
+   std::vector<GLuint>::iterator i;
+   for(i = objects.begin(); i != objects.end(); ++i){
+     glDeleteLists(*i, 1);
+   }
+   // Use set to avoid deleting same texture multiple times
+   // Multiple display lists from same object share the same texture
+   std::set<GLuint> deletedTextures;
+   std::vector<GLuint>::iterator texIt;
+   for(texIt = objectTextures.begin(); texIt != objectTextures.end(); ++texIt){
+     if(*texIt != 0 && deletedTextures.find(*texIt) == deletedTextures.end()){
+       glDeleteTextures(1, &(*texIt));
+       deletedTextures.insert(*texIt);
      }
-     //std::cout<<triangles<<" triangles.\n";
-     return true;
+   }
+   objects.clear();
+   objectTextures.clear();
+   
+   std::vector<object_t>::const_iterator obj_index;
+   std::vector<tri_t>::const_iterator tris_index;
+   
+   for(obj_index = object_table.begin(); obj_index != object_table.end(); ++obj_index){
+     obj = *obj_index;
+     
+     // Determine if this object has a texture
+     if(obj.texture.isEmpty()){
+       textured = false;
+     }else{
+       textured = true;
+     }
+     
+     // Load texture for this object if it has one
+     GLuint objectTexture = 0;
+     if(textured){
+       //std::cout<<"loading texture "<<obj.texture<<"\n";
+       objectTexture = createTextureFromImage(QImage(QString(obj.texture)));
+     }
+     
+     // Create display lists for each triangle group in this object
+     GLuint list = glGenLists(obj.tris_table.size());
+     for(tris_index = obj.tris_table.begin(); 
+         tris_index != obj.tris_table.end(); ++tris_index){
+       glNewList(list, GL_COMPILE);
+       
+       // Qt6/QOpenGLWidget: Don't bind texture during display list compilation
+       // Texture will be bound during rendering in paintGL()
+       
+       if(tris_index->glass){
+         glEnable (GL_BLEND); 
+         glDepthMask (GL_FALSE);
+         glBlendFunc (GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+       }
+       glBegin(GL_TRIANGLES);
+       
+       int offset = tris_index->offset;
+       int count = tris_index->count;
+       for(int i = 0; i < count; i+=3){
+         make_triangle(obj.vtx_indices[offset + i], obj.vtx_indices[offset + i + 1], 
+                   obj.vtx_indices[offset + i + 2]);
+         triangles++;
+       }
+       glEnd();
+       if(tris_index->glass){
+         glDepthMask (GL_TRUE);
+         glDisable(GL_BLEND);
+       }
+       glEndList();
+       
+       // Store display list and associated texture
+       objects.push_back(list);
+       objectTextures.push_back(objectTexture);
+       
+       ++list;
+     }
+   }
+   //std::cout<<triangles<<" triangles.\n";
+   return true;
  }
 
 

@@ -4,6 +4,7 @@
 #include "ltr_model.h"
 #include <cstdio>
 #include <QMessageBox>
+#include <QTimer>
 
 Guardian::Guardian(QWidget *parent) : parentWidget(parent), mdlType(-1), devType(-1), 
   devDesc(QString::fromUtf8(""))
@@ -23,30 +24,45 @@ void Guardian::regTgt(DeviceSetup *ds)
 
 void Guardian::checkDeviceNModel()
 {
-  if((devType == WEBCAM_FT) || (devType == MACWEBCAM_FT) || (devType == MACPS3EYE_FT)){
-    //face tracker needs face model
-    if(mdlType != MDL_FACE){
-      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
-                           QObject::tr("%1 requires Face type Model!").arg(devDesc), QMessageBox::Ok);
+  // Qt6: Defer message box display to avoid crashes during widget initialization
+  // The parent widget may not be fully ready when this is called from ModelEdit constructor
+  // Capture values by value to avoid race conditions if device/model changes before lambda executes
+  int currentDevType = devType;
+  int currentMdlType = mdlType;
+  QString currentDevDesc = devDesc;
+  QWidget *currentParent = parentWidget;
+  
+  QTimer::singleShot(100, this, [currentDevType, currentMdlType, currentDevDesc, currentParent]() {
+    // Guard against null parentWidget
+    if(currentParent == nullptr){
+      return;
     }
-  }else if(devType == JOYSTICK){
-    //face tracker needs face model
-    if(mdlType != MDL_ABSOLUTE){
-      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
-                           QObject::tr("%1 requires Absolute type Model!").arg(devDesc), QMessageBox::Ok);
+    
+    if((currentDevType == WEBCAM_FT) || (currentDevType == MACWEBCAM_FT) || (currentDevType == MACPS3EYE_FT)){
+      //face tracker needs face model
+      if(currentMdlType != MDL_FACE){
+        QMessageBox::warning(currentParent, QObject::tr("Linuxtrack"),
+                             QObject::tr("%1 requires Face type Model!").arg(currentDevDesc), QMessageBox::Ok);
+      }
+    }else if(currentDevType == JOYSTICK){
+      //face tracker needs face model
+      if(currentMdlType != MDL_ABSOLUTE){
+        QMessageBox::warning(currentParent, QObject::tr("Linuxtrack"),
+                             QObject::tr("%1 requires Absolute type Model!").arg(currentDevDesc), QMessageBox::Ok);
+      }
+    }else{
+      //ordinary tracker needs other than face model
+      if(currentMdlType == MDL_FACE){
+        QMessageBox::warning(currentParent, QObject::tr("Linuxtrack"),
+                             QObject::tr("%1 won't work correctly with Face type Model!").arg(currentDevDesc), 
+                             QMessageBox::Ok);
+      }else if(currentMdlType == MDL_ABSOLUTE){
+        QMessageBox::warning(currentParent, QObject::tr("Linuxtrack"),
+                             QObject::tr("%1 won't work correctly with Absolute type Model!").arg(currentDevDesc), 
+                             QMessageBox::Ok);
+      }
     }
-  }else{
-    //ordinary tracker needs other than face model
-    if(mdlType == MDL_FACE){
-      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
-                           QObject::tr("%1 won't work correctly with Face type Model!").arg(devDesc), 
-                           QMessageBox::Ok);
-    }else if(mdlType == MDL_ABSOLUTE){
-      QMessageBox::warning(parentWidget, QObject::tr("Linuxtrack"),
-                           QObject::tr("%1 won't work correctly with Absolute type Model!").arg(devDesc), 
-                           QMessageBox::Ok);
-    }
-  }
+  });
 }
 
 void Guardian::modelSelected(int modelType)

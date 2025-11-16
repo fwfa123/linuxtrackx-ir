@@ -46,6 +46,7 @@ class ReaderThread : public QThread
      void normalizeAngle(int *angle);
 
      std::vector<GLuint> objects;
+     std::vector<GLuint> objectTextures;  // Texture ID for each display list
      float xRot;
      float yRot;
      float zRot;
