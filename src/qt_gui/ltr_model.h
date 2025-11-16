@@ -35,7 +35,7 @@ class ModelCreate : public QDialog
   void removeEditor();
   void activateEditor(QWidget *editor);
   Ui::ModelCreation ui;
-  QRegExpValidator *validator;
+  QRegularExpressionValidator *validator;
   QWidget *modelEditor;
 };
 
@@ -50,7 +50,7 @@ class ModelEdit : public QWidget
  private slots:
   void on_CreateModelButton_pressed();
   void ModelCreated(const QString &section);
-  void on_ModelSelector_activated(const QString &text);
+  void modelSelectorActivated(const QString &text);
  signals:
   void modelSelected(int modelType);
  private:

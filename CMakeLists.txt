@@ -37,7 +37,7 @@ set(LIB32DIR "lib32" CACHE STRING "32-bit library directory (usually needed only
 
 # Set C/C++ standards
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)  # Qt6 requires C++17 or higher
 
 # Compiler flags
 if(ENABLE_DEBUG)
@@ -199,20 +199,22 @@ else()
     message(STATUS "TrackIR support: disabled (missing dependencies)")
 endif()
 
-# Qt5 detection
-find_package(Qt5 COMPONENTS Core Widgets OpenGL REQUIRED)
-find_package(Qt5 QUIET COMPONENTS X11Extras Help Sql Concurrent Network)
+# Qt6 detection
+# Require Qt6.2 or higher (6.2 LTS is the first LTS, 6.5 LTS recommended)
+# Note: OpenGLWidgets requires OpenGL as a dependency
+find_package(Qt6 6.2 COMPONENTS Core Widgets OpenGL OpenGLWidgets REQUIRED)
+find_package(Qt6 QUIET COMPONENTS Help Sql Concurrent Network)
 
-# Get Qt5 version from CMake (no longer need qmake)
-if(Qt5Core_VERSION)
-    message(STATUS "Qt5 version: ${Qt5Core_VERSION}")
+# Get Qt6 version from CMake
+if(Qt6Core_VERSION)
+    message(STATUS "Qt6 version: ${Qt6Core_VERSION}")
 else()
-    message(WARNING "Qt5 version could not be determined")
+    message(WARNING "Qt6 version could not be determined")
 endif()
 
-# Find qhelpgenerator
-find_program(QT5_QHELPGENERATOR
-    NAMES qhelpgenerator-qt5 qhelpgenerator
+# Find qhelpgenerator for Qt6
+find_program(QT6_QHELPGENERATOR
+    NAMES qhelpgenerator-qt6 qhelpgenerator
 )
 
 # Wine detection

@@ -14,14 +14,27 @@ ProfileSelector::ProfileSelector(QWidget *parent) : QWidget(parent), ps(NULL), i
 {
   ui.setupUi(this);
 
+  // Explicit signal/slot connection for Qt6 compatibility
+  connect(ui.Profiles, &QComboBox::currentTextChanged,
+          this, &ProfileSelector::profilesCurrentTextChanged);
+
   //To make sure that at least default exists
   TRACKER.setProfile(QString::fromUtf8("Default"));
 
   QStringList profiles;
   ui.Profiles->addItems(Profile::getProfiles().getProfileNames());
   initializing = false;
-  setCurrentProfile(QString::fromUtf8("Default"));
-//  on_Profiles_currentIndexChanged("Default");
+  // Initialize to "Default" profile - check if signal will be emitted
+  int targetIndex = ui.Profiles->findText(QString::fromUtf8("Default"));
+  if (targetIndex != -1) {
+    if (ui.Profiles->currentIndex() == targetIndex) {
+      // Already at target index, signal won't be emitted - call slot explicitly
+      profilesCurrentTextChanged(QString::fromUtf8("Default"));
+    } else {
+      // Index will change, signal will be emitted - just set the profile
+      setCurrentProfile(QString::fromUtf8("Default"));
+    }
+  }
 }
 
 
@@ -57,7 +70,7 @@ bool ProfileSelector::setCurrentProfile(QString prof)
   return true;
 }
 
-void ProfileSelector::on_Profiles_currentIndexChanged(const QString &text)
+void ProfileSelector::profilesCurrentTextChanged(const QString &text)
 {
   if((PROFILE.isProfile(text)) < 0){
     return;

@@ -131,7 +131,7 @@ class Mickey : public QObject
   QElapsedTimer initTimer;
   QElapsedTimer updateElapsed;
   bool recenterFlag;
-  QDesktopWidget *dw;
+  QScreen *screen;
   QRect screenBBox;
   QPoint screenCenter;
   bool relative;
@@ -144,7 +144,7 @@ class Mickey : public QObject
   void startCalibration();
   void finishCalibration();
   void cancelCalibration(bool calStarted);
-  void screenResized(int screen);
+  void screenResized(int screenIndex);
  signals:
   void mouseHotKey_activated(int button, bool pressed);
 };

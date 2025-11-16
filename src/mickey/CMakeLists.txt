@@ -32,6 +32,9 @@ add_executable(mickey
     mickey.qrc
 )
 
+# Exclude keyb_x11.h from MOC processing (X11 includes cause parsing issues, and Q_OBJECT is commented out)
+set_source_files_properties(keyb_x11.h PROPERTIES SKIP_AUTOMOC ON)
+
 if(NOT APPLE)
     target_sources(mickey PRIVATE mouse_linux.cpp)
 else()
@@ -39,17 +42,17 @@ else()
 endif()
 
 target_link_libraries(mickey
-    Qt5::Core
-    Qt5::Widgets
-    Qt5::Help
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::Help
     ltr
     ${MATH_LIBRARY}
     dl
 )
 
 if(NOT APPLE)
+    # Note: Qt6::X11Extras is not available in Qt6, X11 functionality is handled differently
     target_link_libraries(mickey
-        Qt5::X11Extras
         X11
     )
 endif()
@@ -63,7 +66,7 @@ target_compile_definitions(mickey PRIVATE
 
 if(NOT APPLE)
     target_compile_definitions(mickey PRIVATE
-        QT5_OVERRIDES
+        QT6_OVERRIDES
     )
 endif()
 

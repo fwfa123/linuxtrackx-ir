@@ -7,7 +7,7 @@
 #include <QMessageBox>
 #include <QDateTime>
 #include <QTextStream>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QDir>
 #include <QDirIterator>
 #include <QTimer>

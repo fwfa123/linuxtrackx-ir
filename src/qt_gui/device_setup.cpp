@@ -21,6 +21,7 @@
 #include "guardian.h"
 #include "tracking.h"
 #include <iostream>
+#include <QTimer>
 
 
 /* Coding:
@@ -56,7 +57,11 @@ DeviceSetup::DeviceSetup(Guardian *grd, QBoxLayout *tgt, QWidget *parent)
 {
   grd->regTgt(this);
   ui.setupUi(this);
-  on_RefreshDevices_pressed();
+  // Qt6: Defer device refresh to avoid layout issues during window show
+  // Refresh devices after the widget is fully constructed and parent is visible
+  QTimer::singleShot(0, this, [this]() {
+    on_RefreshDevices_pressed();
+  });
   initOrientations();
   initVideoOnDelay();
 }

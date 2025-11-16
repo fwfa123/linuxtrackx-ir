@@ -62,20 +62,20 @@ pushd "$PROJECT_ROOT" >/dev/null
             die "Failed to parse Qt major version from: '$QT_VERSION'"
         fi
 
-        # Verify Qt5 qhelpgenerator is available (prefer Qt5-specific version)
-        QT5_QHELPGENERATOR=""
-        if command -v qhelpgenerator-qt5 >/dev/null 2>&1; then
-            QT5_QHELPGENERATOR="qhelpgenerator-qt5"
-        elif [[ -f "/usr/lib/qt5/bin/qhelpgenerator" ]]; then
-            QT5_QHELPGENERATOR="/usr/lib/qt5/bin/qhelpgenerator"
+        # Verify Qt6 qhelpgenerator is available (prefer Qt6-specific version)
+        QT6_QHELPGENERATOR=""
+        if command -v qhelpgenerator-qt6 >/dev/null 2>&1; then
+            QT6_QHELPGENERATOR="qhelpgenerator-qt6"
+        elif [[ -f "/usr/lib/qt6/bin/qhelpgenerator" ]]; then
+            QT6_QHELPGENERATOR="/usr/lib/qt6/bin/qhelpgenerator"
         elif command -v qhelpgenerator >/dev/null 2>&1; then
-            QT5_QHELPGENERATOR="qhelpgenerator"
-            print_warning "Using system qhelpgenerator - this may cause compatibility issues if it's not Qt5"
+            QT6_QHELPGENERATOR="qhelpgenerator"
+            print_warning "Using system qhelpgenerator - this may cause compatibility issues if it's not Qt6"
         else
-            die "qhelpgenerator not found; install Qt5 help tools (qt5-tools-help or similar)"
+            die "qhelpgenerator not found; install Qt6 help tools (qt6-tools or similar)"
         fi
 
-        print_success "Qt $QT_VERSION detected, using qhelpgenerator: $QT5_QHELPGENERATOR"
+        print_success "Qt $QT_VERSION detected, using qhelpgenerator: $QT6_QHELPGENERATOR"
 
         # Clean up before regeneration to avoid mixing outputs
         rm -f src/mickey/help.qhc src/mickey/help.qch
@@ -85,8 +85,8 @@ pushd "$PROJECT_ROOT" >/dev/null
         if [[ -f src/mickey/mickey.qhp && -f src/mickey/mickey.qhcp ]]; then
             print_status "Generating mickey help files"
             cd src/mickey
-            $QT5_QHELPGENERATOR mickey.qhcp -o help.qhc
-            $QT5_QHELPGENERATOR mickey.qhp -o help.qch
+            $QT6_QHELPGENERATOR mickey.qhcp -o help.qhc
+            $QT6_QHELPGENERATOR mickey.qhp -o help.qch
             cd ../..
             print_success "Mickey help files generated"
         else
@@ -96,8 +96,8 @@ pushd "$PROJECT_ROOT" >/dev/null
         if [[ -f src/qt_gui/ltr_gui.qhp && -f src/qt_gui/ltr_gui.qhcp ]]; then
             print_status "Generating qt_gui help files"
             cd src/qt_gui
-            $QT5_QHELPGENERATOR ltr_gui.qhcp -o help.qhc
-            $QT5_QHELPGENERATOR ltr_gui.qhp -o help.qch
+            $QT6_QHELPGENERATOR ltr_gui.qhcp -o help.qhc
+            $QT6_QHELPGENERATOR ltr_gui.qhp -o help.qch
             cd ../..
             print_success "Qt GUI help files generated"
         else

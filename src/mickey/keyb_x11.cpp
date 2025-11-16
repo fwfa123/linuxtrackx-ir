@@ -9,7 +9,7 @@ Reporting problems to user.
 #include "keyb.h"
 #include <cstdio>
 
-#ifdef QT5_OVERRIDES
+#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
   #include <xcb/xcb.h>
 #endif
 
@@ -22,11 +22,11 @@ static Window window;
 static bool grabKeyX(Display *display, Window &window, KeyCode code, unsigned int modifiers);
 static bool ungrabKeyX(Display *display, Window &window, KeyCode code, unsigned int modifiers);
 
-#ifdef QT5_OVERRIDES
+#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
 
 static hotKeyFilter *hkFilter = NULL;
 
-bool hotKeyFilter::nativeEventFilter(const QByteArray & eventType, void * message, long * result)
+bool hotKeyFilter::nativeEventFilter(const QByteArray & eventType, void * message, qintptr * result)
 {
   Q_UNUSED(result);
   if(eventType == "xcb_generic_event_t"){
@@ -64,9 +64,10 @@ bool hotKeyFilter::nativeEventFilter(const QByteArray & eventType, void * messag
   return false;
 }
 
-#else //QT < 5.0
-
-static QAbstractEventDispatcher::EventFilter prevFilter = NULL;
+#else //QT < 5.0 (not used in Qt6)
+// Qt6: setEventFilter API removed, use QAbstractNativeEventFilter instead
+// This branch is kept for compatibility but should not be used with Qt6
+static bool (*prevFilter)(void *) = NULL;
 
 static bool eventFilter(void *message)
 {
@@ -91,29 +92,39 @@ static bool eventFilter(void *message)
 
 static void installFilter()
 {
-#ifdef QT5_OVERRIDES
+#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
   hkFilter = new hotKeyFilter();
   QAbstractEventDispatcher::instance()->installNativeEventFilter(hkFilter);
 #else
+  // Qt6: setEventFilter removed - this branch should not be used
+  // Keeping for compatibility with older Qt versions
   if(prevFilter == NULL){
-    prevFilter = QAbstractEventDispatcher::instance()->setEventFilter(eventFilter);
-    //printf("Handler installed!\n");
+    // Note: setEventFilter doesn't exist in Qt6, this will not compile
+    // Use QT6_OVERRIDES to use native event filter instead
+    #error "setEventFilter not available in Qt6 - define QT6_OVERRIDES to use native event filter"
   }
 #endif  
 }
 
 static void uninstallFilter()
 {
-#ifdef QT5_OVERRIDES
+#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
   QAbstractEventDispatcher::instance()->removeNativeEventFilter(hkFilter);
   delete hkFilter;
   hkFilter = NULL;
 #else
+  // Qt6: setEventFilter removed - this branch should not be used
   if(prevFilter != NULL){
-    QAbstractEventDispatcher::instance()->setEventFilter(prevFilter);
-    //printf("Handler removed!\n");
+    // Note: setEventFilter doesn't exist in Qt6
+    #error "setEventFilter not available in Qt6 - define QT6_OVERRIDES to use native event filter"
   }
 #endif
+  // Close X11 display when no shortcuts remain
+  if(display != NULL){
+    XCloseDisplay(display);
+    display = NULL;
+    window = 0;
+  }
 }
 
 
@@ -134,16 +145,14 @@ static int my_x_errhandler(Display* display, XErrorEvent *event)
   return 0;
 }
 
-static unsigned int getModifiers(int key)
+static unsigned int getModifiers(Qt::KeyboardModifiers mods)
 {
-  int mod = Qt::NoModifier;
-  mod = key & (Qt::KeyboardModifierMask);
   unsigned int modifiers = 0;
   
-  modifiers |= (mod & Qt::ShiftModifier)? ShiftMask : 0;
-  modifiers |= (mod & Qt::ControlModifier)? ControlMask : 0;
-  modifiers |= (mod & Qt::AltModifier)? Mod1Mask : 0;
-  modifiers |= (mod & Qt::MetaModifier)? Mod4Mask : 0;
+  modifiers |= (mods & Qt::ShiftModifier)? ShiftMask : 0;
+  modifiers |= (mods & Qt::ControlModifier)? ControlMask : 0;
+  modifiers |= (mods & Qt::AltModifier)? Mod1Mask : 0;
+  modifiers |= (mods & Qt::MetaModifier)? Mod4Mask : 0;
   //Mod2Mask => NumLock!
   //Mod5Mask => ScrollLock!
   return modifiers;
@@ -170,8 +179,10 @@ static bool removeIdFromHash(shortcut* shortcutId, keyPair_t *kp = NULL)
 
 static bool translateSequence(const QKeySequence &s, KeyCode &code, unsigned int &modifiers)
 {
-  QKeySequence key = QKeySequence(s[0] & (~Qt::KeyboardModifierMask));
-  modifiers = getModifiers(s[0]);
+  // Qt6: QKeyCombination API - extract key and modifiers separately
+  QKeyCombination combo = s[0];
+  QKeySequence key(combo.key());  // Create sequence with just the key (no modifiers)
+  modifiers = getModifiers(combo.keyboardModifiers());
   KeySym sym = XStringToKeysym(qPrintable(key.toString()));
   if(sym == NoSymbol){
     //printf("Unknown symbol!\n");
@@ -188,13 +199,13 @@ static bool translateSequence(const QKeySequence &s, KeyCode &code, unsigned int
 bool setShortCut(const QKeySequence &s, shortcut* shortcutId)
 {
   if(display == NULL){
-#ifdef QT5_OVERRIDES
-    display = QX11Info::display();
-    window = QX11Info::appRootWindow();
-#else
-    display = QX11Info::display();
-    window = QX11Info::appRootWindow();
-#endif
+    // Qt6: QX11Info removed, use X11 APIs directly
+    display = XOpenDisplay(NULL);
+    if(display == NULL) {
+      // X11 display unavailable - cannot set shortcuts
+      return false;
+    }
+    window = DefaultRootWindow(display);
   }
   removeIdFromHash(shortcutId);
   if(s.isEmpty()){
@@ -238,10 +249,14 @@ bool unsetShortcut(shortcut* id)
   KeyCode code = kp.first;
   unsigned int modifiers = kp.second;
   
+  // Ungrab the key first while display is still valid
+  bool result = ungrabKeyX(display, window, code, modifiers);
+  
+  // Close display only after ungrabKeyX() completes (when no shortcuts remain)
   if(shortcutHash.empty()){
     uninstallFilter();
   }
-  return ungrabKeyX(display, window, code, modifiers);
+  return result;
 }
 
 static bool grabKeyX(Display *display, Window &window, KeyCode code, unsigned int modifiers)

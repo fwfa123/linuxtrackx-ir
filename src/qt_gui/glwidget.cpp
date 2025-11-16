@@ -3,7 +3,8 @@
 #endif
 
 #include <QtWidgets/QWidget>
-#include <QtOpenGL/QGLWidget>
+#include <QOpenGLWidget>
+#include <QImage>
 #ifndef DARWIN
 #include <GL/glu.h>
 #else
@@ -16,6 +17,23 @@
 #include <iostream> 
 
 #include "pathconfig.h"
+
+// Helper function to create OpenGL texture from QImage (replaces QGLWidget::bindTexture)
+static GLuint createTextureFromImage(const QImage &image)
+{
+  GLuint textureId;
+  glGenTextures(1, &textureId);
+  glBindTexture(GL_TEXTURE_2D, textureId);
+  
+  QImage glImage = image.convertToFormat(QImage::Format_RGBA8888);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, glImage.bits());
+  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  
+  return textureId;
+}
 
 ReaderThread::ReaderThread(): QThread()
 {
@@ -33,12 +51,12 @@ void GLWidget::objectsRead()
 {
   makeCurrent();
   makeObjects();
-  updateGL();
+  update();  // QOpenGLWidget uses update() instead of updateGL()
   emit ready();
 }
 
 GLWidget::GLWidget(QWidget *parent)
-     : QGLWidget(parent), rt(new ReaderThread())
+     : QOpenGLWidget(parent), rt(new ReaderThread())
  {
      xRot = 0;
      yRot = 0;
@@ -114,7 +132,8 @@ GLWidget::GLWidget(QWidget *parent)
 
  void GLWidget::initializeGL()
  {
-     qglClearColor(trolltechPurple.darker());
+     QColor bgColor = trolltechPurple.darker();
+     glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), bgColor.alphaF());
      makeObjects();
      glShadeModel(GL_FLAT);
      glEnable(GL_DEPTH_TEST);
@@ -199,7 +218,7 @@ bool GLWidget::makeObjects()
        if(textured && (currentTexture != QString(obj.texture))){
          cntr += 1;
          //std::cout<<"binding texture "<<obj.texture<<"\n";
-         textures[cntr] = bindTexture(QImage(QString(obj.texture)), GL_TEXTURE_2D);
+         textures[cntr] = createTextureFromImage(QImage(QString(obj.texture)));
          textureChanged = true;
          currentTexture = QString(obj.texture);
        }

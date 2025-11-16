@@ -3,7 +3,7 @@
 #include "ltr_gui_prefs.h"
 #include "guardian.h"
 #include <iostream>
-#include <QRegExpValidator>
+#include <QRegularExpressionValidator>
 #include <QMessageBox>
 #include <cmath>
 
@@ -11,7 +11,7 @@ ModelCreate::ModelCreate(QWidget *parent) : QDialog(parent), validator(NULL), mo
 {
   ui.setupUi(this);
   setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
-  validator = new QRegExpValidator(QRegExp(QString::fromUtf8("^[^\\[\\]]*$")), this);
+  validator = new QRegularExpressionValidator(QRegularExpression(QString::fromUtf8("^[^\\[\\]]*$")), this);
   ui.ModelName->setValidator(validator);
 }
 
@@ -111,6 +111,11 @@ ModelEdit::ModelEdit(Guardian *grd, QWidget *parent) : QWidget(parent), modelTwe
 {
   grd->regTgt(this);
   ui.setupUi(this);
+
+  // Explicit signal/slot connection for Qt6 compatibility
+  connect(ui.ModelSelector, &QComboBox::currentTextChanged,
+          this, &ModelEdit::modelSelectorActivated);
+
   mcw = new ModelCreate(this);
   QObject::connect(mcw, SIGNAL(ModelCreated(const QString &)),
     this, SLOT(ModelCreated(const QString &)));
@@ -125,7 +130,7 @@ void ModelEdit::refresh()
   if(PREF.getActiveModel(str)){
     currentSection = str;
     ModelCreated(str);
-    on_ModelSelector_activated(str);
+    // Note: modelSelectorActivated() will be called automatically via currentTextChanged signal
   }else{
     ModelCreated(QString::fromUtf8(""));
   }
@@ -151,14 +156,14 @@ void ModelEdit::ModelCreated(const QString &section)
     i = list.indexOf(section);
     if(i != -1){
       ui.ModelSelector->setCurrentIndex(i);
-      on_ModelSelector_activated(section);
+      // Note: modelSelectorActivated() will be called automatically via currentTextChanged signal
     }else{
       ui.ModelSelector->setCurrentIndex(-1);
     }
   }
 }
 
-void ModelEdit::on_ModelSelector_activated(const QString &text)
+void ModelEdit::modelSelectorActivated(const QString &text)
 {
   modelType_t modelType = MDL_1PT;
   currentSection = text;

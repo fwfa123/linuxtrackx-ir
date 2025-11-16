@@ -44,9 +44,9 @@ fi
 
 report_action "INFO" "Starting LinuxTrack automatic recovery sequence..."
 
-# Step 1: Verify CMake and Qt5 availability
+# Step 1: Verify CMake and Qt6 availability
 report_action "ACTION" "Verifying build tools..."
-export QT_SELECT=qt5
+export QT_SELECT=qt6
 export PATH="/usr/bin:$PATH"
 
 # Check for CMake
@@ -58,11 +58,11 @@ fi
 CMAKE_VERSION=$(cmake --version | head -n1)
 report_action "SUCCESS" "CMake confirmed available: $CMAKE_VERSION"
 
-# Check for Qt5 (CMake will find it, but verify qhelpgenerator for help files)
-if command -v qhelpgenerator-qt5 >/dev/null 2>&1 || command -v qhelpgenerator >/dev/null 2>&1; then
-    report_action "SUCCESS" "Qt5 tools available"
+# Check for Qt6 (CMake will find it, but verify qhelpgenerator for help files)
+if command -v qhelpgenerator-qt6 >/dev/null 2>&1 || command -v qhelpgenerator >/dev/null 2>&1; then
+    report_action "SUCCESS" "Qt6 tools available"
 else
-    report_action "INFO" "Qt5 qhelpgenerator not found (help files may not be generated)"
+    report_action "INFO" "Qt6 qhelpgenerator not found (help files may not be generated)"
 fi
 
 # Step 2: Clean previous build artifacts
@@ -115,48 +115,48 @@ cd ..
 
 # Step 5: Verify and fix launch script
 report_action "ACTION" "Verifying launch script..."
-if [ -f "run_qt5_gui.sh" ]; then
+if [ -f "run_qt6_gui.sh" ]; then
     # Make sure it's executable
-    chmod +x run_qt5_gui.sh
+    chmod +x run_qt6_gui.sh
     
     # Check if it references the correct executable
-    if grep -q "ltr_gui_qt5_debug" run_qt5_gui.sh; then
+    if grep -q "ltr_gui_qt6_debug" run_qt6_gui.sh; then
         report_action "ACTION" "Updating launch script executable reference..."
-        sed -i 's/ltr_gui_qt5_debug/ltr_gui/g' run_qt5_gui.sh
+        sed -i 's/ltr_gui_qt6_debug/ltr_gui/g' run_qt6_gui.sh
         report_action "SUCCESS" "Launch script updated"
     else
         report_action "SUCCESS" "Launch script already references correct executable"
     fi
 else
     report_action "ACTION" "Creating missing launch script..."
-    cat > run_qt5_gui.sh << 'EOF'
+    cat > run_qt6_gui.sh << 'EOF'
 #!/bin/bash
 # Get script directory (project root)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 
-echo "🚀 Starting LinuxTrack Qt5 GUI (Auto-recovered)"
+echo "🚀 Starting LinuxTrack Qt6 GUI (Auto-recovered)"
 echo "📍 Working directory: $SCRIPT_DIR"
 
-# Set library path and Qt5 environment
+# Set library path and Qt6 environment
 export LD_LIBRARY_PATH="$SCRIPT_DIR/build/src:$LD_LIBRARY_PATH"
-export QT_SELECT=qt5
+export QT_SELECT=qt6
 echo "🔧 Library path: $LD_LIBRARY_PATH"
 
-# Launch Qt5 GUI from build directory
+# Launch Qt6 GUI from build directory
 GUI_EXECUTABLE="$SCRIPT_DIR/build/src/qt_gui/ltr_gui"
 echo "📂 GUI executable: $GUI_EXECUTABLE"
 if [ -f "$GUI_EXECUTABLE" ]; then
-    echo "✨ Launching Qt5 GUI..."
+    echo "✨ Launching Qt6 GUI..."
     "$GUI_EXECUTABLE"
-    echo "🏁 Qt5 GUI closed."
+    echo "🏁 Qt6 GUI closed."
 else
     echo "❌ Error: ltr_gui executable not found. Please build the project first."
     echo "   Expected location: $GUI_EXECUTABLE"
     exit 1
 fi
 EOF
-    chmod +x run_qt5_gui.sh
+    chmod +x run_qt6_gui.sh
     report_action "SUCCESS" "Launch script created"
 fi
 
@@ -256,7 +256,7 @@ pkill -f ltr_gui >/dev/null 2>&1 || true
 sleep 2
 
 # Test launch with timeout
-timeout 10s ./run_qt5_gui.sh >/dev/null 2>&1 &
+timeout 10s ./run_qt6_gui.sh >/dev/null 2>&1 &
 LAUNCH_PID=$!
 sleep 5
 
@@ -311,7 +311,7 @@ if [ "$RECOVERY_SUCCESS" = true ]; then
     echo "✅ $ACTIONS_TAKEN recovery action(s) completed"
     echo ""
     echo "🚀 Ready to use:"
-    echo "   ./run_qt5_gui.sh"
+    echo "   ./run_qt6_gui.sh"
     echo ""
     echo "📊 Run health check to verify full functionality:"
     echo "   ./linuxtrack_health_check.sh"

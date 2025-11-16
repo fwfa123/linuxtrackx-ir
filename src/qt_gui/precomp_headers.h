@@ -21,7 +21,7 @@
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFileSystemWatcher>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsScene>
 #include <QGraphicsView>
@@ -43,8 +43,8 @@
 #include <QPlainTextEdit>
 #include <QProcess>
 #include <QProcessEnvironment>
-#include <QRegExp>
-#include <QRegExpValidator>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
 #include <QRgb>
 #include <QSettings>
 #include <QSplitter>
@@ -87,7 +87,7 @@
 #include <QTime>
 #include <QTimer>
 #include <QtNetwork/QNetworkReply>
-#include <QtOpenGL>
+#include <QOpenGLWidget>
 #include <QVBoxLayout>
 #include <QVector>
 #include <QWidget>

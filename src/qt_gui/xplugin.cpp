@@ -9,7 +9,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFileDialog>
-#include <QRegExp>
+#include <QRegularExpression>
 
 static QMessageBox::StandardButton warningMessage(const QString &message)
 {
@@ -76,14 +76,15 @@ void XPluginInstall::on_BrowseXPlane_pressed()
 {
   QString fileName = QFileDialog::getOpenFileName(this,
      QString::fromUtf8("Find XPlane executable"), QDir::homePath(), QString::fromUtf8("All Files (*)"));
-  QRegExp pathRexp(QString::fromUtf8("^(.*/)[^/]+$"));
-  if(pathRexp.indexIn(fileName) == -1){
+  QRegularExpression pathRexp(QString::fromUtf8("^(.*/)[^/]+$"));
+  QRegularExpressionMatch match = pathRexp.match(fileName);
+  if(!match.hasMatch()){
     reject();
     return;
   }
   QString sourceFile32 = PrefProxy::getLibPath(QString::fromUtf8("xlinuxtrack9_32"));
   QString sourceFile = PrefProxy::getLibPath(QString::fromUtf8("xlinuxtrack9"));
-  QString destPath = pathRexp.cap(1) + QString::fromUtf8("/Resources/plugins");
+  QString destPath = match.captured(1) + QString::fromUtf8("/Resources/plugins");
   if(!QFile::exists(destPath)){
     warningMessage(QString(QString::fromUtf8("Can't install XPlane plugin there:'") + fileName + 
                            QString::fromUtf8("'")));

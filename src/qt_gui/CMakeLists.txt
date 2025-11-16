@@ -1,20 +1,20 @@
 # src/qt_gui/CMakeLists.txt
-# Qt5 GUI application - native CMake Qt integration
+# Qt6 GUI application - native CMake Qt integration
 
-# Enable Qt5 automatic processing
+# Enable Qt6 automatic processing
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 # Find qhelpgenerator for help file generation
-find_program(QT5_QHELPGENERATOR
-    NAMES qhelpgenerator-qt5 qhelpgenerator
+find_program(QT6_QHELPGENERATOR
+    NAMES qhelpgenerator-qt6 qhelpgenerator
 )
 
-if(QT5_QHELPGENERATOR)
-    message(STATUS "Qt5 qhelpgenerator found: ${QT5_QHELPGENERATOR}")
+if(QT6_QHELPGENERATOR)
+    message(STATUS "Qt6 qhelpgenerator found: ${QT6_QHELPGENERATOR}")
 else()
-    message(WARNING "Qt5 qhelpgenerator not found. Help file generation will fail. Install qt5-qttools or qt5-tools package.")
+    message(WARNING "Qt6 qhelpgenerator not found. Help file generation will fail. Install qt6-tools package.")
 endif()
 
 # Copy config.h to build directory (needed for HAVE_CONFIG_H)
@@ -203,15 +203,15 @@ add_executable(ltr_gui
     precomp_headers.h
 )
 
-# Link Qt5 libraries
+# Link Qt6 libraries
 target_link_libraries(ltr_gui
-    Qt5::Core
-    Qt5::Widgets
-    Qt5::OpenGL
-    Qt5::Network
-    Qt5::Help
-    Qt5::Concurrent
-    Qt5::Sql
+    Qt6::Core
+    Qt6::Widgets
+    Qt6::OpenGLWidgets
+    Qt6::Network
+    Qt6::Help
+    Qt6::Concurrent
+    Qt6::Sql
     ltr
     ${MXML_LIBRARIES}
     ${MATH_LIBRARY}
@@ -232,9 +232,9 @@ else()
 endif()
 
 # Platform-specific linking
+# Note: Qt6::X11Extras is not available in Qt6, X11 functionality is handled differently
 if(NOT APPLE)
     target_link_libraries(ltr_gui
-        Qt5::X11Extras
         X11
     )
 endif()
@@ -298,11 +298,11 @@ set_target_properties(ltr_gui PROPERTIES
 set(HELP_QCH_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qch)
 set(HELP_QHC_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qhc)
 
-if(QT5_QHELPGENERATOR)
+if(QT6_QHELPGENERATOR)
     # Generate help.qch from ltr_gui.qhp
     add_custom_command(
         OUTPUT ${HELP_QCH_FILE}
-        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp -o ${HELP_QCH_FILE}
+        COMMAND ${QT6_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp -o ${HELP_QCH_FILE}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating Qt Help file (help.qch)"
@@ -311,7 +311,7 @@ if(QT5_QHELPGENERATOR)
     # Generate help.qhc from ltr_gui.qhcp
     add_custom_command(
         OUTPUT ${HELP_QHC_FILE}
-        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp -o ${HELP_QHC_FILE}
+        COMMAND ${QT6_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp -o ${HELP_QHC_FILE}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp ${HELP_QCH_FILE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating Qt Help collection (help.qhc)"
@@ -332,7 +332,7 @@ if(QT5_QHELPGENERATOR)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
     )
 else()
-    message(WARNING "Qt5 qhelpgenerator not found - help files will not be generated")
+    message(WARNING "Qt6 qhelpgenerator not found - help files will not be generated")
     # Create empty files to avoid installation errors
     add_custom_command(
         OUTPUT ${HELP_QCH_FILE} ${HELP_QHC_FILE}

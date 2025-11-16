@@ -2,7 +2,7 @@
 #include <QMutex>
 #include <QMessageBox>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <ApplicationServices/ApplicationServices.h>
 
 struct mouseLocalData{

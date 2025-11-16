@@ -44,7 +44,7 @@ sudo usermod -a -G plugdev,input $USER
 | Problem | Symptom | Solution |
 |---------|---------|----------|
 | Missing 32-bit headers | `bits/libc-header-start.h: No such file or directory` | **REQUIRED for Wine support**: Install 32-bit dev headers for your distro |
-| Qt5 tools not found | `qmake: command not found` | Add Qt5 bin directory to PATH (see distro guide) |
+| Qt6 tools not found | `qmake: command not found` | Add Qt6 bin directory to PATH (see distro guide) |
 | Wine dev tools missing | `winegcc: command not found` | Install Wine development packages |
 | OpenCV detection failed | Build succeeds but no webcam | Install OpenCV dev packages (non-critical) |
 | ldconfig permission denied | Warning during install | Use `-DENABLE_LDCONFIG=OFF` for packaging |
@@ -75,8 +75,8 @@ sudo usermod -a -G plugdev,input $USER
 # 32-bit headers (critical for Wine)
 sudo apt install gcc-multilib libc6-dev-i386
 
-# Qt5 tools (rare)
-sudo apt install qttools5-dev-tools
+# Qt6 tools (rare)
+sudo apt install qt6-tools-dev-tools
 ```
 
 #### Arch Linux
@@ -90,8 +90,8 @@ sudo pacman -S wine-stable
 
 #### Fedora/RHEL
 ```bash
-# Qt5 tools PATH (critical)
-export PATH="/usr/lib64/qt5/bin:$PATH"
+# Qt6 tools PATH (critical)
+export PATH="/usr/lib64/qt6/bin:$PATH"
 
 # 32-bit headers (critical for Wine)
 sudo dnf install glibc-devel.i686 gcc.i686
@@ -150,7 +150,7 @@ udevadm info -a -n /dev/bus/usb/XXX/YYY  # Replace with device numbers
 
 - **Wayland**: Some features work better with X11 (force with `QT_QPA_PLATFORM=xcb`)
 - **32-bit Wine**: Required for TrackIR compatibility, even on 64-bit systems
-- **Qt5 themes**: Some desktop themes may affect GUI appearance
+- **Qt6 themes**: Some desktop themes may affect GUI appearance
 - **Multiple TrackIR devices**: Only one device supported simultaneously
 
 ## Emergency Recovery
