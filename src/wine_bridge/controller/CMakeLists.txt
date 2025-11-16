@@ -77,7 +77,7 @@ list(APPEND CONTROLLER_OBJECTS ${dinput_obj})
 set(resources_obj ${CMAKE_CURRENT_BINARY_DIR}/Controller_resources.o)
 add_custom_command(
     OUTPUT ${resources_obj}
-    COMMAND ${WRC_EXECUTABLE} -o ${resources_obj} ${CMAKE_CURRENT_SOURCE_DIR}/resources.rc
+    COMMAND ${WRC_EXECUTABLE} --utf8 -o ${resources_obj} ${CMAKE_CURRENT_SOURCE_DIR}/resources.rc
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/resources.rc
     COMMENT "Compiling resources.rc for Controller"
 )

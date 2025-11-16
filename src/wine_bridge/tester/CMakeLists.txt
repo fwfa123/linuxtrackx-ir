@@ -59,7 +59,7 @@ if(WINE64)
     set(npview64_obj ${CMAKE_CURRENT_BINARY_DIR}/Tester64_npview64.o)
     add_custom_command(
         OUTPUT ${npview64_obj}
-        COMMAND ${WRC_EXECUTABLE} -DFOR_WIN64=1 -o ${npview64_obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/npview.rc
+        COMMAND ${WRC_EXECUTABLE} --utf8 -DFOR_WIN64=1 -o ${npview64_obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/npview.rc
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/npview.rc
         COMMENT "Compiling npview.rc for Tester64 (64-bit)"
     )

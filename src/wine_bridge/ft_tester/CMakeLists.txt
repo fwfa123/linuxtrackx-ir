@@ -45,7 +45,7 @@ add_custom_command(
 set(fttester_obj ${CMAKE_CURRENT_BINARY_DIR}/ftc_fttester.o)
 add_custom_command(
     OUTPUT ${fttester_obj}
-    COMMAND ${WRC_EXECUTABLE} -o ${fttester_obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/fttester.rc
+    COMMAND ${WRC_EXECUTABLE} --utf8 -o ${fttester_obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/fttester.rc
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/fttester.rc ${CMAKE_CURRENT_SOURCE_DIR}/resource.h ${CMAKE_BINARY_DIR}/config.h
     COMMENT "Compiling fttester.rc for ftc"
 )
