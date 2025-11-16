@@ -489,10 +489,27 @@ if (match.hasMatch()) { ... }
 - Qt6 modules found and linked correctly
 
 **Runtime**: ⚠️ **PARTIAL SUCCESS (WIP)**
-- Application starts without immediate segfaults
-- Device setup functionality works correctly
-- Model and Tracking tabs disabled (cause crashes)
-- 3D view has texture mapping issues
+- Application starts and help system initializes successfully
+- Device detection works (device 8, Type: 8 detected)
+- **CRITICAL**: Segfault occurs after device detection, before UI is fully displayed
+- ModelEdit and ProfileSelector widgets are now enabled (deferred creation)
+- OpenGL texture mapping fixed (texture binding moved to rendering time)
+- Guardian race condition fixed (value capture instead of [this])
+- Safety guards added for null pointer checks
+
+**Current Blocker - Startup Segfault**:
+The application crashes with a segmentation fault after:
+1. Help system initialization completes successfully
+2. Device detection succeeds (device 8, Type: 8 found)
+3. Before the main window is fully displayed
+
+**Investigation Needed**:
+- Use gdb/valgrind to get detailed stack trace
+- Check TRACKER global object initialization timing
+- Investigate ProfileSelector/ProfileSetup widget creation sequence
+- Verify ScpForm creation in ProfileSetup constructor
+- Check Qt6 widget lifecycle differences vs Qt5
+- Consider further deferring widget creation or using lazy initialization
 
 ## Notes
 
@@ -519,22 +536,28 @@ These warnings are harmless and don't affect functionality. They occur because:
 
 ### Known Issues Requiring Further Investigation
 
-**High Priority:**
-- **Model Tab Blank**: ModelEdit widget disabled due to Qt6 layout calculation crashes
-- **Tracking Setup Tab Blank**: ProfileSelector widget disabled due to ProfileSetup constructor crashes
-- **3D View Texture Mapping**: OpenGL textures not UV mapped correctly on 3D models
+**CRITICAL - Startup Segfault:**
+- **Status**: Application crashes with segfault after device detection, before UI display
+- **Location**: After help system init, device 8 detected, then crash
+- **Impact**: Application cannot start - blocks all functionality
+- **Fixes Applied**: 
+  - ModelEdit and ProfileSelector widgets now enabled with deferred creation
+  - OpenGL texture mapping fixed
+  - Guardian race condition fixed
+  - Null pointer guards added
+- **Next Steps**:
+  - Debug with gdb/valgrind to get stack trace
+  - Investigate TRACKER initialization timing
+  - Check ProfileSetup/ScpForm creation sequence
+  - Consider further widget creation deferral
+  - Test with minimal ProfileSelector (no ProfileSetup)
 
-**Impact:**
-- Users cannot configure 3D models or tracking profiles through the GUI
-- 3D visualization is visually broken
-- Core functionality reduced to device setup only
-
-**Status:**
-- These features worked perfectly in Qt5
-- Issues appeared during Qt6 migration
-- Require separate investigation of Qt6 OpenGL and widget lifecycle changes
+**Previously Resolved (Now Fixed):**
+- ✅ **Model Tab**: ModelEdit widget now enabled (deferred to showEvent())
+- ✅ **Tracking Setup Tab**: ProfileSelector widget now enabled (deferred creation)
+- ✅ **3D View Texture Mapping**: Fixed - textures now bind during rendering
 
 **Workaround:**
-- Use Qt5 branch for full functionality until these issues are resolved
-- Qt6 branch provides basic device setup capabilities
+- Use Qt5 branch for full functionality until startup segfault is resolved
+- Qt6 branch has all widgets enabled but crashes on startup
 
