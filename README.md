@@ -40,6 +40,10 @@ Choose the level that matches your needs. Each level includes all features from 
 
 ### Common Build Commands (All Levels)
 ```bash
+# Clone the repository
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+cd linuxtrackx-ir
+
 # Create build directory
 mkdir build && cd build
 
@@ -55,6 +59,9 @@ sudo cmake --install .
 # Verify
 ldconfig -p | grep linuxtrack
 ltr_gui
+
+#Uninstall from the Build Directory
+sudo cmake --build . --target uninstall
 ```
 
 ### Level-Specific CMake Commands
