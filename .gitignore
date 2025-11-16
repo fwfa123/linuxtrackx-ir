@@ -164,6 +164,9 @@ clang_tidy_results.txt
 cppcheck_results.xml
 *.bin
 *.obj
+# Exception: 3D model files (not compiled object files)
+!src/qt_gui/*.obj
+!src/share/linuxtrack/*.obj
 
 # Cursor IDE files
 .cursor/
