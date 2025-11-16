@@ -40,7 +40,7 @@ function(wine_compile_source src obj is_64bit)
         endif()
         add_custom_command(
             OUTPUT ${obj}
-            COMMAND ${WRC_EXECUTABLE} -o ${obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${src_path}
+            COMMAND ${WRC_EXECUTABLE} --utf8 -o ${obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${src_path}
             DEPENDS ${src_path}
             COMMENT "Compiling resource file ${src} with wrc"
         )
