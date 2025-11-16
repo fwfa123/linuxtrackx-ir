@@ -6,6 +6,7 @@
 #endif
 
 #include <QCloseEvent>
+#include <QShowEvent>
 #include <QProcess>
 #include <QMainWindow>
 #include <QDockWidget>
@@ -41,6 +42,7 @@ class LinuxtrackGui : public QMainWindow
   PluginInstall* getPluginInstall() const;
  protected:
   void closeEvent(QCloseEvent *event);
+  void showEvent(QShowEvent *event) override;
  public slots:
   void show();
  private slots:

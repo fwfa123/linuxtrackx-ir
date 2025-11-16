@@ -185,11 +185,8 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
   QObject::connect(ui.button_refresh_system_info, SIGNAL(pressed()), this, SLOT(on_button_refresh_system_info_pressed()));
 
-  // Qt6: Temporarily comment out ModelEdit widget addition - test ProfileSelector
-  // ui.ModelEditSite->addWidget(me);
-  if(ps) {
-    ui.ProfileSetupSite->addWidget(ps);
-  }
+  // Qt6: ModelEdit and ProfileSelector widgets are now created in showEvent()
+  // to avoid Qt6 layout calculation crashes during window construction
 
   gui_settings = new QSettings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
   showWindow = new LtrGuiForm(ui, *gui_settings);
@@ -273,6 +270,25 @@ void LinuxtrackGui::show()
   });
 }
 
+void LinuxtrackGui::showEvent(QShowEvent *event)
+{
+  // Qt6: Defer widget creation until window is shown to avoid layout calculation crashes
+  // This allows the main window layout to stabilize before adding complex widgets
+  
+  // Create ModelEdit widget if not already created
+  if (me == nullptr) {
+    me = new ModelEdit(grd, this);
+    ui.ModelEditSite->addWidget(me);
+  }
+  
+  // Create ProfileSelector widget if not already created
+  if (ps == nullptr) {
+    ps = new ProfileSelector(this);
+    ui.ProfileSetupSite->addWidget(ps);
+  }
+  
+  QMainWindow::showEvent(event);
+}
 
 LinuxtrackGui::~LinuxtrackGui()
 {
@@ -348,7 +364,13 @@ void LinuxtrackGui::closeEvent(QCloseEvent *event)
   showWindow->close();
   helper->close();
   lv->close();
-  ps->close();
+  // Qt6: Guard against null pointers - widgets may not be created if window closed before showEvent()
+  if (ps != nullptr) {
+    ps->close();
+  }
+  if (me != nullptr) {
+    me->close();
+  }
   pi->close();
   event->accept();
 }
