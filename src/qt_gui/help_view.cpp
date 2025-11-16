@@ -3,7 +3,7 @@
 #endif
 
 #include <QSettings>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QDesktopServices>
 #include <QHelpEngine>
 #include <QHelpContentWidget>

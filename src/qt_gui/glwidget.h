@@ -1,7 +1,7 @@
 #ifndef GLWIDGET_H
  #define GLWIDGET_H
 
- #include <QGLWidget>
+ #include <QOpenGLWidget>
  #include <QThread>
 
 class ReaderThread : public QThread
@@ -16,7 +16,7 @@ class ReaderThread : public QThread
 };
 
 
- class GLWidget : public QGLWidget
+ class GLWidget : public QOpenGLWidget
  {
      Q_OBJECT
 

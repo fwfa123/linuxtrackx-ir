@@ -8,7 +8,7 @@
 #include <QBoxLayout>
 #include <QCloseEvent>
 #include <QCursor>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QDialog>
 #include <QKeySequence>
 #include <QLocale>
@@ -44,7 +44,7 @@
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <QX11Info>
+// QX11Info removed in Qt6 - X11 APIs used directly where needed
 #include <QSplitter>
 #include <QHelpEngine>
 #include <QHelpContents>

@@ -20,7 +20,7 @@
      QTranslator appTranslator;
      const QString locale = QLocale::system().name();
      if (!appTranslator.load(QStringLiteral(":/ltr/translations/ltr_gui_") + locale)) {
-         appTranslator.load(QStringLiteral(":/ltr/translations/ltr_gui_") + QLocale::system().name().left(2));
+         (void)appTranslator.load(QStringLiteral(":/ltr/translations/ltr_gui_") + QLocale::system().name().left(2));
      }
      app.installTranslator(&appTranslator);
 

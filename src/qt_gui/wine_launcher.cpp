@@ -61,7 +61,8 @@ WineLauncher::WineLauncher():winePath(QString::fromUtf8("")), available(false)
   envSet(QString::fromUtf8("WINEDEBUG"), QString::fromUtf8("+err+fixme"));
   QObject::connect(&wine, SIGNAL(finished(int, QProcess::ExitStatus)),
     this, SLOT(finished(int, QProcess::ExitStatus)));
-  QObject::connect(&wine, SIGNAL(error(QProcess::ProcessError)),
+  // Qt6: error signal renamed to errorOccurred
+  QObject::connect(&wine, SIGNAL(errorOccurred(QProcess::ProcessError)),
     this, SLOT(error(QProcess::ProcessError)));
 }
 
@@ -69,7 +70,8 @@ WineLauncher::~WineLauncher()
 {
   QObject::disconnect(&wine, SIGNAL(finished(int, QProcess::ExitStatus)),
     this, SLOT(finished(int, QProcess::ExitStatus)));
-  QObject::disconnect(&wine, SIGNAL(error(QProcess::ProcessError)),
+  // Qt6: error signal renamed to errorOccurred
+  QObject::disconnect(&wine, SIGNAL(errorOccurred(QProcess::ProcessError)),
     this, SLOT(error(QProcess::ProcessError)));
   if(wine.state() != QProcess::NotRunning){
     wine.waitForFinished(10000);

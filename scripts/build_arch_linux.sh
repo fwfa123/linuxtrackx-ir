@@ -72,8 +72,8 @@ install_dependencies() {
     # Core build tools
     sudo pacman -S --needed base-devel autoconf automake libtool
     
-    # Qt5 dependencies
-    sudo pacman -S --needed qt5-base qt5-tools qt5-x11extras
+    # Qt6 dependencies
+    sudo pacman -S --needed qt6-base qt6-tools
     
     # Libraries
     sudo pacman -S --needed opencv libusb mxml libx11 libxrandr

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdint.h>
 #include <QtDebug>
+#include <QRegularExpression>
 
 typedef int (*enum_webcams_fun_t)(char **ids[]);
 typedef int (*enum_webcam_formats_fun_t)(const char *id, webcam_formats *all_formats);
@@ -152,23 +153,25 @@ typedef struct{
 
 bool WebcamInfo::decodeRes(const QString &res, int &res_x, int &res_y)
 {
-  const QRegExp &res_rexp = QRegExp(QString::fromUtf8("^\\s*(\\d+)\\s*[xX]\\s*(\\d+)\\s*$"));
-  if(res_rexp.indexIn(res) == -1){
+  QRegularExpression res_rexp(QString::fromUtf8("^\\s*(\\d+)\\s*[xX]\\s*(\\d+)\\s*$"));
+  QRegularExpressionMatch match = res_rexp.match(res);
+  if(!match.hasMatch()){
     return false;
   }
-  res_x = res_rexp.cap(1).toInt();
-  res_y = res_rexp.cap(2).toInt();
+  res_x = match.captured(1).toInt();
+  res_y = match.captured(2).toInt();
   return true;
 }
 
 bool WebcamInfo::decodeFps(const QString &fps, int &num, int &den)
 {
-  const QRegExp &fps_rexp = QRegExp(QString::fromUtf8("^(\\d+)\\s*/\\s*(\\d+)\\s*$"));
-  if(fps_rexp.indexIn(fps) == -1){
+  QRegularExpression fps_rexp(QString::fromUtf8("^(\\d+)\\s*/\\s*(\\d+)\\s*$"));
+  QRegularExpressionMatch match = fps_rexp.match(fps);
+  if(!match.hasMatch()){
     return false;
   }
-  num = fps_rexp.cap(1).toInt();
-  den = fps_rexp.cap(2).toInt();
+  num = match.captured(1).toInt();
+  den = match.captured(2).toInt();
   return true;
 }
 

@@ -94,7 +94,7 @@ void Window::newPose(linuxtrack_full_pose_t *raw, linuxtrack_pose_t *unfiltered,
 
 void Window::update_pic()
 {
-  glWidget->updateGL();
+  glWidget->update();  // QOpenGLWidget uses update() instead of updateGL()
 }
 
 void Window::stopUpdates()

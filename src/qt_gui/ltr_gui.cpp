@@ -14,10 +14,11 @@
 #include <QClipboard>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QThread>
 #include <QTimer>
+#include <QShowEvent>
 #include <QProcess>
 #include <QMenuBar>
 #include <iostream>
@@ -77,11 +78,11 @@ static QMessageBox::StandardButton infoMessage(const QString &message)
  return static_cast<QMessageBox::StandardButton>(msgBox.exec());
 }
 
-LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(nullptr), 
-  showWindow(nullptr), helper(nullptr), ds(nullptr), me(nullptr), grd(nullptr), lv(nullptr), 
-  pi(nullptr), ps(nullptr), xpInstall(nullptr), initialized(false), gui_settings(nullptr), 
+LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(nullptr),
+  showWindow(nullptr), helper(nullptr), ds(nullptr), me(nullptr), grd(nullptr), lv(nullptr),
+  pi(nullptr), ps(nullptr), xpInstall(nullptr), initialized(false), gui_settings(nullptr),
   welcome(false), news_serial(-1), guiInit(true), showWineWarning(true),
-  trackingDockWidget(nullptr), dockAction(nullptr), undockAction(nullptr), 
+  trackingDockWidget(nullptr), dockAction(nullptr), undockAction(nullptr),
   dockLeftAction(nullptr), dockRightAction(nullptr), dockingMenu(nullptr),
   isTrackingWindowDocked(false), dockArea(Qt::LeftDockWidgetArea)
 {
@@ -93,17 +94,22 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   setCentralWidget(mainWidget);
   
   grd = new Guardian(this);
-  me = new ModelEdit(grd, this);
+  
+  // Qt6: Create DeviceSetup immediately after UI setup to avoid layout issues
+  ds = new DeviceSetup(grd, ui.DeviceSetupSite, this);
+  ui.DeviceSetupSite->addWidget(ds);
+
+  me = nullptr;
   lv = new LogView();
   pi = new PluginInstall(ui, this);
-  ps = new ProfileSelector(this);
+  ps = nullptr; // Temporarily disable ProfileSelector
   testingSection = new TestingSection(this);
   testingSection->setupUI(ui);
   QObject::connect(&STATE, SIGNAL(stateChanged(linuxtrack_state_type)),
                    this, SLOT(trackerStateHandler(linuxtrack_state_type)));
   QObject::connect(&zipper, SIGNAL(finished(int, QProcess::ExitStatus)),
                    this, SLOT(logsPackaged(int, QProcess::ExitStatus)));
-  
+
   // Connect main GUI buttons explicitly (auto-connect broken due to custom central widget)
   QObject::connect(ui.HelpButton, SIGNAL(pressed()), this, SLOT(on_HelpButton_pressed()));
   QObject::connect(ui.DefaultsButton, SIGNAL(pressed()), this, SLOT(on_DefaultsButton_pressed()));
@@ -114,7 +120,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.ViewLogButton, SIGNAL(pressed()), this, SLOT(on_ViewLogButton_pressed()));
   QObject::connect(ui.PackageLogsButton, SIGNAL(pressed()), this, SLOT(on_PackageLogsButton_pressed()));
   QObject::connect(ui.LaunchMickeyButton, SIGNAL(pressed()), this, SLOT(on_LaunchMickeyButton_pressed()));
-  
+
   // Connect Gaming tab buttons
   QObject::connect(ui.FirmwareActionButton, SIGNAL(pressed()), this, SLOT(on_InstallTirMfcButton_pressed()));
   QObject::connect(ui.MfcActionButton, SIGNAL(pressed()), this, SLOT(on_InstallTirMfcButton_pressed()));
@@ -122,7 +128,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
   QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
   // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
-  
+
   // Connect ltr_pipe control interface
   QObject::connect(ui.FormatComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_FormatComboBox_currentTextChanged(QString)));
   QObject::connect(ui.StartLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_StartLtrPipeButton_pressed()));
@@ -157,7 +163,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   ui.SteamProtonButton->setIconSize(QSize(16,16));
   ui.LutrisButton->setIconSize(QSize(16,16));
   ui.CustomPrefixButton->setIconSize(QSize(16,16));
-  
+
   // Connect Testing section buttons
   QObject::connect(ui.TesterExeRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
   QObject::connect(ui.FTTesterRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_FTTesterRadioButton_toggled(bool)));
@@ -174,13 +180,16 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
     // Also trigger the radio button toggle with true (workflow started)
     on_TesterExeRadioButton_toggled(true);
   });
-  
+
   // Connect System information buttons
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
   QObject::connect(ui.button_refresh_system_info, SIGNAL(pressed()), this, SLOT(on_button_refresh_system_info_pressed()));
-  
-  ui.ModelEditSite->addWidget(me);
-  ui.ProfileSetupSite->addWidget(ps);
+
+  // Qt6: Temporarily comment out ModelEdit widget addition - test ProfileSelector
+  // ui.ModelEditSite->addWidget(me);
+  if(ps) {
+    ui.ProfileSetupSite->addWidget(ps);
+  }
 
   gui_settings = new QSettings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
   showWindow = new LtrGuiForm(ui, *gui_settings);
@@ -232,36 +241,38 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
 
 void LinuxtrackGui::show()
 {
-  ds = new DeviceSetup(grd, ui.DeviceSetupSite, this);
-  ui.DeviceSetupSite->insertWidget(0, ds);
-  
-  // Show tracking window based on docking state
-  if (isTrackingWindowDocked) {
-    trackingDockWidget->show();
-  } else {
-    showWindow->show();
-  }
-  
-  const QString dbg = QProcessEnvironment::systemEnvironment().value(QStringLiteral("LINUXTRACK_DBG"));
-  if (dbg.contains(QChar::fromLatin1('d'))) {
-    helper->show();
-  }
-  
-  QMainWindow::show();
-  
-  // Initialize system information
-  updateSystemInformation();
-  
-  if (welcome) {
-    HelpViewer::ChangePage(QStringLiteral("welcome.htm"));
-    HelpViewer::ShowWindow();
-  } else if (news_serial < NEWS_SERIAL) {
-    HelpViewer::ChangePage(QStringLiteral("news.htm"));
-    HelpViewer::ShowWindow();
-  } else {
-    HelpViewer::ChangePage(QStringLiteral("dev_setup.htm"));
-  }
+  // Qt6: Defer the actual window show() call to allow layout calculations to complete
+  // This prevents the recursive QBoxLayout::maximumSize() calls during initial layout
+  QTimer::singleShot(0, this, [this]() {
+    // Show tracking window based on docking state
+    if (isTrackingWindowDocked) {
+      trackingDockWidget->show();
+    } else {
+      showWindow->show();
+    }
+
+    const QString dbg = QProcessEnvironment::systemEnvironment().value(QStringLiteral("LINUXTRACK_DBG"));
+    if (dbg.contains(QChar::fromLatin1('d'))) {
+      helper->show();
+    }
+
+    QMainWindow::show();
+
+    // Initialize system information
+    updateSystemInformation();
+
+    if (welcome) {
+      HelpViewer::ChangePage(QStringLiteral("welcome.htm"));
+      HelpViewer::ShowWindow();
+    } else if (news_serial < NEWS_SERIAL) {
+      HelpViewer::ChangePage(QStringLiteral("news.htm"));
+      HelpViewer::ShowWindow();
+    } else {
+      HelpViewer::ChangePage(QStringLiteral("dev_setup.htm"));
+    }
+  });
 }
+
 
 LinuxtrackGui::~LinuxtrackGui()
 {
@@ -591,14 +602,14 @@ void LinuxtrackGui::setupDocking()
   // Load docking state
   loadDockingState();
   
-  // Apply initial docking state
+  // Apply initial docking state (don't show windows here - let show() method handle it)
   if (isTrackingWindowDocked) {
     addDockWidget(dockArea, trackingDockWidget);
-    trackingDockWidget->show();
-    showWindow->show(); // Show the tracking window content when docked
+    // trackingDockWidget->show(); // Removed - handled in show() method
+    // showWindow->show(); // Removed - handled in show() method
   } else {
-    showWindow->show();
-    trackingDockWidget->hide(); // Hide the dock widget when not docked
+    // showWindow->show(); // Removed - handled in show() method
+    trackingDockWidget->hide(); // Keep dock widget hidden when not docked
   }
   
   updateDockingActions();
@@ -831,8 +842,9 @@ void LinuxtrackGui::on_StartLtrPipeButton_pressed()
     }
     
     // Validate device name (no spaces, alphanumeric only)
-    QRegExp nameValidator(QStringLiteral("^[a-zA-Z0-9_-]+$"));
-    if (!nameValidator.exactMatch(deviceName)) {
+    QRegularExpression nameValidator(QStringLiteral("^[a-zA-Z0-9_-]+$"));
+    QRegularExpressionMatch match = nameValidator.match(deviceName);
+    if (!match.hasMatch()) {
         QMessageBox::warning(this, tr("Invalid Device Name"),
             tr("Device name must contain only letters, numbers, underscores, and hyphens.\n"
                "No spaces are allowed.\n\n"
@@ -1449,9 +1461,10 @@ void LinuxtrackGui::cleanupUinputDevices()
         for (const QString &device : devices) {
             if (!device.trimmed().isEmpty()) {
                 // Extract device number from path like /sys/class/input/eventX
-                QRegExp eventRegex(QStringLiteral("event(\\d+)"));
-                if (eventRegex.indexIn(device) != -1) {
-                    QString eventNum = eventRegex.cap(1);
+                QRegularExpression eventRegex(QStringLiteral("event(\\d+)"));
+                QRegularExpressionMatch match = eventRegex.match(device);
+                if (match.hasMatch()) {
+                    QString eventNum = match.captured(1);
                     
                     // Remove the device using udevadm
                     QProcess removeDevice;

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <QProcess>
 #include <QCoreApplication>
+#include <QRegularExpression>
 
 typedef struct{
   int x, y;
@@ -44,12 +45,13 @@ const QStringList& MacWebcamInfo::getResolutions()
 
 bool MacWebcamInfo::decodeRes(const QString &res, int &res_x, int &res_y)
 {
-  const QRegExp &res_rexp = QRegExp(QString::fromUtf8("^\\s*(\\d+)\\s*[xX]\\s*(\\d+)\\s*$"));
-  if(res_rexp.indexIn(res) == -1){
+  QRegularExpression res_rexp(QString::fromUtf8("^\\s*(\\d+)\\s*[xX]\\s*(\\d+)\\s*$"));
+  QRegularExpressionMatch match = res_rexp.match(res);
+  if(!match.hasMatch()){
     return false;
   }
-  res_x = res_rexp.cap(1).toInt();
-  res_y = res_rexp.cap(2).toInt();
+  res_x = match.captured(1).toInt();
+  res_y = match.captured(2).toInt();
   return true;
 }
 

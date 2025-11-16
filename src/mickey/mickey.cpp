@@ -9,7 +9,7 @@
 #include <QMutex>
 #include <QMessageBox>
 #include <QApplication>
-#include <QDesktopWidget>
+#include <QScreen>
 #include <QCursor>
 #include "mickey.h"
 #include "mouse.h"
@@ -27,7 +27,18 @@ const int settleTime = 2000; //2 seconds
 
 void RestrainWidgetToScreen(QWidget * w)
 {
-  QRect screenRect = QApplication::desktop()->availableGeometry(w);
+  // Qt6: QApplication::desktop() removed, use QScreen instead
+  QScreen *screen = QApplication::primaryScreen();
+  if (w && w->window()) {
+    screen = w->window()->screen();
+  }
+  
+  // If no screen is available, skip constraint logic to avoid resizing widget to 0x0
+  if(screen == nullptr) {
+    return;
+  }
+  
+  QRect screenRect = screen->availableGeometry();
   QRect wRect = w->frameGeometry();
 /*    
   std::cout<<"fg left: "<<w->frameGeometry().left();
@@ -279,7 +290,7 @@ void MickeyThread::run()
 
 
 Mickey::Mickey() : updateTimer(this), btnThread(this), state(STANDBY), 
-  calDlg(), aplDlg(), recenterFlag(true), dw(NULL) 
+  calDlg(), aplDlg(), recenterFlag(true), screen(nullptr) 
 {
   trans = new MickeyTransform();
   //QObject::connect(onOffSwitch, SIGNAL(activated()), this, SLOT(onOffSwitch_activated()));
@@ -298,9 +309,13 @@ Mickey::Mickey() : updateTimer(this), btnThread(this), state(STANDBY),
   if(!mouse.init()){
     exit(1);
   }
-  dw = QApplication::desktop();
-//  screenBBox = dw->screenGeometry();
-  screenBBox = QRect(0, 0, dw->width(), dw->height());
+  screen = QApplication::primaryScreen();
+  if(screen == nullptr) {
+    // Fallback: use default screen geometry if primaryScreen() fails
+    screenBBox = QRect(0, 0, 1920, 1080);  // Default fallback resolution
+  } else {
+    screenBBox = QRect(0, 0, screen->geometry().width(), screen->geometry().height());
+  }
   screenCenter = screenBBox.center();
   updateTimer.setSingleShot(false);
   updateTimer.setInterval(8);
@@ -321,11 +336,17 @@ Mickey::~Mickey()
   btnThread.wait();
 }
 
-void Mickey::screenResized(int screen)
+void Mickey::screenResized(int screenIndex)
 {
-  (void)screen;
-//  screenBBox = dw->screenGeometry(screen);
-  screenBBox = QRect(0, 0, dw->width(), dw->height());
+  (void)screenIndex;
+//  screenBBox = QApplication::screens().at(screenIndex)->geometry();
+  screen = QApplication::primaryScreen();
+  if(screen == nullptr) {
+    // Fallback: use default screen geometry if primaryScreen() fails
+    screenBBox = QRect(0, 0, 1920, 1080);  // Default fallback resolution
+  } else {
+    screenBBox = QRect(0, 0, screen->geometry().width(), screen->geometry().height());
+  }
   screenCenter = screenBBox.center();
 }
 

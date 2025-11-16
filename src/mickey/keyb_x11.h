@@ -1,19 +1,17 @@
 #ifndef KEYB_X11__h
 #define KEYB_X11__h
 
-// QX11Info was moved to QtX11Extras in Qt5
-#ifdef QT5_OVERRIDES
-  #include <QtX11Extras/QX11Info>
-#else
-#include <QX11Info>
-#endif
+// Include Qt headers first to avoid macro conflicts with X11
 #include <QKeySequence>
 #include <QAbstractEventDispatcher>
 #include <QMutex>
 #include <map>
+
+// QX11Info was removed in Qt6 - use X11 APIs directly
+// Include X11 after Qt to avoid macro conflicts
 #include <X11/Xlib.h>
 
-#ifdef QT5_OVERRIDES
+#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
   #include <QAbstractNativeEventFilter>
 #endif
 
@@ -25,11 +23,11 @@ typedef std::map<keyPair_t, shortcut*> shortcutHash_t;
 bool setShortCut(const QKeySequence &s, shortcut* id);
 bool unsetShortcut(shortcut* id);
 
-#ifdef QT5_OVERRIDES
+#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
 class hotKeyFilter : public QAbstractNativeEventFilter
 {
  protected:
-  bool nativeEventFilter(const QByteArray & eventType, void * message, long * result); 
+  bool nativeEventFilter(const QByteArray & eventType, void * message, qintptr * result); 
 };
 #endif
 /*

@@ -7,8 +7,9 @@
 sudo apt update
 sudo apt install build-essential cmake pkg-config
 sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
-sudo apt install qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev
-sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev libqt5opengl5-dev
+sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools
+sudo apt install libqt6opengl6-dev  # Required for Qt6OpenGL CMake config
+sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
 sudo apt install sqlite3  # Required for Qt help system
 ```
 
@@ -119,13 +120,13 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 | `bits/libc-header-start.h: No such file or directory` | **REQUIRED**: Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
-| `qmake: command not found` | Install Qt5 tools: `sudo apt install qttools5-dev-tools` |
+| `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
 | OpenCV detection failed | Build succeeds but no webcam support. Install: `sudo apt install libopencv-dev` |
 
-### Qt5 Tools PATH (Rare)
-If Qt5 tools aren't found, they should be in `/usr/lib/x86_64-linux-gnu/qt5/bin/`. Add to PATH if needed:
+### Qt6 Tools PATH (Rare)
+If Qt6 tools aren't found, they should be in `/usr/lib/x86_64-linux-gnu/qt6/bin/`. Add to PATH if needed:
 ```bash
-export PATH="/usr/lib/x86_64-linux-gnu/qt5/bin:$PATH"
+export PATH="/usr/lib/x86_64-linux-gnu/qt6/bin:$PATH"
 ```
 
 ## Advanced: Custom Build Combinations

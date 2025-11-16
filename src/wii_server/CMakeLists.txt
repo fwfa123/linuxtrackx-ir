@@ -19,8 +19,8 @@ add_executable(wii_server
 )
 
 target_link_libraries(wii_server
-    Qt5::Core
-    Qt5::Widgets
+    Qt6::Core
+    Qt6::Widgets
     ltr
     ${MATH_LIBRARY}
     ${CWIID_LIBRARIES}

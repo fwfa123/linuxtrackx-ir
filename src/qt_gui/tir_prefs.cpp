@@ -9,6 +9,7 @@
 #include "trackir_permission_dialog.h"
 #include <QFile>
 #include <QMessageBox>
+#include <QTimer>
 
 static QString currentId = QString::fromUtf8("None");
 static int tirType = 0;
@@ -102,57 +103,80 @@ bool TirPrefs::Activate(const QString &ID, bool init)
   }
   ltr_int_tir_init_prefs();
   currentId = ID;
-  ui.TirThreshold->setValue(ltr_int_tir_get_threshold());
-  ui.TirMaxBlob->setValue(ltr_int_tir_get_max_blob());
-  ui.TirMinBlob->setValue(ltr_int_tir_get_min_blob());
-  ui.TirIrBright->setValue(ltr_int_tir_get_ir_brightness());
-  ui.TirStatusBright->setValue(ltr_int_tir_get_status_brightness());
-  Qt::CheckState state = (ltr_int_tir_get_status_indication()) ?
-                          Qt::Checked : Qt::Unchecked;
-  ui.TirSignalizeStatus->setCheckState(state);
-  Qt::CheckState grayscale = (ltr_int_tir_get_use_grayscale()) ?
-                          Qt::Checked : Qt::Unchecked;
-  ui.TirUseGrayscale->setCheckState(grayscale);
-  if(firmwareOK){
-    if((tirType < TIR4) || (tirType == TIR5V3)){
-      ui.TirFwLabel->setText(QString::fromUtf8("Firmware not needed!"));
-    }else{
-      ui.TirFwLabel->setText(QString::fromUtf8("Firmware found!"));
-      ui.TirInstallFirmware->setText(QString::fromUtf8("Reinstall Firmware"));
-    }
-    //ui.TirInstallFirmware->setDisabled(true);
-  }else{
-    ui.TirFwLabel->setText(QString::fromUtf8("Firmware not found - TrackIr will not work!"));
-    QMessageBox::warning(this, tr("TrackIR Firmware Installation"),
-        tr("TrackIR device was found, but you don't have the firmware installed."));
-    //on_TirInstallFirmware_pressed();
-  }
   printf("Type: %d\n", tirType);
-  if((tirType < TIR5) || (tirType == SMARTNAV4)){
-    ui.TirIrBright->setDisabled(true);
-    ui.TirIrBright->setHidden(true);
-    ui.TirStatusBright->setDisabled(true);
-    ui.TirStatusBright->setHidden(true);
-    ui.StatusBrightLabel->setHidden(true);
-    ui.StatusBrightLabelOff->setHidden(true);
-    ui.StatusBrightLabelBright->setHidden(true);
-    ui.IRBrightLabel->setHidden(true);
-    ui.IRBrightLabelLow->setHidden(true);
-    ui.IRBrightLabelHigh->setHidden(true);
-  }
-  if(tirType != SMARTNAV4){
-    ui.TirUseGrayscale->setDisabled(true);
-    ui.TirUseGrayscale->setHidden(true);
-    ui.TirUseGrayscaleLabel->setHidden(true);
-  }
-  if(tirType == SMARTNAV3){
-    ui.TirThreshold->setMinimum(40);
-    ui.TirThresholdMin->setText(QString::fromUtf8("40"));
-  }else{
-    ui.TirThreshold->setMinimum(30);
-    ui.TirThresholdMin->setText(QString::fromUtf8("30"));
-  }
-  initializing = false;
+  
+  // Qt6: Defer ALL UI modifications to avoid layout calculation crashes
+  // Setting values and modifying widgets during layout can cause recursive layout issues
+  // Use QTimer::singleShot to defer until after layout is complete
+  QTimer::singleShot(0, this, [this, ID]() {
+    // Store values to set
+    int threshold = ltr_int_tir_get_threshold();
+    int maxBlob = ltr_int_tir_get_max_blob();
+    int minBlob = ltr_int_tir_get_min_blob();
+    int irBright = ltr_int_tir_get_ir_brightness();
+    int statusBright = ltr_int_tir_get_status_brightness();
+    bool statusIndication = ltr_int_tir_get_status_indication();
+    bool useGrayscale = ltr_int_tir_get_use_grayscale();
+    
+    // Set all UI values
+    ui.TirThreshold->setValue(threshold);
+    ui.TirMaxBlob->setValue(maxBlob);
+    ui.TirMinBlob->setValue(minBlob);
+    ui.TirIrBright->setValue(irBright);
+    ui.TirStatusBright->setValue(statusBright);
+    
+    Qt::CheckState state = statusIndication ? Qt::Checked : Qt::Unchecked;
+    ui.TirSignalizeStatus->setCheckState(state);
+    
+    Qt::CheckState grayscaleState = useGrayscale ? Qt::Checked : Qt::Unchecked;
+    ui.TirUseGrayscale->setCheckState(grayscaleState);
+    
+    // Set firmware label
+    if(firmwareOK){
+      if((tirType < TIR4) || (tirType == TIR5V3)){
+        ui.TirFwLabel->setText(QString::fromUtf8("Firmware not needed!"));
+      }else{
+        ui.TirFwLabel->setText(QString::fromUtf8("Firmware found!"));
+        ui.TirInstallFirmware->setText(QString::fromUtf8("Reinstall Firmware"));
+      }
+    }else{
+      ui.TirFwLabel->setText(QString::fromUtf8("Firmware not found - TrackIr will not work!"));
+      // Defer message box to avoid blocking during layout
+      QTimer::singleShot(100, this, [this]() {
+        QMessageBox::warning(this, tr("TrackIR Firmware Installation"),
+            tr("TrackIR device was found, but you don't have the firmware installed."));
+      });
+    }
+    
+    // Hide/show widgets based on device type
+    if((tirType < TIR5) || (tirType == SMARTNAV4)){
+      ui.TirIrBright->setDisabled(true);
+      ui.TirIrBright->setHidden(true);
+      ui.TirStatusBright->setDisabled(true);
+      ui.TirStatusBright->setHidden(true);
+      ui.StatusBrightLabel->setHidden(true);
+      ui.StatusBrightLabelOff->setHidden(true);
+      ui.StatusBrightLabelBright->setHidden(true);
+      ui.IRBrightLabel->setHidden(true);
+      ui.IRBrightLabelLow->setHidden(true);
+      ui.IRBrightLabelHigh->setHidden(true);
+    }
+    if(tirType != SMARTNAV4){
+      ui.TirUseGrayscale->setDisabled(true);
+      ui.TirUseGrayscale->setHidden(true);
+      ui.TirUseGrayscaleLabel->setHidden(true);
+    }
+    if(tirType == SMARTNAV3){
+      ui.TirThreshold->setMinimum(40);
+      ui.TirThresholdMin->setText(QString::fromUtf8("40"));
+    }else{
+      ui.TirThreshold->setMinimum(30);
+      ui.TirThresholdMin->setText(QString::fromUtf8("30"));
+    }
+    
+    initializing = false;
+  });
+  
   return true;
 }
 
