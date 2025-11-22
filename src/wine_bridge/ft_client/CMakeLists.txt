@@ -56,7 +56,7 @@ add_custom_command(
 add_custom_target(FreeTrackClient ALL
     COMMAND ${WINEGCC_EXECUTABLE} ${WINE_LIBS} -m32 -Wall -Wextra -g
         -o ${CMAKE_CURRENT_BINARY_DIR}/FreeTrackClient.dll.so
-        -shared ${main_obj} ${linuxtrack_obj} ${utils_obj} -ldl
+        -shared ${main_obj} ${linuxtrack_obj} ${utils_obj} ${CMAKE_CURRENT_SOURCE_DIR}/FreeTrackClient.spec -ldl
     DEPENDS ${main_obj} ${linuxtrack_obj} ${utils_obj} ${CMAKE_CURRENT_SOURCE_DIR}/FreeTrackClient.spec
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Linking FreeTrackClient with winegcc"
