@@ -2,6 +2,9 @@
 
 This guide covers the most common issues across all supported distributions. For distribution-specific issues, see the individual build guides.
 
+## Wine32 - 64 bit install issue
+**[Wine INstall](scripts/dev/README_wine_dev.md)**
+
 ## Quick Diagnosis
 
 ### 1. Check Your Build
