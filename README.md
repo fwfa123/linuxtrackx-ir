@@ -28,9 +28,9 @@ Choose the level that matches your needs. Each level includes all features from 
 | Level | Use Case | Features |
 |-------|----------|----------|
 | **1: TrackIR Only** | Linux native games only | TrackIR hardware, LinuxTrack server |
-| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires 32-bit Wine**) |
+| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires 32-bit Wine + NSIS**) |
 
-> **⚠️ Important**: Level 2 requires 32-bit Wine support for MFC42 library installation. See your distribution's guide for specific installation commands.
+> **⚠️ Important**: Level 2 requires 32-bit Wine support for MFC42 library installation and NSIS for Wine bridge installer generation. See your distribution's guide for specific installation commands.
 | **3: + Webcam** | Alternative face tracking | Level 2 + webcam/OpenCV support |
 | **4: + OSC** | External applications/MIDI | Level 3 + Open Sound Control |
 | **5: + Wiimote** | Nintendo Wii Remote | Level 4 + Wiimote support |
