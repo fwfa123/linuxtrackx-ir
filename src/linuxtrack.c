@@ -369,15 +369,17 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
 {
   /*
   //search order:
-  //  1. LINUXTRACK_LIBS
+  //  1. LINUXTRACK_LIBS environment variable
   //       development, backward compatibility and weird locations handling
-  //  2. prefix from config file
-  //  3. plain libname
+  //  2. Wine-specific paths (when running under Wine, checked via WINEPREFIX)
+  //  3. prefix from config file (with relative library paths)
+  //  4. absolute fallback paths (common distro layouts)
   //       worth in Linux only, since on Mac we never install to system libraries
   */
   void *handle = NULL;
   char *name = NULL;
   char *prefix;
+
   /*Look for LINUXTRACK_LIBS*/
   char *lp = getenv("LINUXTRACK_LIBS");
   if(lp != NULL){
@@ -399,6 +401,27 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     fprintf(stderr, "DEBUG: Failed to load library from LINUXTRACK_LIBS\n");
   } else {
     fprintf(stderr, "DEBUG: LINUXTRACK_LIBS environment variable not set\n");
+  }
+
+  /* Check if we're running under Wine and add Wine-specific search paths (step 2) */
+  char *wine_check = getenv("WINEPREFIX");
+  if(wine_check != NULL) {
+    fprintf(stderr, "DEBUG: Detected Wine environment (WINEPREFIX=%s), checking Wine-specific library paths\n", wine_check);
+    /* Wine-specific paths for Wine Bridge compatibility */
+    static const char *wine_lib_locations[] = {
+      "/opt/lib/linuxtrack/liblinuxtrack32.so.0",         /* Default CMake install path */
+      "/opt/lib/linuxtrack/liblinuxtrack.so.0",           /* Default CMake install path (fallback) */
+      "/usr/lib/linuxtrack/liblinuxtrack32.so.0",         /* System install path */
+      "/usr/lib/linuxtrack/liblinuxtrack.so.0",           /* System install path (fallback) */
+      NULL
+    };
+    int i = 0;
+    while(wine_lib_locations[i] != NULL){
+      if((handle = linuxtrack_try_library((char*)wine_lib_locations[i++])) != NULL){
+        fprintf(stderr, "DEBUG: Successfully loaded library from Wine-specific path\n");
+        return handle;
+      }
+    }
   }
 
   prefix = linuxtrack_get_prefix();
