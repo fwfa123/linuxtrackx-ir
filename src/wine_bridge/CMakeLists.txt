@@ -16,11 +16,24 @@ if(WINE_PLUGIN)
     if(MAKENSIS_EXECUTABLE)
         message(STATUS "NSIS installer support: enabled (makensis found)")
         
-        # Determine which NSIS script to use based on WINE64 support
+        # Set variables for NSIS template configuration
+        set(srcdir ${CMAKE_CURRENT_SOURCE_DIR})
+
+        # Configure NSIS templates
         if(WINE64)
-            set(NSIS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/ltr_wine64.nsi)
+            configure_file(
+                ${CMAKE_CURRENT_SOURCE_DIR}/ltr_wine64.nsi.in
+                ${CMAKE_CURRENT_BINARY_DIR}/ltr_wine64.nsi
+                @ONLY
+            )
+            set(NSIS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/ltr_wine64.nsi)
         else()
-            set(NSIS_SCRIPT ${CMAKE_CURRENT_SOURCE_DIR}/ltr_wine.nsi)
+            configure_file(
+                ${CMAKE_CURRENT_SOURCE_DIR}/ltr_wine.nsi.in
+                ${CMAKE_CURRENT_BINARY_DIR}/ltr_wine.nsi
+                @ONLY
+            )
+            set(NSIS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/ltr_wine.nsi)
         endif()
         
         # Collect dependencies - depend on component targets and their output files
