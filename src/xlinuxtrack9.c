@@ -87,15 +87,7 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
                                  float inElapsedTimeSinceLastFlightLoop,
                                  int inCounter, void *inRefcon);
 
-static int setupDialog();
 static void messageBox(const char *msgBoxTitle, const char *message);
-
-static void linuxTrackMenuHandler(void *inMenuRef, void *inItemRef) {
-  (void)inMenuRef;
-  (void)inItemRef;
-  setupDialog();
-  return;
-}
 
 static float GetHeadDataRefCB(void *inRefcon) {
   if (inRefcon == NULL) {
@@ -123,8 +115,6 @@ static void SetHeadCtrlRefCB(void *inRefcon, int outValue) {
 }
 
 PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
-  XPLMEnableFeature("XPLM_USE_NATIVE_WIDGET_WINDOWS", 1);
-
   strcpy(outName, "linuxtrackx-ir v" VERSION);
   strcpy(outSig, "linuxtrackx-ir");
   strcpy(outDesc, "A plugin that brings headtracking to Linux");
@@ -151,11 +141,7 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   head_psi = XPLMFindDataRef("sim/graphics/view/pilots_head_psi");
   head_the = XPLMFindDataRef("sim/graphics/view/pilots_head_the");
 
-  // New in XP11...
   head_roll = XPLMFindDataRef("sim/graphics/view/pilots_head_phi");
-  if (head_roll == NULL) {
-    head_roll = XPLMFindDataRef("sim/graphics/view/field_of_view_roll_deg");
-  }
   view = XPLMFindDataRef("sim/graphics/view/view_type");
 
   head_x_out = XPLMRegisterDataAccessor(
@@ -259,12 +245,6 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   XPLMRegisterFlightLoopCallback(xlinuxtrackCallback, /* Callback */
                                  -1.0,                /* Interval */
                                  NULL);               /* refcon not used. */
-  int menuIndex =
-      XPLMAppendMenuItem(XPLMFindPluginsMenu(), "LinuxTrack", NULL, 1);
-
-  setupMenu = XPLMCreateMenu("LinuxTrack", XPLMFindPluginsMenu(), menuIndex,
-                             linuxTrackMenuHandler, NULL);
-  XPLMAppendMenuItem(setupMenu, "Setup", (void *)"Setup", 1);
 
   if (!initialized) {
     linuxtrack_state_type state = linuxtrack_init(NULL);
@@ -465,93 +445,6 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
 // positive x moves us to the right (meters?)
 // positive y moves us up
 // positive z moves us back
-
-static XPLMWindowID mainWindow;
-static XPWidgetID setupWindow;
-static XPWidgetID setupButton;
-static int setupWindowOpened = 0;
-
-static int setupWindowHandler(XPWidgetMessage inMessage, XPWidgetID inWidget,
-                              intptr_t inParam1, intptr_t inParam2) {
-  (void)inWidget;
-  (void)inParam1;
-  (void)inParam2;
-  if ((inMessage == xpMessage_CloseButtonPushed) ||
-      (inMessage == xpMsg_PushButtonPressed)) {
-    if (setupWindow != NULL) {
-      XPHideWidget(setupWindow);
-      setupWindowOpened = 0;
-    }
-    return 1;
-  }
-  return 0;
-}
-
-static XPWidgetID setupText;
-static char line1[] = "Linuxtrack setup is now done using either:";
-static XPWidgetID setupText2;
-static char line2[] = " - Settings -> Joystick, Keys and Equipment -> Buttons "
-                      "Adv. to setup Joystick";
-static XPWidgetID setupText3;
-static char line3[] =
-    " - Settings -> Joystick, Keys and Equipment -> Keys to setup Keyboard";
-static XPWidgetID setupText4;
-static char line4[] = "Use commands linuxtrack/ltr_run, linuxtrack/ltr_pause, "
-                      "linuxtrack/ltr_recenter.";
-static XPWidgetID setupText5;
-static char line5[] =
-    "For more details refer to "
-    "http://code.google.com/p/linux-track/wiki/XplanePluginSetup";
-static XPWidgetID setupText6;
-static char line6[] =
-    "Pilotview plugin found, chanelling headtracking data through it!";
-static char title[] = "Linuxtrack v" PACKAGE_VERSION;
-
-static int setupDialog() {
-  if (setupWindowOpened != 0) {
-    return -1;
-  }
-  setupWindowOpened = 1;
-
-  if (setupWindow != NULL) {
-    XPShowWidget(setupWindow);
-  } else {
-    int x = 100;
-    int y = 600;
-    int w = 500;
-    int h = 150;
-
-    int x2 = x + w;
-    int y2 = y - h;
-
-    setupWindow = XPCreateWidget(x, y, x2, y2,
-                                 1, // Visible
-                                 title,
-                                 1,    // Root
-                                 NULL, // No container
-                                 xpWidgetClass_MainWindow);
-    y -= 20;
-    setupText = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line1, 0,
-                               setupWindow, xpWidgetClass_Caption);
-    y -= 20;
-    setupText2 = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line2, 0,
-                                setupWindow, xpWidgetClass_Caption);
-    y -= 20;
-    setupText3 = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line3, 0,
-                                setupWindow, xpWidgetClass_Caption);
-    y -= 20;
-    setupText4 = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line4, 0,
-                                setupWindow, xpWidgetClass_Caption);
-    y -= 20;
-    setupText5 = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line5, 0,
-                                setupWindow, xpWidgetClass_Caption);
-    y -= 20;
-    setupButton = XPCreateWidget(x + 80, y2 + 27, x2 - 80, y2 + 7, 1, "Close",
-                                 0, setupWindow, xpWidgetClass_Button);
-    XPAddWidgetCallback(setupWindow, (XPWidgetFunc_t)setupWindowHandler);
-  }
-  return 0;
-}
 
 static XPWidgetID msgBox = NULL;
 
