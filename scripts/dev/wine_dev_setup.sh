@@ -5,6 +5,9 @@
 
 set -e
 
+# Get script directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -32,6 +35,39 @@ print_warning() {
 
 print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to find sudo/doas command
+find_privilege_escalation() {
+    if command -v sudo >/dev/null 2>&1; then
+        # Check if passwordless sudo is available
+        # sudo -n true tests for passwordless access without prompting
+        if sudo -n true 2>/dev/null; then
+            echo "sudo"
+            return 0
+        fi
+        # If passwordless sudo not available, check if we're in an interactive terminal
+        # In that case, sudo can prompt for password
+        if [ -t 0 ] && [ -t 1 ]; then
+            # Interactive terminal - sudo can prompt for password
+            echo "sudo"
+            return 0
+        fi
+        # Non-interactive and no passwordless sudo - skip sudo
+    fi
+    
+    if command -v doas >/dev/null 2>&1; then
+        echo "doas"
+        return 0
+    fi
+    
+    # Fallback to su (requires password)
+    if command -v su >/dev/null 2>&1; then
+        echo "su"
+        return 0
+    fi
+    
+    return 1
 }
 
 # Function to show welcome message
@@ -115,6 +151,8 @@ show_installation_options() {
     echo ""
     echo "5. Exit"
     echo ""
+    echo "Note: After options 2, 3, or 4, you can return to this menu."
+    echo ""
 }
 
 # Function to run automatic installation
@@ -123,15 +161,52 @@ run_automatic_installation() {
     print_header "=============================="
     echo ""
     
-    if [ -f "./install_wine_dev.sh" ]; then
-        print_status "Found installer script, running it..."
-        sudo ./install_wine_dev.sh
-        print_status "If you are on Debian/Ubuntu and only have winegcc-stable, wineg++-stable, or wrc-stable, the script will now automatically create the necessary symlinks for you."
-    else
-        print_error "Installer script not found in current directory"
-        print_status "Please make sure you're in the correct directory"
+    local installer_script="${SCRIPT_DIR}/install_wine_dev.sh"
+    
+    if [ ! -f "$installer_script" ]; then
+        print_error "Installer script not found: $installer_script"
+        print_status "Please make sure install_wine_dev.sh exists in the script directory"
         return 1
     fi
+    
+    print_status "Found installer script, running it..."
+    
+    # Find privilege escalation command
+    local priv_cmd
+    if priv_cmd=$(find_privilege_escalation); then
+        if [ "$priv_cmd" = "su" ]; then
+            print_warning "Using 'su' - you may be prompted for root password"
+            # Use double quotes to allow variable expansion and protect the path
+            # The variable will expand before being passed to su -c
+            if ! su root -c "bash \"$installer_script\""; then
+                print_error "Installation failed"
+                return 1
+            fi
+        elif [ "$priv_cmd" = "sudo" ]; then
+            # Check if passwordless sudo is available
+            if ! sudo -n true 2>/dev/null; then
+                print_warning "Using 'sudo' - you may be prompted for your password"
+            fi
+            # Explicitly invoke bash to ensure script runs even without execute permissions
+            if ! $priv_cmd bash "$installer_script"; then
+                print_error "Installation failed"
+                return 1
+            fi
+        else
+            # Explicitly invoke bash to ensure script runs even without execute permissions
+            if ! $priv_cmd bash "$installer_script"; then
+                print_error "Installation failed"
+                return 1
+            fi
+        fi
+    else
+        print_error "No privilege escalation command found (sudo/doas/su)"
+        print_status "Please install sudo, doas, or run this script as root"
+        return 1
+    fi
+    
+    print_status "If you are on Debian/Ubuntu and only have winegcc-stable, wineg++-stable, or wrc-stable, the script will now automatically create the necessary symlinks for you."
+    return 0
 }
 
 # Function to show manual installation
@@ -198,14 +273,27 @@ run_tests() {
     print_header "=========================="
     echo ""
     
-    if [ -f "./test_wine_dev.sh" ]; then
-        print_status "Found test script, running it..."
-        ./test_wine_dev.sh
-    else
-        print_error "Test script not found in current directory"
-        print_status "Please make sure you're in the correct directory"
+    local test_script="${SCRIPT_DIR}/test_wine_dev.sh"
+    
+    if [ ! -f "$test_script" ]; then
+        print_warning "Test script not found: $test_script"
+        print_status "The test script (test_wine_dev.sh) is not available."
+        print_status "You can manually verify your installation with:"
+        echo ""
+        echo "  winegcc --version"
+        echo "  wine --version"
+        echo "  winegcc -o test.exe test.c  # If you have a test.c file"
+        echo ""
+        return 0
+    fi
+    
+    print_status "Found test script, running it..."
+    if ! "$test_script"; then
+        print_error "Tests failed or encountered errors"
         return 1
     fi
+    
+    return 0
 }
 
 # Function to show help and documentation
@@ -254,7 +342,15 @@ show_help() {
 # Function to get user choice
 get_user_choice() {
     local choice
-    read -p "Enter your choice (1-5): " choice
+    read -p "Enter your choice (1-5): " choice || {
+        # Handle EOF (Ctrl+D) gracefully
+        # Output to stderr so it's not captured by command substitution
+        echo "" >&2
+        print_status "EOF detected. Exiting..." >&2
+        # Return a special value that the caller can check
+        echo "EOF"
+        return 1
+    }
     echo "$choice"
 }
 
@@ -262,27 +358,71 @@ get_user_choice() {
 main() {
     show_welcome
     show_current_status
-    show_installation_options
+    
+    local installation_completed=0
     
     while true; do
+        show_installation_options
         choice=$(get_user_choice)
+        
+        # Handle EOF case
+        if [ "$choice" = "EOF" ]; then
+            exit 0
+        fi
         
         case $choice in
             1)
-                run_automatic_installation
-                break
+                if run_automatic_installation; then
+                    installation_completed=1
+                    echo ""
+                    print_success "Setup complete! You can now use winegcc for Wine development."
+                    local test_script="${SCRIPT_DIR}/test_wine_dev.sh"
+                    if [ -f "$test_script" ]; then
+                        print_status "Run \"$test_script\" to verify your installation."
+                    else
+                        print_status "You can verify your installation with: winegcc --version"
+                    fi
+                    echo ""
+                    read -p "Press Enter to return to menu or type 'exit' to quit: " response || {
+                        # Handle EOF (Ctrl+D) gracefully
+                        echo ""
+                        print_status "EOF detected. Exiting..."
+                        exit 0
+                    }
+                    if [ "$response" = "exit" ]; then
+                        exit 0
+                    fi
+                else
+                    echo ""
+                    read -p "Press Enter to return to menu: " response || {
+                        # Handle EOF (Ctrl+D) gracefully - just continue to menu
+                        echo ""
+                    }
+                fi
                 ;;
             2)
                 show_manual_installation
-                break
+                echo ""
+                read -p "Press Enter to return to menu: " response || {
+                    # Handle EOF (Ctrl+D) gracefully - just continue to menu
+                    echo ""
+                }
                 ;;
             3)
                 run_tests
-                break
+                echo ""
+                read -p "Press Enter to return to menu: " response || {
+                    # Handle EOF (Ctrl+D) gracefully - just continue to menu
+                    echo ""
+                }
                 ;;
             4)
                 show_help
-                break
+                echo ""
+                read -p "Press Enter to return to menu: " response || {
+                    # Handle EOF (Ctrl+D) gracefully - just continue to menu
+                    echo ""
+                }
                 ;;
             5)
                 print_status "Exiting..."
@@ -293,10 +433,6 @@ main() {
                 ;;
         esac
     done
-    
-    echo ""
-    print_success "Setup complete! You can now use winegcc for Wine development."
-    print_status "Run './test_wine_dev.sh' to verify your installation."
 }
 
 # Run main function
