@@ -1,4 +1,10 @@
-#define XPLM200
+#define XPLM200 // X-Plane 9.00 & newer
+#define XPLM210 // X-Plane 10.00 & newer (10.20 required for 64-bit plugins)
+#define XPLM300 // X-Plane 11.10 & newer (64-bit only)
+#define XPLM301 // X-Plane 11.20 & newer (64-bit only)
+#define XPLM303 // X-Plane 11.50 & newer (64-bit only)
+// #define XPLM400 // X-Plane 12.04 & newer (64-bit only)
+// #define XPLM410 // X-Plane 12.1.0 & newer (64-bit only)
 
 #include "XPLMPlugin.h"
 #include "XPLMGraphics.h"
@@ -137,9 +143,9 @@ PLUGIN_API int XPluginStart(char *outName,
                             char *outSig,
                             char *outDesc)
 {
-  strcpy(outName, "linuxTrack_v"VERSION);
-  strcpy(outSig, "linuxtrack.headtracker");
-  strcpy(outDesc, "A plugin that brings headtracking to Linux and Mac");
+  strcpy(outName, "linuxtrackx-ir v"VERSION);
+  strcpy(outSig, "linuxtrackx-ir");
+  strcpy(outDesc, "A plugin that brings headtracking to Linux");
 
   int sdk_ver;
   XPLMHostApplicationID app_id;
