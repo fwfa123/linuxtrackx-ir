@@ -78,8 +78,6 @@ static XPLMCommandRef pause_cmd;
 static XPLMCommandRef recenter_cmd;
 static bool initialized = false;
 
-static int xplane_ver;
-
 static int cmd_cbk(XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
                    void *inRefcon);
 
@@ -130,14 +128,6 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
   strcpy(outName, "linuxtrackx-ir v" VERSION);
   strcpy(outSig, "linuxtrackx-ir");
   strcpy(outDesc, "A plugin that brings headtracking to Linux");
-
-  int sdk_ver;
-  XPLMHostApplicationID app_id;
-  XPLMGetVersions(&xplane_ver, &sdk_ver, &app_id);
-  if (xplane_ver > 5000) {
-    xplane_ver /= 10;
-  }
-  // fprintf(stderr, "XPlane version: %d\n", xplane_ver);
 
   run_cmd = XPLMCreateCommand("linuxtrack/ltr_run", "Start/stop tracking");
   start_cmd = XPLMCreateCommand("linuxtrack/ltr_start", "Start tracking");
@@ -423,6 +413,11 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
       initialized = true;
       linuxtrack_suspend();
     }
+  }
+
+  // We don't want to control the camera in other views...
+  if (view_changed) {
+    return -1.0;
   }
 
   if (!active_flag) {
