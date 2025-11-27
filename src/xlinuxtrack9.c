@@ -36,14 +36,6 @@ static XPLMDataRef head_the = NULL;
 static XPLMDataRef head_roll = NULL;
 static XPLMDataRef view = NULL;
 
-static XPLMDataRef PV_Enabled_DR = NULL;
-static XPLMDataRef PV_TIR_X_DR = NULL;
-static XPLMDataRef PV_TIR_Y_DR = NULL;
-static XPLMDataRef PV_TIR_Z_DR = NULL;
-static XPLMDataRef PV_TIR_Pitch_DR = NULL;
-static XPLMDataRef PV_TIR_Heading_DR = NULL;
-static XPLMDataRef PV_TIR_Roll_DR = NULL;
-
 static XPLMDataRef head_x_out = NULL;
 static XPLMDataRef head_y_out = NULL;
 static XPLMDataRef head_z_out = NULL;
@@ -78,7 +70,6 @@ static XPLMDataRef base_y_dr = NULL;
 static XPLMDataRef base_z_dr = NULL;
 
 static bool active_flag = false;
-static bool pv_present = false;
 
 static XPLMCommandRef run_cmd;
 static XPLMCommandRef start_cmd;
@@ -319,28 +310,6 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFromWho, long inMessage,
     case XPLM_MSG_PLANE_LOADED:
       if ((intptr_t)inParam == XPLM_PLUGIN_XPLANE) {
 
-        PV_Enabled_DR =
-            XPLMFindDataRef("sandybarbour/pilotview/external_enabled");
-        PV_TIR_X_DR = XPLMFindDataRef("sandybarbour/pilotview/external_x");
-        PV_TIR_Y_DR = XPLMFindDataRef("sandybarbour/pilotview/external_y");
-        PV_TIR_Z_DR = XPLMFindDataRef("sandybarbour/pilotview/external_z");
-        PV_TIR_Pitch_DR =
-            XPLMFindDataRef("sandybarbour/pilotview/external_pitch");
-        PV_TIR_Heading_DR =
-            XPLMFindDataRef("sandybarbour/pilotview/external_heading");
-        PV_TIR_Roll_DR =
-            XPLMFindDataRef("sandybarbour/pilotview/external_roll");
-
-        if ((PV_Enabled_DR == NULL) || (PV_TIR_X_DR == NULL) ||
-            (PV_TIR_Y_DR == NULL) || (PV_TIR_Z_DR == NULL) ||
-            (PV_TIR_Pitch_DR == NULL) || (PV_TIR_Heading_DR == NULL) ||
-            (PV_TIR_Roll_DR == NULL)) {
-          pv_present = false;
-        } else {
-          pv_present = true;
-          XPLMSetDatai(PV_Enabled_DR, true);
-        }
-
         if (!drefsPublished) {
           // Publish these datarefs for DataRefEditor plugin
           XPLMPluginID PluginID =
@@ -378,15 +347,12 @@ static void activate(void) {
     freeze = false;
     linuxtrack_wakeup();
     linuxtrack_recenter();
-    if (PV_Enabled_DR) {
-      XPLMSetDatai(PV_Enabled_DR, true);
-    }
   }
 }
 
 static void revertView(void) {
   int current_view = XPLMGetDatai(view);
-  if ((!pv_present) && (current_view == 1026)) {
+  if (current_view == 1026) {
     XPLMSetDataf(head_x, base_x);
     XPLMSetDataf(head_y, base_y);
     XPLMSetDataf(head_z, base_z);
@@ -401,9 +367,6 @@ static void revertView(void) {
 static void deactivate() {
   active_flag = false;
   revertView();
-  if (PV_Enabled_DR) {
-    XPLMSetDatai(PV_Enabled_DR, false);
-  }
   if (initialized) {
     linuxtrack_suspend();
   }
@@ -454,9 +417,6 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
     base_z = XPLMGetDataf(head_z);
     view_changed = false;
   }
-  // if(PV_Enabled_DR)
-  //   fprintf(stderr, "PV_ENABLED=%d\n", XPLMGetDatai(PV_Enabled_DR));
-  // XPLMSetDatai(PV_Enabled_DR, active_flag);
 
   if (!initialized) {
     if (linuxtrack_get_tracking_state() != STOPPED) {
@@ -485,14 +445,7 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
     current_head_heading *= -1.0f;
     current_head_roll *= -1.0f;
   }
-  if (pv_present) {
-    XPLMSetDataf(PV_TIR_X_DR, current_head_x);
-    XPLMSetDataf(PV_TIR_Y_DR, current_head_y);
-    XPLMSetDataf(PV_TIR_Z_DR, current_head_z);
-    XPLMSetDataf(PV_TIR_Pitch_DR, current_head_pitch);
-    XPLMSetDataf(PV_TIR_Heading_DR, current_head_heading);
-    XPLMSetDataf(PV_TIR_Roll_DR, current_head_roll);
-  } else if (head_control_enable != 0) {
+  if (head_control_enable != 0) {
     if (!view_changed) {
       XPLMSetDataf(head_x, base_x + current_head_x);
       XPLMSetDataf(head_y, base_y + current_head_y);
@@ -572,9 +525,6 @@ static int setupDialog() {
     int y = 600;
     int w = 500;
     int h = 150;
-    if (pv_present) {
-      h += 20;
-    }
 
     int x2 = x + w;
     int y2 = y - h;
@@ -586,12 +536,6 @@ static int setupDialog() {
                                  NULL, // No container
                                  xpWidgetClass_MainWindow);
     y -= 20;
-    if (pv_present) {
-      // y -= 20;
-      setupText6 = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line6, 0,
-                                  setupWindow, xpWidgetClass_Caption);
-      y -= 20;
-    }
     setupText = XPCreateWidget(x + 20, y, x2 - 20, y - 20, 1, line1, 0,
                                setupWindow, xpWidgetClass_Caption);
     y -= 20;
