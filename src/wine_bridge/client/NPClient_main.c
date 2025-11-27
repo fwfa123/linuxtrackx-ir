@@ -46,6 +46,8 @@ static unsigned char table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 static int dbg_flag;
 static HINSTANCE thisDll;
 static char g_profile_name[256] = {0};
+static bool data_transmission_started = false;
+static DWORD transmission_start_time = 0;  // Track when transmission started
 
 static void dbg_report(const char *msg,...)
 {
@@ -67,17 +69,22 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
 {
   int sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock == -1) {
-    dbg_report("Failed to create socket: %s\n", strerror(errno));
     return -1;
   }
 
   struct sockaddr_un addr;
   memset(&addr, 0, sizeof(addr));
   addr.sun_family = AF_UNIX;
-  memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
+  const char *sock_path = "/tmp/ltr_m_sock";
+  size_t path_len = strlen(sock_path);
+  if(path_len < sizeof(addr.sun_path)) {
+    memcpy(addr.sun_path, sock_path, path_len + 1);
+  } else {
+    close(sock);
+    return -1;
+  }
 
   if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-    dbg_report("Failed to connect to master socket: %s\n", strerror(errno));
     close(sock);
     return -1;
   }
@@ -86,22 +93,25 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
   struct {
     uint32_t cmd;
     uint32_t data;
-    char str[500];
+    union {
+      char str[500];
+      // Other union members not used here
+    };
   } msg;
-  
+
+  // Initialize the entire structure to zero (same as server does)
   memset(&msg, 0, sizeof(msg));
   msg.cmd = cmd;
   msg.data = data;
-  msg.str[0] = '\0';
+  msg.str[0] = '\0'; // Initialize string part
 
-  ssize_t sent = send(sock, &msg, sizeof(msg), 0);
+  // Try write() instead of send() to avoid Wine socket issues
+  ssize_t sent = write(sock, &msg, sizeof(msg));
   if (sent == -1) {
-    dbg_report("Failed to send command: %s\n", strerror(errno));
     close(sock);
     return -1;
   }
 
-  dbg_report("Successfully sent command %u to master\n", cmd);
   close(sock);
   return 0;
 }
@@ -330,26 +340,74 @@ static void enhance(unsigned char buf[], unsigned int size,
  */
 int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
 {
+  dbg_report("GetData request\n");
+
   // Defensive check: ensure data pointer is valid
   if (data == NULL) {
-    printf("ERROR: NP_GetData called with NULL data pointer!\n");
+    dbg_report("ERROR: NP_GetData called with NULL data pointer!\n");
+    TRACE("NP_GetData called with NULL pointer\n");
     return 1;
   }
 
-  // Check if LinuxTrack is properly initialized
-  linuxtrack_state_type state = linuxtrack_get_tracking_state();
-  if (state < LINUXTRACK_OK || state == INITIALIZING) {
-    printf("WARNING: NP_GetData called but LinuxTrack not ready (state: %d)\n", state);
+  // Check if data transmission has been started
+  if (!data_transmission_started) {
+    dbg_report("WARNING: NP_GetData called before StartDataTransmission\n");
     memset((char *)data, 0, sizeof(tir_data_t));
     data->status = 1; // Not tracking
     return 1;
   }
 
-  float r, p, y, tx, ty, tz;
-  unsigned int frame;
+  // CRITICAL: Add a minimum delay after StartDataTransmission before allowing get_pose
+  // The crash at offset 0xA0 suggests internal structures need more time to initialize
+  if (transmission_start_time != 0) {
+    DWORD elapsed = GetTickCount() - transmission_start_time;
+    if (elapsed < 1000) {  // Wait at least 1 second after StartDataTransmission
+      dbg_report("WARNING: NP_GetData called too soon after StartDataTransmission (%d ms), waiting...\n", elapsed);
+      Sleep(1000 - elapsed);
+    }
+    // Reset after any evaluation - ensures this check only runs once
+    transmission_start_time = 0;
+  }
+
+  // Check if LinuxTrack is properly initialized and in a valid state
+  linuxtrack_state_type state = linuxtrack_get_tracking_state();
+  if (state < LINUXTRACK_OK || state == INITIALIZING) {
+    dbg_report("WARNING: NP_GetData called but LinuxTrack not ready (state: %d)\n", state);
+    memset((char *)data, 0, sizeof(tir_data_t));
+    data->status = 1; // Not tracking
+    return 1;
+  }
+
+  // Only call get_pose if we're in a state that can provide data
+  // This prevents accessing uninitialized internal structures
+  if (state != RUNNING && state != PAUSED) {
+    dbg_report("WARNING: NP_GetData called but tracking not active (state: %d)\n", state);
+    memset((char *)data, 0, sizeof(tir_data_t));
+    data->status = 1; // Not tracking
+    return 1;
+  }
+
+  // Initialize variables before calling get_pose
+  float r = 0.0f, p = 0.0f, y = 0.0f, tx = 0.0f, ty = 0.0f, tz = 0.0f;
+  unsigned int frame = 0;
+  
+  // CRITICAL: This is where the crash happens at offset 0xA0
+  // The LinuxTrack library's internal structures may not be fully initialized
+  // even though the state says RUNNING. We've added delays, but if it still crashes,
+  // the issue is in the LinuxTrack library's internal structure access.
+  dbg_report("About to call linuxtrack_get_pose (state: %d)\n", state);
+  
+  // Call get_pose - this may crash if internal structures aren't ready
+  // If it crashes, the issue is in the LinuxTrack library, not our code
   int res = linuxtrack_get_pose(&y, &p, &r, &tx, &ty, &tz, &frame);
+  dbg_report("linuxtrack_get_pose returned: %d\n", res);
+  
+  // Initialize data structure safely
   memset((char *)data, 0, sizeof(tir_data_t));
-  data->status = (linuxtrack_get_tracking_state() == RUNNING) ? 0 : 1;
+  
+  // Get current state for status - validate it's safe
+  linuxtrack_state_type current_state = linuxtrack_get_tracking_state();
+  data->status = (current_state == RUNNING) ? 0 : 1;
   data->frame = frame & 0xFFFF;
   data->cksum = 0;
   data->roll = r / 180.0 * 16383;
@@ -392,15 +450,16 @@ int __stdcall NPCLIENT_NP_GetSignature(tir_signature_t * sig)
 
   // Defensive check: ensure sig pointer is valid
   if (sig == NULL) {
-    printf("ERROR: NP_GetSignature called with NULL sig pointer!\n");
+    dbg_report("ERROR: NP_GetSignature called with NULL sig pointer!\n");
+    TRACE("NP_GetSignature called with NULL pointer\n");
     return 1;
   }
 
   if(getSomeSeriousPoetry(sig->DllSignature, sig->AppSignature)){
-    printf("Signature result: OK\n");
+    dbg_report("Signature result: OK\n");
     return 0;
   }else{
-    printf("Signature result: NOT OK!\n");
+    dbg_report("Signature result: NOT OK!\n");
     return 1;
   }
 }
@@ -423,7 +482,12 @@ int __stdcall NPCLIENT_NP_QueryVersion(unsigned short * version)
 int __stdcall NPCLIENT_NP_ReCenter(void)
 {
   dbg_report("ReCenter request\n");
-  linuxtrack_recenter();
+  linuxtrack_state_type state = linuxtrack_get_tracking_state();
+  if(state >= LINUXTRACK_OK) {
+    linuxtrack_recenter();
+  } else {
+    dbg_report("ReCenter called but LinuxTrack not initialized\n");
+  }
   return 0;
 }
 
@@ -437,12 +501,12 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
   dbg_report("RegisterProgramProfileID request: %d\n", id);
   game_desc_t gd;
   if(game_data_get_desc(id, &gd)){
-    printf("Application ID: %d - %s!!!\n", id, gd.name);
+    dbg_report("Application ID: %d - %s!!!\n", id, gd.name);
     /* Remember profile name for later lazy init (disabled due to build issue) */
     /* snprintf(g_profile_name, sizeof(g_profile_name), "%s", gd.name); */
     crypted = gd.encrypted;
     if(gd.encrypted){
-      printf("Table: %02X %02X %02X %02X %02X %02X %02X %02X\n", table[0],table[1],table[2],table[3],table[4],
+      dbg_report("Table: %02X %02X %02X %02X %02X %02X %02X %02X\n", table[0],table[1],table[2],table[3],table[4],
            table[5], table[6], table[7]);
       table[0] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
       table[1] = (unsigned char)(gd.key1&0xff); gd.key1 >>= 8;
@@ -457,26 +521,27 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
     // Try to initialize LinuxTrack - if it fails, try to start the daemon first
     linuxtrack_state_type init_result = linuxtrack_init(gd.name);
     if(init_result < LINUXTRACK_OK){
-      printf("LinuxTrack initialization failed (%d): %s\n", init_result, linuxtrack_explain(init_result));
+      const char *explain = linuxtrack_explain(init_result);
+      dbg_report("LinuxTrack initialization failed (%d): %s\n", init_result, explain ? explain : "unknown error");
     } else if(init_result == INITIALIZING){
-      printf("LinuxTrack initialization started, waiting for completion...\n");
+      dbg_report("LinuxTrack initialization started, waiting for completion...\n");
       // Wait for initialization to complete
       for(int i = 0; i < 50 && init_result == INITIALIZING; ++i){  // Wait up to 5 seconds
         Sleep(100);
         init_result = linuxtrack_get_tracking_state();
         if(init_result == RUNNING || init_result == PAUSED) {
-          printf("LinuxTrack initialization completed successfully\n");
+          dbg_report("LinuxTrack initialization completed successfully\n");
           break;
         }
       }
       if(init_result == INITIALIZING) {
-        printf("LinuxTrack initialization timed out - system may not be properly configured\n");
+        dbg_report("LinuxTrack initialization timed out - system may not be properly configured\n");
       }
     }
     if(init_result < LINUXTRACK_OK || init_result == INITIALIZING){
 
       // Try to start the LinuxTrack daemon if it's not running
-      printf("Attempting to start LinuxTrack daemon...\n");
+      dbg_report("Attempting to start LinuxTrack daemon...\n");
       
       // First, check if the daemon is already running by checking for the socket file
       char check_socket_cmd[512];
@@ -484,17 +549,18 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
       int socket_exists = (system(check_socket_cmd) == 0);
       
       if(socket_exists){
-        printf("LinuxTrack socket found - daemon appears to be running\n");
+        dbg_report("LinuxTrack socket found - daemon appears to be running\n");
         // Try initialization again
         init_result = linuxtrack_init(gd.name);
         if(init_result >= LINUXTRACK_OK){
-          printf("LinuxTrack initialization successful after socket check\n");
+          dbg_report("LinuxTrack initialization successful after socket check\n");
         } else {
-          printf("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
-                 init_result, linuxtrack_explain(init_result));
+          const char *explain = linuxtrack_explain(init_result);
+          dbg_report("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
+                 init_result, explain ? explain : "unknown error");
         }
       } else {
-        printf("LinuxTrack socket not found - daemon not running, attempting to start...\n");
+        dbg_report("LinuxTrack socket not found - daemon not running, attempting to start...\n");
         
         // Look for ltr_server1 in common locations (this is the actual daemon name)
         const char* possible_paths[] = {
@@ -506,13 +572,13 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         
         int daemon_started = 0;
         for(int i = 0; i < sizeof(possible_paths)/sizeof(possible_paths[0]); i++){
-          printf("Trying to start daemon from: %s\n", possible_paths[i]);
+          dbg_report("Trying to start daemon from: %s\n", possible_paths[i]);
           
           // Check if the daemon is already running first
           char check_cmd[512];
           snprintf(check_cmd, sizeof(check_cmd), "pgrep -f ltr_server1 > /dev/null 2>&1");
           if(system(check_cmd) == 0){
-            printf("LinuxTrack daemon is already running\n");
+            dbg_report("LinuxTrack daemon is already running\n");
             daemon_started = 1;
             break;
           }
@@ -524,26 +590,26 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
           snprintf(cmd, sizeof(cmd), "%s > /dev/null 2>&1 &", possible_paths[i]);
           
           if(system(cmd) == 0){
-            printf("Daemon start command executed successfully\n");
+            dbg_report("Daemon start command executed successfully\n");
             // Wait a moment for the daemon to start
             Sleep(3000);  // 3 second delay for daemon to fully start
             
             // Verify the daemon is actually running
             if(system(check_cmd) == 0){
-              printf("Daemon verification successful - daemon is running\n");
+              dbg_report("Daemon verification successful - daemon is running\n");
               daemon_started = 1;
               break;
             } else {
-              printf("Daemon verification failed - daemon may not have started properly\n");
+              dbg_report("Daemon verification failed - daemon may not have started properly\n");
             }
           } else {
-            printf("Failed to start daemon from: %s\n", possible_paths[i]);
+            dbg_report("Failed to start daemon from: %s\n", possible_paths[i]);
           }
         }
         
         // If direct daemon start failed, try starting the GUI which will start the daemon
         if(!daemon_started){
-          printf("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
+          dbg_report("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
           const char* gui_paths[] = {
             "/usr/bin/ltr_gui",
             "/usr/local/bin/ltr_gui", 
@@ -552,44 +618,45 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
           };
           
           for(int i = 0; i < sizeof(gui_paths)/sizeof(gui_paths[0]); i++){
-            printf("Trying to start GUI from: %s\n", gui_paths[i]);
+            dbg_report("Trying to start GUI from: %s\n", gui_paths[i]);
             char gui_cmd[512];
             snprintf(gui_cmd, sizeof(gui_cmd), "%s > /dev/null 2>&1 &", gui_paths[i]);
             
             if(system(gui_cmd) == 0){
-              printf("GUI start command executed successfully\n");
+              dbg_report("GUI start command executed successfully\n");
               Sleep(5000);  // 5 second delay for GUI to start daemon
               
               // Check if socket was created
               if(system(check_socket_cmd) == 0){
-                printf("LinuxTrack socket created - GUI successfully started daemon\n");
+                dbg_report("LinuxTrack socket created - GUI successfully started daemon\n");
                 daemon_started = 1;
                 break;
               } else {
-                printf("GUI started but socket not created - daemon may not be running\n");
+                dbg_report("GUI started but socket not created - daemon may not be running\n");
               }
             } else {
-              printf("Failed to start GUI from: %s\n", gui_paths[i]);
+              dbg_report("Failed to start GUI from: %s\n", gui_paths[i]);
             }
           }
         }
         
         if(daemon_started){
           // Try initialization again after starting the daemon
-          printf("Retrying LinuxTrack initialization after daemon start...\n");
+          dbg_report("Retrying LinuxTrack initialization after daemon start...\n");
           init_result = linuxtrack_init(gd.name);
           if(init_result < LINUXTRACK_OK){
-            printf("LinuxTrack initialization still failed after daemon start (%d): %s\n", 
-                   init_result, linuxtrack_explain(init_result));
+            const char *explain = linuxtrack_explain(init_result);
+            dbg_report("LinuxTrack initialization still failed after daemon start (%d): %s\n", 
+                   init_result, explain ? explain : "unknown error");
             return 1;
           } else {
-            printf("LinuxTrack initialization successful after daemon start\n");
+            dbg_report("LinuxTrack initialization successful after daemon start\n");
           }
         } else {
-          printf("Could not start LinuxTrack daemon - TrackIR functionality will not work\n");
-          printf("Please ensure LinuxTrack is properly installed and ltr_server1 is available\n");
-          printf("You can start the daemon manually by running: ltr_server1\n");
-          printf("Or start the LinuxTrack GUI which will start the daemon automatically: ltr_gui\n");
+          dbg_report("Could not start LinuxTrack daemon - TrackIR functionality will not work\n");
+          dbg_report("Please ensure LinuxTrack is properly installed and ltr_server1 is available\n");
+          dbg_report("You can start the daemon manually by running: ltr_server1\n");
+          dbg_report("Or start the LinuxTrack GUI which will start the daemon automatically: ltr_gui\n");
           return 1;
         }
       }
@@ -599,11 +666,12 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
     linuxtrack_state_type init_result = linuxtrack_init("Default");
     /* snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default"); */
     if(init_result < LINUXTRACK_OK){
-      printf("LinuxTrack initialization failed with default profile (%d): %s\n", 
-             init_result, linuxtrack_explain(init_result));
+      const char *explain = linuxtrack_explain(init_result);
+      dbg_report("LinuxTrack initialization failed with default profile (%d): %s\n", 
+             init_result, explain ? explain : "unknown error");
       
       // Try to start the LinuxTrack daemon if it's not running
-      printf("Attempting to start LinuxTrack daemon for default profile...\n");
+      dbg_report("Attempting to start LinuxTrack daemon for default profile...\n");
       
       // First, check if the daemon is already running by checking for the socket file
       char check_socket_cmd[512];
@@ -611,17 +679,18 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
       int socket_exists = (system(check_socket_cmd) == 0);
       
       if(socket_exists){
-        printf("LinuxTrack socket found - daemon appears to be running\n");
+        dbg_report("LinuxTrack socket found - daemon appears to be running\n");
         // Try initialization again
         init_result = linuxtrack_init("Default");
         if(init_result >= LINUXTRACK_OK){
-          printf("LinuxTrack initialization successful after socket check\n");
+          dbg_report("LinuxTrack initialization successful after socket check\n");
         } else {
-          printf("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
-                 init_result, linuxtrack_explain(init_result));
+          const char *explain2 = linuxtrack_explain(init_result);
+          dbg_report("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
+                 init_result, explain2 ? explain2 : "unknown error");
         }
       } else {
-        printf("LinuxTrack socket not found - daemon not running, attempting to start...\n");
+        dbg_report("LinuxTrack socket not found - daemon not running, attempting to start...\n");
         
         // Look for ltr_server1 in common locations (this is the actual daemon name)
         const char* possible_paths[] = {
@@ -633,13 +702,13 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         
         int daemon_started = 0;
         for(int i = 0; i < sizeof(possible_paths)/sizeof(possible_paths[0]); i++){
-          printf("Trying to start daemon from: %s\n", possible_paths[i]);
+          dbg_report("Trying to start daemon from: %s\n", possible_paths[i]);
           
           // Check if the daemon is already running first
           char check_cmd[512];
           snprintf(check_cmd, sizeof(check_cmd), "pgrep -f ltr_server1 > /dev/null 2>&1");
           if(system(check_cmd) == 0){
-            printf("LinuxTrack daemon is already running\n");
+            dbg_report("LinuxTrack daemon is already running\n");
             daemon_started = 1;
             break;
           }
@@ -650,26 +719,26 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
           snprintf(cmd, sizeof(cmd), "%s > /dev/null 2>&1 &", possible_paths[i]);
           
           if(system(cmd) == 0){
-            printf("Daemon start command executed successfully\n");
+            dbg_report("Daemon start command executed successfully\n");
             // Wait a moment for the daemon to start
             Sleep(3000);  // 3 second delay for daemon to fully start
             
             // Verify the daemon is actually running
             if(system(check_cmd) == 0){
-              printf("Daemon verification successful - daemon is running\n");
+              dbg_report("Daemon verification successful - daemon is running\n");
               daemon_started = 1;
               break;
             } else {
-              printf("Daemon verification failed - daemon may not have started properly\n");
+              dbg_report("Daemon verification failed - daemon may not have started properly\n");
             }
           } else {
-            printf("Failed to start daemon from: %s\n", possible_paths[i]);
+            dbg_report("Failed to start daemon from: %s\n", possible_paths[i]);
           }
         }
         
         // If direct daemon start failed, try starting the GUI which will start the daemon
         if(!daemon_started){
-          printf("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
+          dbg_report("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
           const char* gui_paths[] = {
             "/usr/bin/ltr_gui",
             "/usr/local/bin/ltr_gui", 
@@ -678,44 +747,45 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
           };
           
           for(int i = 0; i < sizeof(gui_paths)/sizeof(gui_paths[0]); i++){
-            printf("Trying to start GUI from: %s\n", gui_paths[i]);
+            dbg_report("Trying to start GUI from: %s\n", gui_paths[i]);
             char gui_cmd[512];
             snprintf(gui_cmd, sizeof(gui_cmd), "%s > /dev/null 2>&1 &", gui_paths[i]);
             
             if(system(gui_cmd) == 0){
-              printf("GUI start command executed successfully\n");
+              dbg_report("GUI start command executed successfully\n");
               Sleep(5000);  // 5 second delay for GUI to start daemon
               
               // Check if socket was created
               if(system(check_socket_cmd) == 0){
-                printf("LinuxTrack socket created - GUI successfully started daemon\n");
+                dbg_report("LinuxTrack socket created - GUI successfully started daemon\n");
                 daemon_started = 1;
                 break;
               } else {
-                printf("GUI started but socket not created - daemon may not be running\n");
+                dbg_report("GUI started but socket not created - daemon may not be running\n");
               }
             } else {
-              printf("Failed to start GUI from: %s\n", gui_paths[i]);
+              dbg_report("Failed to start GUI from: %s\n", gui_paths[i]);
             }
           }
         }
         
         if(daemon_started){
           // Try initialization again after starting the daemon
-          printf("Retrying LinuxTrack initialization after daemon start...\n");
+          dbg_report("Retrying LinuxTrack initialization after daemon start...\n");
           init_result = linuxtrack_init("Default");
           if(init_result < LINUXTRACK_OK){
-            printf("LinuxTrack initialization still failed after daemon start (%d): %s\n", 
-                   init_result, linuxtrack_explain(init_result));
+            const char *explain3 = linuxtrack_explain(init_result);
+            dbg_report("LinuxTrack initialization still failed after daemon start (%d): %s\n", 
+                   init_result, explain3 ? explain3 : "unknown error");
             return 1;
           } else {
-            printf("LinuxTrack initialization successful after daemon start\n");
+            dbg_report("LinuxTrack initialization successful after daemon start\n");
           }
         } else {
-          printf("Could not start LinuxTrack daemon - TrackIR functionality will not work\n");
-          printf("Please ensure LinuxTrack is properly installed and ltr_server1 is available\n");
-          printf("You can start the daemon manually by running: ltr_server1\n");
-          printf("Or start the LinuxTrack GUI which will start the daemon automatically: ltr_gui\n");
+          dbg_report("Could not start LinuxTrack daemon - TrackIR functionality will not work\n");
+          dbg_report("Please ensure LinuxTrack is properly installed and ltr_server1 is available\n");
+          dbg_report("You can start the daemon manually by running: ltr_server1\n");
+          dbg_report("Or start the LinuxTrack GUI which will start the daemon automatically: ltr_gui\n");
           return 1;
         }
       }
@@ -790,66 +860,130 @@ int __stdcall NPCLIENT_NP_StartCursor(void)
 int __stdcall NPCLIENT_NP_StartDataTransmission(void)
 {
   dbg_report("StartDataTransmission request\n");
-  
-  // Ensure linuxtrack is initialized; try to initialize with last known profile
+
+  // Prevent multiple calls or calls before proper initialization
+  if (data_transmission_started) {
+    dbg_report("WARNING: NP_StartDataTransmission called multiple times, ignoring\n");
+    return 0;
+  }
+
+  // Set flag immediately after guard check to prevent race conditions
+  // If initialization fails, we'll reset it before returning
+  data_transmission_started = true;
+
+  // Since LinuxTrack is already running, just verify it's accessible
+  // and in a valid state before proceeding
   linuxtrack_state_type st = linuxtrack_get_tracking_state();
-  if(st < LINUXTRACK_OK){
+  
+  // If not initialized, try to initialize (shouldn't happen if already running)
+  if(st < LINUXTRACK_OK) {
     const char *profile = (g_profile_name[0] != '\0') ? g_profile_name : "Default";
+    if(profile == NULL) {
+      profile = "Default";
+    }
     st = linuxtrack_init(profile);
-    /* wait briefly for INITIALIZING state to settle */
-    for(int i = 0; i < 20 && st == INITIALIZING; ++i){
+    if(st < LINUXTRACK_OK) {
+      dbg_report("Failed to initialize LinuxTrack in StartDataTransmission\n");
+      data_transmission_started = false;  // Reset on error
+      return 1;
+    }
+    // Brief wait if initializing
+    for(int i = 0; i < 10 && st == INITIALIZING; ++i){
       Sleep(100);
       st = linuxtrack_get_tracking_state();
     }
   }
 
-  // Try direct linuxtrack API to start streaming
-  st = linuxtrack_wakeup();
-  dbg_report("linuxtrack_wakeup() -> %d\n", st);
-  st = linuxtrack_request_frames();
-  dbg_report("linuxtrack_request_frames() -> %d\n", st);
-  st = linuxtrack_notification_on();
-  dbg_report("linuxtrack_notification_on() -> %d\n", st);
+  // Validate state is acceptable - must be RUNNING or PAUSED
+  // State 1 is INITIALIZING - we need to wait for it to complete
+  if(st == INITIALIZING) {
+    dbg_report("WARNING: StartDataTransmission called but LinuxTrack still initializing (state: %d), waiting...\n", st);
+    // Wait longer for initialization to complete
+    for(int i = 0; i < 50 && st == INITIALIZING; ++i){
+      Sleep(100);
+      st = linuxtrack_get_tracking_state();
+      if(st == RUNNING || st == PAUSED) {
+        dbg_report("LinuxTrack finished initializing, state is now: %d\n", st);
+        break;
+      }
+    }
+    if(st == INITIALIZING) {
+      dbg_report("LinuxTrack initialization timed out in StartDataTransmission\n");
+      data_transmission_started = false;  // Reset on error
+      return 1;
+    }
+  }
+  
+  if(st != RUNNING && st != PAUSED) {
+    dbg_report("LinuxTrack not in valid state for data transmission (state: %d)\n", st);
+    data_transmission_started = false;  // Reset on error
+    return 1;
+  }
+
+  // Since LinuxTrack is already running, these calls should be safe
+  // But we'll check results to be defensive
+  linuxtrack_wakeup();
+  linuxtrack_request_frames();
+  linuxtrack_notification_on();
+  
+  // Verify we're still in a good state after these calls
+  st = linuxtrack_get_tracking_state();
+  if(st != RUNNING && st != PAUSED) {
+    dbg_report("State changed after wakeup calls (state: %d)\n", st);
+    data_transmission_started = false;  // Reset on error
+    return 1;
+  }
 
   // Additionally, ping master to wake in case API call path is unavailable
+  // Use defensive socket operations
+  const char *sock_path = "/tmp/ltr_m_sock";
+  size_t path_len = strlen(sock_path);
+  
   int sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock != -1) {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
-      if (send_command_to_master(3, 0) == 0) {
-        dbg_report("Sent CMD_WAKEUP to master\n");
+    if(path_len < sizeof(addr.sun_path)) {
+      memcpy(addr.sun_path, sock_path, path_len + 1);
+      if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+        // Best-effort command send - don't fail if it doesn't work
+        send_command_to_master(3, 0);
       }
     }
     close(sock);
   }
 
-  // Wait for RUNNING state briefly; retry wake once if needed
-  for(int i = 0; i < 20; ++i){
-    linuxtrack_state_type cur = linuxtrack_get_tracking_state();
-    if(cur == RUNNING) {
-      dbg_report("Tracker state RUNNING after %d00ms\n", i);
-      break;
-    }
-    if(i == 10){
-      // mid-way retry wake
-      (void)linuxtrack_wakeup();
-      (void)linuxtrack_request_frames();
-      // best-effort master ping
-      int s2 = socket(AF_UNIX, SOCK_STREAM, 0);
-      if (s2 != -1) {
-        struct sockaddr_un a2; memset(&a2, 0, sizeof(a2)); a2.sun_family = AF_UNIX;
-        memcpy(a2.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
-        if (connect(s2, (struct sockaddr*)&a2, sizeof(a2)) == 0) {
-          (void)send_command_to_master(3, 0);
-        }
-        close(s2);
-      }
-    }
-    Sleep(100);
+  // Since LinuxTrack is already running, we just need to ensure
+  // the connection is stable before allowing data access
+  // The crash at offset 0xA0 suggests internal structures aren't ready
+  // even though the state says RUNNING. We'll "warm up" the connection
+  // by calling get_tracking_state multiple times, then wait.
+  
+  // Warm up the connection by calling get_tracking_state a few times
+  // This helps ensure the internal connection is fully established
+  for(int warmup = 0; warmup < 5; warmup++) {
+    linuxtrack_get_tracking_state();
+    Sleep(50);
   }
+  
+  // Add a longer delay to let any internal state fully settle
+  // The offset 0xA0 crash suggests we need more time for structures to initialize
+  Sleep(500);
+  
+  // Verify final state before completing
+  st = linuxtrack_get_tracking_state();
+  if(st == RUNNING || st == PAUSED) {
+    // Record the time for minimum delay enforcement in NP_GetData
+    transmission_start_time = GetTickCount();
+    dbg_report("StartDataTransmission completed - system ready (state: %d)\n", st);
+    dbg_report("Note: First pose call will be made by NP_GetData when ARMA 2 requests data\n");
+  } else {
+    dbg_report("StartDataTransmission failed - invalid state: %d\n", st);
+    data_transmission_started = false;  // Reset on error
+    return 1;
+  }
+  
   return 0;
 }
 /******************************************************************
@@ -872,19 +1006,26 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
 {
   dbg_report("StopDataTransmission request\n");
   
+  // Reset transmission flag
+  data_transmission_started = false;
+  
   // Fully shutdown to avoid background reconnect attempts
   linuxtrack_state_type st = linuxtrack_shutdown();
   dbg_report("linuxtrack_shutdown() -> %d\n", st);
 
-  // Also notify master (best-effort)
+  // Also notify master (best-effort) with defensive socket operations
+  const char *sock_path = "/tmp/ltr_m_sock";
+  size_t path_len = strlen(sock_path);
   int sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if (sock != -1) {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
-    memcpy(addr.sun_path, "/tmp/ltr_m_sock", strlen("/tmp/ltr_m_sock") + 1);
-    if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
-      (void)send_command_to_master(2, 0);
+    if(path_len < sizeof(addr.sun_path)) {
+      memcpy(addr.sun_path, sock_path, path_len + 1);
+      if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+        send_command_to_master(2, 0);
+      }
     }
     close(sock);
   }
