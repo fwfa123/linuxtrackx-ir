@@ -28,6 +28,10 @@
 
 #define MSG_ADD_DATAREF 0x01000000
 
+static XPLMDataRef base_x_dr = NULL;
+static XPLMDataRef base_y_dr = NULL;
+static XPLMDataRef base_z_dr = NULL;
+
 static XPLMDataRef head_x = NULL;
 static XPLMDataRef head_y = NULL;
 static XPLMDataRef head_z = NULL;
@@ -44,6 +48,12 @@ static XPLMDataRef head_the_out = NULL;
 static XPLMDataRef head_roll_out = NULL;
 static XPLMDataRef enable_view_control = NULL;
 
+static XPLMCommandRef run_cmd;
+static XPLMCommandRef start_cmd;
+static XPLMCommandRef stop_cmd;
+static XPLMCommandRef pause_cmd;
+static XPLMCommandRef recenter_cmd;
+
 static float GetHeadDataRefCB(void *inRefcon);
 static int GetHeadCtrlRefCB(void *inRefcon);
 static void SetHeadCtrlRefCB(void *inRefcon, int outValue);
@@ -57,26 +67,14 @@ static float current_head_pitch;
 static float current_head_roll;
 static int head_control_enable;
 
-static XPLMMenuID setupMenu = NULL;
-
-static int pos_init_flag = 0;
-static bool freeze = false;
-
 static float base_x = 0.0f;
 static float base_y = 0.0f;
 static float base_z = 0.0f;
-static XPLMDataRef base_x_dr = NULL;
-static XPLMDataRef base_y_dr = NULL;
-static XPLMDataRef base_z_dr = NULL;
 
-static bool active_flag = false;
-
-static XPLMCommandRef run_cmd;
-static XPLMCommandRef start_cmd;
-static XPLMCommandRef stop_cmd;
-static XPLMCommandRef pause_cmd;
-static XPLMCommandRef recenter_cmd;
 static bool initialized = false;
+static int pos_init_flag = 0;
+static bool active_flag = false;
+static bool freeze = false;
 
 static int cmd_cbk(XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
                    void *inRefcon);
