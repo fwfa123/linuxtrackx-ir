@@ -403,7 +403,7 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
                 RESULT_VARIABLE SYMLINK_RESULT
             )
         endif()
-        ")
+    ")
 endif()
 
 # Install 32-bit library to multiarch directory if LIB32DIR is set
