@@ -330,6 +330,21 @@ static void enhance(unsigned char buf[], unsigned int size,
  */
 int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
 {
+  // Defensive check: ensure data pointer is valid
+  if (data == NULL) {
+    printf("ERROR: NP_GetData called with NULL data pointer!\n");
+    return 1;
+  }
+
+  // Check if LinuxTrack is properly initialized
+  linuxtrack_state_type state = linuxtrack_get_tracking_state();
+  if (state < LINUXTRACK_OK || state == INITIALIZING) {
+    printf("WARNING: NP_GetData called but LinuxTrack not ready (state: %d)\n", state);
+    memset((char *)data, 0, sizeof(tir_data_t));
+    data->status = 1; // Not tracking
+    return 1;
+  }
+
   float r, p, y, tx, ty, tz;
   unsigned int frame;
   int res = linuxtrack_get_pose(&y, &p, &r, &tx, &ty, &tz, &frame);
@@ -374,6 +389,13 @@ int __stdcall NPCLIENT_NP_GetParameter(int arg0, int arg1)
 int __stdcall NPCLIENT_NP_GetSignature(tir_signature_t * sig)
 {
   dbg_report("GetSignature request\n");
+
+  // Defensive check: ensure sig pointer is valid
+  if (sig == NULL) {
+    printf("ERROR: NP_GetSignature called with NULL sig pointer!\n");
+    return 1;
+  }
+
   if(getSomeSeriousPoetry(sig->DllSignature, sig->AppSignature)){
     printf("Signature result: OK\n");
     return 0;
@@ -436,7 +458,23 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
     linuxtrack_state_type init_result = linuxtrack_init(gd.name);
     if(init_result < LINUXTRACK_OK){
       printf("LinuxTrack initialization failed (%d): %s\n", init_result, linuxtrack_explain(init_result));
-      
+    } else if(init_result == INITIALIZING){
+      printf("LinuxTrack initialization started, waiting for completion...\n");
+      // Wait for initialization to complete
+      for(int i = 0; i < 50 && init_result == INITIALIZING; ++i){  // Wait up to 5 seconds
+        Sleep(100);
+        init_result = linuxtrack_get_tracking_state();
+        if(init_result == RUNNING || init_result == PAUSED) {
+          printf("LinuxTrack initialization completed successfully\n");
+          break;
+        }
+      }
+      if(init_result == INITIALIZING) {
+        printf("LinuxTrack initialization timed out - system may not be properly configured\n");
+      }
+    }
+    if(init_result < LINUXTRACK_OK || init_result == INITIALIZING){
+
       // Try to start the LinuxTrack daemon if it's not running
       printf("Attempting to start LinuxTrack daemon...\n");
       
