@@ -90,11 +90,11 @@ void XPluginInstall::on_BrowseXPlane_pressed()
     return;
   }
   
-  destPath += QString::fromUtf8("xlinuxtrackx-ir/");
+  destPath += QString::fromUtf8("linuxtrackx-ir/");
 
   //Check for the old plugin and remove it if exists
 #ifndef DARWIN
-  QString oldPlugin = destPath + QString::fromUtf8("lin_x64/xlinuxtrackx-ir.xpl");
+  QString oldPlugin = destPath + QString::fromUtf8("lin_x64/linuxtrackx-ir.xpl");
   QFileInfo old(oldPlugin);
   if(old.exists()){
     if(!removePlugin(oldPlugin)){
@@ -103,7 +103,7 @@ void XPluginInstall::on_BrowseXPlane_pressed()
     }
   }
 #else
-  QString oldPlugin = destPath + QString::fromUtf8("mac_x64/xlinuxtrackx-ir.xpl");
+  QString oldPlugin = destPath + QString::fromUtf8("mac_x64/linuxtrackx-ir.xpl");
   QFileInfo old(oldPlugin);
   if(old.exists()){
     if(!removePlugin(oldPlugin)){
@@ -114,7 +114,7 @@ void XPluginInstall::on_BrowseXPlane_pressed()
 #endif
 
 #ifndef DARWIN
-  if(installPlugin(sourceFile, destPath + QString::fromUtf8("lin_x64/xlinuxtrackx-ir.xpl"))){
+  if(installPlugin(sourceFile, destPath + QString::fromUtf8("lin_x64/linuxtrackx-ir.xpl"))){
 #else
   if(installPlugin(sourceFile, destPath + QString::fromUtf8("mac_x64/xlinuxtrackx-ir.xpl"))){
 #endif
