@@ -28,7 +28,7 @@ sudo apt install libv4l-dev v4l-utils libopencv-dev
 
 ### OSC Support (Level 4+)
 ```bash
-sudo apt install liblo-dev
+sudo apt install libv4l-dev v4l-utils libopencv-dev
 ```
 
 ### Wiimote Support (Level 5+)
