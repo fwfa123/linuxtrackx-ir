@@ -26,6 +26,10 @@ THE SOFTWARE.
 
 
 
+#ifndef _GNU_SOURCE
+  #define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -300,6 +304,188 @@ static char *construct_name(const char *path, const char *sep, const char *name)
   return res;
 }
 
+/**
+ * Extract install prefix from LIB_PATH compile-time define
+ * LIB_PATH is defined as "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack/"
+ * This function extracts the prefix by removing "/lib/linuxtrack/" suffix
+ */
+static char *get_install_prefix_from_lib_path(void)
+{
+#ifdef LIB_PATH
+  char *lib_path = strdup(LIB_PATH);
+  if(lib_path == NULL){
+    return NULL;
+  }
+  
+  // Remove trailing slash if present
+  size_t len = strlen(lib_path);
+  if(len > 0 && lib_path[len - 1] == '/'){
+    lib_path[len - 1] = '\0';
+    len--;
+  }
+  
+  // Check if it ends with "/lib/linuxtrack" and extract prefix
+  const char *suffix = "/lib/linuxtrack";
+  size_t suffix_len = strlen(suffix);
+  if(len >= suffix_len && strcmp(lib_path + len - suffix_len, suffix) == 0){
+    lib_path[len - suffix_len] = '\0';
+    fprintf(stderr, "DEBUG: Extracted install prefix from LIB_PATH: %s\n", lib_path);
+    return lib_path;
+  }
+  
+  // If it doesn't match expected pattern, try to find "/lib/linuxtrack" in the path
+  char *lib_pos = strstr(lib_path, suffix);
+  if(lib_pos != NULL){
+    *lib_pos = '\0';
+    fprintf(stderr, "DEBUG: Extracted install prefix from LIB_PATH (pattern match): %s\n", lib_path);
+    return lib_path;
+  }
+  
+  // If we can't extract prefix, return NULL to use fallback
+  free(lib_path);
+  fprintf(stderr, "DEBUG: Could not extract install prefix from LIB_PATH: %s\n", LIB_PATH);
+#endif
+  return NULL;
+}
+
+/**
+ * Build dynamic library search paths based on CMake install location
+ * This ensures libraries can be found regardless of where CMake installs them
+ */
+static void build_dynamic_search_paths(char ***paths, int *count, const char *libname)
+{
+  *count = 0;
+  *paths = NULL;
+  
+  // Get install prefix from LIB_PATH
+  char *install_prefix = get_install_prefix_from_lib_path();
+  if(install_prefix == NULL){
+    fprintf(stderr, "DEBUG: Could not determine install prefix, skipping dynamic paths\n");
+    return;
+  }
+  
+  // Allocate array for paths (we'll build multiple paths)
+  // Estimate: ~10 paths per prefix (standard + multiarch + 32-bit variants)
+  int max_paths = 20;
+  *paths = (char **)malloc(max_paths * sizeof(char *));
+  if(*paths == NULL){
+    free(install_prefix);
+    return;
+  }
+  
+  // Build paths based on install prefix
+  // Standard 64-bit library location
+  char *std_path = construct_name(install_prefix, "/lib/linuxtrack/", libname);
+  if(std_path != NULL && *count < max_paths - 1){
+    (*paths)[(*count)++] = std_path;
+  } else if(std_path != NULL) {
+    free(std_path);  // Free if we can't add it
+  }
+  
+  // Standard 32-bit library location (if looking for 32-bit library)
+  if(strstr(libname, "32") != NULL){
+    // Already looking for 32-bit library, paths are already added above
+  } else {
+    // If looking for 64-bit lib, also check for 32-bit variant in same location
+    if(*count < max_paths - 1){
+      char *std32_path = construct_name(install_prefix, "/lib/linuxtrack/", "liblinuxtrack32.so.0");
+      if(std32_path != NULL){
+        (*paths)[(*count)++] = std32_path;
+      }
+    }
+  }
+  
+  // Multiarch paths (Debian/Ubuntu style)
+  const char *multiarch_dirs[] = {
+    "i386-linux-gnu",      // 32-bit on 64-bit system
+    "x86_64-linux-gnu",    // 64-bit
+    NULL
+  };
+  
+  for(int i = 0; multiarch_dirs[i] != NULL && *count < max_paths - 1; i++){
+    char *multiarch_path = NULL;
+    // Construct multiarch path: prefix/lib/multiarch_dir/linuxtrack/libname
+    if(asprintf(&multiarch_path, "%s/lib/%s/linuxtrack/%s", 
+                install_prefix, multiarch_dirs[i], libname) >= 0){
+      if(*count < max_paths - 1){
+        (*paths)[(*count)++] = multiarch_path;
+      } else {
+        free(multiarch_path);  // Free if we can't add it
+      }
+    }
+    
+    // If looking for 64-bit library, also check for 32-bit variant in i386-linux-gnu
+    if(*count < max_paths - 1 && strstr(libname, "32") == NULL && strcmp(multiarch_dirs[i], "i386-linux-gnu") == 0){
+      char *lib32_multiarch = NULL;
+      if(asprintf(&lib32_multiarch, "%s/lib/%s/linuxtrack/liblinuxtrack32.so.0",
+                  install_prefix, multiarch_dirs[i]) >= 0){
+        if(*count < max_paths - 1){
+          (*paths)[(*count)++] = lib32_multiarch;
+        } else {
+          free(lib32_multiarch);  // Free if we can't add it
+        }
+      }
+    }
+  }
+  
+  // Alternative lib32 directory (if LIB32DIR was set during CMake build)
+  if(*count < max_paths - 1){
+    char *lib32_path = construct_name(install_prefix, "/lib32/linuxtrack/", libname);
+    if(lib32_path != NULL){
+      (*paths)[(*count)++] = lib32_path;
+    }
+  }
+  
+  // lib64 variant (Fedora/RHEL style)
+  if(*count < max_paths - 1){
+    char *lib64_path = construct_name(install_prefix, "/lib64/linuxtrack/", libname);
+    if(lib64_path != NULL){
+      (*paths)[(*count)++] = lib64_path;
+    }
+  }
+  
+  // If install_prefix is not /opt, also check /opt paths (for Steam Proton compatibility)
+  if(strcmp(install_prefix, "/opt") != 0){
+    if(*count < max_paths - 1){
+      char *opt_path = construct_name("/opt", "/lib/linuxtrack/", libname);
+      if(opt_path != NULL){
+        (*paths)[(*count)++] = opt_path;
+      }
+    }
+    
+    // Also check for 32-bit variant in /opt if looking for 64-bit
+    if(*count < max_paths - 1 && strstr(libname, "32") == NULL){
+      char *opt32_path = construct_name("/opt", "/lib/linuxtrack/", "liblinuxtrack32.so.0");
+      if(opt32_path != NULL){
+        (*paths)[(*count)++] = opt32_path;
+      }
+    }
+  }
+  
+  // If install_prefix is not /usr, also check /usr paths (for relocatable installs)
+  if(strcmp(install_prefix, "/usr") != 0 && strcmp(install_prefix, "/usr/local") != 0){
+    if(*count < max_paths - 1){
+      char *usr_path = construct_name("/usr", "/lib/linuxtrack/", libname);
+      if(usr_path != NULL){
+        (*paths)[(*count)++] = usr_path;
+      }
+    }
+    
+    if(*count < max_paths - 1){
+      char *usr_local_path = construct_name("/usr/local", "/lib/linuxtrack/", libname);
+      if(usr_local_path != NULL){
+        (*paths)[(*count)++] = usr_local_path;
+      }
+    }
+  }
+  
+  // Terminate array (safe because we always ensure count < max_paths - 1)
+  (*paths)[*count] = NULL;
+  
+  fprintf(stderr, "DEBUG: Built %d dynamic search paths for %s\n", *count, libname);
+  free(install_prefix);
+}
+
 
 static void* linuxtrack_try_library(const char *path)
 {
@@ -363,21 +549,45 @@ char *linuxtrack_get_prefix()
   return strdup("/usr");
 }
 
-
+/**
+ * Detect if we're running under Steam Proton's pressure-vessel container
+ * Steam Proton uses a containerized environment where /usr is not accessible
+ * but /opt is accessible. This function checks for Steam Proton-specific
+ * environment variables and path patterns.
+ */
+static int is_steam_proton_environment(void)
+{
+  // Check for STEAM_COMPAT_DATA_PATH environment variable
+  if(getenv("STEAM_COMPAT_DATA_PATH") != NULL) {
+    fprintf(stderr, "DEBUG: Detected Steam Proton via STEAM_COMPAT_DATA_PATH\n");
+    return 1;
+  }
+  
+  // Check if WINEPREFIX contains "compatdata" (Steam Proton prefix pattern)
+  char *wineprefix = getenv("WINEPREFIX");
+  if(wineprefix != NULL && strstr(wineprefix, "compatdata") != NULL) {
+    fprintf(stderr, "DEBUG: Detected Steam Proton via WINEPREFIX containing 'compatdata'\n");
+    return 1;
+  }
+  
+  return 0;
+}
 
 static void* linuxtrack_find_library(linuxtrack_state_type *problem)
 {
   /*
   //search order:
-  //  1. LINUXTRACK_LIBS
+  //  1. LINUXTRACK_LIBS environment variable
   //       development, backward compatibility and weird locations handling
-  //  2. prefix from config file
-  //  3. plain libname
+  //  2. Wine-specific paths (when running under Wine, checked via WINEPREFIX)
+  //  3. prefix from config file (with relative library paths)
+  //  4. absolute fallback paths (common distro layouts)
   //       worth in Linux only, since on Mac we never install to system libraries
   */
   void *handle = NULL;
   char *name = NULL;
   char *prefix;
+
   /*Look for LINUXTRACK_LIBS*/
   char *lp = getenv("LINUXTRACK_LIBS");
   if(lp != NULL){
@@ -401,6 +611,104 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     fprintf(stderr, "DEBUG: LINUXTRACK_LIBS environment variable not set\n");
   }
 
+  /* Check if we're running under Wine and add Wine-specific search paths (step 2) */
+  char *wine_check = getenv("WINEPREFIX");
+  if(wine_check != NULL) {
+    fprintf(stderr, "DEBUG: Detected Wine environment (WINEPREFIX=%s), checking Wine-specific library paths\n", wine_check);
+    
+    /* First, try dynamic paths based on CMake install location (for liblinuxtrack32.so.0) */
+    char **dynamic_paths = NULL;
+    int dynamic_count = 0;
+    build_dynamic_search_paths(&dynamic_paths, &dynamic_count, "liblinuxtrack32.so.0");
+    if(dynamic_paths != NULL && dynamic_count > 0){
+      fprintf(stderr, "DEBUG: Trying %d dynamic paths for liblinuxtrack32.so.0 (32-bit)\n", dynamic_count);
+      for(int i = 0; i < dynamic_count && dynamic_paths[i] != NULL; i++){
+        if((handle = linuxtrack_try_library(dynamic_paths[i])) != NULL){
+          fprintf(stderr, "DEBUG: Successfully loaded liblinuxtrack32.so.0 from dynamic path: %s\n", dynamic_paths[i]);
+          // Free all paths
+          for(int j = 0; j < dynamic_count; j++){
+            if(dynamic_paths[j] != NULL) free(dynamic_paths[j]);
+          }
+          free(dynamic_paths);
+          return handle;
+        }
+      }
+      // Free all paths
+      for(int i = 0; i < dynamic_count; i++){
+        if(dynamic_paths[i] != NULL) free(dynamic_paths[i]);
+      }
+      free(dynamic_paths);
+      dynamic_paths = NULL;
+      dynamic_count = 0;
+    } else {
+      fprintf(stderr, "DEBUG: Could not build dynamic paths for liblinuxtrack32.so.0, will try static paths\n");
+    }
+    
+    /* Also try dynamic paths for 64-bit library (liblinuxtrack.so.0) */
+    build_dynamic_search_paths(&dynamic_paths, &dynamic_count, "liblinuxtrack.so.0");
+    if(dynamic_paths != NULL && dynamic_count > 0){
+      fprintf(stderr, "DEBUG: Trying %d dynamic paths for liblinuxtrack.so.0 (64-bit)\n", dynamic_count);
+      for(int i = 0; i < dynamic_count && dynamic_paths[i] != NULL; i++){
+        if((handle = linuxtrack_try_library(dynamic_paths[i])) != NULL){
+          fprintf(stderr, "DEBUG: Successfully loaded liblinuxtrack.so.0 from dynamic path: %s\n", dynamic_paths[i]);
+          // Free all paths
+          for(int j = 0; j < dynamic_count; j++){
+            if(dynamic_paths[j] != NULL) free(dynamic_paths[j]);
+          }
+          free(dynamic_paths);
+          return handle;
+        }
+      }
+      // Free all paths
+      for(int i = 0; i < dynamic_count; i++){
+        if(dynamic_paths[i] != NULL) free(dynamic_paths[i]);
+      }
+      free(dynamic_paths);
+    } else {
+      fprintf(stderr, "DEBUG: Could not build dynamic paths for liblinuxtrack.so.0, will try static paths\n");
+    }
+    
+    /* Fallback to static Wine-specific paths for compatibility */
+    fprintf(stderr, "DEBUG: Trying static Wine-specific paths (both 32-bit and 64-bit)\n");
+    
+    /* Check if we're running under Steam Proton */
+    int is_steam_proton = is_steam_proton_environment();
+    
+    /* Build path array based on environment */
+    /* For Steam Proton: prioritize /opt paths (accessible in container, /usr is not accessible) */
+    /* For regular Wine: prioritize /usr/local (common local install), then /usr (system), then /opt (fallback) */
+    static const char *wine_lib_locations_steam[] = {
+      "/opt/lib/linuxtrack/liblinuxtrack32.so.0",         /* Steam Proton: accessible in container - PRIORITY */
+      "/opt/lib/linuxtrack/liblinuxtrack.so.0",           /* Steam Proton: accessible in container - PRIORITY */
+      "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",   /* Not accessible in container, but kept for completeness */
+      "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",    /* Not accessible in container, but kept for completeness */
+      "/usr/lib/linuxtrack/liblinuxtrack32.so.0",        /* Not accessible in container, but kept for completeness */
+      "/usr/lib/linuxtrack/liblinuxtrack.so.0",          /* Not accessible in container, but kept for completeness */
+      NULL
+    };
+    
+    static const char *wine_lib_locations_regular[] = {
+      "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",  /* Regular Wine: common local install - PRIORITY */
+      "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",    /* Regular Wine: common local install - PRIORITY */
+      "/usr/lib/linuxtrack/liblinuxtrack32.so.0",        /* Regular Wine: system install */
+      "/usr/lib/linuxtrack/liblinuxtrack.so.0",          /* Regular Wine: system install */
+      "/opt/lib/linuxtrack/liblinuxtrack32.so.0",        /* Regular Wine: less common fallback */
+      "/opt/lib/linuxtrack/liblinuxtrack.so.0",          /* Regular Wine: less common fallback */
+      NULL
+    };
+    
+    const char **wine_lib_locations = is_steam_proton ? wine_lib_locations_steam : wine_lib_locations_regular;
+    
+    int i = 0;
+    while(wine_lib_locations[i] != NULL){
+      if((handle = linuxtrack_try_library((char*)wine_lib_locations[i++])) != NULL){
+        fprintf(stderr, "DEBUG: Successfully loaded library from Wine-specific static path\n");
+        return handle;
+      }
+    }
+    fprintf(stderr, "DEBUG: Wine-specific paths exhausted, continuing to prefix-based search\n");
+  }
+
   prefix = linuxtrack_get_prefix();
   if(prefix == NULL){
     *problem = err_NO_CONFIG;
@@ -418,6 +726,33 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     free(name);
   }
   free(prefix);
+  
+  /* Try dynamic paths based on CMake install location (for non-Wine environments) */
+  char **dynamic_paths = NULL;
+  int dynamic_count = 0;
+  build_dynamic_search_paths(&dynamic_paths, &dynamic_count, "liblinuxtrack.so.0");
+  if(dynamic_paths != NULL && dynamic_count > 0){
+    fprintf(stderr, "DEBUG: Trying %d dynamic search paths for liblinuxtrack.so.0 (64-bit) based on CMake install location...\n", dynamic_count);
+    for(int j = 0; j < dynamic_count && dynamic_paths[j] != NULL; j++){
+      if((handle = linuxtrack_try_library(dynamic_paths[j])) != NULL){
+        fprintf(stderr, "DEBUG: Successfully loaded liblinuxtrack.so.0 from dynamic path: %s\n", dynamic_paths[j]);
+        // Free all paths
+        for(int k = 0; k < dynamic_count; k++){
+          if(dynamic_paths[k] != NULL) free(dynamic_paths[k]);
+        }
+        free(dynamic_paths);
+        return handle;
+      }
+    }
+    // Free all paths
+    for(int j = 0; j < dynamic_count; j++){
+      if(dynamic_paths[j] != NULL) free(dynamic_paths[j]);
+    }
+    free(dynamic_paths);
+  } else {
+    fprintf(stderr, "DEBUG: Could not build dynamic paths for liblinuxtrack.so.0, will try fallback static paths\n");
+  }
+  
   /* Absolute fallbacks independent of prefix to support common distro layouts */
   static const char *alt_lib_locations[] = {
     "/usr/local/lib64/linuxtrack/liblinuxtrack.so.0",  /* Fedora local installs */

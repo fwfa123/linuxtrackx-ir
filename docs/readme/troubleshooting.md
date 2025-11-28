@@ -2,6 +2,9 @@
 
 This guide covers the most common issues across all supported distributions. For distribution-specific issues, see the individual build guides.
 
+## Wine32 - 64 bit install issue
+**[Wine INstall](scripts/dev/README_wine_dev.md)**
+
 ## Quick Diagnosis
 
 ### 1. Check Your Build
@@ -55,6 +58,7 @@ sudo usermod -a -G plugdev,input $USER
 |---------|---------|----------|
 | Library not found | `Couldn't load library 'libwc.so.0'` | Run `sudo ldconfig` |
 | GUI not displaying | Window doesn't appear | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
+| Black/blank dialogs | Lutris/Steam game selection dialogs appear black | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied | Device access error | Add user to `plugdev,input` groups |
 | TrackIR not detected | No tracking | Check USB device: `lsusb \| grep Track` |
 | Wine bridge fails | Windows games don't track | Check Wine installation and MFC42 setup |
