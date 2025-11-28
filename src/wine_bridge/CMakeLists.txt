@@ -143,13 +143,21 @@ if [ -f \"\${BUILD_DIR}/views/TrackIR.exe.so\" ]; then
     cp \"\${BUILD_DIR}/views/TrackIR.exe.so\" \"\${STAGING_DIR}/views/TrackIR.exe.so\"
 fi
 
-# Copy icon file if it exists
+# Copy icon file if it exists (to both controller subdirectory and staging root for Icon directive)
 if [ -f \"${CMAKE_CURRENT_SOURCE_DIR}/controller/linuxtrack.ico\" ]; then
     cp \"${CMAKE_CURRENT_SOURCE_DIR}/controller/linuxtrack.ico\" \"\${STAGING_DIR}/controller/linuxtrack.ico\"
+    # Also copy to staging root for Icon directive (makensis runs from staging directory)
+    cp \"${CMAKE_CURRENT_SOURCE_DIR}/controller/linuxtrack.ico\" \"\${STAGING_DIR}/linuxtrack.ico\"
 fi
 
 # Create modified NSIS script that only includes files that exist
 cp \"\${NSIS_SCRIPT}\" \"\${MODIFIED_SCRIPT}\"
+
+# Comment out Icon directive if icon file doesn't exist
+# Note: We'll use relative path "linuxtrack.ico" since makensis runs from staging directory
+if [ ! -f \"\${STAGING_DIR}/linuxtrack.ico\" ]; then
+    sed -i 's|^Icon ".*"|# Icon "linuxtrack.ico"|' \"\${MODIFIED_SCRIPT}\"
+fi
 
 # Comment out File commands for files that don't exist (before changing directory)
 if [ ! -f \"\${STAGING_DIR}/controller/Controller.exe.so\" ]; then
@@ -180,8 +188,14 @@ cd \"\${STAGING_DIR}\" || exit 1
 # Copy the modified NSIS script to staging directory
 cp \"\${MODIFIED_SCRIPT}\" \"\${STAGING_DIR}/ltr_wine_modified.nsi\"
 
+# Verify icon file is present before running makensis
+if [ ! -f \"linuxtrack.ico\" ]; then
+    echo \"Warning: linuxtrack.ico not found in staging directory - Icon directive will be commented out\" >&2
+fi
+
 # Run makensis from staging directory
-${MAKENSIS_EXECUTABLE} \"\${STAGING_DIR}/ltr_wine_modified.nsi\" || exit 1
+# Icon directive uses relative path "linuxtrack.ico" which will be found in current directory
+${MAKENSIS_EXECUTABLE} ltr_wine_modified.nsi || exit 1
 
 # Move the built installer to the expected output location
 if [ -f \"\${STAGING_DIR}/linuxtrack-wine.exe\" ]; then
