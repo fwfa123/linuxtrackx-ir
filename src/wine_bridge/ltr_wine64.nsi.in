@@ -1,5 +1,6 @@
 Name "linuxtrack-wine64"
 OutFile "linuxtrack-wine.exe"
+Icon "linuxtrack.ico"
 InstallDir $PROGRAMFILES\Linuxtrack
 InstallDirRegKey HKLM "Software\Linuxtrack" "InstallDir"
 
