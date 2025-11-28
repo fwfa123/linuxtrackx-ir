@@ -580,7 +580,8 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     char **dynamic_paths = NULL;
     int dynamic_count = 0;
     build_dynamic_search_paths(&dynamic_paths, &dynamic_count, "liblinuxtrack32.so.0");
-    if(dynamic_paths != NULL){
+    if(dynamic_paths != NULL && dynamic_count > 0){
+      fprintf(stderr, "DEBUG: Trying %d dynamic paths for liblinuxtrack32.so.0 (32-bit)\n", dynamic_count);
       for(int i = 0; i < dynamic_count && dynamic_paths[i] != NULL; i++){
         if((handle = linuxtrack_try_library(dynamic_paths[i])) != NULL){
           fprintf(stderr, "DEBUG: Successfully loaded liblinuxtrack32.so.0 from dynamic path: %s\n", dynamic_paths[i]);
@@ -597,9 +598,38 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
         if(dynamic_paths[i] != NULL) free(dynamic_paths[i]);
       }
       free(dynamic_paths);
+      dynamic_paths = NULL;
+      dynamic_count = 0;
+    } else {
+      fprintf(stderr, "DEBUG: Could not build dynamic paths for liblinuxtrack32.so.0, will try static paths\n");
+    }
+    
+    /* Also try dynamic paths for 64-bit library (liblinuxtrack.so.0) */
+    build_dynamic_search_paths(&dynamic_paths, &dynamic_count, "liblinuxtrack.so.0");
+    if(dynamic_paths != NULL && dynamic_count > 0){
+      fprintf(stderr, "DEBUG: Trying %d dynamic paths for liblinuxtrack.so.0 (64-bit)\n", dynamic_count);
+      for(int i = 0; i < dynamic_count && dynamic_paths[i] != NULL; i++){
+        if((handle = linuxtrack_try_library(dynamic_paths[i])) != NULL){
+          fprintf(stderr, "DEBUG: Successfully loaded liblinuxtrack.so.0 from dynamic path: %s\n", dynamic_paths[i]);
+          // Free all paths
+          for(int j = 0; j < dynamic_count; j++){
+            if(dynamic_paths[j] != NULL) free(dynamic_paths[j]);
+          }
+          free(dynamic_paths);
+          return handle;
+        }
+      }
+      // Free all paths
+      for(int i = 0; i < dynamic_count; i++){
+        if(dynamic_paths[i] != NULL) free(dynamic_paths[i]);
+      }
+      free(dynamic_paths);
+    } else {
+      fprintf(stderr, "DEBUG: Could not build dynamic paths for liblinuxtrack.so.0, will try static paths\n");
     }
     
     /* Fallback to static Wine-specific paths for compatibility */
+    fprintf(stderr, "DEBUG: Trying static Wine-specific paths (both 32-bit and 64-bit)\n");
     static const char *wine_lib_locations[] = {
       "/opt/lib/linuxtrack/liblinuxtrack32.so.0",         /* Default CMake install path */
       "/opt/lib/linuxtrack/liblinuxtrack.so.0",           /* Default CMake install path (fallback) */
@@ -610,10 +640,11 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     int i = 0;
     while(wine_lib_locations[i] != NULL){
       if((handle = linuxtrack_try_library((char*)wine_lib_locations[i++])) != NULL){
-        fprintf(stderr, "DEBUG: Successfully loaded library from Wine-specific path\n");
+        fprintf(stderr, "DEBUG: Successfully loaded library from Wine-specific static path\n");
         return handle;
       }
     }
+    fprintf(stderr, "DEBUG: Wine-specific paths exhausted, continuing to prefix-based search\n");
   }
 
   prefix = linuxtrack_get_prefix();
@@ -634,15 +665,15 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
   }
   free(prefix);
   
-  /* Try dynamic paths based on CMake install location first */
+  /* Try dynamic paths based on CMake install location (for non-Wine environments) */
   char **dynamic_paths = NULL;
   int dynamic_count = 0;
   build_dynamic_search_paths(&dynamic_paths, &dynamic_count, "liblinuxtrack.so.0");
-  if(dynamic_paths != NULL){
-    fprintf(stderr, "DEBUG: Trying dynamic search paths based on CMake install location...\n");
+  if(dynamic_paths != NULL && dynamic_count > 0){
+    fprintf(stderr, "DEBUG: Trying %d dynamic search paths for liblinuxtrack.so.0 (64-bit) based on CMake install location...\n", dynamic_count);
     for(int j = 0; j < dynamic_count && dynamic_paths[j] != NULL; j++){
       if((handle = linuxtrack_try_library(dynamic_paths[j])) != NULL){
-        fprintf(stderr, "DEBUG: Successfully loaded library from dynamic path: %s\n", dynamic_paths[j]);
+        fprintf(stderr, "DEBUG: Successfully loaded liblinuxtrack.so.0 from dynamic path: %s\n", dynamic_paths[j]);
         // Free all paths
         for(int k = 0; k < dynamic_count; k++){
           if(dynamic_paths[k] != NULL) free(dynamic_paths[k]);
@@ -656,6 +687,8 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
       if(dynamic_paths[j] != NULL) free(dynamic_paths[j]);
     }
     free(dynamic_paths);
+  } else {
+    fprintf(stderr, "DEBUG: Could not build dynamic paths for liblinuxtrack.so.0, will try fallback static paths\n");
   }
   
   /* Absolute fallbacks independent of prefix to support common distro layouts */
