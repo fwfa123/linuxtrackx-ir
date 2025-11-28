@@ -170,6 +170,9 @@ fi
 if [ ! -f \"\${STAGING_DIR}/ft_tester/ftc.exe.so\" ]; then
     sed -i 's|^  File /oname=FreeTrackTester.exe|  # File /oname=FreeTrackTester.exe|' \"\${MODIFIED_SCRIPT}\"
 fi
+if [ ! -f \"\${STAGING_DIR}/controller/linuxtrack.ico\" ]; then
+    sed -i 's|^  File /oname=linuxtrack.ico|  # File /oname=linuxtrack.ico|' \"\${MODIFIED_SCRIPT}\"
+fi
 
 # Change to staging directory for makensis (it needs to run from there)
 cd \"\${STAGING_DIR}\" || exit 1

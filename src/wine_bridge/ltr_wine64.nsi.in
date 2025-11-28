@@ -72,7 +72,7 @@ Section "Linuxtrack / TrackIR Interface"
   File /oname=NPClient.dll client\NPClient.dll.so
   File /oname=NPClient64.dll client\NPClient64.dll.so
   File /oname=check_data.exe client\check_data.exe.so
-  File /oname=linuxtrack.ico @srcdir@\controller\linuxtrack.ico
+  File /oname=linuxtrack.ico controller\linuxtrack.ico
   File /oname=TrackIR.exe views\TrackIR.exe.so
   
   # Remove backup files after successful installation
