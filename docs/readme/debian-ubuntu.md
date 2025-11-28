@@ -19,6 +19,7 @@ sudo apt install wine wine-staging wine64 wine64-tools libwine-dev wine32-tools
 sudo apt install gcc-multilib libc6-dev-i386  # REQUIRED: 32-bit development headers
 sudo apt install winetricks  # REQUIRED: For MFC42 library installation
 sudo apt install cabextract wget  # REQUIRED: For alternative installation methods
+sudo apt install nsis  # REQUIRED: For Wine bridge installer generation
 ```
 
 ### Webcam Support (Level 3+)
@@ -28,7 +29,7 @@ sudo apt install libv4l-dev v4l-utils libopencv-dev
 
 ### OSC Support (Level 4+)
 ```bash
-sudo apt install liblo-dev
+sudo apt install libv4l-dev v4l-utils libopencv-dev
 ```
 
 ### Wiimote Support (Level 5+)
@@ -118,6 +119,7 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` |
 | `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | Install full 32-bit Wine: `sudo apt install wine wine32 wine32-tools` |
 | `bits/libc-header-start.h: No such file or directory` | **REQUIRED**: Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` |
+| `Wine plugin: disabled (winegcc/wineg++/makensis not found)` | Install NSIS: `sudo apt install nsis` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |

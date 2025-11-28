@@ -187,13 +187,13 @@ function(add_wine_library target)
     endforeach()
     
     # Link shared library
-    # winegcc automatically finds .spec files in the current directory
-    # We include it as a dependency so it's available during linking
+    # winegcc needs the .spec file to be explicitly passed or available in the current directory
+    # Include SPEC_DEPS in the command to ensure winegcc can find and use it
     add_custom_target(${target} ALL
         COMMAND ${WINEGCC_EXECUTABLE} ${WINE_LIBS} -m32 -Wall -Wextra -g
             -shared
             -o ${CMAKE_CURRENT_BINARY_DIR}/${target}.dll.so
-            ${OBJECTS}
+            ${OBJECTS} ${SPEC_DEPS}
             -ldl
         DEPENDS ${OBJECTS} ${SPEC_DEPS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -241,13 +241,13 @@ function(add_wine64_library target)
     endforeach()
     
     # Link shared library (64-bit)
-    # winegcc automatically finds .spec files in the current directory
-    # We include it as a dependency so it's available during linking
+    # winegcc needs the spec file to be explicitly passed in the command (like 32-bit does)
+    # Use the spec file path from SPEC_DEPS (which points to the source spec file)
     add_custom_target(${target}64 ALL
         COMMAND ${WINEGCC_EXECUTABLE} ${WINE64_LIBS} -Wall -Wextra -g
             -shared
             -o ${CMAKE_CURRENT_BINARY_DIR}/${target}64.dll.so
-            ${OBJECTS}
+            ${OBJECTS} ${SPEC_DEPS}
             -ldl
         DEPENDS ${OBJECTS} ${SPEC_DEPS}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -258,4 +258,3 @@ function(add_wine64_library target)
         OUTPUT_NAME "${target}64.dll.so"
     )
 endfunction()
-
