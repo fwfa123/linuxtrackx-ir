@@ -21,7 +21,7 @@ Function .onInit
   IfFileExists "$INSTDIR\NPClient.dll" 0 done
   
   MessageBox MB_YESNO|MB_ICONQUESTION \
-  "Linuxtrack-Wine is already installed. $\n$\nClick `Yes` to upgrade the installation (existing DLL files will be preserved) or `No` to cancel." \
+  "Linuxtrack-Wine is already installed. $\n$\nClick `Yes` to upgrade the installation (symlinks will be preserved) or `No` to cancel." \
   IDYES done
   Abort
 
