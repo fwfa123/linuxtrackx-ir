@@ -163,9 +163,13 @@ void TestingSection::startTracking()
     trackingStarted = true;
 
     // Inform the user once that tracking has been automatically started for testing.
-    QMessageBox::information(nullptr, tr("Tracking Started"),
-                             tr("Head tracking has been automatically started for testing.\n\n"
-                                "Use the tracking window to pause, recenter, or stop tracking as needed."));
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("Tracking Started"));
+    msgBox.setText(tr("Head tracking has been automatically started for testing.\n\n"
+                      "Use the tracking window to pause, recenter, or stop tracking as needed."));
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
 
     // Notify GUI to sync tracking window UI timers
     emit testingWorkflowStarted();
@@ -466,9 +470,13 @@ void TestingSection::runSelectedTester()
         testingStatusLabel->setText(tr("Architecture detected: %1, Selected tester: %2").arg(archString, testerName));
     }
     
-    QMessageBox::information(nullptr, tr("Architecture Detection Complete"),
-                             tr("Detected wine prefix architecture: %1\n\nSelected tester: %2\n\nProceeding with execution...")
-                             .arg(archString, testerName));
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("Architecture Detection Complete"));
+    msgBox.setText(tr("Detected wine prefix architecture: %1\n\nSelected tester: %2\n\nProceeding with execution...")
+                   .arg(archString, testerName));
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.setStandardButtons(QMessageBox::Ok);
+    msgBox.exec();
     
     // Execute tester with detected architecture
     executeTester(testerPath, prefixPath, currentPlatform, prefixArch);
