@@ -370,8 +370,8 @@ char *ltr_int_get_lib_path(const char *libname)
   
   // Fallback: try standard installation paths
   const char *standard_paths[] = {
-    "/usr/local/lib/linuxtrack/",
     "/opt/lib/linuxtrack/",
+    "/usr/local/lib/linuxtrack/",
     "/usr/lib/linuxtrack/",
     "/usr/lib64/linuxtrack/",
     NULL
