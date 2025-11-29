@@ -93,19 +93,23 @@ Once prerequisites are met, you can install Wine Bridge for your preferred gamin
   <li>Custom game detection settings</li>
 </ul>
 
-<h2>Testing Section</h2>
+<h2>Wine Prefix Testing/Hotkeys Section</h2>
 <p>
-The Testing section allows you to verify that Wine Bridge is working correctly with your games:
+The Wine Prefix Testing/Hotkeys section allows you to verify that Wine Bridge is working correctly with your games and configure hotkey controls for head tracking:
 </p>
 
-<h3>Tester Selection</h3>
+<h3>Wine Executable Selection</h3>
 <p>
 <strong>Radio Buttons:</strong>
 </p>
 <ul>
-  <li><strong>"Tester.exe (TrackIR)"</strong> - Uses the TrackIR tester application (recommended for most games)</li>
+  <li><strong>"Tester(TrackIR)"</strong> - Uses the TrackIR tester application (recommended for most games) to verify head tracking functionality</li>
   <li><strong>"FT_Tester (FreeTrack)"</strong> - Uses the FreeTrack tester for games that support FreeTrack protocol</li>
+  <li><strong>"Controller(Hotkeys)"</strong> - Launches the hotkey controller utility for configuring pause/resume and recenter keyboard shortcuts. This utility allows you to control head tracking without leaving your game or application.</li>
 </ul>
+<p>
+<strong>Note:</strong> The Controller utility is not a tester but rather a hotkey configuration tool. It enables you to pause/resume tracking and recenter the tracking position using configurable keyboard shortcuts while running Windows applications under Wine.
+</p>
 
 <h3>Platform Selection</h3>
 <p>
@@ -129,12 +133,12 @@ The Testing section allows you to verify that Wine Bridge is working correctly w
 <strong>Purpose:</strong> Helps you quickly find specific games in large libraries by typing part of the game name.
 </p>
 
-<h3>Game Selection and Testing</h3>
+<h3>Game Selection and Execution</h3>
 <p>
-<strong>Dropdown:</strong> "Game" - Select the specific game you want to test.
+<strong>Dropdown:</strong> "Game" - Select the specific game you want to test or run the controller utility with.
 </p>
 <p>
-<strong>Button:</strong> "Run Tester" - Launches the selected game with the tester application to verify head tracking functionality.
+<strong>Button:</strong> "Run Tester" - Launches the selected Wine executable (tester or controller) in the selected game's Wine prefix. For testers, this verifies head tracking functionality. For Controller, this launches the hotkey configuration utility.
 </p>
 
 <h2>Linuxtrack Server Section</h2>
@@ -262,9 +266,11 @@ LinuxTrack includes a powerful feature that allows you to use head tracking with
 <p>
 <strong>If Wine Bridge installation fails:</strong> Check that Wine is properly installed and your gaming platform is correctly detected.</p>
 <p>
-<strong>If testing fails:</strong> Ensure the Linuxtrack server is running and the correct output format is selected.</p>
+<strong>If testing fails:</strong> Ensure the Linuxtrack server is running and the correct output format is selected. Try different testers (TrackIR or FreeTrack) to verify compatibility.</p>
 <p>
 <strong>If games don't detect head tracking:</strong> Verify that the game supports TrackIR or FreeTrack, and that Wine Bridge is properly installed for your platform.</p>
+<p>
+<strong>If Controller hotkeys don't work:</strong> Ensure Controller.exe is launched within the same Wine prefix as your game. The Controller utility only detects hotkeys within the prefix where it's running. Make sure tracking is started before using Controller hotkeys.</p>
 
 <h2>Advanced Configuration</h2>
 <p>
