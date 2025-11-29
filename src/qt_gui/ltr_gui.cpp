@@ -161,6 +161,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   // Connect Testing section buttons
   QObject::connect(ui.TesterExeRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_TesterExeRadioButton_toggled(bool)));
   QObject::connect(ui.FTTesterRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_FTTesterRadioButton_toggled(bool)));
+  QObject::connect(ui.ControllerExeRadioButton, SIGNAL(toggled(bool)), this, SLOT(on_ControllerExeRadioButton_toggled(bool)));
   QObject::connect(ui.PlatformComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_PlatformComboBox_currentTextChanged(QString)));
   QObject::connect(ui.LoadGamesButton, SIGNAL(pressed()), this, SLOT(on_LoadGamesButton_pressed()));
   QObject::connect(ui.GameComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_GameComboBox_currentTextChanged(QString)));
@@ -970,6 +971,13 @@ void LinuxtrackGui::on_TesterExeRadioButton_toggled(bool checked)
 }
 
 void LinuxtrackGui::on_FTTesterRadioButton_toggled(bool checked)
+{
+    if (checked && testingSection) {
+        testingSection->onTesterSelectionChanged();
+    }
+}
+
+void LinuxtrackGui::on_ControllerExeRadioButton_toggled(bool checked)
 {
     if (checked && testingSection) {
         testingSection->onTesterSelectionChanged();
