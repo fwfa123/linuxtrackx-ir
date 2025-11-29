@@ -48,6 +48,7 @@ cd linuxtrackx-ir
 mkdir build && cd build
 
 # Configure (see level-specific options below)
+# Note: Default prefix is /opt (recommended for Steam Proton compatibility)
 cmake .. [OPTIONS]
 
 # Build
@@ -68,12 +69,14 @@ sudo cmake --build . --target uninstall
 
 | Level | CMake Command | Description |
 |-------|---------------|-------------|
-| 1 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local` | TrackIR only |
-| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON` | + Wine support (**requires 32-bit Wine installed**) |
-| 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON` | + Webcam |
-| 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
-| 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON` | + Wiimote |
-| 6 | `cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
+| 1 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | TrackIR only (default prefix is `/opt`) |
+| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON` | + Wine support (**requires 32-bit Wine installed**) |
+| 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON` | + Webcam |
+| 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
+| 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON` | + Wiimote |
+| 6 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
+
+> **Note**: `/opt` is the default install prefix and is recommended for Steam Proton compatibility. Symlinks are automatically created in `/usr/local/bin` for PATH compatibility.
 
 ### Distribution-Specific Instructions
 
@@ -82,6 +85,10 @@ sudo cmake --build . --target uninstall
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
 
 Each guide includes package installation commands and level-specific build examples.
+
+### Migrating from /usr/local to /opt
+
+If you have an existing installation in `/usr/local` and want to migrate to `/opt` (recommended for Steam Proton compatibility), see the **[Migration Guide](docs/readme/MIGRATION_GUIDE_USR_LOCAL_TO_OPT.md)**.
 
 ## 🎮 Usage
 
@@ -176,10 +183,10 @@ For advanced users, combine CMake flags to build exactly what you need:
 
 ```bash
 # Example: TrackIR + X-Plane without Wine/Webcam
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Example: Wine + OSC without Webcam
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
 ```
 
 ### AppImage Build
@@ -199,7 +206,7 @@ LinuxTrack X-IR welcomes contributions! See the [GitLab repository](https://gitl
 git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
 cd linuxtrackx-ir
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_DEBUG=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_DEBUG=ON
 cmake --build . -j$(nproc)
 ```
 
