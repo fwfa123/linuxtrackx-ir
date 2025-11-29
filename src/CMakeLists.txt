@@ -440,41 +440,9 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
     endif()
 endif()
 
-# Also install libraries to /opt/lib/linuxtrack/ for Steam Proton compatibility
+# Note: /opt is now the default install prefix, providing Steam Proton compatibility
 # Steam Proton's pressure-vessel container can access /opt but not /usr
-# Only install to /opt if main prefix is not already /opt (avoid duplication)
-if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
-    message(STATUS "Installing libraries to /opt/lib/linuxtrack/ for Steam Proton compatibility")
-    install(TARGETS
-        linuxtrack
-        ltr
-        tir
-        joy
-        ltusb1
-        LIBRARY DESTINATION /opt/lib/linuxtrack
-        ARCHIVE DESTINATION /opt/lib/linuxtrack
-    )
-    
-    if(WEBCAM_SUPPORT)
-        install(TARGETS wc
-            LIBRARY DESTINATION /opt/lib/linuxtrack
-            ARCHIVE DESTINATION /opt/lib/linuxtrack
-        )
-    endif()
-    
-    if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
-        install(TARGETS xlinuxtrack9
-            LIBRARY DESTINATION /opt/lib/linuxtrack
-            ARCHIVE DESTINATION /opt/lib/linuxtrack
-        )
-        if(LTR32ON64)
-            install(TARGETS xlinuxtrack9_32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
-    endif()
-endif()
+# No need for dual-installation logic since /opt is the default
 
 # Install 32-bit library to multiarch directory if LIB32DIR is set
 if(LTR32ON64)
@@ -521,14 +489,7 @@ if(LTR32ON64)
             endforeach()
         ")
         
-        # Also install 32-bit library to /opt for Steam Proton compatibility
-        # Install with standard name (liblinuxtrack32.so.0) for Wine bridge compatibility
-        if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
-            install(TARGETS linuxtrack32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
+        # Note: /opt is now the default, so no dual-installation needed
     else()
         # Install to standard location if LIB32DIR is not set or is "lib32"
         install(TARGETS linuxtrack32
@@ -537,14 +498,6 @@ if(LTR32ON64)
         )
         message(STATUS "ℹ️  LIB32DIR not set - 32-bit library installed to standard location: lib/linuxtrack")
         message(STATUS "ℹ️  For Debian/Ubuntu multiarch support, use: -DLIB32DIR=i386-linux-gnu")
-        
-        # Also install 32-bit library to /opt for Steam Proton compatibility
-        if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
-            install(TARGETS linuxtrack32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
     endif()
 endif()
 
@@ -609,22 +562,108 @@ if(TARGET ltr_gui)
     add_dependencies(ltr_gui ltr tir)
 endif()
 
+# Create symlinks from /opt/bin to /usr/local/bin for PATH compatibility
+# This allows binaries to be found even if /opt/bin is not in PATH
+if(CMAKE_INSTALL_PREFIX STREQUAL "/opt")
+    install(CODE "
+        message(STATUS \"Creating symlinks from /opt/bin to /usr/local/bin for PATH compatibility...\")
+        set(BIN_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin\")
+        set(SYMLINK_DIR \"\$ENV{DESTDIR}/usr/local/bin\")
+        
+        # Create /usr/local/bin directory if it doesn't exist (handles both staging and system installs)
+        if(NOT EXISTS \"\${SYMLINK_DIR}\")
+            execute_process(
+                COMMAND \${CMAKE_COMMAND} -E make_directory \"\${SYMLINK_DIR}\"
+                RESULT_VARIABLE MKDIR_RESULT
+            )
+            if(NOT MKDIR_RESULT EQUAL 0)
+                message(WARNING \"⚠️  Failed to create directory: \${SYMLINK_DIR}\")
+            endif()
+        endif()
+        
+        # List of binaries to symlink
+        set(BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter)
+        if(EXISTS \"\${BIN_DIR}/mickey\")
+            list(APPEND BINARIES mickey)
+        endif()
+        
+        foreach(BINARY \${BINARIES})
+            set(BINARY_PATH \"\${BIN_DIR}/\${BINARY}\")
+            set(SYMLINK_PATH \"\${SYMLINK_DIR}/\${BINARY}\")
+            # Symlink target should be the final installed path (without DESTDIR)
+            # This ensures symlinks work correctly after package deployment
+            set(SYMLINK_TARGET \"${CMAKE_INSTALL_PREFIX}/bin/\${BINARY}\")
+            
+            if(EXISTS \"\${BINARY_PATH}\")
+                # Remove existing symlink or file if it exists
+                if(EXISTS \"\${SYMLINK_PATH}\")
+                    execute_process(
+                        COMMAND \${CMAKE_COMMAND} -E remove \"\${SYMLINK_PATH}\"
+                    )
+                endif()
+                
+                # Create symlink pointing to final installed path (not staging path)
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E create_symlink \"\${SYMLINK_TARGET}\" \"\${SYMLINK_PATH}\"
+                    RESULT_VARIABLE SYMLINK_RESULT
+                )
+                
+                if(SYMLINK_RESULT EQUAL 0)
+                    message(STATUS \"✅ Created symlink: \${SYMLINK_PATH} -> \${SYMLINK_TARGET}\")
+                else()
+                    message(WARNING \"⚠️  Failed to create symlink: \${SYMLINK_PATH}\")
+                endif()
+            endif()
+        endforeach()
+    ")
+endif()
+
 # ldconfig integration
 if(ENABLE_LDCONFIG)
     install(CODE "
-        # Only create ld.so.conf.d file if DESTDIR is set (staging installation)
-        # For system installations, this should be handled by package managers
+        # Create ld.so.conf.d file for library path registration
+        # This is required because /opt/lib/linuxtrack is not in default library search paths
         if(NOT \"\$ENV{DESTDIR}\" STREQUAL \"\")
             # Staging installation - write to DESTDIR
-        file(WRITE \"\$ENV{DESTDIR}/etc/ld.so.conf.d/linuxtrack.conf\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
+            set(CONF_DIR \"\$ENV{DESTDIR}/etc/ld.so.conf.d\")
+            set(CONF_FILE \"\${CONF_DIR}/linuxtrack.conf\")
+            # Create directory if it doesn't exist
+            if(NOT EXISTS \"\${CONF_DIR}\")
+                file(MAKE_DIRECTORY \"\${CONF_DIR}\")
+            endif()
+            file(WRITE \"\${CONF_FILE}\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
+            message(STATUS \"Created ${CONF_FILE} with path: ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
         else()
-            # System installation - only run ldconfig, don't create conf file
-            # Package managers should handle /etc/ld.so.conf.d/ files
-            execute_process(
-                COMMAND ldconfig
-                OUTPUT_QUIET
-                ERROR_QUIET
-            )
+            # System installation - create conf file and run ldconfig
+            # Note: This requires root/sudo permissions to write to /etc/ld.so.conf.d/
+            set(CONF_DIR \"/etc/ld.so.conf.d\")
+            set(CONF_FILE \"\${CONF_DIR}/linuxtrack.conf\")
+            
+            # Check if directory exists (it should on all Linux systems)
+            if(NOT EXISTS \"\${CONF_DIR}\")
+                message(WARNING \"⚠️  Directory \${CONF_DIR} does not exist - cannot create ldconfig configuration\")
+                message(WARNING \"⚠️  You will need to manually create ${CONF_FILE} with content: ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
+            else()
+                # Write the configuration file
+                file(WRITE \"\${CONF_FILE}\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
+                message(STATUS \"Created ${CONF_FILE} with path: ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
+                
+                # Run ldconfig to update library cache
+                # Note: This may fail if not run with sufficient permissions
+                execute_process(
+                    COMMAND ldconfig
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                    RESULT_VARIABLE LDCONFIG_RESULT
+                )
+                if(NOT LDCONFIG_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  ldconfig failed (exit code: \${LDCONFIG_RESULT})\")
+                    message(WARNING \"⚠️  You may need to run 'sudo ldconfig' manually to update the library cache\")
+                    message(WARNING \"⚠️  Library path ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack has been added to ${CONF_FILE}\")
+                else()
+                    message(STATUS \"✅ Library cache updated successfully\")
+                endif()
+            endif()
         endif()
     ")
 endif()

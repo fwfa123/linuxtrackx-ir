@@ -16,11 +16,20 @@ FAILED=0
 WARNINGS=0
 TOTAL_CHECKS=0
 
-# Configuration
-INSTALL_PREFIX="/opt/linuxtrack"
-DESKTOP_DIR="/usr/local/share/applications"
-ICONS_DIR="/usr/local/share/icons/hicolor"
-PIXMAPS_DIR="/usr/local/share/pixmaps"
+# Configuration - detect install prefix
+if [ -f /opt/bin/ltr_gui ]; then
+    INSTALL_PREFIX="/opt"
+elif [ -f /usr/local/bin/ltr_gui ]; then
+    INSTALL_PREFIX="/usr/local"
+elif [ -f "$HOME/.local/bin/ltr_gui" ]; then
+    INSTALL_PREFIX="$HOME/.local"
+else
+    INSTALL_PREFIX="/opt"  # Default assumption
+fi
+
+DESKTOP_DIR="${INSTALL_PREFIX}/share/applications"
+ICONS_DIR="${INSTALL_PREFIX}/share/icons/hicolor"
+PIXMAPS_DIR="${INSTALL_PREFIX}/share/pixmaps"
 UDEV_RULES_DIR="/lib/udev/rules.d"
 
 print_header() {

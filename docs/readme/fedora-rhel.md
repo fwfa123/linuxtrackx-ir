@@ -75,7 +75,7 @@ which qhelpgenerator qmake moc
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -84,7 +84,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -93,7 +93,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -102,7 +102,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -111,7 +111,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -120,7 +120,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -197,11 +197,11 @@ Combine cmake flags for your specific needs:
 ```bash
 # Example: TrackIR + X-Plane without Wine/Webcam
 export PATH="/usr/lib64/qt5/bin:$PATH"
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Example: Wine + OSC without Webcam
 export PATH="/usr/lib64/qt5/bin:$PATH"
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
 ```
 
 See the main README for all available CMake options.

@@ -52,5 +52,34 @@ if(EXISTS "/etc/ld.so.conf.d/linuxtrack.conf")
     )
 endif()
 
+# Remove symlinks from /usr/local/bin if prefix was /opt
+if("@CMAKE_INSTALL_PREFIX@" STREQUAL "/opt")
+    message(STATUS "Removing symlinks from /usr/local/bin...")
+    set(SYMLINK_BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter mickey)
+    foreach(BINARY ${SYMLINK_BINARIES})
+        set(SYMLINK_PATH "/usr/local/bin/${BINARY}")
+        if(EXISTS "${SYMLINK_PATH}")
+            # Try to read the symlink target
+            execute_process(
+                COMMAND "@CMAKE_COMMAND@" -E read_symlink "${SYMLINK_PATH}"
+                OUTPUT_VARIABLE SYMLINK_TARGET
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+                RESULT_VARIABLE SYMLINK_RESULT
+            )
+            # Only remove if we can read the symlink and it points to /opt/bin
+            # This ensures we don't accidentally remove regular files
+            if(SYMLINK_RESULT EQUAL 0 AND SYMLINK_TARGET MATCHES "^/opt/bin/")
+                message(STATUS "Removing symlink: ${SYMLINK_PATH} -> ${SYMLINK_TARGET}")
+                execute_process(
+                    COMMAND "@CMAKE_COMMAND@" -E remove "${SYMLINK_PATH}"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                )
+            endif()
+        endif()
+    endforeach()
+endif()
+
 message(STATUS "LinuxTrack uninstalled successfully")
 

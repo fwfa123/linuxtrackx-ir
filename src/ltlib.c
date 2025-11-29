@@ -230,8 +230,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
             // Fallback path resolution
             ltr_int_log_message("Client mode: Attempting fallback path resolution...\n");
             const char *fallback_paths[] = {
+              "/opt/bin/ltr_server1",
               "/usr/local/bin/ltr_server1",
-              "/opt/linuxtrack/bin/ltr_server1",
               "/usr/bin/ltr_server1",
               NULL  // Placeholder for PATH lookup (handled separately)
             };
