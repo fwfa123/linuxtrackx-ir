@@ -104,10 +104,10 @@ QString WineLauncher::selectBestWineVersion()
   QStringList winePaths;
   QStringList wineCommands;
   
-  // Check common wine installation paths
+  // Check common wine installation paths (prioritize /opt as default install location)
   winePaths << QStringLiteral("/opt/wine-staging/bin/wine")
-            << QStringLiteral("/usr/local/bin/wine-staging")
             << QStringLiteral("/opt/wine/bin/wine")
+            << QStringLiteral("/usr/local/bin/wine-staging")
             << QStringLiteral("/usr/local/bin/wine");
   
   // Check common wine commands
@@ -226,7 +226,7 @@ QString WineLauncher::getWineVersion(const QString &winePath)
 // NEW: Get winetricks version
 QString WineLauncher::getWinetricksVersion()
 {
-  QStringList winetricksPaths = {QStringLiteral("winetricks"), QStringLiteral("/usr/local/bin/winetricks"), QStringLiteral("/opt/winetricks/bin/winetricks")};
+  QStringList winetricksPaths = {QStringLiteral("winetricks"), QStringLiteral("/opt/bin/winetricks"), QStringLiteral("/usr/local/bin/winetricks")};
   
   for (const QString &path : winetricksPaths) {
     QProcess winetricksVersion;

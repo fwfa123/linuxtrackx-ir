@@ -508,7 +508,7 @@ void LinuxtrackGui::on_LaunchMickeyButton_pressed()
   QString appImagePath = QCoreApplication::applicationDirPath() + QStringLiteral("/mickey");
   mickeyPaths << appImagePath;
   
-  // Then check system paths
+  // Then check system paths (prioritize /opt as default install location)
   mickeyPaths << QStringLiteral("/opt/bin/mickey")
               << QStringLiteral("/usr/local/bin/mickey")
               << QStringLiteral("/usr/bin/mickey")
@@ -1350,7 +1350,7 @@ QString LinuxtrackGui::findLtrPipeExecutable()
 
     // Then check common installation paths
     QStringList systemPaths = {
-        QStringLiteral("/opt/linuxtrack/bin/ltr_pipe"),
+        QStringLiteral("/opt/bin/ltr_pipe"),
         QStringLiteral("/usr/local/bin/ltr_pipe"),
         QStringLiteral("/usr/bin/ltr_pipe")
     };
