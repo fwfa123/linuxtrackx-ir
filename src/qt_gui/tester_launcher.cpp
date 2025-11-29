@@ -55,6 +55,8 @@ QString TesterLauncher::findTesterInPrefix(const QString &prefixPath,
         possibleNames << QString::fromUtf8("Tester.exe") << QString::fromUtf8("Tester64.exe");
     } else if (testerType == QString::fromUtf8("FT_Tester")) {
         possibleNames << QString::fromUtf8("FT_Tester.exe") << QString::fromUtf8("FreeTrackTester.exe");
+    } else if (testerType == QString::fromUtf8("Controller.exe")) {
+        possibleNames << QString::fromUtf8("Controller.exe");
     }
 
     for (const QString &testerName : possibleNames) {
