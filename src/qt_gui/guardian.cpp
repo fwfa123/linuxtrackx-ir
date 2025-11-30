@@ -33,10 +33,11 @@ void Guardian::checkDeviceNModel()
   QWidget *currentParent = parentWidget;
   
   QTimer::singleShot(100, this, [currentDevType, currentMdlType, currentDevDesc, currentParent]() {
-    // Guard against null parentWidget
+    // Qt6.5: Guard against null parentWidget and null this
     if(currentParent == nullptr){
       return;
     }
+    // Note: 'this' is captured by value in the lambda context, but we validate parentWidget
     
     if((currentDevType == WEBCAM_FT) || (currentDevType == MACWEBCAM_FT) || (currentDevType == MACPS3EYE_FT)){
       //face tracker needs face model

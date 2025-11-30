@@ -12,6 +12,9 @@ class ProfileSetup : public QWidget
  public:
   ProfileSetup(const QString &name, QWidget *parent = 0);
   ~ProfileSetup();
+  // Qt6 RADICAL FIX: allow reusing a single ProfileSetup instance for different profiles
+  // instead of deleting/recreating the widget (which was crashing inside Qt layouts).
+  void loadProfile(const QString &name);
    void copyFromDefault();
    void importProfile(QTextStream &tf);
    void exportProfile(QTextStream &tf);

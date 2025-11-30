@@ -23,6 +23,14 @@ ProfileSetup::~ProfileSetup()
   delete sc;
 }
 
+void ProfileSetup::loadProfile(const QString &name)
+{
+  // Qt6 RADICAL FIX: reuse existing widget for new profile instead of
+  // deleting/recreating it (which was causing layout crashes).
+  profileName = name;
+  TRACKER.setProfile(profileName);
+}
+
 void ProfileSetup::connect()
 {
   QObject::connect(&TRACKER, SIGNAL(initAxes(void)), this, SLOT(initAxes(void)));

@@ -69,8 +69,10 @@ void ModelCreate::on_CreateButton_pressed()
 
 void ModelCreate::removeEditor()
 {
-  if(modelEditor != NULL){
-    ui.MdlLayout->removeWidget(modelEditor);
+  if (modelEditor != NULL) {
+    // Qt6 RADICAL FIX: deleting the child widget is enough; Qt will
+    // automatically remove it from the layout. Calling removeWidget()
+    // first was contributing to QBoxLayout::itemAt() crashes.
     delete modelEditor;
     modelEditor = NULL;
   }
@@ -124,16 +126,54 @@ ModelEdit::ModelEdit(Guardian *grd, QWidget *parent) : QWidget(parent), modelTwe
 
 void ModelEdit::refresh()
 {
-  QString str;
   initializing = true;
 
-  if(PREF.getActiveModel(str)){
-    currentSection = str;
-    ModelCreated(str);
-    // Note: modelSelectorActivated() will be called automatically via currentTextChanged signal
-  }else{
-    ModelCreated(QString::fromUtf8(""));
+  // Determine the best model section to use on startup:
+  // 1. Prefer the active model from prefs, if it still exists.
+  // 2. Otherwise, fall back to "NP TrackClip" if present (good default for TrackIR).
+  // 3. Otherwise, fall back to the first available model.
+  QString activeSection;
+  const bool haveActive = PREF.getActiveModel(activeSection);
+
+  QStringList modelSections;
+  PREF.getModelList(modelSections);
+
+  std::cout << "[ModelEdit::refresh] haveActive=" << (haveActive ? "true" : "false")
+            << ", activeSection='" << activeSection.toStdString() << "'" << std::endl;
+  std::cout << "[ModelEdit::refresh] Available model sections: ";
+  for (const auto &sec : modelSections) {
+    std::cout << "'" << sec.toStdString() << "' ";
   }
+  std::cout << std::endl;
+
+  QString sectionToUse;
+
+  if (haveActive && modelSections.contains(activeSection)) {
+    // Active model from prefs is valid; use it.
+    sectionToUse = activeSection;
+  } else {
+    // Active model missing or invalid – choose a sensible default.
+    if (modelSections.contains(QString::fromUtf8("NP TrackClip"))) {
+      sectionToUse = QString::fromUtf8("NP TrackClip");
+    } else if (!modelSections.isEmpty()) {
+      sectionToUse = modelSections.first();
+    }
+
+    // Keep prefs in sync with our chosen default so UI and config match.
+    if (!sectionToUse.isEmpty()) {
+      PREF.activateModel(sectionToUse);
+    }
+  }
+
+  currentSection = sectionToUse;
+  ModelCreated(sectionToUse);
+
+  // Force the combo box text to our chosen section to override any
+  // auto-selection quirks or unexpected signal ordering.
+  if (!sectionToUse.isEmpty()) {
+    ui.ModelSelector->setCurrentText(sectionToUse);
+  }
+
   initializing = false;
 }
 
@@ -173,7 +213,8 @@ void ModelEdit::modelSelectorActivated(const QString &text)
   }
   QString val;
   if(modelTweaker != NULL){
-    ui.ModelEditorSite->removeWidget(modelTweaker);
+    // Qt6 RADICAL FIX: let Qt remove the widget from the layout when it
+    // is deleted; explicit removeWidget() was leading to layout crashes.
     delete modelTweaker;
     modelTweaker = NULL;
   }
@@ -212,8 +253,10 @@ void ModelEdit::modelSelectorActivated(const QString &text)
     modelType = MDL_1PT;
     modelTweaker = NULL;
   }
-  if(modelTweaker != NULL){
-    ui.ModelEditorSite->insertWidget(2, modelTweaker);
+  if (modelTweaker != NULL) {
+    // Qt6 RADICAL FIX: use addWidget() instead of insertWidget() to avoid
+    // potential off-by-one index issues inside QBoxLayout.
+    ui.ModelEditorSite->addWidget(modelTweaker);
   }
   if(!initializing) PREF.activateModel(currentSection);
   PREF.announceModelChange();

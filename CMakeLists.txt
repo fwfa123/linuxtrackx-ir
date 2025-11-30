@@ -23,6 +23,8 @@ option(ENABLE_LTR_32LIB_ON_X64 "Build 32-bit linuxtrack library on 64-bit host" 
 option(ENABLE_PIE "Enable Position Independent Executable (PIE)" ON)
 option(ENABLE_LDCONFIG "Enable automatic ldconfig configuration" ON)
 option(ENABLE_DEBUG "Enable debug build" OFF)
+# Debugging / instrumentation options
+option(ENABLE_ASAN "Enable AddressSanitizer for debugging Qt6 crashes" OFF)
 
 # Optional feature options
 option(ENABLE_OSC "Enable OSC support" OFF)
@@ -37,7 +39,7 @@ set(LIB32DIR "lib32" CACHE STRING "32-bit library directory (usually needed only
 
 # Set C/C++ standards
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)  # Qt6 requires C++17 or higher
+set(CMAKE_CXX_STANDARD 17)  # Qt6.2+ requires C++17 or higher
 
 # Compiler flags
 if(ENABLE_DEBUG)
@@ -46,6 +48,17 @@ if(ENABLE_DEBUG)
 else()
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+endif()
+
+# AddressSanitizer (for tracking down Qt6 layout crashes)
+if(ENABLE_ASAN)
+    message(STATUS "AddressSanitizer: ENABLED")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -fno-omit-frame-pointer")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+else()
+    message(STATUS "AddressSanitizer: disabled (ENABLE_ASAN=OFF)")
 endif()
 
 # Security flags (matching configure.ac)
@@ -200,14 +213,20 @@ else()
 endif()
 
 # Qt6 detection
-# Require Qt6.2 or higher (6.2 LTS is the first LTS, 6.5 LTS recommended)
+# Require Qt6.2 or higher (Qt6.5 LTS recommended for stability and best compatibility)
 # Note: OpenGLWidgets requires OpenGL as a dependency
+# Qt6.2+ requires C++17 (already set above)
+# The fixes in this codebase are compatible with Qt6.2+, but Qt6.5 is recommended
 find_package(Qt6 6.2 COMPONENTS Core Widgets OpenGL OpenGLWidgets REQUIRED)
 find_package(Qt6 QUIET COMPONENTS Help Sql Concurrent Network)
 
-# Get Qt6 version from CMake
+# Get Qt6 version and provide compatibility information
 if(Qt6Core_VERSION)
-    message(STATUS "Qt6 version: ${Qt6Core_VERSION}")
+    if(Qt6Core_VERSION VERSION_LESS "6.5.0")
+        message(STATUS "Qt6 version: ${Qt6Core_VERSION} (Qt6.5+ recommended for best compatibility)")
+    else()
+        message(STATUS "Qt6 version: ${Qt6Core_VERSION} (Qt6.5 or higher compatibility confirmed)")
+    endif()
 else()
     message(WARNING "Qt6 version could not be determined")
 endif()

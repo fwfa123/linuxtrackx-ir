@@ -32,9 +32,12 @@ ProfileSelector::ProfileSelector(QWidget *parent) : QWidget(parent), ps(NULL), i
     // Set the current index first
     ui.Profiles->setCurrentIndex(targetIndex);
     // Defer ProfileSetup creation to avoid crashes
+    // Qt6.5: Add null check and validate UI widget before access
     QTimer::singleShot(50, this, [this]() {
-      if (ui.Profiles->currentText() == QString::fromUtf8("Default")) {
-        profilesCurrentTextChanged(QString::fromUtf8("Default"));
+      if (this && ui.Profiles) {
+        if (ui.Profiles->currentText() == QString::fromUtf8("Default")) {
+          profilesCurrentTextChanged(QString::fromUtf8("Default"));
+        }
       }
     });
   }
@@ -43,11 +46,10 @@ ProfileSelector::ProfileSelector(QWidget *parent) : QWidget(parent), ps(NULL), i
 
 ProfileSelector::~ProfileSelector()
 {
-  if(ps != NULL){
-    ui.AxesSetup->removeWidget(ps);
-    delete ps;
-    ps = NULL;
-  }
+  // Qt6 RADICAL FIX: Do not manually delete ps here; it is a child of
+  // ProfileSelector and will be destroyed automatically. Manual deletion,
+  // combined with layout removal, was contributing to layout crashes.
+  ps = NULL;
 }
 
 void ProfileSelector::refresh()
@@ -78,14 +80,17 @@ void ProfileSelector::profilesCurrentTextChanged(const QString &text)
   if((PROFILE.isProfile(text)) < 0){
     return;
   }
-  if(ps != NULL){
-    ui.AxesSetup->removeWidget(ps);
-    delete ps;
-    ps = NULL;
+  if (ps == NULL) {
+    // First-time creation: create the ProfileSetup widget and add it to layout
+    ps = new ProfileSetup(text, this);
+    // Qt6 RADICAL FIX: use addWidget() instead of insertWidget() to avoid
+    // edge cases with out-of-range indexes confusing QBoxLayout internals.
+    ui.AxesSetup->addWidget(ps);
+  } else {
+    // Qt6 RADICAL FIX: reuse existing ProfileSetup instance for new profile
+    // instead of deleting/recreating it (which was crashing inside Qt layouts).
+    ps->loadProfile(text);
   }
-  //std::cout<<"Changed index to "<<text.toStdString()<<"\n";
-  ps = new ProfileSetup(text, this);
-  ui.AxesSetup->insertWidget(1, ps);
 }
 
 void ProfileSelector::on_CopyFromDefault_pressed()
