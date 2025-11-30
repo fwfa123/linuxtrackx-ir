@@ -26,7 +26,10 @@ static GLuint createTextureFromImage(const QImage &image)
   glGenTextures(1, &textureId);
   glBindTexture(GL_TEXTURE_2D, textureId);
   
-  QImage glImage = image.convertToFormat(QImage::Format_RGBA8888);
+  // QGLWidget::convertToGLFormat() (used in Qt4/Qt5) flipped the image vertically
+  // to match OpenGL's bottom-left origin. QImage uses a top-left origin, so we need
+  // to mirror the image on upload to keep the UV mapping correct.
+  QImage glImage = image.convertToFormat(QImage::Format_RGBA8888).mirrored(false, true);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0,
                GL_RGBA, GL_UNSIGNED_BYTE, glImage.bits());
   
