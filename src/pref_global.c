@@ -240,12 +240,12 @@ bool ltr_int_get_coord(char *coord_id, float *f)
     return false;
   }
   char *str = ltr_int_get_key(model_section, coord_id);
-  free(model_section);
-  model_section = NULL;
   if(str == NULL){
     ltr_int_log_message("Cannot find key %s in section %s!\n", coord_id, model_section);
+    free(model_section);
     return false;
   }
+  free(model_section);
   *f = atof(str);
   free(str);
   return true;

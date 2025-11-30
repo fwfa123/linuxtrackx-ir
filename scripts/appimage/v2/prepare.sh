@@ -135,11 +135,23 @@ pushd "$PROJECT_ROOT" >/dev/null
                 
                 # Check for required tables (basic compatibility check)
                 local tables=$(sqlite3 "$help_file" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
-                    print_success "Help file $help_file has required tables - format appears compatible"
+                if [[ "$help_file" == *.qch ]]; then
+                    has_contents=false
+                    has_filedata=false
+                    [[ "$tables" =~ ContentsTable ]] && has_contents=true
+                    [[ "$tables" =~ FileDataTable ]] && has_filedata=true
+
+                    if [[ "$has_contents" = true && "$has_filedata" = true ]]; then
+                        print_success "Help file $help_file has required tables - format appears compatible"
+                    else
+                        missing_parts=()
+                        [[ "$has_contents" = true ]] || missing_parts+=("ContentsTable")
+                        [[ "$has_filedata" = true ]] || missing_parts+=("FileDataTable")
+                        print_error "Help file $help_file missing required tables (${missing_parts[*]}) - format incompatible"
+                        die "Help file format validation failed. Cannot proceed with AppImage build."
+                    fi
                 else
-                    print_error "Help file $help_file missing required tables - format incompatible"
-                    die "Help file format validation failed. Cannot proceed with AppImage build."
+                    print_success "Help file $help_file opens as SQLite (schema acceptable for collection)"
                 fi
             else
                 print_error "Help file $help_file is not a valid SQLite database"

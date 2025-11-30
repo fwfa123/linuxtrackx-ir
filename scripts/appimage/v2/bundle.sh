@@ -40,13 +40,28 @@ pushd "$APPDIR" >/dev/null
         print_status "Running linuxdeploy-plugin-qt"
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
         
+        # Verify Qt6 libraries were bundled (not Qt5)
+        print_status "Verifying Qt6 libraries were bundled"
+        if command -v ldd >/dev/null 2>&1; then
+            if ldd usr/bin/ltr_gui 2>/dev/null | grep -q "libQt5"; then
+                print_error "Qt5 libraries detected in binary, expected Qt6"
+                print_error "linuxdeploy-plugin-qt may have bundled Qt5 instead of Qt6"
+                print_error "This may cause runtime issues. Verify Qt6 is properly installed."
+                # Don't fail here - allow build to continue but warn user
+            elif ldd usr/bin/ltr_gui 2>/dev/null | grep -q "libQt6"; then
+                print_success "Qt6 libraries confirmed in binary"
+            else
+                print_warning "Could not detect Qt version in binary (may be statically linked)"
+            fi
+        fi
+        
         # Modify qt.conf to include both plugin paths for maximum compatibility
         if [[ -f usr/bin/qt.conf ]]; then
             print_status "Modifying qt.conf to include both plugin paths"
             # Backup original
             cp usr/bin/qt.conf usr/bin/qt.conf.backup
-            # Update to include both plugin paths
-            sed -i 's|Plugins = plugins|Plugins = plugins:lib/qt5/plugins|' usr/bin/qt.conf
+            # Update to include both plugin paths (Qt6)
+            sed -i 's|Plugins = plugins|Plugins = plugins:lib/qt6/plugins|' usr/bin/qt.conf
             print_success "Updated qt.conf to include both plugin paths"
         else
             print_warning "qt.conf not found after Qt deployment"
@@ -89,39 +104,39 @@ EOHLP
 
     # Ensure Qt Help module is properly bundled
     print_status "Verifying Qt Help module bundling"
-    if [[ ! -f usr/lib/libQt5Help.so.5 && ! -f usr/lib/libQt5Help.so ]]; then
-        print_warning "Qt5Help library not found in bundled libraries"
-        # Try to find and copy Qt5Help from system
-        for qt5help in /usr/lib/x86_64-linux-gnu/libQt5Help.so.5* /usr/lib/libQt5Help.so.5* /usr/lib/qt5/lib/libQt5Help.so.5*; do
-            if [[ -f "$qt5help" ]]; then
-                cp -f "$qt5help" usr/lib/
-                print_success "Copied Qt5Help library: $(basename "$qt5help")"
+    if [[ ! -f usr/lib/libQt6Help.so.6 && ! -f usr/lib/libQt6Help.so ]]; then
+        print_warning "Qt6Help library not found in bundled libraries"
+        # Try to find and copy Qt6Help from system
+        for qt6help in /usr/lib/x86_64-linux-gnu/libQt6Help.so.6* /usr/lib/libQt6Help.so.6* /usr/lib/qt6/lib/libQt6Help.so.6*; do
+            if [[ -f "$qt6help" ]]; then
+                cp -f "$qt6help" usr/lib/
+                print_success "Copied Qt6Help library: $(basename "$qt6help")"
                 break
             fi
         done
     else
-        print_success "Qt5Help library found in bundled libraries"
+        print_success "Qt6Help library found in bundled libraries"
     fi
 
     # Ensure Qt SQL module is properly bundled (required for help system)
     print_status "Verifying Qt SQL module bundling"
-    if [[ ! -f usr/lib/libQt5Sql.so.5 && ! -f usr/lib/libQt5Sql.so ]]; then
-        print_warning "Qt5Sql library not found in bundled libraries"
-        # Try to find and copy Qt5Sql from system
-        for qt5sql in /usr/lib/x86_64-linux-gnu/libQt5Sql.so.5* /usr/lib/libQt5Sql.so.5* /usr/lib/qt5/lib/libQt5Sql.so.5*; do
-            if [[ -f "$qt5sql" ]]; then
-                cp -f "$qt5sql" usr/lib/
-                print_success "Copied Qt5Sql library: $(basename "$qt5sql")"
+    if [[ ! -f usr/lib/libQt6Sql.so.6 && ! -f usr/lib/libQt6Sql.so ]]; then
+        print_warning "Qt6Sql library not found in bundled libraries"
+        # Try to find and copy Qt6Sql from system
+        for qt6sql in /usr/lib/x86_64-linux-gnu/libQt6Sql.so.6* /usr/lib/libQt6Sql.so.6* /usr/lib/qt6/lib/libQt6Sql.so.6*; do
+            if [[ -f "$qt6sql" ]]; then
+                cp -f "$qt6sql" usr/lib/
+                print_success "Copied Qt6Sql library: $(basename "$qt6sql")"
                 break
             fi
         done
     else
-        print_success "Qt5Sql library found in bundled libraries"
+        print_success "Qt6Sql library found in bundled libraries"
     fi
 
     # Ensure Qt plugin directories exist
-    ensure_dir usr/lib/qt5/plugins/platforms
-    ensure_dir usr/lib/qt5/plugins/sqldrivers
+    ensure_dir usr/lib/qt6/plugins/platforms
+    ensure_dir usr/lib/qt6/plugins/sqldrivers
     ensure_dir usr/plugins/platforms
     ensure_dir usr/plugins/sqldrivers
 
@@ -264,8 +279,13 @@ EOHLP
     KIO_PLUGINS_FOUND=0
     
     # Copy KIO Help plugins (these provide enhanced help functionality)
+    # Note: KIO plugins are primarily Qt5-based, but Qt6 help system can use them
     print_status "Searching for KIO Help plugins..."
     KIO_HELP_PLUGIN_LOCATIONS=(
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kf5/kio/kio_help.so"
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kf5/kio/kio_ghelp.so"
+        "/usr/lib/qt6/plugins/kf5/kio/kio_help.so"
+        "/usr/lib/qt6/plugins/kf5/kio/kio_ghelp.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/kio_help.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/kio_ghelp.so"
         "/usr/lib/qt5/plugins/kf5/kio/kio_help.so"
@@ -281,8 +301,13 @@ EOHLP
     done
     
     # Copy other KIO plugins for enhanced functionality
+    # Note: KIO plugins are primarily Qt5-based, but Qt6 help system can use them
     print_status "Searching for additional KIO plugins..."
     KIO_PLUGIN_LOCATIONS=(
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kf5/kio"
+        "/usr/lib/qt6/plugins/kf5/kio"
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kauth/helper"
+        "/usr/lib/qt6/plugins/kauth/helper"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio"
         "/usr/lib/qt5/plugins/kf5/kio"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper"
@@ -314,7 +339,7 @@ EOHLP
     
     # Report Qt Help system bundling status
     print_status "Qt Help system bundling complete:"
-    print_success "  - Core libraries: Qt5Help and Qt5Sql (already bundled)"
+    print_success "  - Core libraries: Qt6Help and Qt6Sql (already bundled)"
     print_success "  - SQLite driver: libqsqlite.so (already bundled)"
     
     if [[ $KIO_HELP_PLUGINS_FOUND -gt 0 ]]; then
@@ -332,16 +357,18 @@ EOHLP
     print_success "Qt Help system components bundled successfully"
 
     # Ensure platform plugin (xcb) fallback if plugin didn't bundle
-    if [[ ! -f usr/plugins/platforms/libqxcb.so && ! -f usr/lib/qt5/plugins/platforms/libqxcb.so ]]; then
+    if [[ ! -f usr/plugins/platforms/libqxcb.so && ! -f usr/lib/qt6/plugins/platforms/libqxcb.so ]]; then
         print_status "Ensuring Qt xcb platform plugin is present"
         while read -r p; do
             [[ -z "$p" ]] && continue
             if [[ -f "$p" ]]; then
-                cp "$p" usr/plugins/platforms/ 2>/dev/null || cp "$p" usr/lib/qt5/plugins/platforms/
+                cp "$p" usr/plugins/platforms/ 2>/dev/null || cp "$p" usr/lib/qt6/plugins/platforms/
                 print_success "Copied Qt platform plugin: $(basename "$p")"
                 break
             fi
         done < <(printf "%s\n" \
+            /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqxcb.so \
+            /usr/lib/qt6/plugins/platforms/libqxcb.so \
             /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/qt/plugins/platforms/libqxcb.so)
@@ -351,15 +378,17 @@ EOHLP
     print_status "Ensuring Qt SQLite driver is present"
     SQLITE_FOUND=false
 
-    # Search multiple locations for SQLite driver
+    # Search multiple locations for SQLite driver (Qt6 first, then Qt5 fallback)
     SQLITE_LOCATIONS=(
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/qt6/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/x86_64-linux-gnu/qt6/plugins/sqldrivers/libqsqlite.so.6"
+        "/usr/lib/qt6/plugins/sqldrivers/libqsqlite.so.6"
+        "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so"
-        "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5"
         "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so.5"
-        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15"
-        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15.2"
     )
 
     print_status "Searching for SQLite driver in: ${SQLITE_LOCATIONS[*]}"
@@ -370,14 +399,14 @@ EOHLP
             # Ensure both directories exist
             print_status "Creating plugin directories..."
             ensure_dir usr/plugins/sqldrivers
-            ensure_dir usr/lib/qt5/plugins/sqldrivers
+            ensure_dir usr/lib/qt6/plugins/sqldrivers
             
             print_status "Verifying directories were created..."
             if [[ ! -d "usr/plugins/sqldrivers" ]]; then
                 die "Failed to create usr/plugins/sqldrivers directory - cannot proceed with AppImage build"
             fi
-            if [[ ! -d "usr/lib/qt5/plugins/sqldrivers" ]]; then
-                die "Failed to create usr/lib/qt5/plugins/sqldrivers directory - cannot proceed with AppImage build"
+            if [[ ! -d "usr/lib/qt6/plugins/sqldrivers" ]]; then
+                die "Failed to create usr/lib/qt6/plugins/sqldrivers directory - cannot proceed with AppImage build"
             fi
             print_success "Plugin directories created successfully"
 
@@ -386,8 +415,8 @@ EOHLP
             if ! cp "$candidate" usr/plugins/sqldrivers/; then
                 die "Failed to copy SQLite driver to usr/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
-            if ! cp "$candidate" usr/lib/qt5/plugins/sqldrivers/; then
-                die "Failed to copy SQLite driver to usr/lib/qt5/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            if ! cp "$candidate" usr/lib/qt6/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver to usr/lib/qt6/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
             print_success "Copied SQLite driver: $(basename "$candidate")"
             SQLITE_FOUND=true
@@ -405,13 +434,13 @@ EOHLP
             print_status "Found SQLite driver with find at: $SQLITE_FIND"
             # Ensure both directories exist
             ensure_dir usr/plugins/sqldrivers
-            ensure_dir usr/lib/qt5/plugins/sqldrivers
+            ensure_dir usr/lib/qt6/plugins/sqldrivers
 
             if ! cp "$SQLITE_FIND" usr/plugins/sqldrivers/; then
                 die "Failed to copy SQLite driver from find to usr/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
-            if ! cp "$SQLITE_FIND" usr/lib/qt5/plugins/sqldrivers/; then
-                die "Failed to copy SQLite driver from find to usr/lib/qt5/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            if ! cp "$SQLITE_FIND" usr/lib/qt6/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver from find to usr/lib/qt6/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
             print_success "Found and copied SQLite driver from find: $(basename "$SQLITE_FIND")"
             SQLITE_FOUND=true
@@ -471,11 +500,11 @@ EOHLP
 
     # Keep both plugin layouts for maximum compatibility
     # usr/plugins for standard Qt plugin path
-    # usr/lib/qt5/plugins for Qt5-specific applications that hardcode the path
-    if [[ -d usr/lib/qt5/plugins ]]; then
+    # usr/lib/qt6/plugins for Qt6-specific applications that hardcode the path
+    if [[ -d usr/lib/qt6/plugins ]]; then
         print_status "Keeping both plugin layouts for maximum compatibility"
         print_status "usr/plugins for standard Qt plugin path"
-        print_status "usr/lib/qt5/plugins for Qt5-specific applications"
+        print_status "usr/lib/qt6/plugins for Qt6-specific applications"
     fi
 
     # RPATH: binaries and libraries
@@ -496,8 +525,6 @@ EOHLP
     # Ensure no OpenGL driver libraries are bundled (can break GL context)
     print_status "Removing bundled OpenGL driver libraries (use host drivers)"
     rm -f usr/lib/libGL.so.* usr/lib/libOpenGL.so.* usr/lib/libGLX.so.* usr/lib/libGLdispatch.so.* usr/lib/libGLU.so.* 2>/dev/null || true
-    
-popd >/dev/null
 
     # Verify library dependencies are correctly resolved
     print_status "Verifying library dependency resolution"
@@ -521,7 +548,7 @@ popd >/dev/null
 
     # Verify SQLite driver is in both locations
     SQLITE_USR_PLUGINS=$({ find usr/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
-    SQLITE_QT5_PLUGINS=$({ find usr/lib/qt5/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
+    SQLITE_QT6_PLUGINS=$({ find usr/lib/qt6/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
 
     if [[ $SQLITE_USR_PLUGINS -gt 0 ]]; then
         print_success "SQLite driver found in usr/plugins/sqldrivers/"
@@ -529,13 +556,15 @@ popd >/dev/null
         print_warning "SQLite driver missing from usr/plugins/sqldrivers/"
     fi
 
-    if [[ $SQLITE_QT5_PLUGINS -gt 0 ]]; then
-        print_success "SQLite driver found in usr/lib/qt5/plugins/sqldrivers/"
+    if [[ $SQLITE_QT6_PLUGINS -gt 0 ]]; then
+        print_success "SQLite driver found in usr/lib/qt6/plugins/sqldrivers/"
     else
-        print_warning "SQLite driver missing from usr/lib/qt5/plugins/sqldrivers/"
+        print_warning "SQLite driver missing from usr/lib/qt6/plugins/sqldrivers/"
     fi
 
     print_success "Bundle complete"
+    
+popd >/dev/null
 
     # Ensure 32-bit linuxtrack runtime is bundled if available on system
     print_status "Ensuring 32-bit liblinuxtrack is bundled if available"
