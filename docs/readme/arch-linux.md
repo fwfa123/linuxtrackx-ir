@@ -111,7 +111,7 @@ ltr_server1 --help
 ltr_gui
 
 # Test Wine bridge (if built)
-ls /usr/local/lib/linuxtrack/wine_bridge/
+ls /opt/lib/linuxtrack/wine_bridge/
 ```
 
 ## Troubleshooting
@@ -133,7 +133,7 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 | `Couldn't load library 'libwc.so.0'` | Update library cache: `sudo ldconfig` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
-| Application not in launcher | Use `/usr/local` prefix instead of `/opt` |
+| Application not in launcher | Desktop integration should work with `/opt` prefix. If issues persist, run: `sudo update-desktop-database /opt/share/applications` |
 
 ### 32-bit Library Issues
 

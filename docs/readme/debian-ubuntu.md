@@ -116,6 +116,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 
 | Problem | Solution |
 |---------|----------|
+| `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install Qt6 development packages: `sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev` |
 | `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` |
 | `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | Install full 32-bit Wine: `sudo apt install wine wine32 wine32-tools` |
 | `bits/libc-header-start.h: No such file or directory` | **REQUIRED**: Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` |
