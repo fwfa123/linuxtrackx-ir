@@ -6,7 +6,7 @@
 ```bash
 sudo pacman -S base-devel cmake pkg-config
 sudo pacman -S libusb zlib bison flex
-sudo pacman -S qt5-base qt5-tools qt5-x11extras
+sudo pacman -S qt6-base qt6-tools qt6-5compat
 sudo pacman -S libmxml mesa glu sqlite  # Required for Qt help system
 ```
 
@@ -124,7 +124,7 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 | `wine-staging` conflicts | Remove conflicting packages: `sudo pacman -R wine-staging wine-gecko wine-mono winetricks` |
 | Missing 32-bit libraries | **Use the automated build script**: `./scripts/build_32bit_libs.sh` |
 | 32-bit/64-bit compilation conflicts | Use explicit 64-bit flags: `CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"` |
-| Qt5 Makefile not generated | Manually generate: `cd src/qt_gui && /usr/bin/qmake-qt5 -spec linux-g++ "LIBDIR=/usr/local/lib/linuxtrack" ltr_gui.pro` |
+| Qt6 CMake config not found | Install Qt6 development packages: `sudo pacman -S qt6-base qt6-tools` |
 
 ### Common Issues
 
@@ -157,10 +157,10 @@ sudo cmake --install .
 
 These are installed to `/usr/lib32/` with correct symlinks.
 
-### Qt5 Tools PATH (Rare)
-If Qt5 tools aren't in PATH, add them:
+### Qt6 Tools PATH (Rare)
+If Qt6 tools aren't in PATH, add them:
 ```bash
-export PATH="/usr/lib/qt5/bin:$PATH"
+export PATH="/usr/lib/qt6/bin:$PATH"
 ```
 
 ## Advanced: Custom Build Combinations

@@ -7,7 +7,7 @@
 sudo dnf groupinstall "Development Tools"
 sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
-sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
+sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
 sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
 sudo dnf install sqlite  # Required for Qt help system
 ```
@@ -48,25 +48,25 @@ sudo mkdir -p /opt/xplane-sdk
 sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ```
 
-## Qt5 Tools PATH Fix (IMPORTANT)
+## Qt6 Tools PATH Fix (IMPORTANT)
 
-On Fedora/RHEL systems, Qt5 tools are installed in `/usr/lib64/qt5/bin/` which may not be in your default PATH. This causes build failures.
+On Fedora/RHEL systems, Qt6 tools are installed in `/usr/lib64/qt6/bin/` which may not be in your default PATH. This causes build failures.
 
-**Before building, add Qt5 tools to your PATH:**
+**Before building, add Qt6 tools to your PATH:**
 ```bash
-export PATH="/usr/lib64/qt5/bin:$PATH"
+export PATH="/usr/lib64/qt6/bin:$PATH"
 ```
 
 **To make this permanent, add to your `~/.bashrc`:**
 ```bash
-echo 'export PATH="/usr/lib64/qt5/bin:$PATH"' >> ~/.bashrc
+echo 'export PATH="/usr/lib64/qt6/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-**Verify Qt5 tools are accessible:**
+**Verify Qt6 tools are accessible:**
 ```bash
 which qhelpgenerator qmake moc
-# Should show: /usr/lib64/qt5/bin/qhelpgenerator, etc.
+# Should show: /usr/lib64/qt6/bin/qhelpgenerator, etc.
 ```
 
 ## Build Commands
@@ -74,7 +74,7 @@ which qhelpgenerator qmake moc
 ### Level 1: TrackIR Only
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -83,7 +83,7 @@ sudo cmake --install .
 ### Level 2: TrackIR + Wine (Most Common)
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -92,7 +92,7 @@ sudo cmake --install .
 ### Level 3: TrackIR + Wine + Webcam
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -101,7 +101,7 @@ sudo cmake --install .
 ### Level 4: TrackIR + Wine + Webcam + OSC
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -110,7 +110,7 @@ sudo cmake --install .
 ### Level 5: TrackIR + Wine + Webcam + OSC + Wiimote
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -119,7 +119,7 @@ sudo cmake --install .
 ### Level 6: Complete Build with X-Plane
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -142,13 +142,14 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 
 ## Troubleshooting
 
-### Qt5 Tools PATH Issues (Most Common)
+### Qt6 Tools PATH Issues (Most Common)
 
 | Problem | Solution |
 |---------|----------|
-| `qhelpgenerator: command not found` | Add Qt5 tools to PATH: `export PATH="/usr/lib64/qt5/bin:$PATH"` |
-| Build fails at help generation step | Qt5 tools not in PATH. Run: `export PATH="/usr/lib64/qt5/bin:$PATH" && make -j$(nproc)` |
-| `qmake: command not found` | Qt5 tools not in PATH. Add `/usr/lib64/qt5/bin` to PATH |
+| `qhelpgenerator: command not found` | Add Qt6 tools to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
+| Build fails at help generation step | Qt6 tools not in PATH. Run: `export PATH="/usr/lib64/qt6/bin:$PATH" && make -j$(nproc)` |
+| `qmake: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH |
+| `Could not find a package configuration file provided by "Qt6"` | Install Qt6 development packages: `sudo dnf install qt6-qtbase-devel qt6-qttools-devel` |
 | `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development: `sudo dnf install gcc-c++.i686` |
 
 ### 32-bit Library Issues
@@ -166,9 +167,9 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 # If you encounter missing library errors during build
 sudo dnf install -y gcc-c++.i686 zlib-ng-compat-devel.i686 libusb1-devel.i686 mxml-devel.i686 libv4l-devel.i686
 
-# If Qt5 qmake is not found
-sudo mkdir -p /usr/lib/qt5/bin
-sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
+# If Qt6 qmake is not found
+sudo mkdir -p /usr/lib/qt6/bin
+sudo ln -s /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake
 ```
 
 ### Wine Issues
@@ -196,11 +197,11 @@ Combine cmake flags for your specific needs:
 
 ```bash
 # Example: TrackIR + X-Plane without Wine/Webcam
-export PATH="/usr/lib64/qt5/bin:$PATH"
+export PATH="/usr/lib64/qt6/bin:$PATH"
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Example: Wine + OSC without Webcam
-export PATH="/usr/lib64/qt5/bin:$PATH"
+export PATH="/usr/lib64/qt6/bin:$PATH"
 cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
 ```
 
