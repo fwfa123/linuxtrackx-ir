@@ -153,6 +153,7 @@ class LinuxtrackGui : public QMainWindow
   
   // ltr_pipe helper functions
   QString findLtrPipeExecutable();
+  QString findLinuxtrackLibPath(const QString &ltrPipePath);
   QStringList buildLtrPipeArguments(const QString &format, const QString &deviceName);
   void stopLtrPipeProcess();
   void pauseLtrPipeProcess();
