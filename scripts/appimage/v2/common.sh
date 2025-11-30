@@ -32,7 +32,7 @@ set_rpath_library() {
     require_cmd patchelf
     if [[ "$lib" == *"/usr/lib/linuxtrack/"* ]]; then
         patchelf --set-rpath '$ORIGIN:$ORIGIN/..' "$lib" 2>/dev/null || true
-    elif [[ "$lib" == *"/usr/lib/qt5/plugins/"* ]]; then
+    elif [[ "$lib" == *"/usr/lib/qt6/plugins/"* ]] || [[ "$lib" == *"/usr/lib/qt5/plugins/"* ]]; then
         patchelf --set-rpath '$ORIGIN/../../lib:$ORIGIN' "$lib" 2>/dev/null || true
     else
         patchelf --set-rpath '$ORIGIN' "$lib" 2>/dev/null || true
@@ -57,18 +57,18 @@ export QT_LOGGING_RULES="qt.qpa.*=false"
 export QT_DEBUG_PLUGINS=0
 export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
 
-# Qt plugin paths - support both layouts
+# Qt plugin paths - support both layouts (Qt6 primary, Qt5 fallback)
 QT_PLUG_ROOT="$APPDIR/usr/plugins"
 if [ -d "$QT_PLUG_ROOT" ]; then
-    export QT_PLUGIN_PATH="$QT_PLUG_ROOT:$APPDIR/usr/lib/qt5/plugins"
+    export QT_PLUGIN_PATH="$QT_PLUG_ROOT:$APPDIR/usr/lib/qt6/plugins:$APPDIR/usr/lib/qt5/plugins"
     export QT_QPA_PLATFORM_PLUGIN_PATH="$QT_PLUG_ROOT/platforms"
-    export QT_SQL_DRIVER_PATH="$QT_PLUG_ROOT/sqldrivers:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+    export QT_SQL_DRIVER_PATH="$QT_PLUG_ROOT/sqldrivers:$APPDIR/usr/lib/qt6/plugins/sqldrivers:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
 else
-    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
-    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins/platforms"
-    export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt5/plugins/sqldrivers"
+    export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt6/plugins:$APPDIR/usr/lib/qt5/plugins"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$APPDIR/usr/lib/qt6/plugins/platforms"
+    export QT_SQL_DRIVER_PATH="$APPDIR/usr/lib/qt6/plugins/sqldrivers:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
 fi
-export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
+export QT_STYLE_PATH="$APPDIR/usr/lib/qt6/plugins/styles:$APPDIR/usr/lib/qt5/plugins/styles"
 
 # Force X11 usage to avoid Wayland compatibility issues
 export QT_QPA_PLATFORM="xcb"
@@ -245,7 +245,7 @@ export QT_IMAGEIO_MAXALLOC=0
 export QT_AUTO_SCREEN_SCALE_FACTOR=1
 
 # Prevent system Qt libraries from being loaded
-unset QT_DIR QTDIR QT_SELECT QT4DIR QT5DIR
+unset QT_DIR QTDIR QT_SELECT QT4DIR QT5DIR QT6DIR
 
 # Ensure X11 is available
 if ! xset q >/dev/null 2>&1; then
