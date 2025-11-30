@@ -46,6 +46,7 @@ sudo usermod -a -G plugdev,input $USER
 
 | Problem | Symptom | Solution |
 |---------|---------|----------|
+| Qt6 CMake config not found | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install `qt6-base-dev` (provides `Qt6Config.cmake`). See distro guide for complete Qt6 package list |
 | Missing 32-bit headers | `bits/libc-header-start.h: No such file or directory` | **REQUIRED for Wine support**: Install 32-bit dev headers for your distro |
 | Qt6 tools not found | `qmake: command not found` | Add Qt6 bin directory to PATH (see distro guide) |
 | Wine dev tools missing | `winegcc: command not found` | Install Wine development packages |

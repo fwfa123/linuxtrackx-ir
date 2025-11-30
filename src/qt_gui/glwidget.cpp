@@ -217,7 +217,6 @@ static void make_triangle(int index1, int index2, int index3)
 bool GLWidget::makeObjects()
  {
    int triangles = 0;
-   int objectsNumber = object_table.size();
    
    // Clear existing objects and textures
    std::vector<GLuint>::iterator i;
