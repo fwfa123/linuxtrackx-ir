@@ -24,9 +24,11 @@ QString resolveWineBridgeInstallerPath()
   found = tryPath(p2);
   if (!found.isEmpty()) return found;
 
-  // 2) Canonical system locations
+  // 2) Canonical system locations (prioritize /opt as default install location)
   QStringList systemCandidates;
-  systemCandidates << QString::fromUtf8("/usr/local/share/linuxtrack/wine/linuxtrack-wine.exe")
+  systemCandidates << QString::fromUtf8("/opt/share/linuxtrack/wine/linuxtrack-wine.exe")
+                   << QString::fromUtf8("/opt/share/linuxtrack/linuxtrack-wine.exe")
+                   << QString::fromUtf8("/usr/local/share/linuxtrack/wine/linuxtrack-wine.exe")
                    << QString::fromUtf8("/usr/share/linuxtrack/wine/linuxtrack-wine.exe")
                    << QString::fromUtf8("/usr/local/share/linuxtrack/linuxtrack-wine.exe")
                    << QString::fromUtf8("/usr/share/linuxtrack/linuxtrack-wine.exe");

@@ -19,7 +19,7 @@ ltr_server1 --help
 ltr_gui
 
 # Check for Wine bridge (if built)
-ls /usr/local/lib/linuxtrack/wine_bridge/
+ls /opt/lib/linuxtrack/wine_bridge/
 ```
 
 ### 2. Check Display Environment
@@ -116,7 +116,7 @@ wine --version
 wine reg query "HKLM\\Software\\Classes\\CLSID\\{98BF1CE3-0x0000-0000-0000-000000000000}"
 
 # Test TrackIR DLL loading
-cd /usr/local/lib/linuxtrack/wine_bridge/
+cd /opt/lib/linuxtrack/wine_bridge/
 wine NPClient64.dll  # Should not crash
 ```
 
@@ -130,7 +130,7 @@ cmake .. --system-information | grep -A 10 "CMAKE_SYSTEM"
 cmake --build . -j$(nproc) -v
 
 # Check library dependencies
-ldd /usr/local/bin/ltr_gui
+ldd /opt/bin/ltr_gui
 ```
 
 ### Device Debugging
@@ -164,9 +164,11 @@ If everything is broken:
 
 ```bash
 # Clean reinstall
-sudo rm -rf /usr/local/lib/linuxtrack/
-sudo rm -rf /usr/local/bin/ltr_*
-sudo rm -rf /usr/local/share/linuxtrack/
+sudo rm -rf /opt/lib/linuxtrack/
+sudo rm -rf /opt/bin/ltr_*
+sudo rm -rf /opt/share/linuxtrack/
+# Also remove symlinks if they exist
+sudo rm -f /usr/local/bin/ltr_*
 
 # Rebuild from scratch
 rm -rf build/
