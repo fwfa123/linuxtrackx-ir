@@ -135,11 +135,30 @@ fi
 print_status "Setting executable permissions..."
 chmod +x winetricks
 
-# Check if we can write to /usr/local/bin
-if [[ -w "/usr/local/bin" ]] || sudo -n true 2>/dev/null; then
-    # Install to /usr/local/bin
+# Check if we can write to /opt/bin (preferred) or /usr/local/bin
+if [[ -w "/opt/bin" ]] || sudo -n true 2>/dev/null; then
+    # Install to /opt/bin (preferred location)
+    print_status "Installing winetricks to /opt/bin..."
+    if sudo mkdir -p /opt/bin && sudo mv winetricks /opt/bin/; then
+        print_success "Winetricks installed successfully to /opt/bin/"
+    elif [[ -w "/usr/local/bin" ]] || sudo -n true 2>/dev/null; then
+        # Fallback to /usr/local/bin
+        print_status "Installing winetricks to /usr/local/bin..."
+        if sudo mv winetricks /usr/local/bin/; then
+            print_success "Winetricks installed successfully to /usr/local/bin/"
+        else
+            print_error "Failed to install winetricks to /usr/local/bin/"
+            print_status "You may need to run this script with sudo privileges"
+            exit 1
+        fi
+    else
+        print_error "Failed to install winetricks to /opt/bin/"
+        print_status "You may need to run this script with sudo privileges"
+        exit 1
+    fi
+elif [[ -w "/usr/local/bin" ]] || sudo -n true 2>/dev/null; then
+    # Fallback to /usr/local/bin
     print_status "Installing winetricks to /usr/local/bin..."
-    
     if sudo mv winetricks /usr/local/bin/; then
         print_success "Winetricks installed successfully to /usr/local/bin/"
     else

@@ -50,7 +50,7 @@ sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ### Level 1: TrackIR Only
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -58,7 +58,7 @@ sudo cmake --install .
 ### Level 2: TrackIR + Wine (Most Common)
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -66,7 +66,7 @@ sudo cmake --install .
 ### Level 3: TrackIR + Wine + Webcam
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -74,7 +74,7 @@ sudo cmake --install .
 ### Level 4: TrackIR + Wine + Webcam + OSC
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -82,7 +82,7 @@ sudo cmake --install .
 ### Level 5: TrackIR + Wine + Webcam + OSC + Wiimote
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -90,7 +90,7 @@ sudo cmake --install .
 ### Level 6: Complete Build with X-Plane
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -107,7 +107,7 @@ ltr_server1 --help
 ltr_gui
 
 # Test Wine bridge (if built)
-ls /usr/local/lib/linuxtrack/wine_bridge/
+ls /opt/lib/linuxtrack/wine_bridge/
 ```
 
 ## Troubleshooting
@@ -137,10 +137,10 @@ If you want features from different levels, combine the cmake flags:
 
 ```bash
 # Example: TrackIR + X-Plane without Wine/Webcam
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Example: Wine + OSC without Webcam
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
 ```
 
 See the main README for all available CMake options.

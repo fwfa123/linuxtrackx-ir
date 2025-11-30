@@ -194,5 +194,8 @@
 #define VERSION "@PACKAGE_VERSION@"
 
 /* Error state and return codes */
+/* Only define ERROR if not already defined by Windows headers */
+#ifndef ERROR
 #define ERROR -4
+#endif
 #define LTR_ERROR -1

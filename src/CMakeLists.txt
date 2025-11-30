@@ -440,41 +440,9 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
     endif()
 endif()
 
-# Also install libraries to /opt/lib/linuxtrack/ for Steam Proton compatibility
+# Note: /opt is now the default install prefix, providing Steam Proton compatibility
 # Steam Proton's pressure-vessel container can access /opt but not /usr
-# Only install to /opt if main prefix is not already /opt (avoid duplication)
-if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
-    message(STATUS "Installing libraries to /opt/lib/linuxtrack/ for Steam Proton compatibility")
-    install(TARGETS
-        linuxtrack
-        ltr
-        tir
-        joy
-        ltusb1
-        LIBRARY DESTINATION /opt/lib/linuxtrack
-        ARCHIVE DESTINATION /opt/lib/linuxtrack
-    )
-    
-    if(WEBCAM_SUPPORT)
-        install(TARGETS wc
-            LIBRARY DESTINATION /opt/lib/linuxtrack
-            ARCHIVE DESTINATION /opt/lib/linuxtrack
-        )
-    endif()
-    
-    if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
-        install(TARGETS xlinuxtrack9
-            LIBRARY DESTINATION /opt/lib/linuxtrack
-            ARCHIVE DESTINATION /opt/lib/linuxtrack
-        )
-        if(LTR32ON64)
-            install(TARGETS xlinuxtrack9_32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
-    endif()
-endif()
+# No need for dual-installation logic since /opt is the default
 
 # Install 32-bit library to multiarch directory if LIB32DIR is set
 if(LTR32ON64)
@@ -521,14 +489,7 @@ if(LTR32ON64)
             endforeach()
         ")
         
-        # Also install 32-bit library to /opt for Steam Proton compatibility
-        # Install with standard name (liblinuxtrack32.so.0) for Wine bridge compatibility
-        if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
-            install(TARGETS linuxtrack32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
+        # Note: /opt is now the default, so no dual-installation needed
     else()
         # Install to standard location if LIB32DIR is not set or is "lib32"
         install(TARGETS linuxtrack32
@@ -537,14 +498,6 @@ if(LTR32ON64)
         )
         message(STATUS "ℹ️  LIB32DIR not set - 32-bit library installed to standard location: lib/linuxtrack")
         message(STATUS "ℹ️  For Debian/Ubuntu multiarch support, use: -DLIB32DIR=i386-linux-gnu")
-        
-        # Also install 32-bit library to /opt for Steam Proton compatibility
-        if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
-            install(TARGETS linuxtrack32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
     endif()
 endif()
 
@@ -604,27 +557,338 @@ if(WIIMOTE_SUPPORT AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/linuxtrack-wii.svg)
     )
 endif()
 
+# Update desktop database and icon cache after installation
+# This ensures desktop files and icons are visible in application menus
+install(CODE "
+    if(NOT \"\$ENV{DESTDIR}\" STREQUAL \"\")
+        # Staging installation - skip updates (package managers handle this)
+        message(STATUS \"Skipping desktop/icon cache updates for staging installation\")
+    else()
+        # System installation - update desktop database and icon cache
+        set(ICON_DIR \"${CMAKE_INSTALL_PREFIX}/share/icons/hicolor\")
+        set(DESKTOP_DIR \"${CMAKE_INSTALL_PREFIX}/share/applications\")
+        
+        # Update desktop database
+        if(EXISTS \"\${DESKTOP_DIR}\")
+            find_program(UPDATE_DESKTOP_DB update-desktop-database)
+            if(UPDATE_DESKTOP_DB)
+                message(STATUS \"Updating desktop database: \${DESKTOP_DIR}\")
+                execute_process(
+                    COMMAND \${UPDATE_DESKTOP_DB} \"\${DESKTOP_DIR}\"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                    RESULT_VARIABLE DESKTOP_DB_RESULT
+                )
+                if(NOT DESKTOP_DB_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  update-desktop-database failed (exit code: \${DESKTOP_DB_RESULT})\")
+                    message(WARNING \"⚠️  You may need to run 'sudo update-desktop-database \${DESKTOP_DIR}' manually\")
+                else()
+                    message(STATUS \"✅ Desktop database updated successfully\")
+                endif()
+            else()
+                message(STATUS \"ℹ️  update-desktop-database not found - desktop files may not appear in menus until cache is updated\")
+            endif()
+        endif()
+        
+        # Update icon cache
+        if(EXISTS \"\${ICON_DIR}\")
+            find_program(UPDATE_ICON_CACHE gtk-update-icon-cache)
+            if(UPDATE_ICON_CACHE)
+                message(STATUS \"Updating icon cache: \${ICON_DIR}\")
+                execute_process(
+                    COMMAND \${UPDATE_ICON_CACHE} -f -t \"\${ICON_DIR}\"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                    RESULT_VARIABLE ICON_CACHE_RESULT
+                )
+                if(NOT ICON_CACHE_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  gtk-update-icon-cache failed (exit code: \${ICON_CACHE_RESULT})\")
+                    message(WARNING \"⚠️  You may need to run 'sudo gtk-update-icon-cache -f -t \${ICON_DIR}' manually\")
+                else()
+                    message(STATUS \"✅ Icon cache updated successfully\")
+                endif()
+            else()
+                message(STATUS \"ℹ️  gtk-update-icon-cache not found - icons may not appear until cache is updated\")
+            endif()
+        endif()
+    endif()
+")
+
 # Build Qt GUI after core libraries
 if(TARGET ltr_gui)
     add_dependencies(ltr_gui ltr tir)
 endif()
 
+# Create symlinks from /opt/bin to /usr/local/bin for PATH compatibility
+# This allows binaries to be found even if /opt/bin is not in PATH
+if(CMAKE_INSTALL_PREFIX STREQUAL "/opt")
+    install(CODE "
+        message(STATUS \"Creating symlinks from /opt to /usr/local for compatibility...\")
+        set(BIN_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin\")
+        set(SYMLINK_BIN_DIR \"\$ENV{DESTDIR}/usr/local/bin\")
+        
+        # Create /usr/local/bin directory if it doesn't exist (handles both staging and system installs)
+        if(NOT EXISTS \"\${SYMLINK_BIN_DIR}\")
+            execute_process(
+                COMMAND \${CMAKE_COMMAND} -E make_directory \"\${SYMLINK_BIN_DIR}\"
+                RESULT_VARIABLE MKDIR_RESULT
+            )
+            if(NOT MKDIR_RESULT EQUAL 0)
+                message(WARNING \"⚠️  Failed to create directory: \${SYMLINK_BIN_DIR}\")
+            endif()
+        endif()
+        
+        # List of binaries to symlink
+        set(BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter)
+        if(EXISTS \"\${BIN_DIR}/mickey\")
+            list(APPEND BINARIES mickey)
+        endif()
+        
+        foreach(BINARY \${BINARIES})
+            set(BINARY_PATH \"\${BIN_DIR}/\${BINARY}\")
+            set(SYMLINK_BIN_PATH \"\${SYMLINK_BIN_DIR}/\${BINARY}\")
+            # Symlink target should be the final installed path (without DESTDIR)
+            # This ensures symlinks work correctly after package deployment
+            set(SYMLINK_TARGET \"${CMAKE_INSTALL_PREFIX}/bin/\${BINARY}\")
+            
+            if(EXISTS \"\${BINARY_PATH}\")
+                # Remove existing symlink or file if it exists
+                if(EXISTS \"\${SYMLINK_BIN_PATH}\")
+                    execute_process(
+                        COMMAND \${CMAKE_COMMAND} -E remove \"\${SYMLINK_BIN_PATH}\"
+                    )
+                endif()
+                
+                # Create symlink pointing to final installed path (not staging path)
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E create_symlink \"\${SYMLINK_TARGET}\" \"\${SYMLINK_BIN_PATH}\"
+                    RESULT_VARIABLE SYMLINK_RESULT
+                )
+                
+                if(SYMLINK_RESULT EQUAL 0)
+                    message(STATUS \"✅ Created symlink: \${SYMLINK_BIN_PATH} -> \${SYMLINK_TARGET}\")
+                else()
+                    message(WARNING \"⚠️  Failed to create symlink: \${SYMLINK_BIN_PATH}\")
+                endif()
+            endif()
+        endforeach()
+        
+        # Create symlinks for desktop files (desktop menu compatibility)
+        # Many desktop environments don't search /opt/share/applications by default
+        set(DESKTOP_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/applications\")
+        set(SYMLINK_DESKTOP_DIR \"\$ENV{DESTDIR}/usr/local/share/applications\")
+        
+        # Create /usr/local/share/applications directory if it doesn't exist
+        if(NOT EXISTS \"\${SYMLINK_DESKTOP_DIR}\")
+            execute_process(
+                COMMAND \${CMAKE_COMMAND} -E make_directory \"\${SYMLINK_DESKTOP_DIR}\"
+                RESULT_VARIABLE MKDIR_RESULT
+            )
+            if(NOT MKDIR_RESULT EQUAL 0)
+                message(WARNING \"⚠️  Failed to create directory: \${SYMLINK_DESKTOP_DIR}\")
+            endif()
+        endif()
+        
+        # List of desktop files to symlink
+        set(DESKTOP_FILES linuxtrack.desktop mickey.desktop)
+        if(EXISTS \"\${DESKTOP_DIR}/linuxtrack-wii.desktop\")
+            list(APPEND DESKTOP_FILES linuxtrack-wii.desktop)
+        endif()
+        
+        foreach(DESKTOP_FILE \${DESKTOP_FILES})
+            set(DESKTOP_PATH \"\${DESKTOP_DIR}/\${DESKTOP_FILE}\")
+            set(SYMLINK_PATH \"\${SYMLINK_DESKTOP_DIR}/\${DESKTOP_FILE}\")
+            # Symlink target should be the final installed path (without DESTDIR)
+            set(SYMLINK_TARGET \"${CMAKE_INSTALL_PREFIX}/share/applications/\${DESKTOP_FILE}\")
+            
+            if(EXISTS \"\${DESKTOP_PATH}\")
+                # Remove existing symlink or file if it exists
+                if(EXISTS \"\${SYMLINK_PATH}\")
+                    execute_process(
+                        COMMAND \${CMAKE_COMMAND} -E remove \"\${SYMLINK_PATH}\"
+                    )
+                endif()
+                
+                # Create symlink pointing to final installed path
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E create_symlink \"\${SYMLINK_TARGET}\" \"\${SYMLINK_PATH}\"
+                    RESULT_VARIABLE SYMLINK_RESULT
+                )
+                
+                if(SYMLINK_RESULT EQUAL 0)
+                    message(STATUS \"✅ Created desktop symlink: \${SYMLINK_PATH} -> \${SYMLINK_TARGET}\")
+                else()
+                    message(WARNING \"⚠️  Failed to create desktop symlink: \${SYMLINK_PATH}\")
+                endif()
+            endif()
+        endforeach()
+        
+        # Update desktop database for /usr/local/share/applications (standard location)
+        if(\"\$ENV{DESTDIR}\" STREQUAL \"\" AND EXISTS \"\${SYMLINK_DESKTOP_DIR}\")
+            find_program(UPDATE_DESKTOP_DB update-desktop-database)
+            if(UPDATE_DESKTOP_DB)
+                message(STATUS \"Updating desktop database: \${SYMLINK_DESKTOP_DIR}\")
+                execute_process(
+                    COMMAND \${UPDATE_DESKTOP_DB} \"\${SYMLINK_DESKTOP_DIR}\"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                    RESULT_VARIABLE DESKTOP_DB_RESULT
+                )
+                if(NOT DESKTOP_DB_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  update-desktop-database failed (exit code: \${DESKTOP_DB_RESULT})\")
+                    message(WARNING \"⚠️  You may need to run 'sudo update-desktop-database \${SYMLINK_DESKTOP_DIR}' manually\")
+                else()
+                    message(STATUS \"✅ Desktop database updated successfully\")
+                endif()
+            endif()
+        endif()
+        
+        # Create symlinks for icons (icon theme compatibility)
+        # /opt/share/icons/hicolor may not have index.theme, so symlink to /usr/local/share/icons/hicolor
+        # which desktop environments definitely search
+        set(ICON_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/share/icons/hicolor\")
+        set(SYMLINK_ICON_DIR \"\$ENV{DESTDIR}/usr/local/share/icons/hicolor\")
+        
+        # Create icon theme directory structure if it doesn't exist
+        set(ICON_SUBDIRS 48x48/apps scalable/apps)
+        foreach(SUBDIR \${ICON_SUBDIRS})
+            set(SUBDIR_PATH \"\${SYMLINK_ICON_DIR}/\${SUBDIR}\")
+            if(NOT EXISTS \"\${SUBDIR_PATH}\")
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E make_directory \"\${SUBDIR_PATH}\"
+                    RESULT_VARIABLE MKDIR_RESULT
+                )
+                if(NOT MKDIR_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  Failed to create icon directory: \${SUBDIR_PATH}\")
+                endif()
+            endif()
+        endforeach()
+        
+        # List of icons to symlink
+        set(ICONS linuxtrack.png linuxtrack.svg)
+        if(EXISTS \"\${ICON_DIR}/48x48/apps/linuxtrack-wii.png\")
+            list(APPEND ICONS linuxtrack-wii.png)
+        endif()
+        if(EXISTS \"\${ICON_DIR}/scalable/apps/linuxtrack-wii.svg\")
+            list(APPEND ICONS linuxtrack-wii.svg)
+        endif()
+        
+        foreach(ICON \${ICONS})
+            # Determine source directory based on icon type
+            # Check if icon ends with .svg using string operations (avoids regex escape issues)
+            string(LENGTH \${ICON} ICON_LEN)
+            if(ICON_LEN GREATER 4)
+                # Calculate start position for last 4 characters
+                math(EXPR START_POS \"\${ICON_LEN} - 4\")
+                string(SUBSTRING \${ICON} \${START_POS} 4 ICON_SUFFIX)
+                if(ICON_SUFFIX STREQUAL \".svg\")
+                    set(ICON_SUBDIR \"scalable/apps\")
+                else()
+                    set(ICON_SUBDIR \"48x48/apps\")
+                endif()
+            else()
+                set(ICON_SUBDIR \"48x48/apps\")
+            endif()
+            
+            set(ICON_SOURCE_DIR \"\${ICON_DIR}/\${ICON_SUBDIR}\")
+            set(ICON_SYMLINK_DIR \"\${SYMLINK_ICON_DIR}/\${ICON_SUBDIR}\")
+            set(ICON_SOURCE_PATH \"\${ICON_SOURCE_DIR}/\${ICON}\")
+            set(ICON_SYMLINK_PATH \"\${ICON_SYMLINK_DIR}/\${ICON}\")
+            # Symlink target should be the final installed path (without DESTDIR)
+            set(ICON_SYMLINK_TARGET \"${CMAKE_INSTALL_PREFIX}/share/icons/hicolor/\${ICON_SUBDIR}/\${ICON}\")
+            
+            if(EXISTS \"\${ICON_SOURCE_PATH}\")
+                # Remove existing symlink or file if it exists
+                if(EXISTS \"\${ICON_SYMLINK_PATH}\")
+                    execute_process(
+                        COMMAND \${CMAKE_COMMAND} -E remove \"\${ICON_SYMLINK_PATH}\"
+                    )
+                endif()
+                
+                # Create symlink pointing to final installed path
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E create_symlink \"\${ICON_SYMLINK_TARGET}\" \"\${ICON_SYMLINK_PATH}\"
+                    RESULT_VARIABLE SYMLINK_RESULT
+                )
+                
+                if(SYMLINK_RESULT EQUAL 0)
+                    message(STATUS \"✅ Created icon symlink: \${ICON_SYMLINK_PATH} -> \${ICON_SYMLINK_TARGET}\")
+                else()
+                    message(WARNING \"⚠️  Failed to create icon symlink: \${ICON_SYMLINK_PATH}\")
+                endif()
+            endif()
+        endforeach()
+        
+        # Update icon cache for /usr/local/share/icons/hicolor (standard location with index.theme)
+        if(\"\$ENV{DESTDIR}\" STREQUAL \"\" AND EXISTS \"\${SYMLINK_ICON_DIR}\")
+            find_program(UPDATE_ICON_CACHE gtk-update-icon-cache)
+            if(UPDATE_ICON_CACHE)
+                message(STATUS \"Updating icon cache: \${SYMLINK_ICON_DIR}\")
+                execute_process(
+                    COMMAND \${UPDATE_ICON_CACHE} -f -t \"\${SYMLINK_ICON_DIR}\"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                    RESULT_VARIABLE ICON_CACHE_RESULT
+                )
+                if(NOT ICON_CACHE_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  gtk-update-icon-cache failed (exit code: \${ICON_CACHE_RESULT})\")
+                    message(WARNING \"⚠️  You may need to run 'sudo gtk-update-icon-cache -f -t \${SYMLINK_ICON_DIR}' manually\")
+                else()
+                    message(STATUS \"✅ Icon cache updated successfully\")
+                endif()
+            else()
+                message(STATUS \"ℹ️  gtk-update-icon-cache not found - icons may not appear until cache is updated\")
+            endif()
+        endif()
+    ")
+endif()
+
 # ldconfig integration
 if(ENABLE_LDCONFIG)
     install(CODE "
-        # Only create ld.so.conf.d file if DESTDIR is set (staging installation)
-        # For system installations, this should be handled by package managers
+        # Create ld.so.conf.d file for library path registration
+        # This is required because /opt/lib/linuxtrack is not in default library search paths
         if(NOT \"\$ENV{DESTDIR}\" STREQUAL \"\")
             # Staging installation - write to DESTDIR
-        file(WRITE \"\$ENV{DESTDIR}/etc/ld.so.conf.d/linuxtrack.conf\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
+            set(CONF_DIR \"\$ENV{DESTDIR}/etc/ld.so.conf.d\")
+            set(CONF_FILE \"\${CONF_DIR}/linuxtrack.conf\")
+            # Create directory if it doesn't exist
+            if(NOT EXISTS \"\${CONF_DIR}\")
+                file(MAKE_DIRECTORY \"\${CONF_DIR}\")
+            endif()
+            file(WRITE \"\${CONF_FILE}\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
+            message(STATUS \"Created ${CONF_FILE} with path: ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
         else()
-            # System installation - only run ldconfig, don't create conf file
-            # Package managers should handle /etc/ld.so.conf.d/ files
-            execute_process(
-                COMMAND ldconfig
-                OUTPUT_QUIET
-                ERROR_QUIET
-            )
+            # System installation - create conf file and run ldconfig
+            # Note: This requires root/sudo permissions to write to /etc/ld.so.conf.d/
+            set(CONF_DIR \"/etc/ld.so.conf.d\")
+            set(CONF_FILE \"\${CONF_DIR}/linuxtrack.conf\")
+            
+            # Check if directory exists (it should on all Linux systems)
+            if(NOT EXISTS \"\${CONF_DIR}\")
+                message(WARNING \"⚠️  Directory \${CONF_DIR} does not exist - cannot create ldconfig configuration\")
+                message(WARNING \"⚠️  You will need to manually create ${CONF_FILE} with content: ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
+            else()
+                # Write the configuration file
+                file(WRITE \"\${CONF_FILE}\" \"${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\\n\")
+                message(STATUS \"Created ${CONF_FILE} with path: ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
+                
+                # Run ldconfig to update library cache
+                # Note: This may fail if not run with sufficient permissions
+                execute_process(
+                    COMMAND ldconfig
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                    RESULT_VARIABLE LDCONFIG_RESULT
+                )
+                if(NOT LDCONFIG_RESULT EQUAL 0)
+                    message(WARNING \"⚠️  ldconfig failed (exit code: \${LDCONFIG_RESULT})\")
+                    message(WARNING \"⚠️  You may need to run 'sudo ldconfig' manually to update the library cache\")
+                    message(WARNING \"⚠️  Library path ${CMAKE_INSTALL_PREFIX}/lib/linuxtrack has been added to ${CONF_FILE}\")
+                else()
+                    message(STATUS \"✅ Library cache updated successfully\")
+                endif()
+            endif()
         endif()
     ")
 endif()
