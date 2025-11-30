@@ -96,6 +96,13 @@ bool HelpViewer::initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngin
         std::cout << "   ✅ Qt5 detected - compatible with help system" << std::endl;
     } else if (currentQtVersion.startsWith(QStringLiteral("6."))) {
         std::cout << "   ⚠️  Qt6 detected - may have compatibility issues with Qt5 help files" << std::endl;
+        // Qt6.2+ QHelpEngine is compatible with Qt5-generated help files (.qhc/.qch)
+        // However, for best compatibility, help files should be regenerated with Qt6 qhelpgenerator
+        if (currentQtVersion.startsWith(QStringLiteral("6.5"))) {
+            std::cout << "   ℹ️  Qt6.5+ detected - QHelpEngine supports Qt5 help files, but Qt6-generated files recommended" << std::endl;
+        } else {
+            std::cout << "   ℹ️  Qt6.2-6.4 detected - QHelpEngine supports Qt5 help files, but Qt6.5+ recommended for best compatibility" << std::endl;
+        }
     } else {
         std::cout << "   ❓ Unknown Qt version - compatibility uncertain" << std::endl;
     }

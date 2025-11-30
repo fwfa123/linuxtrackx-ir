@@ -14,12 +14,19 @@ class TirPrefs : public QWidget{
   TirPrefs(const QString &dev_id, QWidget *parent = 0);
   ~TirPrefs();
   static bool AddAvailableDevices(QComboBox &combo, QWidget *parent = nullptr);
+  // Qt6 RADICAL FIX: SetupUI() loads the UI file after widget is in layout
+  void SetupUI();
+  // Qt6: Made public so DeviceSetup can call it after widget is inserted into layout
+  bool Activate(const QString &ID, bool init = false);
+ private slots:
+  // Internal slot for deferred UI initialization
+  void initializeUI(const QString &ID);
  private:
   const QString id;
-  bool Activate(const QString &ID, bool init = false);
   Ui::TirSetupForm ui;
   //void Connect();
   bool initializing;
+  bool uiSetupComplete;  // Track if SetupUI() has been called
   TirFwExtractor *dlfw;
   static bool firmwareOK;
   static bool permsOK;

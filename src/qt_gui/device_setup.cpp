@@ -59,7 +59,9 @@ DeviceSetup::DeviceSetup(Guardian *grd, QBoxLayout *tgt, QWidget *parent)
   ui.setupUi(this);
   // Qt6: Defer device refresh to avoid layout issues during window show
   // Refresh devices after the widget is fully constructed and parent is visible
-  QTimer::singleShot(0, this, [this]() {
+  // Qt6.5: Increase delay to allow layout to stabilize
+  // Note: 'this' is automatically validated by Qt - if widget is destroyed, timer is cancelled
+  QTimer::singleShot(10, this, [this]() {
     on_RefreshDevices_pressed();
   });
   initOrientations();
@@ -69,7 +71,9 @@ DeviceSetup::DeviceSetup(Guardian *grd, QBoxLayout *tgt, QWidget *parent)
 DeviceSetup::~DeviceSetup()
 {
   if(devPrefs != NULL){
-    target->removeWidget(devPrefs);
+    // Qt6 RADICAL FIX: deleting the child widget is enough; Qt will
+    // automatically remove it from the layout. Explicit removeWidget()
+    // calls have been a recurring source of QBoxLayout::itemAt() crashes.
     delete devPrefs;
     devPrefs = NULL;
   }
@@ -136,7 +140,9 @@ void DeviceSetup::on_DeviceSelector_activated(int index)
     return;
   }
   if(devPrefs != NULL){
-    target->removeWidget(devPrefs);
+    // Qt6 RADICAL FIX: deleting the child widget is enough; Qt will
+    // automatically remove it from the layout. Explicit removeWidget()
+    // has been a recurring source of QBoxLayout::itemAt() crashes.
     delete devPrefs;
     devPrefs = NULL;
   }
@@ -180,13 +186,48 @@ void DeviceSetup::on_DeviceSelector_activated(int index)
     emit deviceTypeChanged(pl.deviceType, QString::fromUtf8("Wiimote"));
   }else
   if(pl.deviceType == TIR){
-    devPrefs = new TirPrefs(pl.ID, this);
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Creating TirPrefs widget for ID: " << pl.ID.toStdString() << std::endl;
+    // Qt6 RADICAL FIX: Create widget WITHOUT parent to avoid Qt6 validation during construction
+    // This breaks the normal Qt pattern but avoids the segfault
+    devPrefs = new TirPrefs(pl.ID, nullptr);
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] TirPrefs widget created (no parent, no UI loaded yet)" << std::endl;
+    
+    // Qt6 RADICAL FIX: Insert widget into layout FIRST (synchronously)
+    // Widget must be in layout before UI file is loaded
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Inserting TirPrefs widget into layout..." << std::endl;
+    target->insertWidget(-1, devPrefs);
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Widget inserted into layout" << std::endl;
+    
+    // NOW load UI file - widget is safely in layout
+    TirPrefs *tirPrefs = qobject_cast<TirPrefs*>(devPrefs);
+    if (tirPrefs) {
+      std::cout << "[DeviceSetup::on_DeviceSelector_activated] Calling SetupUI() to load UI file..." << std::endl;
+      tirPrefs->SetupUI();
+      std::cout << "[DeviceSetup::on_DeviceSelector_activated] UI file loaded, now activating..." << std::endl;
+      
+      // Activate widget to initialize UI values
+      tirPrefs->Activate(pl.ID, true);
+      std::cout << "[DeviceSetup::on_DeviceSelector_activated] TirPrefs activated successfully" << std::endl;
+    } else {
+      std::cerr << "[DeviceSetup::on_DeviceSelector_activated] ERROR: Failed to cast devPrefs to TirPrefs" << std::endl;
+    }
+    
+    // Emit signal and initialize UI
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Emitting signal..." << std::endl;
     emit deviceTypeChanged(pl.deviceType, QString::fromUtf8("TrackIR"));
     // Refresh VideoOnDelay UI when TrackIR is selected
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Initializing VideoOnDelay..." << std::endl;
     initVideoOnDelay();
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] All TrackIR initialization complete" << std::endl;
   }
-  if(devPrefs != NULL){
-    target->insertWidget(-1, devPrefs);
+  if(devPrefs != NULL && pl.deviceType != TIR){
+    // For non-TrackIR devices, defer insertion (they don't have the same timing issues)
+    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Scheduling widget insertion for non-TIR device..." << std::endl;
+    QTimer::singleShot(10, this, [this]() {
+      if (this && devPrefs && target) {
+        target->insertWidget(-1, devPrefs);
+      }
+    });
   }
 }
 
@@ -243,16 +284,21 @@ void DeviceSetup::on_VideoOnDelayValue_valueChanged(int value)
 
 void DeviceSetup::on_RefreshDevices_pressed()
 {
+  std::cout << "[DeviceSetup::on_RefreshDevices_pressed] Called, refreshing devices..." << std::endl;
   refresh();
+  std::cout << "[DeviceSetup::on_RefreshDevices_pressed] Refresh complete" << std::endl;
 }
 
 
 void DeviceSetup::refresh()
 {
+  std::cout << "[DeviceSetup::refresh] Starting device refresh..." << std::endl;
   ui.DeviceSelector->clear();
   bool res = false;
   // Prefer TrackIR when available by adding it first
+  std::cout << "[DeviceSetup::refresh] Adding TrackIR devices..." << std::endl;
   res |= TirPrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
+  std::cout << "[DeviceSetup::refresh] TrackIR devices added, result: " << (res ? "true" : "false") << std::endl;
   res |= WiimotePrefs::AddAvailableDevices(*(ui.DeviceSelector));
 #ifdef DARWIN
   res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector));
@@ -267,7 +313,9 @@ void DeviceSetup::refresh()
   if(!res){
     initialized = true;
   }
+  std::cout << "[DeviceSetup::refresh] Activating device selector at index: " << ui.DeviceSelector->currentIndex() << std::endl;
   on_DeviceSelector_activated(ui.DeviceSelector->currentIndex());
+  std::cout << "[DeviceSetup::refresh] Device activation complete" << std::endl;
   initialized = true;
 }
 
