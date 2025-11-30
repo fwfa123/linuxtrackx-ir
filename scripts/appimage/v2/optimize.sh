@@ -34,42 +34,44 @@ pushd "$APPDIR" >/dev/null
         popd >/dev/null
     fi
 
-    # Qt plugins: keep essential subsets
-    if [[ -d usr/lib/qt5/plugins/platforms ]]; then
-        pushd usr/lib/qt5/plugins/platforms >/dev/null
-            for p in *.so; do
-                [[ -f "$p" ]] || continue
-                case "$p" in
-                    libqxcb.so|libqminimal.so|libqminimalegl.so) : ;; # keep
-                    *) rm -f "$p" ;;
-                esac
-            done
-        popd >/dev/null
-    fi
+    # Qt plugins: keep essential subsets (Qt6 primary, Qt5 fallback)
+    for qt_version in qt6 qt5; do
+        if [[ -d usr/lib/$qt_version/plugins/platforms ]]; then
+            pushd usr/lib/$qt_version/plugins/platforms >/dev/null
+                for p in *.so; do
+                    [[ -f "$p" ]] || continue
+                    case "$p" in
+                        libqxcb.so|libqminimal.so|libqminimalegl.so) : ;; # keep
+                        *) rm -f "$p" ;;
+                    esac
+                done
+            popd >/dev/null
+        fi
 
-    if [[ -d usr/lib/qt5/plugins/imageformats ]]; then
-        pushd usr/lib/qt5/plugins/imageformats >/dev/null
-            for p in *.so; do
-                [[ -f "$p" ]] || continue
-                case "$p" in
-                    libqjpeg.so|libqpng.so|libqsvg.so|libqgif.so) : ;; # keep
-                    *) rm -f "$p" ;;
-                esac
-            done
-        popd >/dev/null
-    fi
+        if [[ -d usr/lib/$qt_version/plugins/imageformats ]]; then
+            pushd usr/lib/$qt_version/plugins/imageformats >/dev/null
+                for p in *.so; do
+                    [[ -f "$p" ]] || continue
+                    case "$p" in
+                        libqjpeg.so|libqpng.so|libqsvg.so|libqgif.so) : ;; # keep
+                        *) rm -f "$p" ;;
+                    esac
+                done
+            popd >/dev/null
+        fi
 
-    if [[ -d usr/lib/qt5/plugins/iconengines ]]; then
-        pushd usr/lib/qt5/plugins/iconengines >/dev/null
-            for p in *.so; do
-                [[ -f "$p" ]] || continue
-                case "$p" in
-                    libqsvgicon.so) : ;; # keep
-                    *) rm -f "$p" ;;
-                esac
-            done
-        popd >/dev/null
-    fi
+        if [[ -d usr/lib/$qt_version/plugins/iconengines ]]; then
+            pushd usr/lib/$qt_version/plugins/iconengines >/dev/null
+                for p in *.so; do
+                    [[ -f "$p" ]] || continue
+                    case "$p" in
+                        libqsvgicon.so) : ;; # keep
+                        *) rm -f "$p" ;;
+                    esac
+                done
+            popd >/dev/null
+        fi
+    done
 
 popd >/dev/null
 

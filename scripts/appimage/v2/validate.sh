@@ -75,19 +75,20 @@ else
 fi
 
 # Ensure Qt essentials
-# Check for Qt plugins in new and legacy locations
-if [[ ! -e "$APPDIR/usr/plugins/platforms/libqxcb.so" && ! -e "$APPDIR/usr/lib/qt5/plugins/platforms/libqxcb.so" ]]; then
+# Check for Qt plugins in new and legacy locations (Qt6 primary, Qt5 fallback)
+if [[ ! -e "$APPDIR/usr/plugins/platforms/libqxcb.so" && ! -e "$APPDIR/usr/lib/qt6/plugins/platforms/libqxcb.so" && ! -e "$APPDIR/usr/lib/qt5/plugins/platforms/libqxcb.so" ]]; then
     print_error "Qt platform plugin (xcb) missing"
     failures=$((failures+1))
 fi
 # Check SQLite driver in both locations (robust against no-match under pipefail)
 SQLITE_USR_PLUGINS=$({ find "$APPDIR/usr/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l)
+SQLITE_QT6_PLUGINS=$({ find "$APPDIR/usr/lib/qt6/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l)
 SQLITE_QT5_PLUGINS=$({ find "$APPDIR/usr/lib/qt5/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l)
 
-if [[ $SQLITE_USR_PLUGINS -gt 0 ]] || [[ $SQLITE_QT5_PLUGINS -gt 0 ]]; then
+if [[ $SQLITE_USR_PLUGINS -gt 0 ]] || [[ $SQLITE_QT6_PLUGINS -gt 0 ]] || [[ $SQLITE_QT5_PLUGINS -gt 0 ]]; then
     print_success "Qt SQLite driver present"
 else
-    print_error "Qt SQLite driver missing from both locations; help system will fail"
+    print_error "Qt SQLite driver missing from all locations; help system will fail"
     failures=$((failures+1))
 fi
 
@@ -160,43 +161,57 @@ else
     print_warning "sqlite3 not available; skipping detailed help database validation"
 fi
 
-# Check Qt Help and SQL module libraries
+# Check Qt Help and SQL module libraries (Qt6 primary, Qt5 fallback)
 print_status "Checking Qt Help and SQL module libraries"
-HELP_LIB=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt5Help.so*' 2>/dev/null || true; } | wc -l)
-SQL_LIB=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt5Sql.so*' 2>/dev/null || true; } | wc -l)
+HELP_LIB_QT6=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt6Help.so*' 2>/dev/null || true; } | wc -l)
+SQL_LIB_QT6=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt6Sql.so*' 2>/dev/null || true; } | wc -l)
+HELP_LIB_QT5=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt5Help.so*' 2>/dev/null || true; } | wc -l)
+SQL_LIB_QT5=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt5Sql.so*' 2>/dev/null || true; } | wc -l)
 
-if [[ $HELP_LIB -gt 0 ]]; then
-    print_success "Qt5Help library present"
+if [[ $HELP_LIB_QT6 -gt 0 ]]; then
+    print_success "Qt6Help library present"
+elif [[ $HELP_LIB_QT5 -gt 0 ]]; then
+    print_warning "Qt5Help library present (Qt6 preferred)"
 else
-    print_error "Qt5Help library missing; help system will fail"
+    print_error "Qt Help library missing (Qt6Help or Qt5Help); help system will fail"
     failures=$((failures+1))
 fi
 
-if [[ $SQL_LIB -gt 0 ]]; then
-    print_success "Qt5Sql library present"
+if [[ $SQL_LIB_QT6 -gt 0 ]]; then
+    print_success "Qt6Sql library present"
+elif [[ $SQL_LIB_QT5 -gt 0 ]]; then
+    print_warning "Qt5Sql library present (Qt6 preferred)"
 else
-    print_error "Qt5Sql library missing; help system will fail"
+    print_error "Qt SQL library missing (Qt6Sql or Qt5Sql); help system will fail"
     failures=$((failures+1))
 fi
 
-# Check Qt Help plugins comprehensively
+# Check Qt Help plugins comprehensively (Qt6 primary, Qt5 fallback)
 print_status "Checking Qt Help plugins"
 HELP_PLUGINS_USR=$({ find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
+HELP_PLUGINS_QT6=$({ find "$APPDIR/usr/lib/qt6/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
 HELP_PLUGINS_QT5=$({ find "$APPDIR/usr/lib/qt5/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
 KIO_HELP_PLUGINS=$({ find "$APPDIR/usr/plugins/kauth/helper" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
 KIO_KF5_PLUGINS=$({ find "$APPDIR/usr/plugins/kf5/kio" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
 
 # Total help plugins found
-TOTAL_HELP_PLUGINS=$((HELP_PLUGINS_USR + HELP_PLUGINS_QT5))
+TOTAL_HELP_PLUGINS=$((HELP_PLUGINS_USR + HELP_PLUGINS_QT6 + HELP_PLUGINS_QT5))
 TOTAL_KIO_PLUGINS=$((KIO_HELP_PLUGINS + KIO_KF5_PLUGINS))
 
 if [[ $TOTAL_HELP_PLUGINS -gt 0 ]]; then
-    print_success "Qt Help plugins found: $TOTAL_HELP_PLUGINS total (usr/plugins: $HELP_PLUGINS_USR, usr/lib/qt5/plugins: $HELP_PLUGINS_QT5)"
+    print_success "Qt Help plugins found: $TOTAL_HELP_PLUGINS total (usr/plugins: $HELP_PLUGINS_USR, usr/lib/qt6/plugins: $HELP_PLUGINS_QT6, usr/lib/qt5/plugins: $HELP_PLUGINS_QT5)"
     
     # List specific plugins found
     if [[ $HELP_PLUGINS_USR -gt 0 ]]; then
         echo "  usr/plugins/help:"
         find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
+            echo "    - $(basename "$plugin")"
+        done
+    fi
+    
+    if [[ $HELP_PLUGINS_QT6 -gt 0 ]]; then
+        echo "  usr/lib/qt6/plugins/help:"
+        find "$APPDIR/usr/lib/qt6/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
             echo "    - $(basename "$plugin")"
         done
     fi
