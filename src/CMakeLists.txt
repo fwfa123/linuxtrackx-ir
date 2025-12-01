@@ -433,12 +433,6 @@ if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
             LIBRARY DESTINATION /opt/lib/linuxtrack
             ARCHIVE DESTINATION /opt/lib/linuxtrack
         )
-        if(LTR32ON64)
-            install(TARGETS xlinuxtrack9_32
-                LIBRARY DESTINATION /opt/lib/linuxtrack
-                ARCHIVE DESTINATION /opt/lib/linuxtrack
-            )
-        endif()
     endif()
 endif()
 
