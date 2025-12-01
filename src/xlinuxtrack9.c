@@ -348,9 +348,7 @@ static void revertView(void) {
     XPLMSetDataf(head_z, base_z);
     XPLMSetDataf(head_psi, 0.0);
     XPLMSetDataf(head_the, 0.0);
-    if (head_roll != NULL) {
-      XPLMSetDataf(head_roll, 0.0);
-    }
+    XPLMSetDataf(head_roll, 0.0);
   }
 }
 
@@ -447,16 +445,12 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
       XPLMSetDataf(head_z, base_z + current_head_z);
       XPLMSetDataf(head_psi, current_head_heading);
       XPLMSetDataf(head_the, current_head_pitch);
-      if (head_roll != NULL) {
-        XPLMSetDataf(head_roll, current_head_roll);
-      }
+      XPLMSetDataf(head_roll, current_head_roll);
     } else {
       // Make sure to cancel any roll, otherwise bad things start to happening
       //   e.g. mising HUD in forward with HUD view or rolled view in other
       //   views... Also the roll seems to be persistent!
-      if (head_roll != NULL) {
-        XPLMSetDataf(head_roll, 0);
-      }
+      XPLMSetDataf(head_roll, 0);
     }
   }
   return -1.0;
