@@ -359,14 +359,14 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
 
   // CRITICAL: Add a minimum delay after StartDataTransmission before allowing get_pose
   // The crash at offset 0xA0 suggests internal structures need more time to initialize
+  // Timer remains set throughout the transmission session and is only reset in StopDataTransmission
   if (transmission_start_time != 0) {
     DWORD elapsed = GetTickCount() - transmission_start_time;
     if (elapsed < 1000) {  // Wait at least 1 second after StartDataTransmission
       dbg_report("WARNING: NP_GetData called too soon after StartDataTransmission (%d ms), waiting...\n", elapsed);
       Sleep(1000 - elapsed);
     }
-    // Reset after any evaluation - ensures this check only runs once
-    transmission_start_time = 0;
+    // Timer is NOT reset here - it remains set until NP_StopDataTransmission is called
   }
 
   // Check if LinuxTrack is properly initialized and in a valid state
@@ -386,6 +386,11 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
     data->status = 1; // Not tracking
     return 1;
   }
+
+  // Note: transmission_start_time is NOT reset here - it remains set until
+  // NP_StopDataTransmission is called. This ensures the delay check can run
+  // on every call until the minimum delay has passed, and the timer tracks
+  // the full transmission session duration.
 
   // Initialize variables before calling get_pose
   float r = 0.0f, p = 0.0f, y = 0.0f, tx = 0.0f, ty = 0.0f, tz = 0.0f;
@@ -552,8 +557,10 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         dbg_report("LinuxTrack socket found - daemon appears to be running\n");
         // Try initialization again
         init_result = linuxtrack_init(gd.name);
-        if(init_result >= LINUXTRACK_OK){
+        if(init_result == RUNNING || init_result == PAUSED){
           dbg_report("LinuxTrack initialization successful after socket check\n");
+        } else if(init_result == INITIALIZING){
+          dbg_report("LinuxTrack initialization in progress after socket check (state: INITIALIZING)\n");
         } else {
           const char *explain = linuxtrack_explain(init_result);
           dbg_report("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
@@ -669,6 +676,22 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
       const char *explain = linuxtrack_explain(init_result);
       dbg_report("LinuxTrack initialization failed with default profile (%d): %s\n", 
              init_result, explain ? explain : "unknown error");
+    } else if(init_result == INITIALIZING){
+      dbg_report("LinuxTrack initialization started with default profile, waiting for completion...\n");
+      // Wait for initialization to complete
+      for(int i = 0; i < 50 && init_result == INITIALIZING; ++i){  // Wait up to 5 seconds
+        Sleep(100);
+        init_result = linuxtrack_get_tracking_state();
+        if(init_result == RUNNING || init_result == PAUSED) {
+          dbg_report("LinuxTrack initialization completed successfully with default profile\n");
+          break;
+        }
+      }
+      if(init_result == INITIALIZING) {
+        dbg_report("LinuxTrack initialization timed out with default profile - system may not be properly configured\n");
+      }
+    }
+    if(init_result < LINUXTRACK_OK || init_result == INITIALIZING){
       
       // Try to start the LinuxTrack daemon if it's not running
       dbg_report("Attempting to start LinuxTrack daemon for default profile...\n");
@@ -682,8 +705,10 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         dbg_report("LinuxTrack socket found - daemon appears to be running\n");
         // Try initialization again
         init_result = linuxtrack_init("Default");
-        if(init_result >= LINUXTRACK_OK){
+        if(init_result == RUNNING || init_result == PAUSED){
           dbg_report("LinuxTrack initialization successful after socket check\n");
+        } else if(init_result == INITIALIZING){
+          dbg_report("LinuxTrack initialization in progress after socket check (state: INITIALIZING)\n");
         } else {
           const char *explain2 = linuxtrack_explain(init_result);
           dbg_report("LinuxTrack initialization still failed even with socket present (%d): %s\n", 
@@ -1006,8 +1031,9 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
 {
   dbg_report("StopDataTransmission request\n");
   
-  // Reset transmission flag
+  // Reset transmission flag and timer
   data_transmission_started = false;
+  transmission_start_time = 0;  // Reset timer when transmission stops
   
   // Fully shutdown to avoid background reconnect attempts
   linuxtrack_state_type st = linuxtrack_shutdown();

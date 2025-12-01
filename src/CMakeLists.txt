@@ -406,6 +406,42 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
     ")
 endif()
 
+# Also install libraries to /opt/lib/linuxtrack/ for Steam Proton compatibility
+# Steam Proton's pressure-vessel container can access /opt but not /usr
+# Only install to /opt if main prefix is not already /opt (avoid duplication)
+if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
+    message(STATUS "Installing libraries to /opt/lib/linuxtrack/ for Steam Proton compatibility")
+    install(TARGETS
+        linuxtrack
+        ltr
+        tir
+        joy
+        ltusb1
+        LIBRARY DESTINATION /opt/lib/linuxtrack
+        ARCHIVE DESTINATION /opt/lib/linuxtrack
+    )
+    
+    if(WEBCAM_SUPPORT)
+        install(TARGETS wc
+            LIBRARY DESTINATION /opt/lib/linuxtrack
+            ARCHIVE DESTINATION /opt/lib/linuxtrack
+        )
+    endif()
+    
+    if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
+        install(TARGETS xlinuxtrack9
+            LIBRARY DESTINATION /opt/lib/linuxtrack
+            ARCHIVE DESTINATION /opt/lib/linuxtrack
+        )
+        if(LTR32ON64)
+            install(TARGETS xlinuxtrack9_32
+                LIBRARY DESTINATION /opt/lib/linuxtrack
+                ARCHIVE DESTINATION /opt/lib/linuxtrack
+            )
+        endif()
+    endif()
+endif()
+
 # Install 32-bit library to multiarch directory if LIB32DIR is set
 if(LTR32ON64)
     if(LIB32DIR AND NOT LIB32DIR STREQUAL "lib32")
@@ -450,6 +486,15 @@ if(LTR32ON64)
                 file(REMOVE \"\${FILE}\")
             endforeach()
         ")
+        
+        # Also install 32-bit library to /opt for Steam Proton compatibility
+        # Install with standard name (liblinuxtrack32.so.0) for Wine bridge compatibility
+        if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
+            install(TARGETS linuxtrack32
+                LIBRARY DESTINATION /opt/lib/linuxtrack
+                ARCHIVE DESTINATION /opt/lib/linuxtrack
+            )
+        endif()
     else()
         # Install to standard location if LIB32DIR is not set or is "lib32"
         install(TARGETS linuxtrack32
@@ -458,6 +503,14 @@ if(LTR32ON64)
         )
         message(STATUS "ℹ️  LIB32DIR not set - 32-bit library installed to standard location: lib/linuxtrack")
         message(STATUS "ℹ️  For Debian/Ubuntu multiarch support, use: -DLIB32DIR=i386-linux-gnu")
+        
+        # Also install 32-bit library to /opt for Steam Proton compatibility
+        if(NOT CMAKE_INSTALL_PREFIX STREQUAL "/opt")
+            install(TARGETS linuxtrack32
+                LIBRARY DESTINATION /opt/lib/linuxtrack
+                ARCHIVE DESTINATION /opt/lib/linuxtrack
+            )
+        endif()
     endif()
 endif()
 

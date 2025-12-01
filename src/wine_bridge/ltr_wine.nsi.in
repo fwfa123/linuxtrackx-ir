@@ -1,5 +1,6 @@
 Name "linuxtrack-wine"
 OutFile "linuxtrack-wine.exe"
+Icon "linuxtrack.ico"
 InstallDir $PROGRAMFILES\Linuxtrack
 InstallDirRegKey HKLM "Software\Linuxtrack" "InstallDir"
 
@@ -21,7 +22,7 @@ Function .onInit
   IfFileExists "$INSTDIR\NPClient.dll" 0 done
   
   MessageBox MB_YESNO|MB_ICONQUESTION \
-  "Linuxtrack-Wine is already installed. $\n$\nClick `Yes` to upgrade the installation (existing DLL files will be preserved) or `No` to cancel." \
+  "Linuxtrack-Wine is already installed. $\n$\nClick `Yes` to upgrade the installation (symlinks will be preserved) or `No` to cancel." \
   IDYES done
   Abort
 
@@ -62,7 +63,7 @@ Section "Linuxtrack / TrackIR Interface"
   File /oname=Tester.exe tester\Tester.exe.so
   File /oname=NPClient.dll client\NPClient.dll.so
   File /oname=check_data.exe client\check_data.exe.so
-  File /oname=linuxtrack.ico @srcdir@\controller\linuxtrack.ico
+  File /oname=linuxtrack.ico controller\linuxtrack.ico
   File /oname=TrackIR.exe views\TrackIR.exe.so
   
   # Remove backup files after successful installation
