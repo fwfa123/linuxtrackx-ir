@@ -7,16 +7,13 @@
 // #define XPLM410 // X-Plane 12.1.0 & newer (64-bit only)
 
 #include "XPLMDataAccess.h"
-#include "XPLMDisplay.h"
 #include "XPLMGraphics.h"
-#include "XPLMMenus.h"
 #include "XPLMPlugin.h"
 #include "XPLMProcessing.h"
 #include "XPLMUtilities.h"
 #include "XPStandardWidgets.h"
 #include "XPWidgets.h"
 #include "linuxtrack.h"
-#include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
