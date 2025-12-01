@@ -276,25 +276,50 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFromWho, long inMessage,
       if ((intptr_t)inParam == XPLM_PLUGIN_XPLANE) {
 
         if (!drefsPublished) {
-          // Publish these datarefs for DataRefEditor plugin
-          XPLMPluginID PluginID =
-              XPLMFindPluginBySignature("xplanesdk.examples.DataRefEditor");
-          if (PluginID != XPLM_NO_PLUGIN_ID) {
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/pilots_head_x");
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/pilots_head_y");
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/pilots_head_z");
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/pilots_head_psi");
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/pilots_head_the");
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/pilots_head_roll");
-            XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
-                                    (void *)"linuxtrack/enable_head_control");
-            drefsPublished = true;
+          {
+            // Publish these datarefs for DataRefEditor plugin
+            XPLMPluginID PluginID =
+                XPLMFindPluginBySignature("xplanesdk.examples.DataRefEditor");
+            if (PluginID != XPLM_NO_PLUGIN_ID) {
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_x");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_y");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_z");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_psi");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_the");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_roll");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/enable_head_control");
+              drefsPublished = true;
+            }
+          }
+
+          {
+            // Publish these datarefs for DataRefTool plugin
+            XPLMPluginID PluginID =
+                XPLMFindPluginBySignature("com.leecbaker.datareftool");
+            if (PluginID != XPLM_NO_PLUGIN_ID) {
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_x");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_y");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_z");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_psi");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_the");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/pilots_head_roll");
+              XPLMSendMessageToPlugin(PluginID, MSG_ADD_DATAREF,
+                                      (void *)"linuxtrack/enable_head_control");
+              drefsPublished = true;
+            }
           }
         }
       }
