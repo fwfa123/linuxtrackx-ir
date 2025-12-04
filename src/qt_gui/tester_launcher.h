@@ -25,7 +25,7 @@ public:
                                     LutrisIntegration *lutrisIntegration);
 
     // Find tester executable inside a prefix.
-    // testerType: "Tester.exe" or "FT_Tester". Returns absolute path or empty.
+    // testerType: "Tester.exe", "FT_Tester", or "Controller.exe". Returns absolute path or empty.
     static QString findTesterInPrefix(const QString &prefixPath,
                                       const QString &testerType);
     

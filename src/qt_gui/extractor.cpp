@@ -874,7 +874,7 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   // Ensure PATH has common locations for GUI-launched environments
   QString path = env.value(QStringLiteral("PATH"));
   // Merge current PATH with typical system locations to ensure winetricks can find dependencies
-  QStringList systemPaths = {QStringLiteral("/usr/bin"), QStringLiteral("/usr/local/bin"), QStringLiteral("/bin"), QStringLiteral("/usr/sbin"), QStringLiteral("/sbin")};
+  QStringList systemPaths = {QStringLiteral("/opt/bin"), QStringLiteral("/usr/bin"), QStringLiteral("/usr/local/bin"), QStringLiteral("/bin"), QStringLiteral("/usr/sbin"), QStringLiteral("/sbin")};
   QString mergedPath = path;
   for(const QString& sysPath : systemPaths) {
     if(!mergedPath.contains(sysPath)) {
@@ -1195,7 +1195,8 @@ QString Mfc42uWinetricksExtractor::locateWinetricks()
   }
   // Try common absolute paths
   QStringList candidates;
-  candidates << QStringLiteral("/usr/bin/winetricks")
+  candidates << QStringLiteral("/opt/bin/winetricks")
+             << QStringLiteral("/usr/bin/winetricks")
              << QStringLiteral("/usr/local/bin/winetricks")
              << QStringLiteral("/bin/winetricks");
   for(const QString &c : candidates){

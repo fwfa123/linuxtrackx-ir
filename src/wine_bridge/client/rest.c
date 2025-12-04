@@ -175,7 +175,12 @@ typedef struct {
   // Numeric-aware disambiguation: prefer candidates sharing the same first number as the query
   int query_first_number;
   bool best_contains_numeric_match;
+  // Word-boundary matching: track best word-order match
+  size_t best_word_order_score;
+  bool best_has_word_order_match;
 } name_match_ctx_t;
+
+static bool word_boundary_match(const char *text, const char *word, size_t word_len);
 
 static size_t score_match(const char *a, const char *b)
 {
@@ -211,11 +216,72 @@ static bool candidate_contains_alpha_keyword(const char *qbuf, const char *nbuf)
     while(*p && ((*p >= 'a' && *p <= 'z'))) p++;
     size_t len = (size_t)(p - start);
     if(len >= 3){
-      // check substring
-      if(strstr(nbuf, (const char*)start) != NULL){ return true; }
+      if(word_boundary_match(nbuf, start, len)){ return true; }
     }
   }
   return false;
+}
+
+// Check if a word appears as a complete word (word-boundary aware)
+static bool word_boundary_match(const char *text, const char *word, size_t word_len)
+{
+  if(!text || !word || word_len == 0) return false;
+  const char *p = text;
+  while(*p){
+    // Check if word matches at current position
+    if(strncmp(p, word, word_len) == 0){
+      // Check word boundaries: before and after must be non-alphabetic
+      bool before_ok = (p == text || !((*(p-1) >= 'a' && *(p-1) <= 'z')));
+      bool after_ok = (!p[word_len] || !((p[word_len] >= 'a' && p[word_len] <= 'z')));
+      if(before_ok && after_ok) return true;
+    }
+    // Skip to next potential word start
+    while(*p && ((*p >= 'a' && *p <= 'z'))) p++;
+    while(*p && !((*p >= 'a' && *p <= 'z'))) p++;
+  }
+  return false;
+}
+
+// Score word-order match: how many query words appear in order in candidate
+static size_t score_word_order(const char *qbuf, const char *nbuf)
+{
+  if(!qbuf || !nbuf) return 0;
+  size_t score = 0;
+  const char *q = qbuf;
+  const char *n = nbuf;
+  
+  while(*q && *n){
+    // Skip non-letters in query
+    while(*q && !((*q >= 'a' && *q <= 'z'))) q++;
+    if(!*q) break;
+    
+    const char *qword_start = q;
+    while(*q && ((*q >= 'a' && *q <= 'z'))) q++;
+    size_t qword_len = (size_t)(q - qword_start);
+    if(qword_len < 2) continue; // Skip very short words
+    
+    // Try to find this word in candidate, starting from current position
+    const char *n_search = n;
+    bool found = false;
+    while(*n_search){
+      if(strncmp(n_search, qword_start, qword_len) == 0){
+        // Check word boundary
+        bool before_ok = (n_search == nbuf || !((*(n_search-1) >= 'a' && *(n_search-1) <= 'z')));
+        bool after_ok = (!n_search[qword_len] || !((n_search[qword_len] >= 'a' && n_search[qword_len] <= 'z')));
+        if(before_ok && after_ok){
+          found = true;
+          score += qword_len; // Add word length to score
+          n = n_search + qword_len; // Advance candidate position
+          break;
+        }
+      }
+      // Skip to next potential word start in candidate
+      while(*n_search && ((*n_search >= 'a' && *n_search <= 'z'))) n_search++;
+      while(*n_search && !((*n_search >= 'a' && *n_search <= 'z'))) n_search++;
+    }
+    if(!found) break; // Word not found in order, stop
+  }
+  return score;
 }
 
 static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1, uint32_t k2, void *ctx)
@@ -228,6 +294,9 @@ static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1
   char nbuf[4096]; size_t ni = 0; for(; name[ni] && ni < sizeof(nbuf)-1; ni++){ char ch = name[ni]; if(ch>='A'&&ch<='Z') ch = (char)(ch - 'A' + 'a'); nbuf[ni] = ch; } nbuf[ni] = 0;
   char qbuf[4096]; size_t qi = 0; for(; q[qi] && qi < sizeof(qbuf)-1; qi++){ char ch = q[qi]; if(ch>='A'&&ch<='Z') ch = (char)(ch - 'A' + 'a'); qbuf[qi] = ch; } qbuf[qi] = 0;
 
+  // exact, case-insensitive match wins immediately
+  if(strcasecmp(name, c->query) == 0){ c->best_id = id; c->best_score = (size_t)-1; c->found_contains = true; c->best_contains_len = (size_t)-1; c->best_has_word_order_match = true; c->best_word_order_score = (size_t)-1; return true; }
+
   // Strong rule: if the alphabetic prefix token matches and the first numbers match, short-circuit
   // Extract first alphabetic token (>=3 letters) from query
   const char *p = qbuf; while(*p && !((*p >= 'a' && *p <= 'z'))) p++; const char *qstart = p; while(*p && ((*p >= 'a' && *p <= 'z'))) p++; size_t qplen = (size_t)(p - qstart);
@@ -237,39 +306,73 @@ static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1
     // Compare first numbers
     int qnum = c->query_first_number;
     int cnum = 0; const char *tn = nbuf; while(*tn && (*tn < '0' || *tn > '9')) tn++; if(*tn){ while(*tn >= '0' && *tn <= '9'){ cnum = cnum*10 + (*tn - '0'); tn++; } }
-    if(qnum > 0 && cnum == qnum){ c->best_id = id; c->best_score = (size_t)-1; c->found_contains = true; c->best_contains_len = (size_t)-1; return true; }
+    if(qnum > 0 && cnum == qnum){
+      // Additional check: require at least one more word match for shared prefixes
+      // This prevents "Project" from matching "Project Reality" when query is "Project CARS 2"
+      size_t word_order = score_word_order(qbuf, nbuf);
+      if(word_order > qplen){ // Require an additional word match beyond the shared prefix
+        c->best_id = id; c->best_score = (size_t)-1; c->found_contains = true; c->best_contains_len = (size_t)-1; c->best_has_word_order_match = true; c->best_word_order_score = word_order; return true;
+      }
+    }
   }
-  // exact, case-insensitive match wins immediately
-  if(strcasecmp(name, c->query) == 0){ c->best_id = id; c->best_score = (size_t)-1; c->found_contains = true; c->best_contains_len = (size_t)-1; return true; }
-  // contains check (case-insensitive)
-  size_t nq = strlen(q);
+
+  // Word-order matching: prefer candidates where query words appear in order
+  size_t word_order_score = score_word_order(qbuf, nbuf);
+  bool has_word_order = (word_order_score > 0);
+
+  // contains check (case-insensitive) - full query string contained in candidate
   if(strstr(nbuf, qbuf) != NULL){
+    size_t candidate_len = strlen(name);
     // Extract first integer from candidate name for numeric-aware preference
     int cand_num = 0; {
       const char *p = nbuf; while(*p && (*p < '0' || *p > '9')) p++; if(*p){ cand_num = 0; while(*p >= '0' && *p <= '9'){ cand_num = cand_num*10 + (*p - '0'); p++; } }
     }
     bool has_kw = candidate_contains_alpha_keyword(qbuf, nbuf);
     bool cand_numeric_match = (has_kw && c->query_first_number > 0 && cand_num == c->query_first_number);
-    // Prefer numeric matches over non-numeric when available; otherwise fall back to existing tie-breaks
+    
+    // Prefer candidates with word-order matches and numeric matches
+    bool prefer_this = false;
     if(!c->found_contains){
-      c->found_contains = true; c->best_contains_len = nq; c->best_id = id; c->best_contains_numeric_match = cand_numeric_match;
+      prefer_this = true;
     }else{
-      if(c->best_contains_numeric_match != cand_numeric_match){
-        if(!c->best_contains_numeric_match && cand_numeric_match){
-          // Upgrade to numeric-matching candidate
-          c->best_contains_len = nq; c->best_id = id; c->best_contains_numeric_match = true;
-        }
-        // else keep current best (it already matches numeric where this one doesn't)
-      }else{
-        // Both candidates are same numeric class; use length/id tie-breakers
-        if(nq > c->best_contains_len || (nq == c->best_contains_len && (c->best_id < 0 || id < c->best_id))){
-          c->best_contains_len = nq; c->best_id = id;
+      // Compare: word-order match > numeric match > length
+      if(has_word_order && !c->best_has_word_order_match){
+        prefer_this = true;
+      }else if(has_word_order == c->best_has_word_order_match){
+        if(has_word_order && word_order_score > c->best_word_order_score){
+          prefer_this = true;
+        }else if(!has_word_order){
+          if(cand_numeric_match && !c->best_contains_numeric_match){
+            prefer_this = true;
+          }else if(cand_numeric_match == c->best_contains_numeric_match){
+            if(candidate_len > c->best_contains_len || (candidate_len == c->best_contains_len && (c->best_id < 0 || id < c->best_id))){
+              prefer_this = true;
+            }
+          }
         }
       }
     }
+    
+    if(prefer_this){
+      c->found_contains = true; c->best_contains_len = candidate_len; c->best_id = id; c->best_contains_numeric_match = cand_numeric_match;
+      c->best_has_word_order_match = has_word_order; c->best_word_order_score = word_order_score;
+    }
     return false;
   }
+  
+  if(c->found_contains){
+    // Once we have a contains-level match, do not allow fuzzy matches to override it
+    return false;
+  }
+  
+  // Fuzzy matching with word-order and numeric bonuses
   size_t s = score_match(name, c->query);
+  
+  // Boost score for word-order matches
+  if(has_word_order){
+    s += word_order_score * 10; // Significant boost for word-order matches
+  }
+  
   // Numeric-aware preference in fuzzy stage: boost score if candidate shares the same first number as the query
   if(c->query_first_number > 0){
     int cand_num = 0; {
@@ -281,11 +384,24 @@ static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1
       s += 1000;
     }
   }
+  
+  // Prefer word-order matches over pure fuzzy matches
+  bool prefer_fuzzy = false;
   if(s > c->best_score){
-    c->best_score = s; c->best_id = id;
+    prefer_fuzzy = true;
   }else if(s == c->best_score && s > 0){
-    // Tie-break by lowest ID as per plan
-    if(c->best_id < 0 || id < c->best_id){ c->best_id = id; }
+    // If scores are equal, prefer word-order matches
+    if(has_word_order && !c->best_has_word_order_match){
+      prefer_fuzzy = true;
+    }else if(has_word_order == c->best_has_word_order_match){
+      // Tie-break by lowest ID as per plan
+      if(c->best_id < 0 || id < c->best_id){ prefer_fuzzy = true; }
+    }
+  }
+  
+  if(prefer_fuzzy){
+    c->best_score = s; c->best_id = id;
+    c->best_has_word_order_match = has_word_order; c->best_word_order_score = word_order_score;
   }
   return false; // continue to possibly find exact match
 }
@@ -293,7 +409,15 @@ static bool on_match_entry(int id, const char *name, bool encrypted, uint32_t k1
 bool game_data_find_id_by_name(const char *name, int *out_id)
 {
   if(!name || !out_id) return false;
-  name_match_ctx_t ctx; ctx.query = name; ctx.best_id = -1; ctx.best_score = 0; ctx.found_contains = false; ctx.best_contains_len = 0; ctx.best_contains_numeric_match = false;
+  name_match_ctx_t ctx; 
+  ctx.query = name; 
+  ctx.best_id = -1; 
+  ctx.best_score = 0; 
+  ctx.found_contains = false; 
+  ctx.best_contains_len = 0; 
+  ctx.best_contains_numeric_match = false;
+  ctx.best_word_order_score = 0;
+  ctx.best_has_word_order_match = false;
   // Extract first integer from query (e.g., "Falcon 4" -> 4) for numeric-aware preference
   ctx.query_first_number = 0; {
     const char *p = name; while(*p && (*p < '0' || *p > '9')) p++; if(*p){ int qn = 0; while(*p >= '0' && *p <= '9'){ qn = qn*10 + (*p - '0'); p++; } ctx.query_first_number = qn; }
