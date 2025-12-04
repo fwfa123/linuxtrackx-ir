@@ -32,6 +32,7 @@ TestingSection::TestingSection(QObject *parent)
     , testingGroupBox(nullptr)
     , testerExeRadioButton(nullptr)
     , ftTesterRadioButton(nullptr)
+    , controllerExeRadioButton(nullptr)
     , platformComboBox(nullptr)
     , loadGamesButton(nullptr)
     , gameComboBox(nullptr)
@@ -58,6 +59,7 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
     testingGroupBox = ui.TestingGroupBox;
     testerExeRadioButton = ui.TesterExeRadioButton;
     ftTesterRadioButton = ui.FTTesterRadioButton;
+    controllerExeRadioButton = ui.ControllerExeRadioButton;
     platformComboBox = ui.PlatformComboBox;
     loadGamesButton = ui.LoadGamesButton;
     gameComboBox = ui.GameComboBox;
@@ -181,6 +183,8 @@ void TestingSection::onTesterSelectionChanged()
         currentTesterType = QString::fromUtf8("Tester.exe");
     } else if (ftTesterRadioButton && ftTesterRadioButton->isChecked()) {
         currentTesterType = QString::fromUtf8("FT_Tester");
+    } else if (controllerExeRadioButton && controllerExeRadioButton->isChecked()) {
+        currentTesterType = QString::fromUtf8("Controller.exe");
     }
     
     // Start tracking when tester selection changes
@@ -866,6 +870,16 @@ QString TestingSection::selectAppropriateTester(const QString &prefixPath, WineA
         qDebug() << "FT_Tester not found, will fall back to other testers";
     }
 
+    // Handle Controller.exe specifically (32-bit only, located in Program Files/Linuxtrack)
+    if (preferredTester == QString::fromUtf8("Controller.exe")) {
+        QString controller = TesterLauncher::findTesterInPrefix(prefixPath, preferredTester);
+        if (!controller.isEmpty()) {
+            qDebug() << "Found Controller.exe:" << controller;
+            return controller;
+        }
+        qDebug() << "Controller.exe not found, will fall back to other testers";
+    }
+
     // For Tester.exe, use architecture-based selection
     if (preferredTester == QString::fromUtf8("Tester.exe")) {
         QString appropriateTester = TesterLauncher::findAppropriateTester(prefixPath, arch);
@@ -926,12 +940,13 @@ QString TestingSection::findAnyTesterInPrefix(const QString &prefixPath)
         return QString();
     }
     
-    // Look for any available tester (including both TrackIR and FreeTrack variants)
+    // Look for any available tester (including both TrackIR and FreeTrack variants) and Controller.exe
     QStringList testerNames = {
         QString::fromUtf8("Tester.exe"), 
         QString::fromUtf8("Tester64.exe"),
         QString::fromUtf8("FT_Tester.exe"),
-        QString::fromUtf8("FreeTrackTester.exe")
+        QString::fromUtf8("FreeTrackTester.exe"),
+        QString::fromUtf8("Controller.exe")
     };
     
     for (const QString &searchDir : searchDirs) {

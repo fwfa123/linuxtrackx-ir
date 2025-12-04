@@ -82,6 +82,7 @@ class LinuxtrackGui : public QMainWindow
   // Testing section slots
   void on_TesterExeRadioButton_toggled(bool checked);
   void on_FTTesterRadioButton_toggled(bool checked);
+  void on_ControllerExeRadioButton_toggled(bool checked);
   void on_PlatformComboBox_currentTextChanged(const QString &text);
   void on_LoadGamesButton_pressed();
   void on_GameComboBox_currentTextChanged(const QString &text);

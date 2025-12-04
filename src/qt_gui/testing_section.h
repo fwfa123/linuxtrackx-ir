@@ -36,6 +36,7 @@ public:
     QGroupBox *testingGroupBox;
     QRadioButton *testerExeRadioButton;
     QRadioButton *ftTesterRadioButton;
+    QRadioButton *controllerExeRadioButton;
     QComboBox *platformComboBox;
     QPushButton *loadGamesButton;
     QComboBox *gameComboBox;

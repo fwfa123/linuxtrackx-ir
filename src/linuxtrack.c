@@ -676,7 +676,7 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     
     /* Build path array based on environment */
     /* For Steam Proton: prioritize /opt paths (accessible in container, /usr is not accessible) */
-    /* For regular Wine: prioritize /usr/local (common local install), then /usr (system), then /opt (fallback) */
+    /* For regular Wine: prioritize /opt (default install location), then /usr/local (backward compatibility), then /usr (system) */
     static const char *wine_lib_locations_steam[] = {
       "/opt/lib/linuxtrack/liblinuxtrack32.so.0",         /* Steam Proton: accessible in container - PRIORITY */
       "/opt/lib/linuxtrack/liblinuxtrack.so.0",           /* Steam Proton: accessible in container - PRIORITY */
@@ -688,12 +688,12 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     };
     
     static const char *wine_lib_locations_regular[] = {
-      "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",  /* Regular Wine: common local install - PRIORITY */
-      "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",    /* Regular Wine: common local install - PRIORITY */
+      "/opt/lib/linuxtrack/liblinuxtrack32.so.0",        /* Regular Wine: default install location - PRIORITY */
+      "/opt/lib/linuxtrack/liblinuxtrack.so.0",          /* Regular Wine: default install location - PRIORITY */
+      "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",  /* Regular Wine: backward compatibility */
+      "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",    /* Regular Wine: backward compatibility */
       "/usr/lib/linuxtrack/liblinuxtrack32.so.0",        /* Regular Wine: system install */
       "/usr/lib/linuxtrack/liblinuxtrack.so.0",          /* Regular Wine: system install */
-      "/opt/lib/linuxtrack/liblinuxtrack32.so.0",        /* Regular Wine: less common fallback */
-      "/opt/lib/linuxtrack/liblinuxtrack.so.0",          /* Regular Wine: less common fallback */
       NULL
     };
     
@@ -755,17 +755,18 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
   
   /* Absolute fallbacks independent of prefix to support common distro layouts */
   static const char *alt_lib_locations[] = {
+    "/opt/lib/linuxtrack/liblinuxtrack.so.0",          /* Default install location - PRIORITY */
+    "/opt/lib/linuxtrack/liblinuxtrack32.so.0",         /* Default install location 32-bit - PRIORITY */
     "/usr/local/lib64/linuxtrack/liblinuxtrack.so.0",  /* Fedora local installs */
     "/usr/local/lib/linuxtrack/liblinuxtrack.so.0",     /* Arch/Debian local installs */
+    "/usr/local/lib64/linuxtrack/liblinuxtrack32.so.0",  /* Fedora local installs 32-bit */
+    "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",     /* Arch/Debian local installs 32-bit */
     "/usr/lib64/linuxtrack/liblinuxtrack.so.0",        /* Fedora/RHEL 64-bit */
     "/usr/lib/linuxtrack/liblinuxtrack.so.0",          /* Arch/Debian */
     "/lib64/linuxtrack/liblinuxtrack.so.0",            /* Alternative Fedora location */
     "/lib/linuxtrack/liblinuxtrack.so.0",              /* Alternative Arch/Debian location */
     "/usr/lib/x86_64-linux-gnu/linuxtrack/liblinuxtrack.so.0", /* Debian/Ubuntu 64-bit */
     "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",  /* Debian/Ubuntu 32-bit */
-    /* 32-bit library paths for wine bridge compatibility */
-    "/usr/local/lib64/linuxtrack/liblinuxtrack32.so.0",  /* Fedora local installs 32-bit */
-    "/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",     /* Arch/Debian local installs 32-bit */
     "/usr/lib64/linuxtrack/liblinuxtrack32.so.0",        /* Fedora/RHEL 32-bit */
     "/usr/lib/linuxtrack/liblinuxtrack32.so.0",          /* Arch/Debian 32-bit */
     "/lib64/linuxtrack/liblinuxtrack32.so.0",            /* Alternative Fedora location 32-bit */
