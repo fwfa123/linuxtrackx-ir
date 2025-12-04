@@ -118,7 +118,7 @@ class MFC42Installer:
 
     def detect_wine(self) -> Optional[str]:
         """Detect Wine installation"""
-        wine_paths = ['wine', '/usr/bin/wine', '/usr/local/bin/wine']
+        wine_paths = ['wine', '/opt/bin/wine', '/usr/bin/wine', '/usr/local/bin/wine']
         for path in wine_paths:
             if shutil.which(path):
                 return path

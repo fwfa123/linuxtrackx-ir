@@ -714,12 +714,13 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
             debugInfo += QString::fromUtf8("Lutris Wine version not found at: ") + winePath + QString::fromUtf8("\n");
             ltr_int_log_message("Lutris Wine version not found at: %s\n", winePath.toUtf8().constData());
             
-            // Try to find alternative Wine installations
+            // Try to find alternative Wine installations (prioritize /opt as default install location)
             QStringList alternativePaths;
-            alternativePaths << QString::fromUtf8("/usr/bin/wine");
-            alternativePaths << QString::fromUtf8("/usr/local/bin/wine");
             alternativePaths << QString::fromUtf8("/opt/wine-staging/bin/wine");
             alternativePaths << QString::fromUtf8("/opt/wine-stable/bin/wine");
+            alternativePaths << QString::fromUtf8("/opt/wine/bin/wine");
+            alternativePaths << QString::fromUtf8("/usr/local/bin/wine");
+            alternativePaths << QString::fromUtf8("/usr/bin/wine");
             
             bool foundAlternative = false;
             for (const QString &altPath : alternativePaths) {

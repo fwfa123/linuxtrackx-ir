@@ -571,9 +571,9 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         
         // Look for ltr_server1 in common locations (this is the actual daemon name)
         const char* possible_paths[] = {
-          "/usr/bin/ltr_server1",
-          "/usr/local/bin/ltr_server1", 
           "/opt/bin/ltr_server1",
+          "/usr/local/bin/ltr_server1", 
+          "/usr/bin/ltr_server1",
           "ltr_server1"  // Try PATH
         };
         
@@ -618,9 +618,9 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         if(!daemon_started){
           dbg_report("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
           const char* gui_paths[] = {
-            "/usr/bin/ltr_gui",
-            "/usr/local/bin/ltr_gui", 
             "/opt/bin/ltr_gui",
+            "/usr/local/bin/ltr_gui", 
+            "/usr/bin/ltr_gui",
             "ltr_gui"  // Try PATH
           };
           
@@ -719,9 +719,9 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         
         // Look for ltr_server1 in common locations (this is the actual daemon name)
         const char* possible_paths[] = {
-          "/usr/bin/ltr_server1",
-          "/usr/local/bin/ltr_server1", 
           "/opt/bin/ltr_server1",
+          "/usr/local/bin/ltr_server1", 
+          "/usr/bin/ltr_server1",
           "ltr_server1"  // Try PATH
         };
         
@@ -765,9 +765,9 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
         if(!daemon_started){
           dbg_report("Direct daemon start failed, trying to start LinuxTrack GUI...\n");
           const char* gui_paths[] = {
-            "/usr/bin/ltr_gui",
-            "/usr/local/bin/ltr_gui", 
             "/opt/bin/ltr_gui",
+            "/usr/local/bin/ltr_gui", 
+            "/usr/bin/ltr_gui",
             "ltr_gui"  // Try PATH
           };
           

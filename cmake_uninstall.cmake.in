@@ -52,5 +52,127 @@ if(EXISTS "/etc/ld.so.conf.d/linuxtrack.conf")
     )
 endif()
 
+# Remove symlinks from /usr/local if prefix was /opt
+if("@CMAKE_INSTALL_PREFIX@" STREQUAL "/opt")
+    # Remove binary symlinks from /usr/local/bin
+    message(STATUS "Removing symlinks from /usr/local/bin...")
+    set(SYMLINK_BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter mickey)
+    foreach(BINARY ${SYMLINK_BINARIES})
+        set(SYMLINK_PATH "/usr/local/bin/${BINARY}")
+        if(EXISTS "${SYMLINK_PATH}")
+            # Try to read the symlink target
+            execute_process(
+                COMMAND "@CMAKE_COMMAND@" -E read_symlink "${SYMLINK_PATH}"
+                OUTPUT_VARIABLE SYMLINK_TARGET
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+                RESULT_VARIABLE SYMLINK_RESULT
+            )
+            # Only remove if we can read the symlink and it points to /opt/bin
+            # This ensures we don't accidentally remove regular files
+            if(SYMLINK_RESULT EQUAL 0 AND SYMLINK_TARGET MATCHES "^/opt/bin/")
+                message(STATUS "Removing symlink: ${SYMLINK_PATH} -> ${SYMLINK_TARGET}")
+                execute_process(
+                    COMMAND "@CMAKE_COMMAND@" -E remove "${SYMLINK_PATH}"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                )
+            endif()
+        endif()
+    endforeach()
+    
+    # Remove desktop file symlinks from /usr/local/share/applications
+    message(STATUS "Removing desktop symlinks from /usr/local/share/applications...")
+    set(SYMLINK_DESKTOP_FILES linuxtrack.desktop mickey.desktop linuxtrack-wii.desktop)
+    foreach(DESKTOP_FILE ${SYMLINK_DESKTOP_FILES})
+        set(SYMLINK_PATH "/usr/local/share/applications/${DESKTOP_FILE}")
+        if(EXISTS "${SYMLINK_PATH}")
+            # Try to read the symlink target
+            execute_process(
+                COMMAND "@CMAKE_COMMAND@" -E read_symlink "${SYMLINK_PATH}"
+                OUTPUT_VARIABLE SYMLINK_TARGET
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+                RESULT_VARIABLE SYMLINK_RESULT
+            )
+            # Only remove if we can read the symlink and it points to /opt/share/applications
+            if(SYMLINK_RESULT EQUAL 0 AND SYMLINK_TARGET MATCHES "^/opt/share/applications/")
+                message(STATUS "Removing desktop symlink: ${SYMLINK_PATH} -> ${SYMLINK_TARGET}")
+                execute_process(
+                    COMMAND "@CMAKE_COMMAND@" -E remove "${SYMLINK_PATH}"
+                    OUTPUT_QUIET
+                    ERROR_QUIET
+                )
+            endif()
+        endif()
+    endforeach()
+    
+    # Remove icon symlinks from /usr/local/share/icons/hicolor
+    message(STATUS "Removing icon symlinks from /usr/local/share/icons/hicolor...")
+    set(ICON_SUBDIRS "48x48/apps" "scalable/apps")
+    set(ICON_FILES "linuxtrack.png" "linuxtrack.svg" "linuxtrack-wii.png" "linuxtrack-wii.svg")
+    foreach(SUBDIR ${ICON_SUBDIRS})
+        foreach(ICON_FILE ${ICON_FILES})
+            # Only check files that match the subdirectory type
+            # Use string operations to check file extension (avoids regex escape issues)
+            string(LENGTH ${ICON_FILE} ICON_FILE_LEN)
+            if(ICON_FILE_LEN GREATER 4)
+                # Calculate start position for last 4 characters
+                math(EXPR START_POS "${ICON_FILE_LEN} - 4")
+                string(SUBSTRING ${ICON_FILE} ${START_POS} 4 ICON_FILE_SUFFIX)
+                if((SUBDIR STREQUAL "scalable/apps" AND ICON_FILE_SUFFIX STREQUAL ".svg") OR
+                   (SUBDIR STREQUAL "48x48/apps" AND ICON_FILE_SUFFIX STREQUAL ".png"))
+                    set(SYMLINK_PATH "/usr/local/share/icons/hicolor/${SUBDIR}/${ICON_FILE}")
+                    if(EXISTS "${SYMLINK_PATH}")
+                        # Try to read the symlink target
+                        execute_process(
+                            COMMAND "@CMAKE_COMMAND@" -E read_symlink "${SYMLINK_PATH}"
+                            OUTPUT_VARIABLE SYMLINK_TARGET
+                            OUTPUT_STRIP_TRAILING_WHITESPACE
+                            ERROR_QUIET
+                            RESULT_VARIABLE SYMLINK_RESULT
+                        )
+                        # Only remove if we can read the symlink and it points to /opt/share/icons
+                        if(SYMLINK_RESULT EQUAL 0 AND SYMLINK_TARGET MATCHES "^/opt/share/icons/hicolor/")
+                            message(STATUS "Removing icon symlink: ${SYMLINK_PATH} -> ${SYMLINK_TARGET}")
+                            execute_process(
+                                COMMAND "@CMAKE_COMMAND@" -E remove "${SYMLINK_PATH}"
+                                OUTPUT_QUIET
+                                ERROR_QUIET
+                            )
+                        endif()
+                    endif()
+                endif()
+            endif()
+        endforeach()
+    endforeach()
+    
+    # Update desktop database after removing symlinks
+    if(EXISTS "/usr/local/share/applications")
+        find_program(UPDATE_DESKTOP_DB update-desktop-database)
+        if(UPDATE_DESKTOP_DB)
+            message(STATUS "Updating desktop database after symlink removal...")
+            execute_process(
+                COMMAND ${UPDATE_DESKTOP_DB} "/usr/local/share/applications"
+                OUTPUT_QUIET
+                ERROR_QUIET
+            )
+        endif()
+    endif()
+    
+    # Update icon cache after removing icon symlinks
+    if(EXISTS "/usr/local/share/icons/hicolor")
+        find_program(UPDATE_ICON_CACHE gtk-update-icon-cache)
+        if(UPDATE_ICON_CACHE)
+            message(STATUS "Updating icon cache after symlink removal...")
+            execute_process(
+                COMMAND ${UPDATE_ICON_CACHE} -f -t "/usr/local/share/icons/hicolor"
+                OUTPUT_QUIET
+                ERROR_QUIET
+            )
+        endif()
+    endif()
+endif()
+
 message(STATUS "LinuxTrack uninstalled successfully")
 

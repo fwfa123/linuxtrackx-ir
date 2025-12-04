@@ -32,7 +32,7 @@ print_error() {
 # Check if running as root for system-wide installation
 check_privileges() {
     if [ "$EUID" -eq 0 ]; then
-        INSTALL_PREFIX="/usr/local"
+        INSTALL_PREFIX="/opt"
         SYSTEM_INSTALL=true
     else
         INSTALL_PREFIX="$HOME/.local"
@@ -142,7 +142,9 @@ NC='\033[0m'
 echo -e "${YELLOW}Uninstalling LinuxTrack...${NC}"
 
 # Remove installed files
-if [ -f /usr/local/bin/ltr_gui ]; then
+if [ -f /opt/bin/ltr_gui ]; then
+    PREFIX="/opt"
+elif [ -f /usr/local/bin/ltr_gui ]; then
     PREFIX="/usr/local"
 elif [ -f "$HOME/.local/bin/ltr_gui" ]; then
     PREFIX="$HOME/.local"
@@ -160,6 +162,22 @@ rm -f "$PREFIX/bin/ltr_extractor"
 rm -f "$PREFIX/bin/osc_server"
 rm -rf "$PREFIX/lib/linuxtrack"
 rm -rf "$PREFIX/lib32/linuxtrack"
+
+# Remove symlinks from /usr/local/bin if prefix was /opt
+if [ "$PREFIX" = "/opt" ]; then
+    echo "Removing symlinks from /usr/local/bin..."
+    for binary in ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter mickey; do
+        symlink_path="/usr/local/bin/$binary"
+        if [ -L "$symlink_path" ]; then
+            # Check if symlink points to /opt/bin
+            target=$(readlink "$symlink_path")
+            if [ "${target#/opt/bin/}" != "$target" ]; then
+                rm -f "$symlink_path"
+                echo "Removed symlink: $symlink_path"
+            fi
+        fi
+    done
+fi
 
 # Remove desktop entry
 rm -f /usr/share/applications/linuxtrack.desktop
