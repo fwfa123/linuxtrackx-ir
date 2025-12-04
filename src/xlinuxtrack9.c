@@ -234,6 +234,8 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
       (head_psi_out == NULL) || (head_the_out == NULL) ||
       (head_roll_out == NULL) || (enable_view_control == NULL) ||
       (base_x_dr == NULL) || (base_y_dr == NULL) || (base_z_dr == NULL)) {
+    XPLMDebugString(
+        "\nlinuxtrackx-ir couldn't initialize one of it's datarefs\n\n");
     return (0);
   }
 
@@ -241,12 +243,6 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
                                  -1.0,                /* Interval */
                                  NULL);               /* refcon not used. */
 
-  if (!initialized) {
-    linuxtrack_state_type state = linuxtrack_init(NULL);
-    if (state < LINUXTRACK_OK) {
-      messageBox("Linuxtrack Problem", linuxtrack_explain(state));
-    }
-  }
   return (1);
 }
 
@@ -257,14 +253,29 @@ PLUGIN_API void XPluginStop(void) {
   XPLMUnregisterCommandHandler(pause_cmd, cmd_cbk, true, (void *)PAUSE);
   XPLMUnregisterCommandHandler(recenter_cmd, cmd_cbk, true, (void *)RECENTER);
   XPLMUnregisterFlightLoopCallback(xlinuxtrackCallback, NULL);
+}
+
+PLUGIN_API void XPluginDisable(void) {
   if (initialized) {
     linuxtrack_shutdown();
+    initialized = false;
+
+    XPLMDebugString("\nlinuxtrackx-ir shut down\n\n");
   }
 }
 
-PLUGIN_API void XPluginDisable(void) {}
+PLUGIN_API int XPluginEnable(void) {
+  if (!initialized) {
+    linuxtrack_state_type state = linuxtrack_init(NULL);
+    if (state < LINUXTRACK_OK) {
+      messageBox("Linuxtrack Problem", linuxtrack_explain(state));
+      return 0;
+    }
 
-PLUGIN_API int XPluginEnable(void) { return 1; }
+    XPLMDebugString("\nlinuxtrackx-ir initialized\n\n");
+  }
+  return 1;
+}
 
 static bool drefsPublished = false;
 
