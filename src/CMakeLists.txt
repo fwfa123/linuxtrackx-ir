@@ -396,12 +396,24 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
     install(CODE "
         set(LIB_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
         set(LIB_FILE \"\${LIB_DIR}/xlinuxtrack9.so\")
+        set(SYMLINK_FILE \"\${LIB_DIR}/xlinuxtrack9.so.0\")
         if(EXISTS \"\${LIB_FILE}\")
-            execute_process(
-                COMMAND \${CMAKE_COMMAND} -E create_symlink xlinuxtrack9.so xlinuxtrack9.so.0
-                WORKING_DIRECTORY \"\${LIB_DIR}\"
-                RESULT_VARIABLE SYMLINK_RESULT
-            )
+            if(NOT EXISTS \"\${SYMLINK_FILE}\")
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E create_symlink xlinuxtrack9.so xlinuxtrack9.so.0
+                    WORKING_DIRECTORY \"\${LIB_DIR}\"
+                    RESULT_VARIABLE SYMLINK_RESULT
+                )
+                if(SYMLINK_RESULT EQUAL 0)
+                    message(STATUS \"✅ Created xlinuxtrack9.so.0 symlink\")
+                else()
+                    message(WARNING \"⚠️  Failed to create xlinuxtrack9.so.0 symlink\")
+                endif()
+            else()
+                message(STATUS \"ℹ️  xlinuxtrack9.so.0 symlink already exists\")
+            endif()
+        else()
+            message(WARNING \"⚠️  xlinuxtrack9.so not found at \${LIB_FILE}\")
         endif()
     ")
 endif()
