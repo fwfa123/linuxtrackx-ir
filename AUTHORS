@@ -20,6 +20,9 @@ aledin - Contributor to original project (2 commits)
 ### Fork Maintainer
 fwfa123 - Qt5 modernization, build system updates, and fork maintenance (61 commits)
 
+### Contributors
+telephono1 - X-Plane plugin modernization (removed 32-bit support, fixed symlink creation, modernized plugin code)
+
 ### Development Assistance
 Cursor AI - Assisted with Qt5 modernization and build system updates
 
