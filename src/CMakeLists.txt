@@ -317,12 +317,12 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
         linuxtrack.c linuxtrack.h
         utils.c utils.h
     )
-    
+
     set_target_properties(xlinuxtrack9 PROPERTIES
         PREFIX ""
         OUTPUT_NAME "xlinuxtrack9"
     )
-    
+
     target_compile_options(xlinuxtrack9 PRIVATE
         -fPIC
         -I${XPLANE_SDK_PATH}/XPLM
@@ -331,56 +331,17 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
         -DAPL=0
         -DLIN=1
     )
-    
+
     target_link_libraries(xlinuxtrack9
         ${MATH_LIBRARY}
         dl
     )
-    
+
     # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/xlinuxtrack.sym)
     #     target_link_options(xlinuxtrack9 PRIVATE
     #         -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/xlinuxtrack.sym
     #     )
     # endif()
-    
-    # 32-bit version
-    if(LTR32ON64)
-        add_library(xlinuxtrack9_32 MODULE
-            xlinuxtrack9.c
-            linuxtrack.c linuxtrack.h
-            utils.c utils.h
-        )
-        
-        set_target_properties(xlinuxtrack9_32 PROPERTIES
-            PREFIX ""
-            OUTPUT_NAME "xlinuxtrack9_32"
-        )
-        
-        target_compile_options(xlinuxtrack9_32 PRIVATE
-            -fPIC
-            -m32
-            -I${XPLANE_SDK_PATH}/XPLM
-            -I${XPLANE_SDK_PATH}/Widgets
-            -DIBM=0
-            -DAPL=0
-            -DLIN=1
-        )
-        
-        target_link_options(xlinuxtrack9_32 PRIVATE
-            -m32
-        )
-        
-        target_link_libraries(xlinuxtrack9_32
-            ${MATH_LIBRARY}
-            dl
-        )
-        
-        # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/xlinuxtrack.sym)
-        #     target_link_options(xlinuxtrack9_32 PRIVATE
-        #         -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/xlinuxtrack.sym
-        #     )
-        # endif()
-    endif()
 endif()
 
 # ============================================================================
@@ -432,12 +393,29 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
         LIBRARY DESTINATION lib/linuxtrack
         ARCHIVE DESTINATION lib/linuxtrack
     )
-    if(LTR32ON64)
-        install(TARGETS xlinuxtrack9_32
-            LIBRARY DESTINATION lib/linuxtrack
-            ARCHIVE DESTINATION lib/linuxtrack
-        )
-    endif()
+    install(CODE "
+        set(LIB_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
+        set(LIB_FILE \"\${LIB_DIR}/xlinuxtrack9.so\")
+        set(SYMLINK_FILE \"\${LIB_DIR}/xlinuxtrack9.so.0\")
+        if(EXISTS \"\${LIB_FILE}\")
+            if(NOT EXISTS \"\${SYMLINK_FILE}\")
+                execute_process(
+                    COMMAND \${CMAKE_COMMAND} -E create_symlink xlinuxtrack9.so xlinuxtrack9.so.0
+                    WORKING_DIRECTORY \"\${LIB_DIR}\"
+                    RESULT_VARIABLE SYMLINK_RESULT
+                )
+                if(SYMLINK_RESULT EQUAL 0)
+                    message(STATUS \"✅ Created xlinuxtrack9.so.0 symlink\")
+                else()
+                    message(WARNING \"⚠️  Failed to create xlinuxtrack9.so.0 symlink\")
+                endif()
+            else()
+                message(STATUS \"ℹ️  xlinuxtrack9.so.0 symlink already exists\")
+            endif()
+        else()
+            message(WARNING \"⚠️  xlinuxtrack9.so not found at \${LIB_FILE}\")
+        endif()
+    ")
 endif()
 
 # Note: /opt is now the default install prefix, providing Steam Proton compatibility

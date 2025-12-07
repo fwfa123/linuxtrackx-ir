@@ -81,9 +81,8 @@ void XPluginInstall::on_BrowseXPlane_pressed()
     reject();
     return;
   }
-  QString sourceFile32 = PrefProxy::getLibPath(QString::fromUtf8("xlinuxtrack9_32"));
   QString sourceFile = PrefProxy::getLibPath(QString::fromUtf8("xlinuxtrack9"));
-  QString destPath = pathRexp.cap(1) + QString::fromUtf8("/Resources/plugins");
+  QString destPath = pathRexp.cap(1) + QString::fromUtf8("Resources/plugins/");
   if(!QFile::exists(destPath)){
     warningMessage(QString(QString::fromUtf8("Can't install XPlane plugin there:'") + fileName + 
                            QString::fromUtf8("'")));
@@ -91,8 +90,11 @@ void XPluginInstall::on_BrowseXPlane_pressed()
     return;
   }
   
+  destPath += QString::fromUtf8("linuxtrackx-ir/");
+
   //Check for the old plugin and remove it if exists
-  QString oldPlugin = destPath + QString::fromUtf8("/xlinuxtrack.xpl");
+#ifndef DARWIN
+  QString oldPlugin = destPath + QString::fromUtf8("lin_x64/linuxtrackx-ir.xpl");
   QFileInfo old(oldPlugin);
   if(old.exists()){
     if(!removePlugin(oldPlugin)){
@@ -100,12 +102,21 @@ void XPluginInstall::on_BrowseXPlane_pressed()
       return;
     }
   }
-  destPath += QString::fromUtf8("/xlinuxtrack/");
-#ifndef DARWIN
-  if(installPlugin(sourceFile32, destPath + QString::fromUtf8("/lin.xpl")) &&
-       installPlugin(sourceFile, destPath + QString::fromUtf8("/64/lin.xpl"))){
 #else
-  if(installPlugin(sourceFile, destPath + QString::fromUtf8("/mac.xpl"))){
+  QString oldPlugin = destPath + QString::fromUtf8("mac_x64/linuxtrackx-ir.xpl");
+  QFileInfo old(oldPlugin);
+  if(old.exists()){
+    if(!removePlugin(oldPlugin)){
+      reject();
+      return;
+    }
+  }
+#endif
+
+#ifndef DARWIN
+  if(installPlugin(sourceFile, destPath + QString::fromUtf8("lin_x64/linuxtrackx-ir.xpl"))){
+#else
+  if(installPlugin(sourceFile, destPath + QString::fromUtf8("mac_x64/xlinuxtrackx-ir.xpl"))){
 #endif
     QMessageBox::information(NULL, QObject::tr("Linuxtrack"), 
       QObject::tr("XPlane plugin installed successfuly!"));
