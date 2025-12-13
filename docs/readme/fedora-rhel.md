@@ -10,6 +10,7 @@ sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
 sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
 sudo dnf install sqlite  # Required for Qt help system
+sudo dnf install qt5-qtx11extras-devel
 ```
 
 ### Wine Support (Level 2+)
