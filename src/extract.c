@@ -13,6 +13,7 @@
 #include <glob.h>
 #include "digest.h"
 #include "utils.h"
+#include "game_data.h"
 
 static const size_t sums_len = SHA_DIGEST_LENGTH + MD5_DIGEST_LENGTH;
 
@@ -175,8 +176,12 @@ static int append_file(FILE *installer, FILE *blob, const char* name)
  * Deobfuscates data in the buffer using contents of installer
  *   and writes them to a file at destination directory.
  */
-static int process_buffer(int8_t* buffer, int32_t fname_len, int32_t data_len, FILE* installer, const char* destination)
+static int process_buffer(int8_t* buffer, int32_t fname_len, int32_t data_len, FILE* installer, const char* destination, bool update_games_only)
 {
+	const char *fname = (const char*)buffer;
+	if(update_games_only && (strcmp(fname, "sgl.dat") != 0)){
+		return 0;
+	}
 	if(!destination){
 		printf("Destination directory must be non-NULL.\n");
 		return -1;
@@ -197,6 +202,38 @@ static int process_buffer(int8_t* buffer, int32_t fname_len, int32_t data_len, F
 	if(cmp != 0){
 		printf("Extracted file checksums do not match.\n");
 		return -1;
+	}
+
+	if(update_games_only){
+		char tmp_template[] = "/tmp/sglXXXXXX";
+		int tmp_fd = mkstemp(tmp_template);
+		if(tmp_fd < 0){
+			printf("Can't create temporary file for gamedata extraction.\n");
+			return -1;
+		}
+		FILE *tmp_file = fdopen(tmp_fd, "wb");
+		if(!tmp_file){
+			printf("Can't open temporary file for gamedata extraction.\n");
+			close(tmp_fd);
+			unlink(tmp_template);
+			return -1;
+		}
+		if(fwrite(buffer + fname_len, sizeof(int8_t), data_len, tmp_file) != (size_t)data_len){
+			printf("Can't write to the temporary sgl.dat file.\n");
+			fclose(tmp_file);
+			unlink(tmp_template);
+			return -1;
+		}
+		fclose(tmp_file);
+		char *gamedata_path;
+		if(asprintf(&gamedata_path, "%s/%s", destination, "gamedata.txt") < 0){
+			unlink(tmp_template);
+			return -1;
+		}
+		bool gd_res = get_game_data(tmp_template, gamedata_path, false);
+		unlink(tmp_template);
+		free(gamedata_path);
+		return gd_res ? 0 : -1;
 	}
 
 	char* dest;
@@ -226,7 +263,7 @@ static int process_buffer(int8_t* buffer, int32_t fname_len, int32_t data_len, F
 /*
  * Extracts contents of blob, using installer for deobfuscation.
  */
-static int extract_files(FILE* blob, FILE* installer, const char* destination)
+static int extract_files(FILE* blob, FILE* installer, const char* destination, bool update_games_only)
 {
 	while(!feof(blob)){
 		int32_t fname_size;
@@ -255,7 +292,7 @@ static int extract_files(FILE* blob, FILE* installer, const char* destination)
 			return -1;
 		}
 		printf("Going to extract file '%s' (%d bytes long).\n", buffer, data_len);
-		process_buffer(buffer, fname_size, data_len, installer, destination);
+		process_buffer(buffer, fname_size, data_len, installer, destination, update_games_only);
 		free(buffer);
 	}
 	return 0;
@@ -337,7 +374,7 @@ static FILE* find_blob(const char *installer_name)
 /*
  * Extract contents of the blob using inst contents for deobfuscation.
  */
-int extract_blob(const char *inst, const char* destination)
+int extract_blob(const char *inst, const char* destination, bool update_games_only)
 {
 	
 	FILE *f, *installer;
@@ -351,7 +388,7 @@ int extract_blob(const char *inst, const char* destination)
 		return -1;
 	}
         
-	extract_files(f, installer, destination);
+	extract_files(f, installer, destination, update_games_only);
 
 
 	printf("Freeing f\n");
