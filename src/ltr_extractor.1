@@ -20,7 +20,7 @@ For developer's usage - create signatures of files provided.
 When updated game identifiers are downloaded, this command decrypts the informations.
 .TP
 .B --update-games
-Extracts only game data (sgl.dat -> gamedata.txt) using the existing extraction paths (blob, Wine, or file scanning). Skips all firmware files and writes gamedata.txt directly into the existing ~/.config/linuxtrack/tir_firmware/ directory (or --destination if provided) without creating new folders or symlinks.
+Extracts only game data (sgl.dat -> gamedata.txt) using the existing extraction paths (blob, Wine, or file/directory scanning). When directories are specified, they are recursively scanned for sgl.dat files. Skips all firmware files and writes gamedata.txt directly into the existing ~/.config/linuxtrack/tir_firmware/ directory (or --destination if provided) without creating new folders or symlinks.
 .SH OPTIONS
 .TP
 .B --spec file
@@ -84,6 +84,20 @@ When using Linuxtrack in Wine, the game IDs and sometimes a communication keys a
 To download the update, use the following comand:
 
 .B ltr_extractor --update
+
+.SH Example of updating game data only
+To update only the game data file (gamedata.txt) without extracting firmware, you can use
+the --update-games flag. This is useful when you only need to refresh the game compatibility
+list. The command will scan directories recursively for sgl.dat files:
+
+.B ltr_extractor --update-games /path/to/TrackIR5/directory
+
+Or use blob extraction if available:
+
+.B ltr_extractor --update-games --blob --installer ~/Downloads/TrackIR_5.5.3.exe
+
+The gamedata.txt file will be written directly to ~/.config/linuxtrack/tir_firmware/ (or
+--destination if provided) without creating new timestamped folders or symlinks.
 
 .SH Rationale
 Most of the TrackIR devices need a firmware to work.
