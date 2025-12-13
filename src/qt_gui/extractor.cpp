@@ -1939,6 +1939,14 @@ void Extractor::show()
   QDialog::show();
 }
 
+void Mfc42uWinetricksExtractor::show()
+{
+  // Ensure all buttons are enabled when dialog is shown (especially important for reinstall scenarios)
+  enableButtons(true);
+  // Call parent show() method
+  Extractor::show();
+}
+
 
 /*
 WINEDLLOVERRIDES=winemenubuilder.exe=d WINEPREFIX=/home/qbuilder/devel/research/extractor/test/TrackIR_5.2.Final wine TrackIR_5.2.Final.exe /s /v"/qb"

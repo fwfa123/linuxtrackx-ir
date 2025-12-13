@@ -115,6 +115,9 @@ class Mfc42uWinetricksExtractor : public Extractor
   // Public method to start automatic installation
   void startAutomaticInstallation();
   
+  // Override show() to ensure buttons are enabled when dialog is displayed
+  void show();
+  
  private:
   void commenceExtraction(QString file);
   void enableButtons(bool enable);
