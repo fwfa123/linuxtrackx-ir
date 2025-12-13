@@ -115,6 +115,9 @@ class Mfc42uWinetricksExtractor : public Extractor
   // Public method to start automatic installation
   void startAutomaticInstallation();
   
+  // Override show() to ensure buttons are enabled when dialog is displayed
+  void show();
+  
  private:
   void commenceExtraction(QString file);
   void enableButtons(bool enable);
@@ -152,6 +155,54 @@ class Mfc42uWinetricksExtractor : public Extractor
   void on_BrowseInstaller_pressed();
   void on_DownloadButton_pressed();
   void on_WinetricksButton_pressed();
+};
+
+
+
+// Thread for scanning directories for sgl.dat files (update games only)
+class UpdateGamesExtractThread;
+
+// Update Games List extractor - extracts only gamedata.txt using --update-games flag
+class UpdateGamesExtractor : public Extractor
+{
+ Q_OBJECT
+ public:
+  UpdateGamesExtractor(QWidget *parent = 0);
+  ~UpdateGamesExtractor();
+ private:
+  void commenceExtraction(QString file);
+  void enableButtons(bool enable);
+  void browseDirPressed();
+  bool tryBlob(const QString& file);
+  UpdateGamesExtractThread *et;
+  bool wineInitialized;
+  QString installerFile;
+
+ private slots:
+  void threadFinished();
+  void wineFinished(bool result);
+  void on_QuitButton_pressed();
+  void on_BrowseInstaller_pressed();
+};
+
+// Thread for scanning directories for sgl.dat files (update games only)
+class UpdateGamesExtractThread: public QThread
+{
+ Q_OBJECT
+ public:
+  UpdateGamesExtractThread() : quit(false), success(false){};
+  virtual void start(const QString &p, const QString &d);
+  void run();
+  void stop(){quit = true;};
+  bool haveSuccess(){return success;};
+ signals:
+  void progress(const QString &msg);
+ private:
+  bool findSglDatFiles(QString name);
+  QString path;
+  QString destPath;
+  bool quit;
+  bool success;
 };
 
 

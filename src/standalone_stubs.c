@@ -653,10 +653,11 @@ void ltr_int_array_cleanup(void *array) {
 }
 
 // Firmware extraction functions
-int extract_blob(const char *game_name, const char *output_dir) {
-    printf("[STUB] extract_blob: %s -> %s\n", 
+int extract_blob(const char *game_name, const char *output_dir, bool update_games_only) {
+    printf("[STUB] extract_blob: %s -> %s (games_only=%d)\n", 
            game_name ? game_name : "NULL", 
-           output_dir ? output_dir : "NULL");
+           output_dir ? output_dir : "NULL",
+           update_games_only ? 1 : 0);
     return 0;
 }
 

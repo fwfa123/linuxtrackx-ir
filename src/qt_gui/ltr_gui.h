@@ -31,6 +31,7 @@ class Guardian;
 class XPluginInstall;
 class TestingSection;
 class AboutDialog;
+class UpdateGamesExtractor;
 
 class LinuxtrackGui : public QMainWindow
 {
@@ -73,6 +74,7 @@ class LinuxtrackGui : public QMainWindow
   // void on_BatchInstallButton_pressed();
   void on_OtherPlatformButton_pressed();
   void on_WinePrefixButton_pressed();
+  void on_UpdateGamesButton_pressed();
   
   // ltr_pipe control slots
   void on_FormatComboBox_currentTextChanged(const QString &text);
@@ -123,6 +125,7 @@ class LinuxtrackGui : public QMainWindow
   PluginInstall *pi;
   ProfileSelector *ps;
   XPluginInstall *xpInstall;
+  UpdateGamesExtractor *updateGamesExtractor;
   bool initialized;
   QSettings *gui_settings;
   void rereadPrefs();
