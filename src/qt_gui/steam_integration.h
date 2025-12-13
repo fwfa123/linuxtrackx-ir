@@ -89,6 +89,7 @@ private:
     QString extractVDFValue(const QString &line);
     QString getGameNameFromAppManifest(const QString &manifestPath);
     bool isGameUsingProton(const QString &gameId);
+    QStringList getCompatibilityToolsDirectories();
 };
 
 #endif // STEAM_INTEGRATION_H 
