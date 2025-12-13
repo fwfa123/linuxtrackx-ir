@@ -10,6 +10,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDirIterator>
+#include <algorithm>
 #include "../utils.h"
 
 SteamIntegration::SteamIntegration(QObject *parent)
@@ -670,48 +671,147 @@ QString SteamIntegration::findProtonVersion(const QString &gameId)
             protonPathLine.toUtf8().constData());
         
         // Extract the Proton name from the path
-        // Example: /media/Fast/Steam_Linux/steamapps/common/Proton - Experimental/files/
-        QRegularExpression regex(QStringLiteral(".*/common/([^/]+)/files/"));
-        QRegularExpressionMatch match = regex.match(protonPathLine);
-        if (match.hasMatch()) {
-            protonName = match.captured(1);
-            ltr_int_log_message("SteamIntegration::findProtonVersion() - Extracted Proton name from path: %s\n", 
+        // Try multiple patterns to handle different path structures:
+        // 1. Standard: /path/steamapps/common/Proton - Experimental/files/
+        // 2. Standard (no /files/): /path/steamapps/common/Proton - Experimental/
+        // 3. Custom tools: /path/compatibilitytools.d/GE-Proton-9-1/
+        QRegularExpression regexCommon(QStringLiteral(".*/common/([^/]+)(?:/files)?/"));
+        QRegularExpression regexCompatTools(QStringLiteral(".*compatibilitytools\\.d/([^/]+)/"));
+        
+        QRegularExpressionMatch matchCommon = regexCommon.match(protonPathLine);
+        QRegularExpressionMatch matchCompatTools = regexCompatTools.match(protonPathLine);
+        
+        if (matchCommon.hasMatch()) {
+            protonName = matchCommon.captured(1);
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Extracted Proton name from common path: %s\n", 
                 protonName.toUtf8().constData());
-            
+        } else if (matchCompatTools.hasMatch()) {
+            protonName = matchCompatTools.captured(1);
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Extracted Proton name from compatibilitytools.d path: %s\n", 
+                protonName.toUtf8().constData());
+        }
+        
+        if (!protonName.isEmpty()) {
             // Validate that this Proton installation actually exists
-            // Use the library path where we found the config_info
-            QString libraryRoot = configInfoPath;
-            libraryRoot.remove(QStringLiteral("/compatdata/") + gameId + QStringLiteral("/config_info"));
-            QString protonPath = libraryRoot + QStringLiteral("common/") + protonName;
+            // First, try standard steamapps/common/ location
+            // Construct the path more robustly using the selectedPrefixLibrary
+            QString protonPathCommon;
+            if (!selectedPrefixLibrary.isEmpty()) {
+                // Use the library path directly - it should already be in the form /path/steamapps/
+                protonPathCommon = selectedPrefixLibrary + QStringLiteral("common/") + protonName;
+            } else {
+                // Fallback: construct from configInfoPath
+                QString libraryRoot = configInfoPath;
+                libraryRoot.remove(QStringLiteral("/compatdata/") + gameId + QStringLiteral("/config_info"));
+                // Normalize the path - ensure it ends with a slash before adding common/
+                if (!libraryRoot.endsWith(QStringLiteral("/"))) {
+                    libraryRoot += QStringLiteral("/");
+                }
+                protonPathCommon = libraryRoot + QStringLiteral("common/") + protonName;
+            }
             
-            ltr_int_log_message("SteamIntegration::findProtonVersion() - Checking Proton path: %s\n", 
-                protonPath.toUtf8().constData());
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Checking standard Proton path: %s\n", 
+                protonPathCommon.toUtf8().constData());
             
-            if (QDir(protonPath).exists()) {
-                QString protonBinaryPath = protonPath + QStringLiteral("/proton");
+            if (QDir(protonPathCommon).exists()) {
+                QString protonBinaryPath = protonPathCommon + QStringLiteral("/proton");
                 QFileInfo protonBinary(protonBinaryPath);
                 
                 if (protonBinary.exists() && protonBinary.isExecutable()) {
-                    ltr_int_log_message("SteamIntegration::findProtonVersion() - Validated Proton installation: %s\n", 
+                    ltr_int_log_message("SteamIntegration::findProtonVersion() - Validated Proton installation in common: %s\n", 
                         protonName.toUtf8().constData());
                     return protonName;
-                } else {
-                    ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton binary not found or not executable: %s\n", 
-                        protonBinaryPath.toUtf8().constData());
                 }
-            } else {
-                ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton directory does not exist: %s\n", 
-                    protonPath.toUtf8().constData());
             }
+            
+            // If not found in common, try compatibilitytools.d directories
+            QStringList compatToolsDirs = getCompatibilityToolsDirectories();
+            for (const QString& compatToolsDir : compatToolsDirs) {
+                QDir dir(compatToolsDir);
+                if (!dir.exists()) {
+                    continue;
+                }
+                
+                // Check if there's a directory matching the Proton name
+                QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+                for (const QFileInfo& entry : entries) {
+                    QString dirName = entry.fileName();
+                    // Case-insensitive comparison
+                    if (dirName.compare(protonName, Qt::CaseInsensitive) == 0) {
+                        QString protonBinaryPath = entry.absoluteFilePath() + QStringLiteral("/proton");
+                        QFileInfo protonBinary(protonBinaryPath);
+                        
+                        if (protonBinary.exists() && protonBinary.isExecutable()) {
+                            ltr_int_log_message("SteamIntegration::findProtonVersion() - Validated Proton installation in compatibilitytools.d: %s\n", 
+                                protonName.toUtf8().constData());
+                            return protonName;
+                        }
+                    }
+                }
+            }
+            
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Proton name extracted but installation not found: %s\n", 
+                protonName.toUtf8().constData());
         }
     }
     
     // Fallback: try to map Steam's internal version names to actual Proton installation names
+    // This is only used when path extraction from config_info fails
     ltr_int_log_message("SteamIntegration::findProtonVersion() - Attempting version mapping for: %s\n", 
         versionLine.toUtf8().constData());
     
     QString mappedProtonName;
-    if (versionLine.startsWith(QStringLiteral("10.0-"))) {
+    // Note: Both Proton - Experimental and Proton Hotfix may use 10.1000-* version pattern
+    // We prioritize path extraction over version mapping, so this fallback should rarely be needed
+    // If version mapping is used, we can't distinguish between Experimental and Hotfix from version alone
+    if (versionLine.startsWith(QStringLiteral("10.1000-"))) {
+        // Try to find either Experimental or Hotfix - check which one exists
+        // This is a best-effort fallback when path extraction fails
+        bool foundExperimental = false;
+        bool foundHotfix = false;
+        
+        for (const QString& libraryPath : libraryPaths) {
+            QString libraryRoot = libraryPath;
+            libraryRoot.remove(QStringLiteral("/steamapps/"));
+            QString experimentalPath = libraryRoot + QStringLiteral("/steamapps/common/Proton - Experimental");
+            QString hotfixPath = libraryRoot + QStringLiteral("/steamapps/common/Proton Hotfix");
+            
+            // Check for Experimental
+            if (!foundExperimental && QDir(experimentalPath).exists()) {
+                QString protonBinaryPath = experimentalPath + QStringLiteral("/proton");
+                QFileInfo protonBinary(protonBinaryPath);
+                if (protonBinary.exists() && protonBinary.isExecutable()) {
+                    foundExperimental = true;
+                }
+            }
+            
+            // Check for Hotfix
+            if (!foundHotfix && QDir(hotfixPath).exists()) {
+                QString protonBinaryPath = hotfixPath + QStringLiteral("/proton");
+                QFileInfo protonBinary(protonBinaryPath);
+                if (protonBinary.exists() && protonBinary.isExecutable()) {
+                    foundHotfix = true;
+                }
+            }
+            
+            // If both found, we can break early (prefer Experimental)
+            if (foundExperimental && foundHotfix) {
+                break;
+            }
+        }
+        
+        if (foundExperimental) {
+            mappedProtonName = QStringLiteral("Proton - Experimental");
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton - Experimental (found in libraries)\n");
+        } else if (foundHotfix) {
+            mappedProtonName = QStringLiteral("Proton Hotfix");
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton Hotfix (found in libraries)\n");
+        } else {
+            // Default to Experimental if neither found (Experimental is more common)
+            mappedProtonName = QStringLiteral("Proton - Experimental");
+            ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton - Experimental (default, neither found)\n");
+        }
+    } else if (versionLine.startsWith(QStringLiteral("10.0-"))) {
         mappedProtonName = QStringLiteral("Proton - Experimental");
     } else if (versionLine.startsWith(QStringLiteral("9.0-"))) {
         // Check if Proton 9.0 (Beta) exists, otherwise fall back to Proton 9.0
@@ -739,6 +839,11 @@ QString SteamIntegration::findProtonVersion(const QString &gameId)
         mappedProtonName = QStringLiteral("Proton 8.0");
     } else if (versionLine.startsWith(QStringLiteral("7.0-"))) {
         mappedProtonName = QStringLiteral("Proton 7.0");
+    } else if (versionLine.startsWith(QStringLiteral("6.3-"))) {
+        // Proton - Hotfix typically uses 6.3-* version pattern
+        // Note: This mapping may need adjustment based on actual Hotfix version numbers
+        mappedProtonName = QStringLiteral("Proton - Hotfix");
+        ltr_int_log_message("SteamIntegration::findProtonVersion() - Mapped to Proton - Hotfix\n");
     } else {
         ltr_int_log_message("SteamIntegration::findProtonVersion() - Version not recognized: %s\n", 
             versionLine.toUtf8().constData());
@@ -783,7 +888,7 @@ QString SteamIntegration::getProtonPath(const QString &protonVersion)
         }
     }
     
-    // Now try to find the specific version
+    // Now try to find the specific version in steamapps/common/ first
     for (const QString& libraryPath : libraryPaths) {
         QString libraryRoot = libraryPath;
         libraryRoot.remove(QStringLiteral("/steamapps/"));
@@ -807,7 +912,45 @@ QString SteamIntegration::getProtonPath(const QString &protonVersion)
         }
     }
     
-    ltr_int_log_message("SteamIntegration::getProtonPath() - Proton %s not found in any library\n", 
+    // If not found in steamapps/common/, search compatibilitytools.d directories
+    ltr_int_log_message("SteamIntegration::getProtonPath() - Not found in steamapps/common/, searching compatibilitytools.d directories\n");
+    QStringList compatToolsDirs = getCompatibilityToolsDirectories();
+    for (const QString& compatToolsDir : compatToolsDirs) {
+        QDir dir(compatToolsDir);
+        if (!dir.exists()) {
+            ltr_int_log_message("SteamIntegration::getProtonPath() - Compatibility tools directory does not exist: %s\n", 
+                compatToolsDir.toUtf8().constData());
+            continue;
+        }
+        
+        ltr_int_log_message("SteamIntegration::getProtonPath() - Searching compatibility tools directory: %s\n", 
+            compatToolsDir.toUtf8().constData());
+        
+        QFileInfoList entries = dir.entryInfoList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QFileInfo& entry : entries) {
+            QString dirName = entry.fileName();
+            // Case-insensitive comparison
+            if (dirName.compare(protonVersion, Qt::CaseInsensitive) == 0) {
+                QString protonBinaryPath = entry.absoluteFilePath() + QStringLiteral("/proton");
+                QFileInfo protonBinary(protonBinaryPath);
+                
+                ltr_int_log_message("SteamIntegration::getProtonPath() - Found matching directory: %s\n", 
+                    dirName.toUtf8().constData());
+                ltr_int_log_message("SteamIntegration::getProtonPath() - Checking binary: %s (exists: %s, executable: %s)\n", 
+                    protonBinaryPath.toUtf8().constData(),
+                    protonBinary.exists() ? "YES" : "NO",
+                    protonBinary.isExecutable() ? "YES" : "NO");
+                
+                if (protonBinary.exists() && protonBinary.isExecutable()) {
+                    ltr_int_log_message("SteamIntegration::getProtonPath() - Found Proton in compatibilitytools.d: %s\n", 
+                        entry.absoluteFilePath().toUtf8().constData());
+                    return entry.absoluteFilePath();
+                }
+            }
+        }
+    }
+    
+    ltr_int_log_message("SteamIntegration::getProtonPath() - Proton %s not found in any library or compatibility tools directory\n", 
         protonVersion.toUtf8().constData());
     return QString();
 }
@@ -1046,6 +1189,58 @@ void SteamIntegration::setupFlatpakSteamPaths()
     ltr_int_log_message("  Steam path: %s\n", steamPath.toUtf8().constData());
     ltr_int_log_message("  Steam apps path: %s\n", steamAppsPath.toUtf8().constData());
     ltr_int_log_message("  Compat data path: %s\n", compatDataPath.toUtf8().constData());
+}
+
+QStringList SteamIntegration::getCompatibilityToolsDirectories()
+{
+    QStringList directories;
+    
+    // System-wide directories (lowest precedence)
+    directories.append(QStringLiteral("/usr/share/steam/compatibilitytools.d"));
+    directories.append(QStringLiteral("/usr/local/share/steam/compatibilitytools.d"));
+    
+    // Check for STEAM_EXTRA_COMPAT_TOOLS_PATHS environment variable
+    QByteArray extraPathsEnv = qgetenv("STEAM_EXTRA_COMPAT_TOOLS_PATHS");
+    if (!extraPathsEnv.isEmpty()) {
+        QStringList extraPaths = QString::fromUtf8(extraPathsEnv).split(QStringLiteral(":"));
+        for (const QString& path : extraPaths) {
+            if (!path.isEmpty() && !directories.contains(path)) {
+                directories.append(path);
+            }
+        }
+    }
+    
+    // User-specific directories (highest precedence)
+    QString homeDir = getHomeDirectory();
+    if (!steamPath.isEmpty()) {
+        // Check ~/.steam/steam/compatibilitytools.d
+        QString compatToolsPath = steamPath + QStringLiteral("compatibilitytools.d");
+        if (!directories.contains(compatToolsPath)) {
+            directories.append(compatToolsPath);
+        }
+        
+        // Check ~/.steam/root/compatibilitytools.d
+        QString rootCompatToolsPath = steamPath;
+        rootCompatToolsPath.remove(QStringLiteral("/steam/"));
+        rootCompatToolsPath += QStringLiteral("/root/compatibilitytools.d");
+        if (!directories.contains(rootCompatToolsPath)) {
+            directories.append(rootCompatToolsPath);
+        }
+    }
+    
+    // Reverse the list so user directories (highest precedence) are searched first
+    // The list was built in order from lowest to highest precedence, but we want
+    // to search from highest to lowest precedence (user overrides system)
+    std::reverse(directories.begin(), directories.end());
+    
+    ltr_int_log_message("SteamIntegration::getCompatibilityToolsDirectories() - Found %d compatibility tools directories (search order: highest to lowest precedence)\n", 
+        directories.size());
+    for (const QString& dir : directories) {
+        ltr_int_log_message("SteamIntegration::getCompatibilityToolsDirectories() - Directory: %s\n", 
+            dir.toUtf8().constData());
+    }
+    
+    return directories;
 }
 
  
