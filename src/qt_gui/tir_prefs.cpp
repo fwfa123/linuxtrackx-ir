@@ -7,6 +7,8 @@
 #include "pathconfig.h"
 #include "dyn_load.h"
 #include "trackir_permission_dialog.h"
+#include "ltr_gui.h"
+#include "plugin_install.h"
 #include <QFile>
 #include <QMessageBox>
 
@@ -232,28 +234,73 @@ void TirPrefs::on_TirUseGrayscale_stateChanged(int state)
 
 void TirPrefs::TirFirmwareDLFinished(bool state)
 {
-  if(state){
-    dlfw->hide();
-    probeTir(firmwareOK, permsOK);
-    if(firmwareOK){
-      ui.TirFwLabel->setText(QString::fromUtf8("Firmware found!"));
-      //ui.TirInstallFirmware->setDisabled(true);
-      ui.TirInstallFirmware->setText(QString::fromUtf8("Reinstall Firmware"));
-    }else{
-      ui.TirFwLabel->setText(QString::fromUtf8("Firmware not found - TrackIr will not work!"));
+  // This callback is used both for the old TirFwExtractor method and the new PluginInstall method
+  // When called from PluginInstall::prereqStatusChanged, we need to check firmware status directly
+  // When called from old method, state indicates success/failure
+  
+  // If dlfw exists, it means we used the old method
+  if(dlfw != NULL){
+    if(state){
+      dlfw->hide();
     }
+  }
+  
+  // Check firmware status regardless of which method was used
+  probeTir(firmwareOK, permsOK);
+  if(firmwareOK){
+    ui.TirFwLabel->setText(QString::fromUtf8("Firmware found!"));
+    //ui.TirInstallFirmware->setDisabled(true);
+    ui.TirInstallFirmware->setText(QString::fromUtf8("Reinstall Firmware"));
+  }else{
+    ui.TirFwLabel->setText(QString::fromUtf8("Firmware not found - TrackIr will not work!"));
   }
 }
 
 void TirPrefs::on_TirInstallFirmware_pressed()
 {
-  if(dlfw == NULL){
-    dlfw = new TirFwExtractor(this);
-    QObject::connect(dlfw, SIGNAL(finished(bool)),
-      this, SLOT(TirFirmwareDLFinished(bool)));
+  // Use the same method as the Gaming tab - find LinuxtrackGui parent and use PluginInstall
+  LinuxtrackGui *mainGui = nullptr;
+  
+  // Traverse up the widget hierarchy to find LinuxtrackGui
+  QObject *obj = parent();
+  while (obj && !mainGui) {
+    mainGui = qobject_cast<LinuxtrackGui*>(obj);
+    if (mainGui) {
+      break;
+    }
+    obj = obj->parent();
   }
-  dlfw->show();
-  dlfw->raise();
+  
+  if (mainGui) {
+    PluginInstall *pi = mainGui->getPluginInstall();
+    if (pi) {
+      // Use the same method as Gaming tab - allows reinstall even if already installed
+      pi->installTirFirmwareOnly();
+      
+      // Connect to prereqStatusChanged to update UI when firmware installation completes
+      // The signal parameter indicates if both prerequisites are ready, but we'll check firmware status in callback
+      QObject::disconnect(pi, SIGNAL(prereqStatusChanged(bool)), this, SLOT(TirFirmwareDLFinished(bool)));
+      QObject::connect(pi, SIGNAL(prereqStatusChanged(bool)), this, SLOT(TirFirmwareDLFinished(bool)), Qt::UniqueConnection);
+    } else {
+      // Fallback to old method if PluginInstall not available
+      if(dlfw == NULL){
+        dlfw = new TirFwExtractor(this);
+        QObject::connect(dlfw, SIGNAL(finished(bool)),
+          this, SLOT(TirFirmwareDLFinished(bool)));
+      }
+      dlfw->show();
+      dlfw->raise();
+    }
+  } else {
+    // Fallback to old method if LinuxtrackGui not found
+    if(dlfw == NULL){
+      dlfw = new TirFwExtractor(this);
+      QObject::connect(dlfw, SIGNAL(finished(bool)),
+        this, SLOT(TirFirmwareDLFinished(bool)));
+    }
+    dlfw->show();
+    dlfw->raise();
+  }
 }
 
 
