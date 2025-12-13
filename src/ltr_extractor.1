@@ -3,7 +3,7 @@
 .SH NAME
 ltr_extractor - extracts TrackIR/SmartNav firmware files and other necessary informations needed by Linuxtrack
 .SH SYNOPSYS
-.B ltr_extractor --extract | --update | --create [--blob] [--installer file] [--destination directory] [--spec file] file1 [file2 ... ]
+.B ltr_extractor --extract | --update | --update-games | --create [--blob] [--installer file] [--destination directory] [--spec file] file1 [file2 ... ]
 .SH DESCRIPTION
 ltr_extractor allows user to extract files necessary for Linuxtrack to utilize TrackIR/SmartNav devices.
 These files are extracted from NaturalPoint's TrackIR software; the software itself can be installed using 
@@ -18,6 +18,9 @@ For developer's usage - create signatures of files provided.
 .TP
 .B --update
 When updated game identifiers are downloaded, this command decrypts the informations.
+.TP
+.B --update-games
+Extracts only game data (sgl.dat -> gamedata.txt) using the existing extraction paths (blob, Wine, or file scanning). Skips all firmware files and writes gamedata.txt directly into the existing ~/.config/linuxtrack/tir_firmware/ directory (or --destination if provided) without creating new folders or symlinks.
 .SH OPTIONS
 .TP
 .B --spec file
