@@ -380,9 +380,39 @@ void PluginInstall::finished(bool ok)
         isTirMfcOnlyInstallation = false;  // Reset flag
       }
       break;
-    case LTR_W:
     case TIR_FW_ONLY:
+      if(ok) {
+        // TIR firmware installation/reinstall successful - show completion message and stop
+        QMessageBox::information(getParentWidget(), QObject::tr("Installation Complete"),
+          QObject::tr("TrackIR firmware has been successfully installed/reinstalled."));
+        state = DONE;
+        enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
+        emit prereqStatusChanged(isTirFirmwareInstalled() && isMfc42uInstalled());
+      } else {
+        // TIR firmware extraction failed - don't proceed
+        state = DONE;
+        enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
+      }
+      break;
     case MFC_ONLY:
+      if(ok) {
+        // MFC42 installation/reinstall successful - show completion message and stop
+        QMessageBox::information(getParentWidget(), QObject::tr("Installation Complete"),
+          QObject::tr("MFC42 libraries have been successfully installed/reinstalled."));
+        state = DONE;
+        enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
+        emit prereqStatusChanged(isTirFirmwareInstalled() && isMfc42uInstalled());
+      } else {
+        // MFC42 extraction failed - don't proceed
+        state = DONE;
+        enableButtons(true);
+        isTirMfcOnlyInstallation = false;  // Reset flag
+      }
+      break;
+    case LTR_W:
     default:
       if (ok && state == LTR_W) {
         // Wine bridge installation was successful
@@ -454,6 +484,38 @@ void PluginInstall::installTirFirmwareAndMfc42()
     isTirMfcOnlyInstallation = false;  // Reset flag
     emit prereqStatusChanged(true);
   }
+}
+
+// Method for reinstalling TrackIR firmware only (allows reinstall even if already installed)
+void PluginInstall::installTirFirmwareOnly()
+{
+  // Set flag to indicate this is TIR/MFC42 only installation
+  isTirMfcOnlyInstallation = true;
+  
+  // Allow reinstallation even if already installed - proceed directly to installation
+  state = TIR_FW_ONLY;
+  tirFirmwareInstall();
+}
+
+// Method for reinstalling MFC42 libraries only (allows reinstall even if already installed)
+void PluginInstall::installMfc42Only()
+{
+  // Set flag to indicate this is TIR/MFC42 only installation
+  isTirMfcOnlyInstallation = true;
+  
+  // Still require firmware to be installed first
+  if(!isTirFirmwareInstalled()){
+    QWidget *parentWidget = getParentWidget();
+    QMessageBox::warning(parentWidget, QObject::tr("Mfc42u install"),
+                         QObject::tr("Install TrackIR firmware first!"));
+    state = TIR_FW_ONLY;
+    tirFirmwareInstall();
+    return;
+  }
+  
+  // Allow reinstallation even if already installed - proceed directly to installation
+  state = MFC_ONLY;
+  mfc42uInstall();
 }
 
 // New method for wine bridge installation to custom prefix
