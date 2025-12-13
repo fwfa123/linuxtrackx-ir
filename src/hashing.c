@@ -10,8 +10,10 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <dirent.h>
 // This dependency proved problematic (deprecating MD5 and spweing warnings)
 //   so I opted for my own implementation.
 //#include <openssl/sha.h>
@@ -445,14 +447,20 @@ void search_file(FILE *f, const char* destination)
   }
 }
 
-bool open_file_to_search(char *fname, const char* destination)
+bool open_file_to_search(char *fname, const char* destination, bool games_only)
 {
   if(strcmp(fname + (strlen(fname) - 7), "sgl.dat") == 0){
     printf("Decoding game data.\n");
-    char *tgt_data = ltr_int_get_default_file_name("tir_firmware/gamedata.txt");
+    char *tgt_data;
+    if(asprintf(&tgt_data, "%s/%s", destination, "gamedata.txt") < 0){
+      return false;
+    }
     gamedata_found = get_game_data(fname, tgt_data, false);
     free(tgt_data);
   }else{
+    if(games_only){
+      return true;
+    }
     FILE *f = fopen(fname, "r");
     if(f == NULL){
       return false;
@@ -479,6 +487,58 @@ bool check_missed()
     }
   }
   return res;
+}
+
+static bool scan_directory_for_sgl_dat(const char *dir_path, const char *destination)
+{
+  DIR *dir = opendir(dir_path);
+  if(dir == NULL){
+    return false;
+  }
+  
+  struct dirent *entry;
+  bool found = false;
+  
+  while((entry = readdir(dir)) != NULL){
+    if(strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0){
+      continue;
+    }
+    
+    char *full_path;
+    if(asprintf(&full_path, "%s/%s", dir_path, entry->d_name) < 0){
+      continue;
+    }
+    
+    struct stat st;
+    if(stat(full_path, &st) != 0){
+      free(full_path);
+      continue;
+    }
+    
+    if(S_ISDIR(st.st_mode)){
+      // Skip "windows" directory like the GUI does
+      if(strcmp(entry->d_name, "windows") != 0){
+        if(scan_directory_for_sgl_dat(full_path, destination)){
+          found = true;
+        }
+      }
+    }else if(S_ISREG(st.st_mode)){
+      // Check if this is sgl.dat
+      size_t len = strlen(entry->d_name);
+      if(len >= 7 && strcmp(entry->d_name + len - 7, "sgl.dat") == 0){
+        printf("Found sgl.dat at: %s\n", full_path);
+        if(open_file_to_search(full_path, destination, true)){
+          found = true;
+          gamedata_found = true;
+        }
+      }
+    }
+    
+    free(full_path);
+  }
+  
+  closedir(dir);
+  return found;
 }
 
 bool update_gamedata()
@@ -658,13 +718,15 @@ static char* get_update_dir(const char* dirname, bool* is_link)
 
 void print_help()
 {
-  printf("ltr_extractor --extract | --create | --update [--spec file] file1 [file2 ...]\n");
+  printf("ltr_extractor --extract | --create | --update-games [--spec file] file1 [file2 ...]\n");
+  printf("NOTE: --update flag is no longer supported. Use --update-games instead.\n");
 }
 
 int main(int argc, char *argv[])
 {
   bool extract = false;
   bool update = false;
+  bool update_games = false;
   bool create = false;
   bool custom_spec = false;
   char *spec_path = NULL;
@@ -679,6 +741,7 @@ int main(int argc, char *argv[])
                    {"create-spec", no_argument,       NULL, 'c'},
                    {"extract",     no_argument,       NULL, 'e'},
                    {"update",      no_argument,       NULL, 'u'},
+                   {"update-games",no_argument,       NULL, 'g'},
                    {"help",        no_argument,       NULL, 'h'},
                    {"blob",        no_argument,       NULL, 'b'},
                    {"installer",   required_argument, NULL, 'i'},
@@ -689,7 +752,7 @@ int main(int argc, char *argv[])
 
   ltr_int_check_root();
   while(1){
-    c = getopt_long(argc, argv, "s:ceuhbi:d:", long_opts, &index);
+    c = getopt_long(argc, argv, "s:ceuhbi:d:g", long_opts, &index);
     if(c < 0){
       break;
     }
@@ -700,6 +763,8 @@ int main(int argc, char *argv[])
       case 'e': extract = true;
         break;
       case 'u': update = true;
+        break;
+      case 'g': update_games = true;
         break;
       case 's':
         if(optarg != NULL){
@@ -728,7 +793,67 @@ int main(int argc, char *argv[])
     }
   }
 
-  if(extract){
+  if(update_games){
+    if(!destination){
+      destination = ltr_int_get_default_file_name("tir_firmware");
+      if(!destination){
+        printf("Can't determine destination directory.\n");
+        return -1;
+      }
+    }
+    int res = 0;
+    if(blob && installer){
+      res = extract_blob(installer_name, destination, true);
+      if(res != 0){
+        printf("Failed to extract game data from blob.\n");
+      }
+    }else{
+      int i = optind;
+      if(i >= argc){
+        printf("Please specify files or directories to search for sgl.dat.\n");
+        res = -1;
+      }else{
+        bool found_any = false;
+        while(i < argc){
+          char *fname = argv[i++];
+          struct stat st;
+          if(stat(fname, &st) != 0){
+            printf("Warning: Cannot access '%s': %s\n", fname, strerror(errno));
+            continue;
+          }
+          
+          if(S_ISDIR(st.st_mode)){
+            printf("Scanning directory: %s\n", fname);
+            if(scan_directory_for_sgl_dat(fname, destination)){
+              found_any = true;
+            }
+          }else if(S_ISREG(st.st_mode)){
+            size_t len = strlen(fname);
+            if(len >= 7 && strcmp(fname + len - 7, "sgl.dat") == 0){
+              printf("Processing sgl.dat file: %s\n", fname);
+              if(open_file_to_search(fname, destination, true)){
+                found_any = true;
+                gamedata_found = true;
+              }
+            }else{
+              printf("Skipping file '%s' (not sgl.dat)\n", fname);
+            }
+          }else{
+            printf("Warning: '%s' is not a regular file or directory, skipping.\n", fname);
+          }
+        }
+        
+        if(!found_any && !gamedata_found){
+          printf("Error: No sgl.dat file found in any of the specified paths.\n");
+          res = -1;
+        }else if(gamedata_found){
+          printf("Successfully extracted game data to %s/gamedata.txt\n", destination);
+        }
+      }
+    }
+    free(destination);
+    return res;
+  }else if(extract){
     bool is_link = false;
     if(!destination){
       char *fw_dir = ltr_int_get_default_file_name("tir_firmware");
@@ -741,7 +866,7 @@ int main(int argc, char *argv[])
     }
     int res = 0;
     if(blob && installer){
-      res = extract_blob(installer_name, destination);
+      res = extract_blob(installer_name, destination, false);
     }else{
       char *spec;
       if(custom_spec){
@@ -755,7 +880,7 @@ int main(int argc, char *argv[])
       print_spec_list();
       int i = optind;
       while(i < argc){
-        open_file_to_search(argv[i++], destination);
+        open_file_to_search(argv[i++], destination, false);
       }
       res = !check_missed();
       free_specs();
@@ -765,7 +890,10 @@ int main(int argc, char *argv[])
     }
     free(destination);
   }else if(update){
-    update_gamedata();
+    printf("ERROR: The --update flag is no longer supported.\n");
+    printf("Game data updates should be done using --update-games or the GUI.\n");
+    printf("Use 'ltr_extractor --update-games --help' for more information.\n");
+    return -1;
   }else if(create){
     if(blob && installer){
       build_blob(installer_name, optind, argc, argv);

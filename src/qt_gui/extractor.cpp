@@ -417,7 +417,8 @@ bool Extractor::tryBlob(const QString& installerName)
   destPath = makeDestPath(PrefProxy::getRsrcDirPath());
   QString blob_w_path = PrefProxy::getDataPath(blob_name);
   return 0 == extract_blob(installerName.toUtf8().data(),
-                      destPath.toUtf8().data());
+                      destPath.toUtf8().data(),
+                      false);
 }
 
 void Extractor::on_BrowseInstaller_pressed()
@@ -576,6 +577,12 @@ Mfc42uWinetricksExtractor::Mfc42uWinetricksExtractor(QWidget *parent) : Extracto
   // Set up download combo box and button for MFC42
   ui.downloadLabel->setText(QString::fromUtf8("Select Installation Method"));
   ui.DownloadButton->setText(QString::fromUtf8("Install"));
+  
+  // Make the Install button larger and more visible
+  ui.DownloadButton->setMinimumWidth(150);
+  QSizePolicy policy = ui.DownloadButton->sizePolicy();
+  policy.setHorizontalPolicy(QSizePolicy::Minimum);
+  ui.DownloadButton->setSizePolicy(policy);
   
   // Populate the combo box with installation methods
   populateDownloadCombo();
@@ -1938,6 +1945,282 @@ void Extractor::show()
   QDialog::show();
 }
 
+void Mfc42uWinetricksExtractor::show()
+{
+  // Ensure all buttons are enabled when dialog is shown (especially important for reinstall scenarios)
+  enableButtons(true);
+  // Call parent show() method
+  Extractor::show();
+}
+
+
+// UpdateGamesExtractThread implementation
+void UpdateGamesExtractThread::start(const QString &p, const QString &d)
+{
+  if(!isRunning()){
+    path = p;
+    destPath = d;
+    quit = false;
+    success = false;
+    QThread::start();
+  }
+}
+
+void UpdateGamesExtractThread::run()
+{
+  emit progress(QString::fromUtf8("Scanning directory '%1' for sgl.dat files...").arg(path));
+  success = findSglDatFiles(path);
+  if(success){
+    emit progress(QString::fromUtf8("Game data extraction completed successfully!"));
+  }else{
+    emit progress(QString::fromUtf8("Could not find or extract game data from sgl.dat files."));
+  }
+}
+
+bool UpdateGamesExtractThread::findSglDatFiles(QString name)
+{
+  if(quit) return false;
+  int i;
+  QDir dir(name);
+  QStringList patt;
+  patt<<QString::fromUtf8("*.dat");
+  QFileInfoList files = dir.entryInfoList(patt, QDir::Files | QDir::Readable);
+  for(i = 0; i < files.size(); ++i){
+    if(quit) return false;
+    if(files[i].fileName().compare(QString::fromUtf8("sgl.dat"), Qt::CaseInsensitive) == 0){
+      QString outfile = QString::fromUtf8("%1/gamedata.txt").arg(destPath);
+      if(get_game_data(files[i].canonicalFilePath().toUtf8().constData(),
+                       outfile.toUtf8().constData(), false)){
+        emit progress(QString::fromUtf8("Extracted game data from %1").arg(files[i].canonicalFilePath()));
+        return true;
+      }
+    }
+  }
+
+  QFileInfoList subdirs =
+    dir.entryInfoList(QDir::AllDirs | QDir::NoDotAndDotDot | QDir::NoSymLinks);
+  QString dirname;
+  for(i = 0; i < subdirs.size(); ++i){
+    dirname = subdirs[i].canonicalFilePath();
+    if((!dirname.endsWith(QString::fromUtf8("windows"))) && findSglDatFiles(dirname)){
+      return true;
+    }
+  }
+  return false;
+}
+
+// UpdateGamesExtractor implementation
+UpdateGamesExtractor::UpdateGamesExtractor(QWidget *parent) : Extractor(parent), et(NULL)
+{
+  et = new UpdateGamesExtractThread();
+  QObject::connect(et, SIGNAL(progress(const QString &)), this, SLOT(progress(const QString &)));
+  QObject::connect(et, SIGNAL(finished()), this, SLOT(threadFinished()));
+  QObject::connect(wine, SIGNAL(finished(bool)), this, SLOT(wineFinished(bool)));
+  wineInitialized = false;
+  
+  QString dbg = QProcessEnvironment::systemEnvironment().value(QString::fromUtf8("LINUXTRACK_DBG"));
+  if(!dbg.contains(QChar::fromLatin1('d'))){
+    ui.AnalyzeSourceButton->setVisible(false);
+  }
+  
+  // Hide download UI elements for update games extractor
+  ui.downloadLabel->setVisible(false);
+  ui.FWCombo->setVisible(false);
+  ui.DownloadButton->setVisible(false);
+  
+  // Update title and instructions for update games extraction
+  ui.label_2->setText(QString::fromUtf8("Update Games List"));
+  ui.downloadInstructions->setText(QString::fromUtf8(
+    "<div style='margin: 0; padding: 0;'>"
+    "<p>This tool extracts only the game data file (gamedata.txt) from TrackIR installers.</p>"
+    "<p><b>Note:</b> This will NOT extract firmware files. It only updates the list of supported games.</p>"
+    "<p><b>Steps:</b></p>"
+    "<div style='margin-left: 20px;'>"
+    "<p style='margin: 5px 0;'>1. Visit <a href='https://www.naturalpoint.com/trackir/'>https://www.naturalpoint.com/trackir/</a></p>"
+    "<p style='margin: 5px 0;'>2. Download the latest TrackIR software installer</p>"
+    "<p style='margin: 5px 0;'>3. Use the 'Extract from installer' button below to select and process the downloaded file</p>"
+    "<p style='margin: 5px 0;'>Or use 'Browse directory' to select a directory containing sgl.dat files</p>"
+    "</div>"
+    "<p>The game data will be extracted and written directly to the tir_firmware directory.</p>"
+    "</div>"
+  ));
+}
+
+UpdateGamesExtractor::~UpdateGamesExtractor()
+{
+  if(et->isRunning()){
+    et->stop();
+    et->wait(5000);
+    if(et->isRunning()){
+      et->terminate();
+      et->wait(5000);
+    }
+  }
+  delete et;
+  et = NULL;
+}
+
+bool UpdateGamesExtractor::tryBlob(const QString& installerName)
+{
+  QString blob_name{getBlobName(installerName)};
+  if(blob_name.isEmpty()){
+    return false;
+  }
+  progress(QStringLiteral("Found blob. Commencing game data extraction."));
+  // Use tir_firmware directory directly, no timestamped folder
+  destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
+  QDir().mkpath(destPath);
+  QString blob_w_path = PrefProxy::getDataPath(blob_name);
+  bool result = (0 == extract_blob(installerName.toUtf8().data(),
+                      destPath.toUtf8().data(),
+                      true)); // update_games_only = true
+  if(result){
+    progress(QStringLiteral("Game data extraction finished."));
+  }
+  return result;
+}
+
+void UpdateGamesExtractor::commenceExtraction(QString file)
+{
+#ifndef DARWIN
+  QMessageBox::information(this, tr("Instructions"),
+  tr("NP's TrackIR installer might pop up now.\n\n"
+  "If it does, install it with all components to the default location, so the game data "
+  "can be extracted.\n\n"
+  "The software will be installed to the wine sandbox, that will be deleted afterwards, so "
+  "there are no leftovers.")
+  );
+#endif
+  qDebug()<<winePrefix;
+  progress(QString::fromUtf8("Initializing wine and running installer %1").arg(file));
+  //To avoid adding TrackIR icons/menus to Linux "start menu"...
+  wine->setEnv(QString::fromUtf8("WINEDLLOVERRIDES"), QString::fromUtf8("winemenubuilder.exe=d"));
+  //To redirect wine's Desktop directory to avoid TrackIR icon being placed on Linux desktop
+  QFile xdgFile(winePrefix + QString::fromUtf8("/user-dirs.dirs"));
+  if(xdgFile.open(QFile::WriteOnly | QFile::Truncate)){
+    QTextStream xdg(&xdgFile);
+    xdg<<"XDG_DESKTOP_DIR=\""<<winePrefix<<"\"\n";
+    xdgFile.close();
+    wine->setEnv(QString::fromUtf8("XDG_CONFIG_HOME"), winePrefix);
+  }
+  wine->setEnv(QString::fromUtf8("WINEPREFIX"), winePrefix);
+  installerFile = file;
+  // Try different silent installation parameters
+  QStringList args;
+  args << QStringLiteral("/VERYSILENT") << QStringLiteral("/NORESTART") << QStringLiteral("/SUPPRESSMSGBOXES");
+  wine->run(installerFile, args);
+}
+
+void UpdateGamesExtractor::wineFinished(bool result)
+{
+  if(!wineInitialized){
+    wineInitialized = true;
+    if(!result){
+      QMessageBox::warning(this, tr("Error running Wine"),
+        tr("There was an error initializing\n"
+        "the wine prefix; will try to extract game data\n"
+        "just in case..."
+        "Please see the log for more details.\n\n")
+      );
+    }
+    // Use tir_firmware directory directly, no timestamped folder
+    destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
+    QDir().mkpath(destPath);
+    et->start(winePrefix, destPath);
+  }else{
+    if(!result){
+      QMessageBox::warning(this, tr("Error running Wine"),
+        tr("There was an error when extracting\n"
+        "the game data, will try the analysis\n"
+        "just in case..."
+        "Please see the log for more details.\n\n")
+      );
+    }
+    // Use tir_firmware directory directly, no timestamped folder
+    destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
+    QDir().mkpath(destPath);
+    et->start(winePrefix, destPath);
+  }
+}
+
+void UpdateGamesExtractor::browseDirPressed()
+{
+  enableButtons(false);
+  QString dirName = QFileDialog::getExistingDirectory(this,
+    QString::fromUtf8("Open a directory containing unpacked TrackIR driver:"));
+  if(dirName.isEmpty()){
+    enableButtons(true);
+    return;
+  }
+  // Use tir_firmware directory directly, no timestamped folder
+  destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
+  QDir().mkpath(destPath);
+  et->start(dirName, destPath);
+}
+
+void UpdateGamesExtractor::threadFinished()
+{
+  enableButtons(true);
+  bool success = et->haveSuccess();
+  if(success){
+    progress(QString::fromUtf8("Game data extraction completed successfully!"));
+    QMessageBox::information(this, tr("Update Games List"),
+      tr("Game data was successfully extracted and updated."));
+  }else{
+    QMessageBox::warning(this, tr("Update Games List"),
+      tr("Game data extraction was not successful. Please see the log for more details.")
+    );
+  }
+  emit finished(success);
+  hide();
+}
+
+void UpdateGamesExtractor::enableButtons(bool enable)
+{
+  ui.BrowseInstaller->setEnabled(enable);
+  ui.BrowseDir->setEnabled(enable);
+  ui.QuitButton->setEnabled(enable);
+}
+
+void UpdateGamesExtractor::on_QuitButton_pressed()
+{
+  if(et->isRunning()){
+    et->stop();
+    et->wait();
+  }
+  hide();
+}
+
+void UpdateGamesExtractor::on_BrowseInstaller_pressed()
+{
+  enableButtons(false);
+  ui.BrowseInstaller->setEnabled(false);
+  QString file = QFileDialog::getOpenFileName(this, QString::fromUtf8("Open an installer:"));
+  if(file.isEmpty()){
+    enableButtons(true);
+    return;
+  }
+  if(tryBlob(file)){
+    progress(QStringLiteral("Game data extraction finished."));
+    enableButtons(true);
+    // No symlink creation for update-games mode
+    QMessageBox::information(this, tr("Update Games List"),
+      tr("Game data was successfully extracted and updated."));
+    emit finished(true);
+    hide();
+    return;
+  }
+  
+  winePrefix = QDir::tempPath() + QString::fromUtf8("/wineXXXXXX");
+  QByteArray charData = winePrefix.toUtf8();
+  char *prefix = mkdtemp(charData.data());
+  if(prefix == NULL){
+    enableButtons(true);
+    return;
+  }
+  winePrefix = QString::fromUtf8(prefix);
+  commenceExtraction(file);
+}
 
 /*
 WINEDLLOVERRIDES=winemenubuilder.exe=d WINEPREFIX=/home/qbuilder/devel/research/extractor/test/TrackIR_5.2.Final wine TrackIR_5.2.Final.exe /s /v"/qb"

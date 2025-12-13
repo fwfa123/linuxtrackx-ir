@@ -44,6 +44,7 @@
 #include "tracker.h"
 #include "testing_section.h"
 #include "about_dialog.h"
+#include "extractor.h"
 
 // Static string constants for better performance
 static const QString APP_TITLE = QStringLiteral("Linuxtrack");
@@ -80,7 +81,7 @@ static QMessageBox::StandardButton infoMessage(const QString &message)
 
 LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(nullptr),
   showWindow(nullptr), helper(nullptr), ds(nullptr), me(nullptr), grd(nullptr), lv(nullptr),
-  pi(nullptr), ps(nullptr), xpInstall(nullptr), initialized(false), gui_settings(nullptr),
+  pi(nullptr), ps(nullptr), xpInstall(nullptr), updateGamesExtractor(nullptr), initialized(false), gui_settings(nullptr),
   welcome(false), news_serial(-1), guiInit(true), showWineWarning(true),
   trackingDockWidget(nullptr), dockAction(nullptr), undockAction(nullptr),
   dockLeftAction(nullptr), dockRightAction(nullptr), dockingMenu(nullptr),
@@ -127,6 +128,7 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.SteamProtonButton, SIGNAL(pressed()), this, SLOT(on_SteamProtonButton_pressed()));
   QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
   QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
+  QObject::connect(ui.UpdateGamesButton, SIGNAL(pressed()), this, SLOT(on_UpdateGamesButton_pressed()));
   // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
 
   // Connect ltr_pipe control interface
@@ -312,6 +314,8 @@ LinuxtrackGui::~LinuxtrackGui()
   lv = nullptr;
   delete ds;
   ds = nullptr;
+  delete updateGamesExtractor;
+  updateGamesExtractor = nullptr;
   if (xpInstall != nullptr) {
     // xpInstall cleanup if needed
   }
@@ -752,10 +756,23 @@ void LinuxtrackGui::loadDockingState()
 // Gaming tab slot implementations
 void LinuxtrackGui::on_InstallTirMfcButton_pressed()
 {
-    // Call the new TIR/MFC42 installation method
+    // Determine which button was pressed and call the appropriate installation method
     if (pi) {
         if (showWindow) { showWindow->startTimersOnly(); }
-        pi->installTirFirmwareAndMfc42();
+        
+        // Use sender() to determine which button triggered this slot
+        QObject *senderObj = QObject::sender();
+        if (senderObj == ui.FirmwareActionButton) {
+            // Firmware button pressed - install/reinstall firmware only
+            pi->installTirFirmwareOnly();
+        } else if (senderObj == ui.MfcActionButton) {
+            // MFC42 button pressed - install/reinstall MFC42 only
+            pi->installMfc42Only();
+        } else {
+            // Fallback to combined installation (shouldn't happen with current connections)
+            pi->installTirFirmwareAndMfc42();
+        }
+        
         refreshGamingPrereqStatus();
     }
 }
@@ -811,6 +828,17 @@ void LinuxtrackGui::on_CustomPrefixButton_pressed()
         if (showWindow) { showWindow->startTimersOnly(); }
         pi->installWineBridgeToCustomPrefix();
     }
+}
+
+void LinuxtrackGui::on_UpdateGamesButton_pressed()
+{
+    // Create and show the UpdateGamesExtractor dialog
+    if (updateGamesExtractor == nullptr) {
+        updateGamesExtractor = new UpdateGamesExtractor(this);
+    }
+    updateGamesExtractor->show();
+    updateGamesExtractor->raise();
+    updateGamesExtractor->activateWindow();
 }
 
 /*
