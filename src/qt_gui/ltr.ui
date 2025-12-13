@@ -120,73 +120,87 @@
       </attribute>
       <layout class="QVBoxLayout" name="gamingTabLayout">
        <item>
-        <widget class="QGroupBox" name="PrereqGroupBox">
-         <property name="title">
-          <string>Prerequisites</string>
-         </property>
-         <layout class="QGridLayout" name="prereqLayout">
-          <item row="0" column="0">
-           <widget class="QLabel" name="FirmwareLabel">
-            <property name="accessibleName">
-             <string>TrackIR firmware label</string>
-            </property>
-            <property name="text">
-             <string>TrackIR firmware:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="FirmwareStatusLabel">
-            <property name="accessibleName">
-             <string>TrackIR firmware status</string>
-            </property>
-            <property name="text">
-             <string>Not installed</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="FirmwareActionButton">
-            <property name="accessibleName">
-             <string>Install or repair TrackIR firmware</string>
-            </property>
-            <property name="text">
-             <string>Install/Repair</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="MfcLabel">
-            <property name="accessibleName">
-             <string>MFC42 label</string>
-            </property>
-            <property name="text">
-             <string>MFC42 libraries:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="MfcStatusLabel">
-            <property name="accessibleName">
-             <string>MFC42 status</string>
-            </property>
-            <property name="text">
-             <string>Not installed</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QPushButton" name="MfcActionButton">
-            <property name="accessibleName">
-             <string>Install or repair MFC42 libraries</string>
-            </property>
-            <property name="text">
-             <string>Install/Repair</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
+        <layout class="QHBoxLayout" name="prereqAndUpdateLayout">
+         <item>
+          <widget class="QGroupBox" name="PrereqGroupBox">
+           <property name="title">
+            <string>Prerequisites</string>
+           </property>
+           <layout class="QGridLayout" name="prereqLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="FirmwareLabel">
+              <property name="accessibleName">
+               <string>TrackIR firmware label</string>
+              </property>
+              <property name="text">
+               <string>TrackIR firmware:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLabel" name="FirmwareStatusLabel">
+              <property name="accessibleName">
+               <string>TrackIR firmware status</string>
+              </property>
+              <property name="text">
+               <string>Not installed</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QPushButton" name="FirmwareActionButton">
+              <property name="accessibleName">
+               <string>Install or repair TrackIR firmware</string>
+              </property>
+              <property name="text">
+               <string>Install/Repair</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="MfcLabel">
+              <property name="accessibleName">
+               <string>MFC42 label</string>
+              </property>
+              <property name="text">
+               <string>MFC42 libraries:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLabel" name="MfcStatusLabel">
+              <property name="accessibleName">
+               <string>MFC42 status</string>
+              </property>
+              <property name="text">
+               <string>Not installed</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QPushButton" name="MfcActionButton">
+              <property name="accessibleName">
+               <string>Install or repair MFC42 libraries</string>
+              </property>
+              <property name="text">
+               <string>Install/Repair</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="UpdateGamesButton">
+           <property name="accessibleName">
+            <string>Update Games List</string>
+           </property>
+           <property name="text">
+            <string>Update Games List</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
        </item>
        <item>
         <layout class="QGridLayout" name="gridLayout_3">
