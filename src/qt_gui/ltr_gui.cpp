@@ -598,7 +598,8 @@ void LinuxtrackGui::setupDocking()
   trackingDockWidget->setFeatures(QDockWidget::DockWidgetMovable | 
                                   QDockWidget::DockWidgetFloatable |
                                   QDockWidget::DockWidgetClosable);
-  // Qt5: No setWidgetResizable, so set minimum/preferred size for both dock and content
+  // Set minimum/preferred size for both dock and content
+  // Note: QDockWidget::setWidgetResizable() exists in Qt6 but we use explicit sizing for compatibility
   QSize camViewSize(640, 480);
   trackingDockWidget->setMinimumWidth(camViewSize.width());
   trackingDockWidget->setMinimumHeight(camViewSize.height());
@@ -933,7 +934,8 @@ void LinuxtrackGui::on_StartLtrPipeButton_pressed()
     QString libPath = findLinuxtrackLibPath(ltrPipePath);
     
     // Launch ltr_pipe with modified environment
-    // Qt6's startDetached doesn't support environment, so we use a shell command with env
+    // Note: QProcess::startDetached() static method doesn't support QProcessEnvironment directly.
+    // We use a shell command with env as a portable workaround for both Qt5 and Qt6.
     bool success = false;
     if (!libPath.isEmpty()) {
         // Get current LD_LIBRARY_PATH from environment
