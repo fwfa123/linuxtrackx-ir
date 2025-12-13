@@ -718,7 +718,8 @@ static char* get_update_dir(const char* dirname, bool* is_link)
 
 void print_help()
 {
-  printf("ltr_extractor --extract | --create | --update [--spec file] file1 [file2 ...]\n");
+  printf("ltr_extractor --extract | --create | --update-games [--spec file] file1 [file2 ...]\n");
+  printf("NOTE: --update flag is no longer supported. Use --update-games instead.\n");
 }
 
 int main(int argc, char *argv[])
@@ -889,7 +890,10 @@ int main(int argc, char *argv[])
     }
     free(destination);
   }else if(update){
-    update_gamedata();
+    printf("ERROR: The --update flag is no longer supported.\n");
+    printf("Game data updates should be done using --update-games or the GUI.\n");
+    printf("Use 'ltr_extractor --update-games --help' for more information.\n");
+    return -1;
   }else if(create){
     if(blob && installer){
       build_blob(installer_name, optind, argc, argv);
