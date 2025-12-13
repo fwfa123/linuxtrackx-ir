@@ -11,6 +11,11 @@ Page instfiles
 UninstPage uninstConfirm
 UninstPage instfiles
 
+Function .onInstFailed
+  # Restore backup files if installation failed
+  Call RestoreBackupFiles
+FunctionEnd
+
 Function .onInit
 
   ReadRegStr $R0 HKLM \
