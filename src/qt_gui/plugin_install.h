@@ -28,6 +28,8 @@ class PluginInstall : public QObject
  public:
   // New Gaming tab methods
   void installTirFirmwareAndMfc42();
+  void installTirFirmwareOnly();
+  void installMfc42Only();
   void installWineBridgeToCustomPrefix();
   void installLutrisWineBridge();
   void installSteamProtonBridge();

@@ -719,10 +719,23 @@ void LinuxtrackGui::loadDockingState()
 // Gaming tab slot implementations
 void LinuxtrackGui::on_InstallTirMfcButton_pressed()
 {
-    // Call the new TIR/MFC42 installation method
+    // Determine which button was pressed and call the appropriate installation method
     if (pi) {
         if (showWindow) { showWindow->startTimersOnly(); }
-        pi->installTirFirmwareAndMfc42();
+        
+        // Use sender() to determine which button triggered this slot
+        QObject *senderObj = QObject::sender();
+        if (senderObj == ui.FirmwareActionButton) {
+            // Firmware button pressed - install/reinstall firmware only
+            pi->installTirFirmwareOnly();
+        } else if (senderObj == ui.MfcActionButton) {
+            // MFC42 button pressed - install/reinstall MFC42 only
+            pi->installMfc42Only();
+        } else {
+            // Fallback to combined installation (shouldn't happen with current connections)
+            pi->installTirFirmwareAndMfc42();
+        }
+        
         refreshGamingPrereqStatus();
     }
 }
