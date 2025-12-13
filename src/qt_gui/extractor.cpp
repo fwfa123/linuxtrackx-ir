@@ -417,7 +417,8 @@ bool Extractor::tryBlob(const QString& installerName)
   destPath = makeDestPath(PrefProxy::getRsrcDirPath());
   QString blob_w_path = PrefProxy::getDataPath(blob_name);
   return 0 == extract_blob(installerName.toUtf8().data(),
-                      destPath.toUtf8().data());
+                      destPath.toUtf8().data(),
+                      false);
 }
 
 void Extractor::on_BrowseInstaller_pressed()
