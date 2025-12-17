@@ -78,6 +78,10 @@ set(LTR_GUI_HEADERS
     flatpak_detector.h
     installer_paths.h
     about_dialog.h
+    ../mickey/hotkey.h
+    ../mickey/hotkey_setup_dlg.h
+    ../mickey/my_line_edit.h
+    ../mickey/keyb.h
 )
 
 set(LTR_GUI_FORMS
@@ -105,6 +109,8 @@ set(LTR_GUI_FORMS
     wine_warn.ui
     m_ps3eye_setup.ui
     m_ps3eye_ft_setup.ui
+    ../mickey/hotkey.ui
+    ../mickey/hotkey_setup.ui
 )
 
 set(LTR_GUI_SOURCES
@@ -157,6 +163,10 @@ set(LTR_GUI_SOURCES
     flatpak_detector.cpp
     installer_paths.cpp
     about_dialog.cpp
+    ../mickey/hotkey.cpp
+    ../mickey/hotkey_setup_dlg.cpp
+    ../mickey/my_line_edit.cpp
+    ../mickey/keyb.cpp
 )
 
 # Platform-specific files
@@ -178,6 +188,7 @@ if(NOT APPLE)
         webcam_prefs.cpp
         webcam_ft_prefs.cpp
         joy_prefs.cpp
+        ../mickey/keyb_x11.cpp
     )
 else()
     # macOS-specific files
@@ -192,6 +203,7 @@ else()
     list(APPEND LTR_GUI_SOURCES
         macwebcamft_prefs.cpp
         macwebcam_prefs.cpp
+        ../mickey/keyb.cpp
     )
 endif()
 
@@ -245,6 +257,7 @@ endif()
 target_compile_definitions(ltr_gui PRIVATE
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII
+    QT5_OVERRIDES
     HAVE_CONFIG_H
     HELP_BASE="ltr_gui/"
 )

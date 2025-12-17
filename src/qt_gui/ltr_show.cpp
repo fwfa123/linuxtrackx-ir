@@ -24,10 +24,16 @@
 #include <ipc_utils.h>
 #include <unistd.h>
 #include <tracker.h>
+#include <ltlib_int.h>
 
 #include "buffering.h"
 #include <QApplication>
 #include "ltr_gui.h"
+#include "../mickey/hotkey.h"
+#include <QGridLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QMessageBox>
 
 QWidget *label;
 static bool running = false;
@@ -38,11 +44,16 @@ static float fps_buffer[8] ={0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 static int fps_ptr = 0;
 //!!!TBD multithread sync!!!
 
+// Hotkey ID constants
+static const int HOTKEY_TOGGLE_TRACKING = 0;
+static const int HOTKEY_QUICK_RECENTER = 1;
+
 
 
 LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &settings)
               : glw(NULL), cv(NULL), allowClose(false), main_gui(tmp_gui),
-                contextMenu(nullptr), dockAction(nullptr), undockAction(nullptr)
+                contextMenu(nullptr), dockAction(nullptr), undockAction(nullptr),
+                toggleHotKey(nullptr), recenterHotKey(nullptr), hotkeySettings(&settings)
 {
   ui.setupUi(this);
   cv = new CameraView(label);
@@ -81,6 +92,9 @@ LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &setting
   QSize camViewSize(640, 480);
   setMinimumSize(camViewSize);
   resize(camViewSize);
+  
+  // Initialize hotkeys
+  initHotkeys();
 }
 
 //Assuming that frame dimensions can't change while running!!!
@@ -110,6 +124,15 @@ LtrGuiForm::~LtrGuiForm()
   if(running){
     TRACKER.stop();
   }
+
+  // Clean up hotkeys
+  if(toggleHotKey){
+    delete toggleHotKey;
+  }
+  if(recenterHotKey){
+    delete recenterHotKey;
+  }
+
   delete glw;
 }
 
@@ -375,6 +398,169 @@ void LtrGuiForm::undockFromMainWindow()
   if (mainWindow) {
     QMetaObject::invokeMethod(mainWindow, "undockTrackingWindow", Qt::DirectConnection);
   }
+}
+
+// Hotkey implementation
+static HotKey* addHotKey(const QString &label, const QString &prefId, int id, 
+		  QWidget *owner, QObject *target, QGridLayout *dest, QSettings *pref, int row, int column)
+{
+  HotKey *hk = new HotKey(label, prefId, id, owner);
+  QString hkString = pref->value(prefId, QString::fromUtf8("None")).toString();
+  if(hk->setHotKey(hkString)){
+    dest->addWidget(hk, row, column);
+    QObject::connect(hk, SIGNAL(activated(int, bool)), target, SLOT(hotKey_activated(int, bool)));
+    QObject::connect(hk, SIGNAL(newHotKey(const QString &, const QString &)), 
+		     owner, SLOT(updateHotKey(const QString &, const QString &)));
+    return hk;
+  }else{
+    delete hk;
+    return NULL;
+  }
+}
+
+void LtrGuiForm::initHotkeys()
+{
+  // Create hotkey layout dynamically - insert after the buttons but before the status label
+  QVBoxLayout *mainLayout = qobject_cast<QVBoxLayout*>(layout());
+  if(!mainLayout){
+    return; // Cannot find main layout
+  }
+
+  // Find the position of the horizontal layout (buttons) in the main layout
+  int buttonLayoutIndex = -1;
+  for(int i = 0; i < mainLayout->count(); ++i){
+    QLayoutItem *item = mainLayout->itemAt(i);
+    if(item && item->layout()){
+      QHBoxLayout *hLayout = qobject_cast<QHBoxLayout*>(item->layout());
+      if(hLayout){ // Found the horizontal button layout
+        buttonLayoutIndex = i;
+        break;
+      }
+    }
+  }
+
+  if(buttonLayoutIndex == -1){
+    return; // Could not find button layout
+  }
+
+  // Create hotkey frame
+  QFrame *hotkeyFrame = new QFrame();
+  hotkeyFrame->setFrameShape(QFrame::StyledPanel);
+  hotkeyFrame->setFrameShadow(QFrame::Raised);
+
+  QVBoxLayout *hotkeyVBox = new QVBoxLayout(hotkeyFrame);
+
+  // Add informational label
+  QLabel *infoLabel = new QLabel(QString::fromUtf8("⚠️ Global Hotkeys: These hotkeys work system-wide. For per-game hotkeys, use controller.exe installed via Wine Bridge in each game prefix. ⚠️ Warning: Do not run both global hotkeys and controller.exe simultaneously - they will conflict!"));
+  infoLabel->setWordWrap(true);
+  hotkeyVBox->addWidget(infoLabel);
+
+  // Create grid layout for hotkeys
+  QGridLayout *hotkeyLayout = new QGridLayout();
+  hotkeyLayout->setHorizontalSpacing(5);
+  hotkeyLayout->setVerticalSpacing(8);
+  hotkeyLayout->setContentsMargins(5, 5, 5, 5);
+
+  hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
+
+  toggleHotKey = addHotKey(QString::fromUtf8("Pause/Resume tracking:"), QString::fromUtf8("tracking_toggle"),
+			   HOTKEY_TOGGLE_TRACKING, this, this, hotkeyLayout, hotkeySettings, 0, 0);
+  if(!toggleHotKey){
+    QMessageBox::warning(this, QString::fromUtf8("Hotkey Setup Warning"),
+      QString::fromUtf8("Failed to register pause/resume hotkey. Hotkey functionality may be limited."));
+  }
+
+  recenterHotKey = addHotKey(QString::fromUtf8("Quick recenter:"), QString::fromUtf8("quick_recenter"),
+			   HOTKEY_QUICK_RECENTER, this, this, hotkeyLayout, hotkeySettings, 1, 0);
+  if(!recenterHotKey){
+    QMessageBox::warning(this, QString::fromUtf8("Hotkey Setup Warning"),
+      QString::fromUtf8("Failed to register recenter hotkey. Hotkey functionality may be limited."));
+  }
+
+  hotkeySettings->endGroup();
+
+  hotkeyVBox->addLayout(hotkeyLayout);
+
+  // Add clear button
+  QPushButton *clearButton = new QPushButton(QString::fromUtf8("Clear Hotkeys"));
+  connect(clearButton, SIGNAL(pressed()), this, SLOT(clearHotkeys()));
+  hotkeyVBox->addWidget(clearButton);
+
+  // Insert hotkey frame after the button layout
+  mainLayout->insertWidget(buttonLayoutIndex + 1, hotkeyFrame);
+}
+
+void LtrGuiForm::hotKey_activated(int id, bool pressed)
+{
+  if(!pressed){
+    return;
+  }
+
+  // Only activate hotkeys when tracking is active (running or paused)
+  linuxtrack_state_type current_state = ltr_int_get_tracking_state();
+  if(current_state != RUNNING && current_state != PAUSED){
+    return; // Tracker not active, ignore hotkey
+  }
+
+  switch(id){
+    case HOTKEY_TOGGLE_TRACKING: // toggle pause/resume
+      {
+        if(current_state == RUNNING){
+          TRACKER.pause();
+        }else if(current_state == PAUSED){
+          TRACKER.wakeup();
+        }
+      }
+      break;
+    case HOTKEY_QUICK_RECENTER: // quick recenter
+      TRACKER.recenter();
+      break;
+  }
+}
+
+void LtrGuiForm::updateHotKey(const QString &prefId, const QString &hk)
+{
+  hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
+  hotkeySettings->setValue(prefId, hk);
+  hotkeySettings->endGroup();
+  
+  // Sync to mickey.conf
+  syncHotkeysToMickey();
+}
+
+void LtrGuiForm::syncHotkeysToMickey()
+{
+  QSettings mickeySettings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("mickey"));
+  
+  hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
+  QString trackingToggle = hotkeySettings->value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
+  QString quickRecenter = hotkeySettings->value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
+  hotkeySettings->endGroup();
+  
+  mickeySettings.beginGroup(QString::fromUtf8("HotKeys"));
+  mickeySettings.setValue(QString::fromUtf8("tracking_toggle"), trackingToggle);
+  mickeySettings.setValue(QString::fromUtf8("quick_recenter"), quickRecenter);
+  mickeySettings.endGroup();
+}
+
+void LtrGuiForm::clearHotkeys()
+{
+  QString noneStr = QString::fromUtf8("None");
+  
+  if(toggleHotKey){
+    toggleHotKey->setHotKey(noneStr);
+  }
+  if(recenterHotKey){
+    recenterHotKey->setHotKey(noneStr);
+  }
+  
+  hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
+  hotkeySettings->setValue(QString::fromUtf8("tracking_toggle"), noneStr);
+  hotkeySettings->setValue(QString::fromUtf8("quick_recenter"), noneStr);
+  hotkeySettings->endGroup();
+  
+  // Sync to mickey.conf
+  syncHotkeysToMickey();
 }
 
 
