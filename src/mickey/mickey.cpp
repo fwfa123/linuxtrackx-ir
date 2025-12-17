@@ -740,7 +740,15 @@ void MickeyGUI::readPrefs()
   settings.beginGroup(QString::fromUtf8("Misc"));
   welcome = settings.value(QString::fromUtf8("welcome"), true).toBool();
   newsSerial = settings.value(QString::fromUtf8("news"), -1).toInt();
-  resize(settings.value(QString::fromUtf8("size"), QSize(-1, -1)).toSize());
+  QSize savedSize = settings.value(QString::fromUtf8("size"), QSize(640, 460)).toSize();
+  // Ensure minimum height is respected (in case old saved size is too small)
+  if (savedSize.height() < 450) {
+    savedSize.setHeight(450);
+  }
+  if (savedSize.width() < 470) {
+    savedSize.setWidth(470);
+  }
+  resize(savedSize);
   move(settings.value(QString::fromUtf8("pos"), QPoint(0, 0)).toPoint());
   settings.endGroup();
 }
