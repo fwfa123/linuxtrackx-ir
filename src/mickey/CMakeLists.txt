@@ -99,7 +99,77 @@ set_target_properties(mickey PROPERTIES
     BUILD_WITH_INSTALL_RPATH TRUE
 )
 
+# ============================================================================
+# Help File Generation
+# ============================================================================
+
+# Find qhelpgenerator for help file generation
+find_program(QT5_QHELPGENERATOR
+    NAMES qhelpgenerator-qt5 qhelpgenerator
+)
+
+set(HELP_QCH_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qch)
+set(HELP_QHC_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qhc)
+
+if(QT5_QHELPGENERATOR)
+    # Generate help.qch from mickey.qhp
+    add_custom_command(
+        OUTPUT ${HELP_QCH_FILE}
+        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhp -o ${HELP_QCH_FILE}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhp
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating Mickey Qt Help file (help.qch)"
+    )
+    
+    # Generate help.qhc from mickey.qhcp
+    add_custom_command(
+        OUTPUT ${HELP_QHC_FILE}
+        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhcp -o ${HELP_QHC_FILE}
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhcp ${HELP_QCH_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Generating Mickey Qt Help collection (help.qhc)"
+    )
+    
+    # Fix help.qhc path after generation (modifies file in place)
+    add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
+        COMMAND chmod u+w ${HELP_QHC_FILE}
+        COMMAND ${CMAKE_COMMAND} -DHELP_QHC_FILE="${HELP_QHC_FILE}" -DHELP_QCH_FILE="${HELP_QCH_FILE}" -P "${CMAKE_SOURCE_DIR}/cmake/fix_help_qhc.cmake"
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
+        DEPENDS ${HELP_QHC_FILE}
+        COMMENT "Fixing Mickey help.qhc path references"
+    )
+    
+    # Custom target for help generation
+    add_custom_target(mickey_help ALL
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
+    )
+else()
+    message(WARNING "Qt5 qhelpgenerator not found - Mickey help files will not be generated")
+    # Create empty files to avoid installation errors
+    add_custom_command(
+        OUTPUT ${HELP_QCH_FILE} ${HELP_QHC_FILE}
+        COMMAND ${CMAKE_COMMAND} -E touch ${HELP_QCH_FILE} ${HELP_QHC_FILE}
+        COMMENT "Creating placeholder Mickey help files (qhelpgenerator not found)"
+    )
+    add_custom_target(mickey_help ALL
+        DEPENDS ${HELP_QCH_FILE} ${HELP_QHC_FILE}
+    )
+endif()
+
+# ============================================================================
+# Installation
+# ============================================================================
+
 install(TARGETS mickey
     RUNTIME DESTINATION bin
+)
+
+# Install help files if they exist
+install(FILES
+    ${HELP_QHC_FILE}
+    ${HELP_QCH_FILE}
+    DESTINATION share/linuxtrack/help/mickey
+    OPTIONAL
 )
 

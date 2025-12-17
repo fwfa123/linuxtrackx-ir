@@ -227,6 +227,7 @@ class MickeyGUI : public QWidget
     {changed = true; cntrDelay = val;};
   void on_MickeyTabs_currentChanged(int index);
   void updateHotKey(const QString &prefId, const QString &hk);
+  void clearHotkeys();
  signals:
   void axisChanged();
 };
