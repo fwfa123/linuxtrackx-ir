@@ -22,6 +22,7 @@
 
 class LtrGuiForm;
 class QSettings;
+class HotKey;
 
 class CameraView : public QWidget
 {
@@ -67,6 +68,11 @@ class LtrGuiForm : public QWidget
    void dockToMainWindow();
    void undockFromMainWindow();
    
+   // Hotkey slots
+   void hotKey_activated(int id, bool pressed);
+   void updateHotKey(const QString &prefId, const QString &hk);
+   void clearHotkeys();
+   
   protected:
    void closeEvent(QCloseEvent *event);
    void contextMenuEvent(QContextMenuEvent *event);
@@ -90,6 +96,13 @@ class LtrGuiForm : public QWidget
    QAction *undockAction;
    void createContextMenu();
    void updateContextMenu();
+   
+   // Hotkeys
+   HotKey *toggleHotKey;
+   HotKey *recenterHotKey;
+   QSettings *hotkeySettings;
+   void initHotkeys();
+   void syncHotkeysToMickey();
 };
 
 #endif
