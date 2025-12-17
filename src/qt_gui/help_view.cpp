@@ -173,12 +173,17 @@ bool HelpViewer::initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngin
     if (!QFile::exists(helpFile)) {
         std::cout << "   ❌ Help file does not exist!" << std::endl;
         
-        // Try alternative paths
+        // Try alternative paths (using HELP_BASE to support both mickey and ltr_gui)
         QStringList alternativePaths;
-                alternativePaths << QApplication::applicationDirPath() + QStringLiteral("/../share/linuxtrack/help/ltr_gui/help.qhc")
-                         << QApplication::applicationDirPath() + QStringLiteral("/../share/linuxtrack/help/ltr_gui/help.qhc")
-                         << QStringLiteral("/usr/share/linuxtrack/help/ltr_gui/help.qhc")
-                         << QStringLiteral("/opt/linuxtrack/share/linuxtrack/help/ltr_gui/help.qhc");
+        QString helpBase = QString::fromUtf8(HELP_BASE);
+        // Remove trailing slash if present
+        if (helpBase.endsWith(QStringLiteral("/"))) {
+            helpBase.chop(1);
+        }
+        alternativePaths << QApplication::applicationDirPath() + QStringLiteral("/../share/linuxtrack/help/") + helpBase + QStringLiteral("/help.qhc")
+                         << QApplication::applicationDirPath() + QStringLiteral("/../share/linuxtrack/help/") + helpBase + QStringLiteral("/help.qhc")
+                         << QStringLiteral("/usr/share/linuxtrack/help/") + helpBase + QStringLiteral("/help.qhc")
+                         << QStringLiteral("/opt/linuxtrack/share/linuxtrack/help/") + helpBase + QStringLiteral("/help.qhc");
         
         for (const QString &altPath : alternativePaths) {
             if (QFile::exists(altPath)) {
