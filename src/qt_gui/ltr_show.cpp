@@ -443,35 +443,41 @@ void LtrGuiForm::initHotkeys()
     return; // Could not find button layout
   }
 
-  // Create hotkey frame
+  // Create hotkey frame with compact horizontal layout
   QFrame *hotkeyFrame = new QFrame();
   hotkeyFrame->setFrameShape(QFrame::StyledPanel);
   hotkeyFrame->setFrameShadow(QFrame::Raised);
+  // Set size policy to prevent excessive expansion
+  hotkeyFrame->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Maximum);
 
-  QVBoxLayout *hotkeyVBox = new QVBoxLayout(hotkeyFrame);
+  QHBoxLayout *hotkeyHBox = new QHBoxLayout(hotkeyFrame);
+  hotkeyHBox->setContentsMargins(8, 5, 8, 5);
+  hotkeyHBox->setSpacing(10);
 
-  // Add informational label
-  QLabel *infoLabel = new QLabel(QString::fromUtf8("⚠️ Global Hotkeys: These hotkeys work system-wide. For per-game hotkeys, use controller.exe installed via Wine Bridge in each game prefix. ⚠️ Warning: Do not run both global hotkeys and controller.exe simultaneously - they will conflict!"));
-  infoLabel->setWordWrap(true);
-  hotkeyVBox->addWidget(infoLabel);
+  // Add compact informational label with tooltip
+  QLabel *infoLabel = new QLabel(QString::fromUtf8("⚠️ Global Hotkeys:"));
+  QString tooltipText = QString::fromUtf8("These hotkeys work system-wide. For per-game hotkeys, use controller.exe installed via Wine Bridge in each game prefix.\n\nWarning: Do not run both global hotkeys and controller.exe simultaneously - they will conflict!");
+  infoLabel->setToolTip(tooltipText);
+  infoLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+  hotkeyHBox->addWidget(infoLabel);
 
-  // Create grid layout for hotkeys
+  // Create grid layout for hotkeys (arranged horizontally in single row)
   QGridLayout *hotkeyLayout = new QGridLayout();
-  hotkeyLayout->setHorizontalSpacing(5);
-  hotkeyLayout->setVerticalSpacing(8);
-  hotkeyLayout->setContentsMargins(5, 5, 5, 5);
+  hotkeyLayout->setHorizontalSpacing(10);
+  hotkeyLayout->setVerticalSpacing(0);
+  hotkeyLayout->setContentsMargins(0, 0, 0, 0);
 
   hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
 
-  toggleHotKey = addHotKey(QString::fromUtf8("Pause/Resume tracking:"), QString::fromUtf8("tracking_toggle"),
+  toggleHotKey = addHotKey(QString::fromUtf8("Pause/Resume:"), QString::fromUtf8("tracking_toggle"),
 			   HOTKEY_TOGGLE_TRACKING, this, this, hotkeyLayout, hotkeySettings, 0, 0);
   if(!toggleHotKey){
     QMessageBox::warning(this, QString::fromUtf8("Hotkey Setup Warning"),
       QString::fromUtf8("Failed to register pause/resume hotkey. Hotkey functionality may be limited."));
   }
 
-  recenterHotKey = addHotKey(QString::fromUtf8("Quick recenter:"), QString::fromUtf8("quick_recenter"),
-			   HOTKEY_QUICK_RECENTER, this, this, hotkeyLayout, hotkeySettings, 1, 0);
+  recenterHotKey = addHotKey(QString::fromUtf8("Recenter:"), QString::fromUtf8("quick_recenter"),
+			   HOTKEY_QUICK_RECENTER, this, this, hotkeyLayout, hotkeySettings, 0, 1);
   if(!recenterHotKey){
     QMessageBox::warning(this, QString::fromUtf8("Hotkey Setup Warning"),
       QString::fromUtf8("Failed to register recenter hotkey. Hotkey functionality may be limited."));
@@ -479,12 +485,16 @@ void LtrGuiForm::initHotkeys()
 
   hotkeySettings->endGroup();
 
-  hotkeyVBox->addLayout(hotkeyLayout);
+  hotkeyHBox->addLayout(hotkeyLayout);
 
-  // Add clear button
-  QPushButton *clearButton = new QPushButton(QString::fromUtf8("Clear Hotkeys"));
+  // Add clear button inline
+  QPushButton *clearButton = new QPushButton(QString::fromUtf8("Clear"));
+  clearButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
   connect(clearButton, SIGNAL(pressed()), this, SLOT(clearHotkeys()));
-  hotkeyVBox->addWidget(clearButton);
+  hotkeyHBox->addWidget(clearButton);
+
+  // Add spacer to push everything to the left
+  hotkeyHBox->addStretch();
 
   // Insert hotkey frame after the button layout
   mainLayout->insertWidget(buttonLayoutIndex + 1, hotkeyFrame);
