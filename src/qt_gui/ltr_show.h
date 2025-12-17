@@ -13,6 +13,7 @@
 #include <QVBoxLayout>
 #include <QElapsedTimer>
 #include <QContextMenuEvent>
+#include <QShowEvent>
 #include <QMenu>
 #include <QAction>
 #include <QDockWidget>
@@ -76,6 +77,7 @@ class LtrGuiForm : public QWidget
   protected:
    void closeEvent(QCloseEvent *event);
    void contextMenuEvent(QContextMenuEvent *event);
+   void showEvent(QShowEvent *event) override;
   private:
    Ui::Ltr_gui ui;
    Window *glw;
@@ -101,8 +103,8 @@ class LtrGuiForm : public QWidget
    HotKey *toggleHotKey;
    HotKey *recenterHotKey;
    QSettings *hotkeySettings;
+   bool hotkeysInitialized;
    void initHotkeys();
-   void syncHotkeysToMickey();
 };
 
 #endif
