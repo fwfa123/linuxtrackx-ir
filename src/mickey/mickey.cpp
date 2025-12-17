@@ -11,6 +11,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QCursor>
+#include <QPushButton>
 #include "mickey.h"
 #include "mouse.h"
 #include "linuxtrack.h"
@@ -825,6 +826,65 @@ void MickeyGUI::show()
   }
 }
 
+// Check for hotkey conflicts between mickey and ltr_gui
+static void checkHotkeyConflicts(QWidget *parent)
+{
+  QSettings ltrGuiSettings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("ltr_gui"));
+  QSettings mickeySettings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("mickey"));
+  
+  QStringList conflicts;
+  
+  // Check tracking_toggle hotkey
+  ltrGuiSettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString ltrToggle = ltrGuiSettings.value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
+  ltrGuiSettings.endGroup();
+  
+  mickeySettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString mickeyToggle = mickeySettings.value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
+  mickeySettings.endGroup();
+  
+  if (mickeyToggle.compare(QString::fromUtf8("None"), Qt::CaseInsensitive) != 0 &&
+      mickeyToggle.compare(ltrToggle, Qt::CaseInsensitive) == 0) {
+    conflicts << QString::fromUtf8("Start/Stop tracking: %1").arg(mickeyToggle);
+  }
+  
+  // Check quick_recenter hotkey
+  ltrGuiSettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString ltrRecenter = ltrGuiSettings.value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
+  ltrGuiSettings.endGroup();
+  
+  mickeySettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString mickeyRecenter = mickeySettings.value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
+  mickeySettings.endGroup();
+  
+  if (mickeyRecenter.compare(QString::fromUtf8("None"), Qt::CaseInsensitive) != 0 &&
+      mickeyRecenter.compare(ltrRecenter, Qt::CaseInsensitive) == 0) {
+    conflicts << QString::fromUtf8("Quick recenter: %1").arg(mickeyRecenter);
+  }
+  
+  // Show warning dialog if conflicts found
+  if (!conflicts.isEmpty()) {
+    QString conflictText = QString::fromUtf8(
+      "Hotkey conflict detected!\n\n"
+      "The following hotkeys are configured identically in both Mickey and Linuxtrack GUI:\n\n"
+    );
+    for (const QString &conflict : conflicts) {
+      conflictText += QString::fromUtf8("  • %1\n").arg(conflict);
+    }
+    conflictText += QString::fromUtf8(
+      "\n"
+      "Both applications cannot use the same global hotkeys simultaneously.\n"
+      "If you launch both applications, only the first one launched will be able to register these hotkeys.\n\n"
+      "To avoid conflicts:\n"
+      "  • Use different hotkeys in each application, or\n"
+      "  • Only run one application at a time, or\n"
+      "  • Clear the conflicting hotkeys in one of the applications."
+    );
+    
+    QMessageBox::warning(parent, QString::fromUtf8("Hotkey Conflict Warning"), conflictText);
+  }
+}
+
 //To avoid recursion as Mickey's constructor uses GUI too
 void MickeyGUI::init()
 {
@@ -842,10 +902,45 @@ void MickeyGUI::init()
 			   1, this, mickey, ui.HotkeyStack, &settings, 4, 1);
   mmbHotKey = addHotKey(QString::fromUtf8("Middle:"), QString::fromUtf8("m_mouse"), 
 			   2, this, mickey, ui.HotkeyStack, &settings, 4, 2);
+  
+  // Add Clear Hotkeys button
+  QPushButton *clearButton = new QPushButton(QString::fromUtf8("Clear Hotkeys"), this);
+  clearButton->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
+  QObject::connect(clearButton, SIGNAL(pressed()), this, SLOT(clearHotkeys()));
+  ui.HotkeyStack->addWidget(clearButton, 5, 1, 1, 2);
+  
   settings.endGroup();
   ui.ApplyButton->setEnabled(false);
   mickey->setRelative(ui.RelativeCB->isChecked());
   changed = false;
+  
+  // Check for conflicts with ltr_gui after hotkeys are initialized
+  checkHotkeyConflicts(this);
+}
+
+void MickeyGUI::clearHotkeys()
+{
+  QString noneStr = QString::fromUtf8("None");
+  
+  if(toggleHotKey){
+    toggleHotKey->setHotKey(noneStr);
+  }
+  if(recenterHotKey){
+    recenterHotKey->setHotKey(noneStr);
+  }
+  if(lmbHotKey){
+    lmbHotKey->setHotKey(noneStr);
+  }
+  if(mmbHotKey){
+    mmbHotKey->setHotKey(noneStr);
+  }
+  
+  settings.beginGroup(QString::fromUtf8("HotKeys"));
+  settings.setValue(QString::fromUtf8("tracking_toggle"), noneStr);
+  settings.setValue(QString::fromUtf8("quick_recenter"), noneStr);
+  settings.setValue(QString::fromUtf8("l_mouse"), noneStr);
+  settings.setValue(QString::fromUtf8("m_mouse"), noneStr);
+  settings.endGroup();
 }
 
 #include "moc_mickey.cpp"

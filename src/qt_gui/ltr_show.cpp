@@ -14,7 +14,6 @@
 #include <pref_global.h>
 #include <pref.hpp>
 #include <tracking.h>
-#include <iostream>
 #include <scp_form.h>
 #include <ltr_state.h>
 #include <string.h>
@@ -34,6 +33,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QMessageBox>
+#include <QShowEvent>
 
 QWidget *label;
 static bool running = false;
@@ -53,7 +53,8 @@ static const int HOTKEY_QUICK_RECENTER = 1;
 LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &settings)
               : glw(NULL), cv(NULL), allowClose(false), main_gui(tmp_gui),
                 contextMenu(nullptr), dockAction(nullptr), undockAction(nullptr),
-                toggleHotKey(nullptr), recenterHotKey(nullptr), hotkeySettings(&settings)
+                toggleHotKey(nullptr), recenterHotKey(nullptr), hotkeySettings(&settings),
+                hotkeysInitialized(false)
 {
   ui.setupUi(this);
   cv = new CameraView(label);
@@ -401,21 +402,16 @@ void LtrGuiForm::undockFromMainWindow()
 }
 
 // Hotkey implementation
-static HotKey* addHotKey(const QString &label, const QString &prefId, int id, 
-		  QWidget *owner, QObject *target, QGridLayout *dest, QSettings *pref, int row, int column)
+// Version that creates widget without registering hotkey (for delayed registration)
+static HotKey* createHotKeyWidget(const QString &label, const QString &prefId, int id, 
+		  QWidget *owner, QObject *target, QGridLayout *dest, int row, int column)
 {
   HotKey *hk = new HotKey(label, prefId, id, owner);
-  QString hkString = pref->value(prefId, QString::fromUtf8("None")).toString();
-  if(hk->setHotKey(hkString)){
-    dest->addWidget(hk, row, column);
-    QObject::connect(hk, SIGNAL(activated(int, bool)), target, SLOT(hotKey_activated(int, bool)));
-    QObject::connect(hk, SIGNAL(newHotKey(const QString &, const QString &)), 
+  dest->addWidget(hk, row, column);
+  QObject::connect(hk, SIGNAL(activated(int, bool)), target, SLOT(hotKey_activated(int, bool)));
+  QObject::connect(hk, SIGNAL(newHotKey(const QString &, const QString &)), 
 		     owner, SLOT(updateHotKey(const QString &, const QString &)));
-    return hk;
-  }else{
-    delete hk;
-    return NULL;
-  }
+  return hk;
 }
 
 void LtrGuiForm::initHotkeys()
@@ -469,19 +465,12 @@ void LtrGuiForm::initHotkeys()
 
   hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
 
-  toggleHotKey = addHotKey(QString::fromUtf8("Pause/Resume:"), QString::fromUtf8("tracking_toggle"),
-			   HOTKEY_TOGGLE_TRACKING, this, this, hotkeyLayout, hotkeySettings, 0, 0);
-  if(!toggleHotKey){
-    QMessageBox::warning(this, QString::fromUtf8("Hotkey Setup Warning"),
-      QString::fromUtf8("Failed to register pause/resume hotkey. Hotkey functionality may be limited."));
-  }
+  // Create hotkey widgets without registering them yet (will be registered in showEvent)
+  toggleHotKey = createHotKeyWidget(QString::fromUtf8("Pause/Resume:"), QString::fromUtf8("tracking_toggle"),
+			   HOTKEY_TOGGLE_TRACKING, this, this, hotkeyLayout, 0, 0);
 
-  recenterHotKey = addHotKey(QString::fromUtf8("Recenter:"), QString::fromUtf8("quick_recenter"),
-			   HOTKEY_QUICK_RECENTER, this, this, hotkeyLayout, hotkeySettings, 0, 1);
-  if(!recenterHotKey){
-    QMessageBox::warning(this, QString::fromUtf8("Hotkey Setup Warning"),
-      QString::fromUtf8("Failed to register recenter hotkey. Hotkey functionality may be limited."));
-  }
+  recenterHotKey = createHotKeyWidget(QString::fromUtf8("Recenter:"), QString::fromUtf8("quick_recenter"),
+			   HOTKEY_QUICK_RECENTER, this, this, hotkeyLayout, 0, 1);
 
   hotkeySettings->endGroup();
 
@@ -533,24 +522,6 @@ void LtrGuiForm::updateHotKey(const QString &prefId, const QString &hk)
   hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
   hotkeySettings->setValue(prefId, hk);
   hotkeySettings->endGroup();
-  
-  // Sync to mickey.conf
-  syncHotkeysToMickey();
-}
-
-void LtrGuiForm::syncHotkeysToMickey()
-{
-  QSettings mickeySettings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("mickey"));
-  
-  hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
-  QString trackingToggle = hotkeySettings->value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
-  QString quickRecenter = hotkeySettings->value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
-  hotkeySettings->endGroup();
-  
-  mickeySettings.beginGroup(QString::fromUtf8("HotKeys"));
-  mickeySettings.setValue(QString::fromUtf8("tracking_toggle"), trackingToggle);
-  mickeySettings.setValue(QString::fromUtf8("quick_recenter"), quickRecenter);
-  mickeySettings.endGroup();
 }
 
 void LtrGuiForm::clearHotkeys()
@@ -568,9 +539,97 @@ void LtrGuiForm::clearHotkeys()
   hotkeySettings->setValue(QString::fromUtf8("tracking_toggle"), noneStr);
   hotkeySettings->setValue(QString::fromUtf8("quick_recenter"), noneStr);
   hotkeySettings->endGroup();
+}
+
+// Check for hotkey conflicts between ltr_gui and mickey
+static void checkHotkeyConflicts(QWidget *parent)
+{
+  QSettings ltrGuiSettings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("ltr_gui"));
+  QSettings mickeySettings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("mickey"));
   
-  // Sync to mickey.conf
-  syncHotkeysToMickey();
+  QStringList conflicts;
+  
+  // Check tracking_toggle hotkey
+  ltrGuiSettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString ltrToggle = ltrGuiSettings.value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
+  ltrGuiSettings.endGroup();
+  
+  mickeySettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString mickeyToggle = mickeySettings.value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
+  mickeySettings.endGroup();
+  
+  if (ltrToggle.compare(QString::fromUtf8("None"), Qt::CaseInsensitive) != 0 &&
+      ltrToggle.compare(mickeyToggle, Qt::CaseInsensitive) == 0) {
+    conflicts << QString::fromUtf8("Pause/Resume tracking: %1").arg(ltrToggle);
+  }
+  
+  // Check quick_recenter hotkey
+  ltrGuiSettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString ltrRecenter = ltrGuiSettings.value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
+  ltrGuiSettings.endGroup();
+  
+  mickeySettings.beginGroup(QString::fromUtf8("HotKeys"));
+  QString mickeyRecenter = mickeySettings.value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
+  mickeySettings.endGroup();
+  
+  if (ltrRecenter.compare(QString::fromUtf8("None"), Qt::CaseInsensitive) != 0 &&
+      ltrRecenter.compare(mickeyRecenter, Qt::CaseInsensitive) == 0) {
+    conflicts << QString::fromUtf8("Quick recenter: %1").arg(ltrRecenter);
+  }
+  
+  // Show warning dialog if conflicts found
+  if (!conflicts.isEmpty()) {
+    QString conflictText = QString::fromUtf8(
+      "Hotkey conflict detected!\n\n"
+      "The following hotkeys are configured identically in both Linuxtrack GUI and Mickey:\n\n"
+    );
+    for (const QString &conflict : conflicts) {
+      conflictText += QString::fromUtf8("  • %1\n").arg(conflict);
+    }
+    conflictText += QString::fromUtf8(
+      "\n"
+      "Both applications cannot use the same global hotkeys simultaneously.\n"
+      "If you launch both applications, only the first one launched will be able to register these hotkeys.\n\n"
+      "To avoid conflicts:\n"
+      "  • Use different hotkeys in each application, or\n"
+      "  • Only run one application at a time, or\n"
+      "  • Clear the conflicting hotkeys in one of the applications."
+    );
+    
+    QMessageBox::warning(parent, QString::fromUtf8("Hotkey Conflict Warning"), conflictText);
+  }
+}
+
+void LtrGuiForm::showEvent(QShowEvent *event)
+{
+  QWidget::showEvent(event);
+  
+  // Register hotkeys when widget is shown (X11 display/window is ready)
+  // This ensures the X11 display and window are properly initialized before
+  // attempting to register global hotkeys, preventing registration failures.
+  if (!hotkeysInitialized && toggleHotKey && recenterHotKey) {
+    hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
+    
+    QString trackingToggle = hotkeySettings->value(QString::fromUtf8("tracking_toggle"), QString::fromUtf8("None")).toString();
+    if (!toggleHotKey->setHotKey(trackingToggle)) {
+      // Hotkey registration failed (e.g., hotkey already taken by another app).
+      // We silently ignore this to avoid showing warnings during initialization.
+      // User can manually configure hotkeys through the UI if needed.
+    }
+    
+    QString quickRecenter = hotkeySettings->value(QString::fromUtf8("quick_recenter"), QString::fromUtf8("None")).toString();
+    if (!recenterHotKey->setHotKey(quickRecenter)) {
+      // Hotkey registration failed (e.g., hotkey already taken by another app).
+      // We silently ignore this to avoid showing warnings during initialization.
+      // User can manually configure hotkeys through the UI if needed.
+    }
+    
+    hotkeySettings->endGroup();
+    hotkeysInitialized = true;
+    
+    // Check for conflicts with mickey after hotkeys are registered
+    checkHotkeyConflicts(this);
+  }
 }
 
 
