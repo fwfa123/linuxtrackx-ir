@@ -137,9 +137,14 @@ bool HelpViewer::initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngin
         std::cout << "   Attempting to manually load SQLite plugin..." << std::endl;
         
         // Check multiple possible locations for the SQLite plugin
+        // Prioritize Qt6 paths, then fall back to Qt5 paths for compatibility
         QStringList sqlitePluginPaths;
         sqlitePluginPaths << qtSqlDriverPath + QStringLiteral("/libqsqlite.so")
                          << qtPluginPath + QStringLiteral("/sqldrivers/libqsqlite.so")
+                         << QApplication::applicationDirPath() + QStringLiteral("/../lib/qt6/plugins/sqldrivers/libqsqlite.so")
+                         << QApplication::applicationDirPath() + QStringLiteral("/../lib/qt6/plugins/sqldrivers/libqsqlite.so")
+                         << QStringLiteral("/usr/lib/x86_64-linux-gnu/qt6/plugins/sqldrivers/libqsqlite.so")
+                         << QStringLiteral("/usr/lib/qt6/plugins/sqldrivers/libqsqlite.so")
                          << QApplication::applicationDirPath() + QStringLiteral("/../lib/qt5/plugins/sqldrivers/libqsqlite.so")
                          << QApplication::applicationDirPath() + QStringLiteral("/../lib/qt5/plugins/sqldrivers/libqsqlite.so")
                          << QStringLiteral("/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so")

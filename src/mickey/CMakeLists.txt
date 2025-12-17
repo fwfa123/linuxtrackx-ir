@@ -104,18 +104,20 @@ set_target_properties(mickey PROPERTIES
 # ============================================================================
 
 # Find qhelpgenerator for help file generation
-find_program(QT5_QHELPGENERATOR
-    NAMES qhelpgenerator-qt5 qhelpgenerator
+# Qt6.2+: Use Qt6 qhelpgenerator for best compatibility with Qt6 QHelpEngine
+# Help files generated with Qt5 qhelpgenerator may work but Qt6-generated files are recommended
+find_program(QT6_QHELPGENERATOR
+    NAMES qhelpgenerator-qt6 qhelpgenerator
 )
 
 set(HELP_QCH_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qch)
 set(HELP_QHC_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qhc)
 
-if(QT5_QHELPGENERATOR)
+if(QT6_QHELPGENERATOR)
     # Generate help.qch from mickey.qhp
     add_custom_command(
         OUTPUT ${HELP_QCH_FILE}
-        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhp -o ${HELP_QCH_FILE}
+        COMMAND ${QT6_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhp -o ${HELP_QCH_FILE}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhp
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating Mickey Qt Help file (help.qch)"
@@ -124,7 +126,7 @@ if(QT5_QHELPGENERATOR)
     # Generate help.qhc from mickey.qhcp
     add_custom_command(
         OUTPUT ${HELP_QHC_FILE}
-        COMMAND ${QT5_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhcp -o ${HELP_QHC_FILE}
+        COMMAND ${QT6_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhcp -o ${HELP_QHC_FILE}
         DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/mickey.qhcp ${HELP_QCH_FILE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Generating Mickey Qt Help collection (help.qhc)"
@@ -145,7 +147,7 @@ if(QT5_QHELPGENERATOR)
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
     )
 else()
-    message(WARNING "Qt5 qhelpgenerator not found - Mickey help files will not be generated")
+    message(WARNING "Qt6 qhelpgenerator not found - Mickey help files will not be generated")
     # Create empty files to avoid installation errors
     add_custom_command(
         OUTPUT ${HELP_QCH_FILE} ${HELP_QHC_FILE}

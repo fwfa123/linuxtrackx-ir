@@ -6,6 +6,8 @@
 #include <QAbstractEventDispatcher>
 #include <QMutex>
 #include <map>
+#include <QSocketNotifier>
+#include <QTimer>
 
 // QX11Info was removed in Qt6 - use X11 APIs directly
 // Include X11 after Qt to avoid macro conflicts

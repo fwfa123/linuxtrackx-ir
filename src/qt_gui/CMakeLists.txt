@@ -257,7 +257,7 @@ endif()
 target_compile_definitions(ltr_gui PRIVATE
     QT_NO_CAST_FROM_ASCII
     QT_NO_CAST_TO_ASCII
-    QT5_OVERRIDES
+    QT6_OVERRIDES
     HAVE_CONFIG_H
     HELP_BASE="ltr_gui/"
 )
