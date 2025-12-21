@@ -112,6 +112,9 @@ QT_QPA_PLATFORM=xcb ltr_gui
 - **Server approach** - Use LinuxTrack server for Wine games
 - **OSC network** - External application integration
 
+### Companion Applications
+- **[LinuxTrack Mapper](https://gitlab.com/open-source4661535/linuxtrack-mapper)** - Map head tracking zones to keyboard inputs for games that support keyboard look controls. Perfect for flight simulators and racing games that don't have native TrackIR support but support keyboard view controls.
+
 ## 🎯 Supported Hardware
 
 ### TrackIR Devices
@@ -223,4 +226,5 @@ This project builds upon the incredible work of the original LinuxTrack develope
 - **GitLab Repository**: [fwfa123/linuxtrackx-ir](https://gitlab.com/fwfa123/linuxtrackx-ir)
 - **Wiki**: [GitLab Wiki](https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/home)
 - **Original Project**: [uglyDwarf/linuxtrack](https://github.com/uglyDwarf/linuxtrack)
+- **Companion Application**: [LinuxTrack Mapper](https://gitlab.com/open-source4661535/linuxtrack-mapper) - Map head tracking to keyboard inputs
 
