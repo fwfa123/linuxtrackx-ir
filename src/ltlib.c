@@ -229,21 +229,42 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
             
             // Fallback path resolution
             ltr_int_log_message("Client mode: Attempting fallback path resolution...\n");
-            const char *fallback_paths[] = {
-              "/opt/bin/ltr_server1",
-              "/usr/local/bin/ltr_server1",
-              "/usr/bin/ltr_server1",
-              NULL  // Placeholder for PATH lookup (handled separately)
-            };
             
-            server = NULL;
-            // First try the hardcoded paths
-            for(int i = 0; i < 3; i++){
-              ltr_int_log_message("Client mode: Trying fallback path %d: %s\n", i, fallback_paths[i]);
-              if(access(fallback_paths[i], F_OK | X_OK) == 0){
-                server = ltr_int_my_strdup(fallback_paths[i]);
-                ltr_int_log_message("Client mode: Found ltr_server1 at fallback path: %s\n", server);
-                break;
+            // Detect AppImage environment and try AppImage-specific path first
+            char *appimage_server_path = NULL;
+            const char *appdir_path = getenv("APPDIR");
+            if(appdir_path != NULL){
+              // Running in AppImage - try AppImage's usr/bin directory
+              size_t appdir_len = strlen(appdir_path);
+              appimage_server_path = (char *)malloc(appdir_len + 25);
+              if(appimage_server_path != NULL){
+                snprintf(appimage_server_path, appdir_len + 25, "%s/usr/bin/ltr_server1", appdir_path);
+                ltr_int_log_message("Client mode: Trying AppImage path: %s\n", appimage_server_path);
+                if(access(appimage_server_path, F_OK | X_OK) == 0){
+                  server = ltr_int_my_strdup(appimage_server_path);
+                  ltr_int_log_message("Client mode: Found ltr_server1 in AppImage: %s\n", server);
+                }
+                free(appimage_server_path);
+                appimage_server_path = NULL;
+              }
+            }
+            
+            // If AppImage path didn't work, try standard system paths
+            if(server == NULL){
+              const char *fallback_paths[] = {
+                "/opt/bin/ltr_server1",
+                "/usr/local/bin/ltr_server1",
+                "/usr/bin/ltr_server1",
+                NULL
+              };
+              
+              for(int i = 0; fallback_paths[i] != NULL; i++){
+                ltr_int_log_message("Client mode: Trying fallback path %d: %s\n", i, fallback_paths[i]);
+                if(access(fallback_paths[i], F_OK | X_OK) == 0){
+                  server = ltr_int_my_strdup(fallback_paths[i]);
+                  ltr_int_log_message("Client mode: Found ltr_server1 at fallback path: %s\n", server);
+                  break;
+                }
               }
             }
             
@@ -402,14 +423,31 @@ linuxtrack_state_type ltr_init(const char *cust_section)
     if(result != NULL){
       return ltr_get_tracking_state();
     }else{
-      return INITIALIZING;
+      // Client mode failed - check if we should fall back to standalone mode
+      // or return the actual error state
+      linuxtrack_state_type error_state = ltr_get_tracking_state();
+      if(error_state == err_NOT_INITIALIZED){
+        // Client mode failed completely, try standalone mode as fallback
+        ltr_int_log_message("Client mode initialization failed, falling back to standalone mode\n");
+        result = ltr_int_init_helper(cust_section, true);
+        if(result != NULL){
+          return ltr_get_tracking_state();
+        }else{
+          // Both modes failed, return the error state
+          return ltr_get_tracking_state();
+        }
+      }else{
+        // Return the actual state (might be INITIALIZING if in progress)
+        return error_state;
+      }
     }
   }else{
     // No server running, use standalone mode
     if(ltr_int_init_helper(cust_section, true) != NULL){
       return ltr_get_tracking_state();
     }else{
-      return INITIALIZING;
+      // Standalone mode failed, return the actual error state
+      return ltr_get_tracking_state();
     }
   }
 }
