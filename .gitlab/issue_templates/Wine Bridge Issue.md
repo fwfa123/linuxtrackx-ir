@@ -2,10 +2,12 @@
 Brief description of the Wine bridge problem
 
 ## Steps to Reproduce
-1. Launch LinuxTrack X-IR v0.99.23
-2. Go to "Misc" tab
-3. Click "Install Wine Bridge" button
-4. [Describe what happens]
+1. Launch LinuxTrack X-IR 
+2. Go to "Gaming" tab
+3. Choose the Platform where the game is installed
+4. Choose the game from the list that is populated to install the winebridge
+5. Click "Install Wine Bridge" button
+6. [Describe what happens]
 
 ## Expected Behavior
 What should happen during Wine bridge installation
@@ -15,7 +17,7 @@ What actually happens
 
 ## System Information
 - **OS**: Ubuntu 22.04 / Fedora 37 / Arch Linux / etc.
-- **LinuxTrack Version**: v0.99.23
+- **LinuxTrack Version**: 
 - **Wine Version**: (e.g., 8.0, 7.0, etc.)
 - **Wine Installation**: System package / Lutris / Manual
 - **Wine Prefix**: Default (~/.wine) / Custom location
@@ -36,7 +38,7 @@ Copy/paste any error messages from:
 ## Game Information (if applicable)
 - **Game Name**: 
 - **Game Version**: 
-- **Game Platform**: Steam / GOG / Standalone
+- **Game Platform**: Steam / Lutris / Standalone
 - **Game Architecture**: 32-bit / 64-bit
 
 ## Additional Information
