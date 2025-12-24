@@ -2,9 +2,9 @@
 Brief description of the AppImage-specific problem
 
 ## Steps to Reproduce
-1. Download LinuxTrack-X-IR-0.99.22-x86_64.AppImage
-2. Make executable: `chmod +x LinuxTrack-X-IR-0.99.22-x86_64.AppImage`
-3. Run: `./LinuxTrack-X-IR-0.99.22-x86_64.AppImage`
+1. Download Download the latest AppImage
+2. Make executable: EXAMPLE `chmod +x LinuxTrack-X-IR-0.99.22-x86_64.AppImage`
+3. Run: EXAMPLE `./LinuxTrack-X-IR-0.99.22-x86_64.AppImage`
 4. [Describe what happens]
 
 ## Expected Behavior
@@ -15,8 +15,7 @@ What actually happens
 
 ## System Information
 - **OS**: Ubuntu 22.04 / Fedora 37 / Arch Linux / etc.
-- **LinuxTrack Version**: v0.99.23
-- **AppImage Size**: 69MB
+- **LinuxTrack Version**: 
 - **Hardware**: CPU, GPU, RAM
 - **Desktop Environment**: GNOME / KDE / XFCE / etc.
 - **Display Server**: X11 / Wayland

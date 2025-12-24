@@ -2,7 +2,7 @@
 Brief summary of the problem
 
 ## Steps to Reproduce
-1. Download the latest AppImage or builkd from source
+1. Download the latest AppImage or build from source
 2. Run the ltr_gui
 3. Go to [specific menu/tab]
 4. Click [specific button]
