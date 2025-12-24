@@ -2,8 +2,8 @@
 Brief summary of the problem
 
 ## Steps to Reproduce
-1. Download LinuxTrack X-IR v0.99.23
-2. Run the AppImage
+1. Download the latest AppImage or builkd from source
+2. Run the ltr_gui
 3. Go to [specific menu/tab]
 4. Click [specific button]
 5. Error occurs
@@ -16,7 +16,7 @@ What actually happens
 
 ## System Information
 - **OS**: Ubuntu 22.04 / Fedora 37 / Arch Linux / etc.
-- **LinuxTrack Version**: v0.99.23
+- **LinuxTrack Version**: 
 - **Installation Method**: AppImage / Source / Package
 - **Wine Version**: (if applicable)
 - **Hardware**: CPU, GPU, RAM
