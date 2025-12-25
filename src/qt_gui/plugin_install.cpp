@@ -10,6 +10,7 @@
 #include "extractor.h"
 #include "utils.h"
 #include "installer_paths.h"
+#include "lutris_path_config_dialog.h"
 #include "tracker.h"
 
 #ifdef HAVE_CONFIG_H
@@ -553,6 +554,69 @@ void PluginInstall::installLutrisWineBridge()
       QObject::tr("Lutris is not installed or not properly configured.\n\n") +
       QObject::tr("Error: ") + lutrisIntegration->getLastError());
     return;
+  }
+
+  // Check if Lutris paths actually exist - if not, show configuration dialog
+  QString dbPath = lutrisIntegration->getLutrisDatabasePath();
+  QString cfgPath = lutrisIntegration->getLutrisConfigPath();
+
+  QFileInfo dbFile(dbPath);
+  QDir cfgDir(cfgPath);
+
+  bool dbExists = dbFile.exists();
+  bool cfgExists = cfgDir.exists();
+
+  if (!dbExists || !cfgExists) {
+    QString message = QString::fromUtf8("Lutris was detected, but its configuration files were not found at:\n\n"
+                              "Database: %1 (%2)\n"
+                              "Config: %3 (%4)\n\n"
+                              "This can happen with non-standard Lutris installations.\n\n"
+                              "Would you like to configure custom paths?")
+                              .arg(dbPath)
+                              .arg(dbExists ? QString::fromUtf8("Found") : QString::fromUtf8("Not Found"))
+                              .arg(cfgPath)
+                              .arg(cfgExists ? QString::fromUtf8("Found") : QString::fromUtf8("Not Found"));
+
+    QMessageBox::StandardButton result = QMessageBox::question(
+      getParentWidget(),
+      QString::fromUtf8("Lutris Configuration Not Found"),
+      message
+    );
+
+    if (result == QMessageBox::Yes) {
+      LutrisPathConfigDialog dialog(getParentWidget());
+      if (dialog.exec() == QDialog::Accepted) {
+        // Apply the custom paths
+        QString customDbPath = dialog.getDatabasePath();
+        QString customCfgPath = dialog.getConfigPath();
+
+        if (!customDbPath.isEmpty() && !customCfgPath.isEmpty()) {
+          lutrisIntegration->setCustomPaths(customDbPath, customCfgPath);
+          lutrisIntegration->saveCustomPaths();
+          // Re-initialize paths with the new custom paths
+          lutrisIntegration->initializePaths();
+        } else {
+          // Reset to defaults if user cleared the paths
+          lutrisIntegration->clearCustomPaths();
+          lutrisIntegration->initializePaths();
+        }
+
+        // Re-check if Lutris is now properly configured
+        if (!lutrisIntegration->isLutrisInstalled()) {
+          QMessageBox::warning(getParentWidget(), QObject::tr("Configuration Failed"),
+            QObject::tr("Lutris configuration is still invalid after applying custom paths.\n\n") +
+            QObject::tr("Please check your paths and try again."));
+          return;
+        }
+      } else {
+        // User cancelled the configuration dialog
+        return;
+      }
+    } else {
+      // User chose not to configure custom paths
+      QMessageBox::information(getParentWidget(), QObject::tr("Using Default Paths"),
+        QObject::tr("Continuing with default Lutris paths. The installation may fail if they are incorrect."));
+    }
   }
   
   // Get available Lutris games
