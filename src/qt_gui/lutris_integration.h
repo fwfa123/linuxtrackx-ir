@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QStandardPaths>
+#include <QSettings>
 #include "flatpak_detector.h"
 
 class LutrisGame {
@@ -67,12 +68,27 @@ public:
     void clearError() { lastError.clear(); }
     QString getDebugInfo() const { return debugInfo; }
 
+    // Custom path configuration
+    void setCustomPaths(const QString &dbPath, const QString &cfgPath);
+    void loadCustomPaths();
+    void saveCustomPaths();
+    bool hasCustomPaths() const;
+    void clearCustomPaths();
+
+public:
+    // Path initialization (public for external re-initialization)
+    bool initializePaths();
+
 private:
     QSqlDatabase lutrisDb;
     QString lastError;
     QString debugInfo;
     QString databasePath;
     QString configPath;
+    // Custom path configuration
+    bool useCustomPaths;
+    QString customDatabasePath;
+    QString customConfigPath;
     // Cache for fast-path installs
     bool hasSelectedGame = false;
     QString selectedGameSlug;
@@ -81,7 +97,6 @@ private:
     QMap<QString, LutrisGame> configParseCache; // key: configPath
     
     // Helper methods
-    bool initializePaths();
     QString getHomeDirectory();
     bool detectLutrisFlatpak();
     void setupFlatpakLutrisPaths();

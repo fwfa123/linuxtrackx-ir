@@ -70,6 +70,7 @@ set(LTR_GUI_HEADERS
     ../digest.h
     trackir_permission_dialog.h
     lutris_integration.h
+    lutris_path_config_dialog.h
     steam_integration.h
     testing_section.h
     tester_launcher.h
@@ -155,6 +156,7 @@ set(LTR_GUI_SOURCES
     ../digest.c
     trackir_permission_dialog.cpp
     lutris_integration.cpp
+    lutris_path_config_dialog.cpp
     steam_integration.cpp
     testing_section.cpp
     tester_launcher.cpp
