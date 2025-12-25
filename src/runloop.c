@@ -28,6 +28,9 @@ int ltr_int_rl_run(struct camera_control_block *ccb, frame_callback_fun cbk)
   }
   struct reflector_model_type rm;
   ltr_int_get_model_setup(&rm);
+  ltr_int_log_message("Runloop: Initial model type=%d\n", rm.type);
+  // Announce model change to ensure tracking system initializes with correct model
+  ltr_int_announce_model_change();
   frame.bloblist.blobs = ltr_int_my_malloc(sizeof(struct blob_type) * MAX_BLOBS);
   frame.bloblist.num_blobs = MAX_BLOBS;
   if((rm.type == SINGLE) || (rm.type == FACE)){

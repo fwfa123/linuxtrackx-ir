@@ -40,15 +40,30 @@ bool ltr_int_check_pose()
 {
   struct reflector_model_type rm;
   if(ltr_int_model_changed(true)){
+    ltr_int_log_message("check_pose: Model change flag was set, reloading model configuration\n");
     if(!ltr_int_get_model_setup(&rm)){
       ltr_int_log_message("Can't get pose setup!\n");
       return false;
     }
-    ltr_int_log_message("Initializing model!\n");
+    ltr_int_log_message("Initializing model with type=%d\n", rm.type);
     if(!ltr_int_pose_init(rm)){
       ltr_int_log_message("Can't initialize pose!\n");
       return false;
     }
+    // Verify that pose system has correct model type
+    int pose_type = ltr_int_get_pose_model_type();
+    int expected_type = (rm.type == CAP) ? 0 : (rm.type == CLIP) ? 1 : 
+                        (rm.type == SINGLE) ? 2 : (rm.type == FACE) ? 3 : 4;
+    if(pose_type != expected_type){
+      ltr_int_log_message("WARNING: Pose model type mismatch! Expected %d, got %d. Forcing re-init.\n", 
+                          expected_type, pose_type);
+      // Force re-initialization
+      if(!ltr_int_pose_init(rm)){
+        ltr_int_log_message("Can't reinitialize pose after mismatch!\n");
+        return false;
+      }
+    }
+    ltr_int_log_message("Model initialization complete, pose type=%d\n", ltr_int_get_pose_model_type());
   }
   return true;
 }
@@ -410,6 +425,7 @@ int ltr_int_update_pose(struct frame_type *frame)
 {
   //printf("Updating pose...\n");
   if(ltr_int_model_changed(false)){
+    ltr_int_log_message("update_pose: Model change detected during tracking, reinitializing pose\n");
     ltr_int_check_pose();
     recenter = true;
   }
