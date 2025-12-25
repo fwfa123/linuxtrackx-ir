@@ -45,24 +45,28 @@ static dbg_flag_type pts_dbg_flag = DBG_CHECK;
 
 bool ltr_int_pose_init(struct reflector_model_type rm)
 {
+  ltr_int_log_message("Pose init: received model type %d\n", rm.type);
   if(pts_dbg_flag == DBG_CHECK){
     pts_dbg_flag = ltr_int_get_dbg_flag('3');
   }
   switch(rm.type){
     case CAP:
       type = M_CAP;
+      ltr_int_log_message("Pose init: setting internal type to M_CAP (for 3-point cap/TrackClip)\n");
       #ifdef PT_DBG
         printf("MODEL:CAP\n");
       #endif
       break;
     case CLIP:
       type = M_CLIP;
+      ltr_int_log_message("Pose init: setting internal type to M_CLIP (for 3-point clip/TrackClip Pro)\n");
       #ifdef PT_DBG
         printf("MODEL:CLIP\n");
       #endif
       break;
     case SINGLE:
       type = M_SINGLE;
+      ltr_int_log_message("Pose init: setting internal type to M_SINGLE\n");
       #ifdef PT_DBG
         printf("MODEL:SINGLE\n");
       #endif
@@ -70,6 +74,7 @@ bool ltr_int_pose_init(struct reflector_model_type rm)
       break;
     case FACE:
       type = M_FACE;
+      ltr_int_log_message("Pose init: setting internal type to M_FACE\n");
       #ifdef PT_DBG
         printf("MODEL:FACE\n");
       #endif
@@ -77,6 +82,7 @@ bool ltr_int_pose_init(struct reflector_model_type rm)
       break;
     case ABSOLUTE:
       type = M_ABSOLUTE;
+      ltr_int_log_message("Pose init: setting internal type to M_ABSOLUTE\n");
       #ifdef PT_DBG
         printf("MODEL:ABSOLUTE\n");
       #endif
@@ -156,6 +162,13 @@ bool ltr_int_is_face()
 bool ltr_int_is_absolute()
 {
   return type == M_ABSOLUTE;
+}
+
+int ltr_int_get_pose_model_type()
+{
+  // Return the internal type enum value for verification purposes
+  // M_CAP=0, M_CLIP=1, M_SINGLE=2, M_FACE=3, M_ABSOLUTE=4
+  return (int)type;
 }
 
 static double blob_dist(struct blob_type b0, struct blob_type b1)
