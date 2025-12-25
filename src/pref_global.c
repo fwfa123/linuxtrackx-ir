@@ -27,6 +27,9 @@ static bool model_changed = true;
 bool ltr_int_model_changed(bool reset_flag)
 {
   bool flag = model_changed;
+  if(flag){
+    ltr_int_log_message("Model change detected (reset_flag=%s)\n", reset_flag ? "true" : "false");
+  }
   if(reset_flag){
     model_changed = false;
   }
@@ -40,7 +43,9 @@ void ltr_int_announce_model_change()
 
 static char *ltr_int_get_model_section()
 {
-  return ltr_int_get_key("Global", "Model");
+  char *section = ltr_int_get_key("Global", "Model");
+  ltr_int_log_message("Getting model section: '%s'\n", section ? section : "(null)");
+  return section;
 }
 
 bool ltr_int_is_model_active()
@@ -334,25 +339,32 @@ bool ltr_int_get_model_setup(reflector_model_type *rm)
   assert(rm != NULL);
   char *model_section = ltr_int_get_model_section();
   assert(model_section != NULL);
-  static bool res = false;
+  bool res = false;
   char *model_type = ltr_int_get_key(model_section, "Model-type");
+  ltr_int_log_message("Model setup: section='%s', Model-type='%s'\n", 
+                      model_section, model_type ? model_type : "(null)");
   assert(model_type != NULL);
 
   if(strcasecmp(model_type, "Cap") == 0){
     res = setup_cap(rm, model_section);
+    ltr_int_log_message("Model type after setup: CAP (type=%d)\n", rm->type);
   }else if(strcasecmp(model_type, "Clip") == 0){
     res = setup_clip(rm, model_section);
+    ltr_int_log_message("Model type after setup: CLIP (type=%d)\n", rm->type);
   }else if(strcasecmp(model_type, "SinglePoint") == 0){
     rm->type = SINGLE;
+    ltr_int_log_message("Model type after setup: SINGLE (type=%d)\n", rm->type);
     res = true;
   }else if(strcasecmp(model_type, "Face") == 0){
     rm->type = FACE;
+    ltr_int_log_message("Model type after setup: FACE (type=%d)\n", rm->type);
     res = true;
   }else if(strcasecmp(model_type, "Absolute") == 0){
     rm->type = ABSOLUTE;
+    ltr_int_log_message("Model type after setup: ABSOLUTE (type=%d)\n", rm->type);
     res = true;
   }else{
-    ltr_int_log_message("Unknown modeltype specified in section %s\n", model_section);
+    ltr_int_log_message("Unknown modeltype '%s' specified in section %s\n", model_type, model_section);
     res = false;
   }
   free(model_type);

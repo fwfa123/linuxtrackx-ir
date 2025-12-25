@@ -57,6 +57,7 @@ bool ltr_int_pose_process_blobs(struct bloblist_type blobs,
 bool ltr_int_is_single_point();
 bool ltr_int_is_face();
 bool ltr_int_is_absolute();
+int ltr_int_get_pose_model_type();  // Returns current internal model type for verification
 
 /*
 int ltr_int_pose_compute_camera_update(struct transform trans,
