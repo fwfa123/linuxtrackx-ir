@@ -17,7 +17,9 @@
 
 LutrisIntegration::LutrisIntegration(QObject *parent)
     : QObject(parent)
+    , useCustomPaths(false)
 {
+    loadCustomPaths();
     initializePaths();
 }
 
@@ -29,33 +31,60 @@ LutrisIntegration::~LutrisIntegration()
 bool LutrisIntegration::initializePaths()
 {
     QString homeDir = getHomeDirectory();
-    
+
     // CRITICAL: Verify that the home directory is not a hardcoded build-time path
     QString currentUser = QString::fromUtf8(qgetenv("USER"));
     QString expectedHome = QString::fromUtf8("/home/") + currentUser;
-    
+
     ltr_int_log_message("LutrisIntegration::initializePaths() - Current user: %s\n", currentUser.toUtf8().constData());
     ltr_int_log_message("LutrisIntegration::initializePaths() - Expected home: %s\n", expectedHome.toUtf8().constData());
     ltr_int_log_message("LutrisIntegration::initializePaths() - Actual home: %s\n", homeDir.toUtf8().constData());
-    
+
     // If the home directory looks like a hardcoded build-time path, try to fix it
     // Check if the home directory contains a username that doesn't match the current user
     QStringList homeParts = homeDir.split(QString::fromUtf8("/"));
-    if (homeParts.size() >= 3 && homeParts[1] == QString::fromUtf8("home") && 
+    if (homeParts.size() >= 3 && homeParts[1] == QString::fromUtf8("home") &&
         homeParts[2] != currentUser && !currentUser.isEmpty()) {
         ltr_int_log_message("LutrisIntegration::initializePaths() - WARNING: Detected hardcoded build-time path!\n");
         ltr_int_log_message("LutrisIntegration::initializePaths() - Attempting to fix by using current user's home\n");
         homeDir = expectedHome;
     }
-    
+
+    // Priority 1: Check for custom paths from QSettings
+    if (useCustomPaths && !customDatabasePath.isEmpty() && !customConfigPath.isEmpty()) {
+        databasePath = customDatabasePath;
+        configPath = customConfigPath;
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Using custom paths from settings\n");
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Custom database path: %s\n", databasePath.toUtf8().constData());
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Custom config path: %s\n", configPath.toUtf8().constData());
+        return true;
+    }
+
+    // Priority 2: Check for environment variable LUTRIS_INSTALL_DIR
+    QString lutrisRoot = QString::fromUtf8(qgetenv("LUTRIS_INSTALL_DIR"));
+    if (!lutrisRoot.isEmpty() && !lutrisRoot.endsWith(QLatin1Char('/'))) {
+        lutrisRoot += QLatin1Char('/');
+    }
+
+    if (!lutrisRoot.isEmpty()) {
+        databasePath = lutrisRoot + QString::fromUtf8("pga.db");
+        configPath = lutrisRoot + QString::fromUtf8("games/");
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Using environment variable LUTRIS_INSTALL_DIR: %s\n", lutrisRoot.toUtf8().constData());
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Database path: %s\n", databasePath.toUtf8().constData());
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Config path: %s\n", configPath.toUtf8().constData());
+        return true;
+    }
+
+    // Priority 3: Fall back to default home-based paths
     databasePath = homeDir + QString::fromUtf8("/.local/share/lutris/pga.db");
     configPath = homeDir + QString::fromUtf8("/.config/lutris/games/");
-    
+
     // Debug logging to help identify path issues
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Using default paths\n");
     ltr_int_log_message("LutrisIntegration::initializePaths() - Final home directory: %s\n", homeDir.toUtf8().constData());
     ltr_int_log_message("LutrisIntegration::initializePaths() - Database path: %s\n", databasePath.toUtf8().constData());
     ltr_int_log_message("LutrisIntegration::initializePaths() - Config path: %s\n", configPath.toUtf8().constData());
-    
+
     return true;
 }
 
@@ -828,6 +857,72 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
 
     ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Wine Bridge installer completed successfully\n");
     return true;
+}
+
+// Custom path configuration methods
+void LutrisIntegration::setCustomPaths(const QString &dbPath, const QString &cfgPath)
+{
+    customDatabasePath = dbPath;
+    customConfigPath = cfgPath;
+    useCustomPaths = (!dbPath.isEmpty() && !cfgPath.isEmpty());
+    ltr_int_log_message("LutrisIntegration::setCustomPaths() - Custom paths set: DB=%s, CFG=%s\n",
+                       dbPath.toUtf8().constData(), cfgPath.toUtf8().constData());
+}
+
+void LutrisIntegration::loadCustomPaths()
+{
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("LutrisIntegration"));
+
+    customDatabasePath = settings.value(QStringLiteral("customDatabasePath")).toString();
+    customConfigPath = settings.value(QStringLiteral("customConfigPath")).toString();
+    useCustomPaths = settings.value(QStringLiteral("useCustomPaths"), false).toBool();
+
+    settings.endGroup();
+
+    ltr_int_log_message("LutrisIntegration::loadCustomPaths() - Loaded custom paths: DB=%s, CFG=%s, useCustom=%s\n",
+                       customDatabasePath.toUtf8().constData(),
+                       customConfigPath.toUtf8().constData(),
+                       useCustomPaths ? "true" : "false");
+}
+
+void LutrisIntegration::saveCustomPaths()
+{
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("LutrisIntegration"));
+
+    settings.setValue(QStringLiteral("customDatabasePath"), customDatabasePath);
+    settings.setValue(QStringLiteral("customConfigPath"), customConfigPath);
+    settings.setValue(QStringLiteral("useCustomPaths"), useCustomPaths);
+
+    settings.endGroup();
+
+    ltr_int_log_message("LutrisIntegration::saveCustomPaths() - Saved custom paths: DB=%s, CFG=%s, useCustom=%s\n",
+                       customDatabasePath.toUtf8().constData(),
+                       customConfigPath.toUtf8().constData(),
+                       useCustomPaths ? "true" : "false");
+}
+
+bool LutrisIntegration::hasCustomPaths() const
+{
+    return useCustomPaths && !customDatabasePath.isEmpty() && !customConfigPath.isEmpty();
+}
+
+void LutrisIntegration::clearCustomPaths()
+{
+    useCustomPaths = false;
+    customDatabasePath.clear();
+    customConfigPath.clear();
+
+    // Remove from settings
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("LutrisIntegration"));
+    settings.remove(QStringLiteral("customDatabasePath"));
+    settings.remove(QStringLiteral("customConfigPath"));
+    settings.remove(QStringLiteral("useCustomPaths"));
+    settings.endGroup();
+
+    ltr_int_log_message("LutrisIntegration::clearCustomPaths() - Custom paths cleared and settings removed\n");
 }
 
 // Flatpak detection methods
