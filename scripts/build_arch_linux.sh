@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# LinuxTrack X-IR Arch Linux Build Script
+# LinuxTrack X-IR Arch Linux Build Script (Qt6)
 # This script provides seamless Arch Linux support with proper 32-bit wine bridge functionality
+# Designed for Arch Linux with Qt6 (default on modern Arch Linux systems)
 
 set -e
 
@@ -72,7 +73,7 @@ install_dependencies() {
     # Core build tools
     sudo pacman -S --needed base-devel autoconf automake libtool
     
-    # Qt6 dependencies
+    # Qt6 dependencies (Arch Linux default)
     sudo pacman -S --needed qt6-base qt6-tools
     
     # Libraries
@@ -300,11 +301,25 @@ verify_wine32() {
     
     # Test winegcc compilation
     print_status "Testing winegcc compilation..."
-    if winegcc -m32 -o /tmp/test.exe /dev/null 2>/dev/null; then
-        print_success "winegcc compilation test passed"
-        rm -f /tmp/test.exe
+    # Create a minimal test C file
+    cat > /tmp/test_winegcc.c << 'EOF'
+int main(void) { return 0; }
+EOF
+    
+    # Test winegcc compilation (compile only, no linking to avoid library dependency issues)
+    if winegcc -m32 -c -o /tmp/test_winegcc.o /tmp/test_winegcc.c 2>/dev/null; then
+        # Verify the output file exists and is not empty
+        if [ -s /tmp/test_winegcc.o ]; then
+            print_success "winegcc compilation test passed"
+            rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o
+        else
+            print_error "winegcc produced empty output file"
+            rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o
+            return 1
+        fi
     else
         print_error "winegcc compilation test failed"
+        rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o
         return 1
     fi
     
@@ -325,6 +340,13 @@ configure_build() {
         -DENABLE_LTR_32LIB_ON_X64=ON \
         -DWINE_LIBS_PATH="/usr/lib32/wine/i386-unix" \
         -DWINE64_LIBS_PATH="/usr/lib/wine/x86_64-unix"
+    
+    # Verify config.h was generated (required for wine bridge components)
+    if [ ! -f "config.h" ]; then
+        print_error "config.h not found after CMake configuration"
+        cd ..
+        return 1
+    fi
     
     cd ..
     
@@ -382,7 +404,7 @@ verify_installation() {
 
 # Function to show usage
 show_usage() {
-    echo "LinuxTrack X-IR Arch Linux Build Script"
+    echo "LinuxTrack X-IR Arch Linux Build Script (Qt6)"
     echo ""
     echo "Usage: $0 [OPTIONS]"
     echo ""
