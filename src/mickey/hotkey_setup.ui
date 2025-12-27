@@ -47,7 +47,7 @@
   <customwidget>
    <class>myLineEdit</class>
    <extends>QLineEdit</extends>
-   <header>my_line_edit.h</header>
+   <header>../mickey/my_line_edit.h</header>
   </customwidget>
  </customwidgets>
  <resources/>
