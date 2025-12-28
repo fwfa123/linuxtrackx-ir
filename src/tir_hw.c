@@ -731,6 +731,7 @@ static bool start_camera_tir5()
   ltr_int_send_data(out_ep, Video_on,sizeof(Video_on));
   {
     int delay = ltr_int_tir_get_video_on_delay();
+    ltr_int_log_message("start_camera_tir5: video_on_delay = %d microseconds\n", delay);
     if(delay > 0){
       ltr_int_usleep(delay);
     }
@@ -966,6 +967,7 @@ static bool init_camera_tir5(bool force_fw_load, bool p_ir_on)
   ltr_int_send_data(out_ep, Video_on,sizeof(Video_on));
   {
     int delay = ltr_int_tir_get_video_on_delay();
+    ltr_int_log_message("init_camera_tir5: video_on_delay = %d microseconds\n", delay);
     if(delay > 0){
       ltr_int_usleep(delay);
     }
