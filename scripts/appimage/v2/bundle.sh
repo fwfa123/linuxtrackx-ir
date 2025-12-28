@@ -17,6 +17,13 @@ print_status "Bundle: dependencies into AppDir (linuxdeploy-first)"
 [[ -x "$LINUXDEPLOY_QT" ]] || print_warning "linuxdeploy-plugin-qt not found or not executable; will try without"
 
 pushd "$APPDIR" >/dev/null
+    # CRITICAL: Set LD_LIBRARY_PATH so linuxdeploy can find liblinuxtrack.so.0
+    # The linuxtrack libraries are installed in usr/lib/linuxtrack (subdirectory)
+    # Without this, linuxdeploy fails with "Could not find dependency: liblinuxtrack.so.0"
+    # which then causes linuxdeploy-plugin-qt to crash without bundling Qt libraries
+    export LD_LIBRARY_PATH="$(pwd)/usr/lib:$(pwd)/usr/lib/linuxtrack${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+    print_status "Set LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+
     # linuxdeploy to discover and copy runtime deps
     print_status "Running linuxdeploy"
     DESKTOP_FILE="usr/share/applications/linuxtrack.desktop"
