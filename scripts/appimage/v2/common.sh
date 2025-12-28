@@ -48,8 +48,22 @@ write_minimal_apprun() {
 # Get the directory where the AppImage is mounted
 APPDIR="$(dirname "$(readlink -f "$0")")"
 
+# CRITICAL: Export APPDIR so Wine bridge and other processes can detect AppImage
+export APPDIR
+
 # Set up completely isolated environment for self-contained AppImage
 export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack:$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
+
+# CRITICAL: Set LINUXTRACK_LIBS so Wine bridge can find libraries when running from AppImage
+# This is especially important for Steam/Proton which doesn't use AppRun directly
+# Try 32-bit library first (for Wine), then 64-bit as fallback
+if [ -f "$APPDIR/usr/lib/linuxtrack/liblinuxtrack32.so.0" ]; then
+    export LINUXTRACK_LIBS="$APPDIR/usr/lib/linuxtrack/liblinuxtrack32.so.0:$APPDIR/usr/lib/linuxtrack/liblinuxtrack.so.0"
+elif [ -f "$APPDIR/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0" ]; then
+    export LINUXTRACK_LIBS="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0:$APPDIR/usr/lib/linuxtrack/liblinuxtrack.so.0"
+elif [ -f "$APPDIR/usr/lib/linuxtrack/liblinuxtrack.so.0" ]; then
+    export LINUXTRACK_LIBS="$APPDIR/usr/lib/linuxtrack/liblinuxtrack.so.0"
+fi
 
 # CRITICAL: Complete Qt isolation to prevent version mixing
 export QT_DISABLE_VERSION_CHECK=1
