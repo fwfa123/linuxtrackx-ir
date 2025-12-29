@@ -249,11 +249,14 @@ int linuxtrack_get_pose_full(linuxtrack_pose_t *pose, float blobs[], int num_blo
 
 linuxtrack_state_type linuxtrack_get_tracking_state(void)
 {
+  
   if(ltr_get_tracking_state_fun == NULL){
     linuxtrack_log("ltr_get_tracking_state_fun is NULL!\n");
     return err_NOT_INITIALIZED;
   }
   linuxtrack_state_type res = ltr_get_tracking_state_fun();
+  
+  
   linuxtrack_log("ltr_get_tracking_state_fun returned: %d\n", res);
   return res;
 }
@@ -880,9 +883,12 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
 static linuxtrack_state_type linuxtrack_load_library()
 {
 #ifndef __MINGW32__
+  
   fprintf(stderr, "DEBUG: linuxtrack_load_library called\n");
-  linuxtrack_state_type problem;
+  linuxtrack_state_type problem = err_NOT_FOUND;  // Initialize to default error
   lib_handle = linuxtrack_find_library(&problem);
+  
+  
   if(lib_handle == NULL){
     fprintf(stderr, "DEBUG: linuxtrack_find_library failed with problem: %d\n", problem);
     linuxtrack_log("Couldn't load liblinuxtrack, headtracking will not be available!\n");
@@ -892,6 +898,8 @@ static linuxtrack_state_type linuxtrack_load_library()
   dlerror(); /*clear any existing error...*/
   fprintf(stderr, "DEBUG: About to call linuxtrack_load_functions\n");
   linuxtrack_state_type load_result = linuxtrack_load_functions(lib_handle);
+  
+  
   fprintf(stderr, "DEBUG: linuxtrack_load_functions returned: %d\n", load_result);
   if(load_result != LINUXTRACK_OK){
     fprintf(stderr, "DEBUG: Function loading failed\n");
@@ -910,8 +918,11 @@ static linuxtrack_state_type linuxtrack_load_library()
 
 linuxtrack_state_type linuxtrack_init(const char *cust_section)
 {
+  
   fprintf(stderr, "DEBUG: linuxtrack_init called with section: %s\n", cust_section ? cust_section : "NULL");
   linuxtrack_state_type res = linuxtrack_load_library();
+  
+  
   if(res < LINUXTRACK_OK){
     fprintf(stderr, "DEBUG: linuxtrack_load_library failed: %d\n", res);
     return res;
@@ -922,7 +933,10 @@ linuxtrack_state_type linuxtrack_init(const char *cust_section)
     return err_SYMBOL_LOOKUP;
   }
   fprintf(stderr, "DEBUG: About to call ltr_init_fun\n");
+  
   linuxtrack_state_type init_res = ltr_init_fun(cust_section);
+  
+  
   fprintf(stderr, "DEBUG: ltr_init_fun returned: %d\n", init_res);
   linuxtrack_log("ltr_init_fun returned: %d (%s)\n", init_res, linuxtrack_explain(init_res));
   return init_res;
