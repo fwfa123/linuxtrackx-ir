@@ -53,10 +53,8 @@ if(NOT APPLE)
     )
 endif()
 
-set_target_properties(wii_server PROPERTIES
-    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
-    BUILD_WITH_INSTALL_RPATH TRUE
-)
+# Set RPATH so wii_server can find linuxtrack libraries at runtime
+set_linuxtrack_rpath(wii_server)
 
 install(TARGETS wii_server
     RUNTIME DESTINATION bin
