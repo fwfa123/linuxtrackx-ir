@@ -5,6 +5,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include "ltlib_int.h"
 #include "ipc_utils.h"
@@ -92,6 +93,7 @@ linuxtrack_state_type ltr_wakeup(void);
 
 static char *ltr_int_init_helper(const char *cust_section, bool standalone)
 {
+  
   char pid[16];
   char pipe0[16];
   char pipe1[16];
@@ -131,12 +133,16 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
   
   // Create new shared memory region if not initialized or if previous one was in error state
   if(!initialized){
-    if(make_mmap() != 0) return NULL;
+    if(make_mmap() != 0) {
+      return NULL;
+    }
     initialized = true;
     created_new_mmap = true;  // Track that we created it in this call
+    
   }
   
   struct ltr_comm *com = mmm.data;
+  
   // Acquire semaphore before modifying shared memory state to prevent data races
   ltr_int_lockSemaphore(mmm.sem);
   // Only reset state to INITIALIZING if it's currently in an error state
@@ -152,11 +158,14 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
     }
   }
   ltr_int_unlockSemaphore(mmm.sem);
+  
   if(standalone){
     if(pipe(fd) < 0){
       fd[0] = fd[1] = -1;
     }
     char *server = ltr_int_get_app_path("/ltr_server1");
+    
+    
     if(cust_section == NULL){
       cust_section = "Default";
     }
@@ -166,6 +175,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
     snprintf(pipe0, sizeof(pipe0), "%d", fd[0]);
     snprintf(pipe1, sizeof(pipe1), "%d", fd[1]);
     char *args[] = {server, section, mmm.fname, pid, pipe0, pipe1, NULL};
+    
+    
     if(!ltr_int_fork_child(args, &is_child)){
       // Acquire semaphore before modifying shared memory state
       ltr_int_lockSemaphore(mmm.sem);
@@ -191,6 +202,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
     close(fd[1]);
     notify_pipe = fd[0];
     fcntl(notify_pipe, F_SETFL, fcntl(notify_pipe, F_GETFL) | O_NONBLOCK);
+    
+    
       } else {
         // Client mode: establish connection to existing server
         int socket_fd = ltr_int_connect_to_socket("/tmp/ltr_m_sock");
@@ -224,6 +237,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
           // The diagnostic logging below via ltr_int_get_app_path() will show the path being used.
           
           char *server = ltr_int_get_app_path("/ltr_server1");
+          
+          
           if(server == NULL){
             ltr_int_log_message("Client mode: Could not find ltr_server1 path via ltr_int_get_app_path!\n");
             
@@ -233,6 +248,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
             // Detect AppImage environment and try AppImage-specific path first
             char *appimage_server_path = NULL;
             const char *appdir_path = getenv("APPDIR");
+            
+            
             if(appdir_path != NULL){
               // Running in AppImage - try AppImage's usr/bin directory
               size_t appdir_len = strlen(appdir_path);
@@ -240,9 +257,15 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
               if(appimage_server_path != NULL){
                 snprintf(appimage_server_path, appdir_len + 25, "%s/usr/bin/ltr_server1", appdir_path);
                 ltr_int_log_message("Client mode: Trying AppImage path: %s\n", appimage_server_path);
-                if(access(appimage_server_path, F_OK | X_OK) == 0){
+                
+                
+                int access_result = access(appimage_server_path, F_OK | X_OK);
+                
+                
+                if(access_result == 0){
                   server = ltr_int_my_strdup(appimage_server_path);
                   ltr_int_log_message("Client mode: Found ltr_server1 in AppImage: %s\n", server);
+                  
                 }
                 free(appimage_server_path);
                 appimage_server_path = NULL;
@@ -345,6 +368,8 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
           ltr_int_log_message("Client mode: Spawning slave process: %s %s %s\n", server, section, mmm.fname);
           ltr_int_log_message("Client mode: Slave process arguments: [0]=%s [1]=%s [2]=%s [3]=%s [4]=%s [5]=%s\n",
                              args[0], args[1], args[2], args[3], args[4], args[5]);
+          
+          
           if(!ltr_int_fork_child(args, &is_child)){
             ltr_int_log_message("Client mode: Failed to fork slave process! (is_child=%d, errno=%d: %s)\n", 
                                is_child, errno, strerror(errno));
@@ -379,6 +404,7 @@ static char *ltr_int_init_helper(const char *cust_section, bool standalone)
           close(fd[1]);
           notify_pipe = fd[0];
           fcntl(notify_pipe, F_SETFL, fcntl(notify_pipe, F_GETFL) | O_NONBLOCK);
+          
         } else {
           // Socket connection failed - no pipe was created in this path
           ltr_int_log_message("Client mode: Could not connect to master socket /tmp/ltr_m_sock (errno: %d, %s)\n", 
@@ -409,10 +435,13 @@ linuxtrack_state_type ltr_get_tracking_state(void);
 
 linuxtrack_state_type ltr_init(const char *cust_section)
 {
+  
   // Check if a server is already running by testing if we can connect to the socket
   // This is more reliable than lock file detection
   int socket_fd = ltr_int_connect_to_socket("/tmp/ltr_m_sock");
   bool server_running = (socket_fd >= 0);
+  
+  
   if(socket_fd >= 0){
     close(socket_fd); // Close the test connection
   }
@@ -420,21 +449,80 @@ linuxtrack_state_type ltr_init(const char *cust_section)
   if(server_running){
     // Server is running, use client mode
     char *result = ltr_int_init_helper(cust_section, false);
+    
+    
     if(result != NULL){
-      return ltr_get_tracking_state();
+      // FIX: Read state directly from shared memory instead of calling ltr_get_tracking_state()
+      // which may access a different instance of static variables when called through function pointer.
+      // Since we're in the same function context, we have direct access to mmm.
+      linuxtrack_state_type state = STOPPED;
+      struct ltr_comm *com = mmm.data;
+      
+      
+      if(com != NULL && mmm.sem != NULL){
+        if(com->preparing_start){
+          state = INITIALIZING;
+        } else {
+          ltr_int_lockSemaphore(mmm.sem);
+          state = com->state;
+          ltr_int_unlockSemaphore(mmm.sem);
+        }
+      } else {
+        state = err_NOT_INITIALIZED;
+      }
+      
+      return state;
     }else{
-      // Client mode failed - check if we should fall back to standalone mode
-      // or return the actual error state
-      linuxtrack_state_type error_state = ltr_get_tracking_state();
+      // Client mode failed - read state directly from shared memory
+      linuxtrack_state_type error_state = STOPPED;
+      struct ltr_comm *com = mmm.data;
+      if(com != NULL && mmm.sem != NULL){
+        if(com->preparing_start){
+          error_state = INITIALIZING;
+        } else {
+          ltr_int_lockSemaphore(mmm.sem);
+          error_state = com->state;
+          ltr_int_unlockSemaphore(mmm.sem);
+        }
+      } else {
+        error_state = err_NOT_INITIALIZED;
+      }
+      
+      
       if(error_state == err_NOT_INITIALIZED){
         // Client mode failed completely, try standalone mode as fallback
         ltr_int_log_message("Client mode initialization failed, falling back to standalone mode\n");
         result = ltr_int_init_helper(cust_section, true);
+        
+        
         if(result != NULL){
-          return ltr_get_tracking_state();
+          // Read state directly from shared memory
+          com = mmm.data;
+          linuxtrack_state_type state = STOPPED;
+          if(com != NULL && mmm.sem != NULL){
+            if(com->preparing_start){
+              state = INITIALIZING;
+            } else {
+              ltr_int_lockSemaphore(mmm.sem);
+              state = com->state;
+              ltr_int_unlockSemaphore(mmm.sem);
+            }
+          } else {
+            state = err_NOT_INITIALIZED;
+          }
+          return state;
         }else{
-          // Both modes failed, return the error state
-          return ltr_get_tracking_state();
+          // Both modes failed, read state directly
+          com = mmm.data;
+          linuxtrack_state_type state = STOPPED;
+          if(com != NULL && mmm.sem != NULL){
+            ltr_int_lockSemaphore(mmm.sem);
+            state = com->state;
+            ltr_int_unlockSemaphore(mmm.sem);
+          } else {
+            state = err_NOT_INITIALIZED;
+          }
+          return state;
         }
       }else{
         // Return the actual state (might be INITIALIZING if in progress)
@@ -443,11 +531,37 @@ linuxtrack_state_type ltr_init(const char *cust_section)
     }
   }else{
     // No server running, use standalone mode
-    if(ltr_int_init_helper(cust_section, true) != NULL){
-      return ltr_get_tracking_state();
+    char *result = ltr_int_init_helper(cust_section, true);
+    
+    
+    if(result != NULL){
+      // Read state directly from shared memory
+      struct ltr_comm *com = mmm.data;
+      linuxtrack_state_type state = STOPPED;
+      if(com != NULL && mmm.sem != NULL){
+        if(com->preparing_start){
+          state = INITIALIZING;
+        } else {
+          ltr_int_lockSemaphore(mmm.sem);
+          state = com->state;
+          ltr_int_unlockSemaphore(mmm.sem);
+        }
+      } else {
+        state = err_NOT_INITIALIZED;
+      }
+      return state;
     }else{
-      // Standalone mode failed, return the actual error state
-      return ltr_get_tracking_state();
+      // Standalone mode failed, read state directly
+      struct ltr_comm *com = mmm.data;
+      linuxtrack_state_type state = STOPPED;
+      if(com != NULL && mmm.sem != NULL){
+        ltr_int_lockSemaphore(mmm.sem);
+        state = com->state;
+        ltr_int_unlockSemaphore(mmm.sem);
+      } else {
+        state = err_NOT_INITIALIZED;
+      }
+      return state;
     }
   }
 }
@@ -696,17 +810,32 @@ linuxtrack_state_type ltr_request_frames(void)
 
 linuxtrack_state_type ltr_get_tracking_state(void)
 {
+  
   linuxtrack_state_type state = STOPPED;
   struct ltr_comm *com = mmm.data;
-  if((!initialized) || (com == NULL)){
+  
+  // FIX: Don't rely solely on static 'initialized' variable which may be in a different
+  // library instance when called through function pointer. Instead, check if shared memory
+  // is valid - if mmm.data is non-NULL and we can access it, we're initialized.
+  // The shared memory is the source of truth, not the static variable.
+  if(com == NULL){
     return err_NOT_INITIALIZED;
   }
+  
+  // If we have valid shared memory, we're initialized regardless of static variable state
+  // Check if semaphore is valid before trying to lock it
+  if(mmm.sem == NULL){
+    return err_NOT_INITIALIZED;
+  }
+  
   if(com->preparing_start){
     return INITIALIZING;
   }
   ltr_int_lockSemaphore(mmm.sem);
   state = com->state;
   ltr_int_unlockSemaphore(mmm.sem);
+  
+  
   return state;
 }
 
