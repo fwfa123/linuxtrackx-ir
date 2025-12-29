@@ -246,6 +246,20 @@ if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
 endif()
 
 # ============================================================================
+# Helper Functions
+# ============================================================================
+
+# Helper function to set RPATH for executables linking against linuxtrack libraries
+# This ensures all executables can find liblinuxtrack.so.0 at runtime
+# Usage: set_linuxtrack_rpath(target_name)
+function(set_linuxtrack_rpath target)
+    set_target_properties(${target} PROPERTIES
+        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
+        BUILD_WITH_INSTALL_RPATH TRUE
+    )
+endfunction()
+
+# ============================================================================
 # Binaries
 # ============================================================================
 
@@ -264,10 +278,7 @@ target_link_libraries(ltr_server1
 
 # Set RPATH so ltr_server1 can find libltr.so at runtime
 # This is critical when the slave process is spawned from Wine context
-set_target_properties(ltr_server1 PROPERTIES
-    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
-    BUILD_WITH_INSTALL_RPATH TRUE
-)
+set_linuxtrack_rpath(ltr_server1)
 
 # ltr_pipe CLI
 add_executable(ltr_pipe
@@ -280,6 +291,9 @@ target_link_libraries(ltr_pipe
     ltr
     dl
 )
+
+# Set RPATH so ltr_pipe can find liblinuxtrack.so.0 at runtime
+set_linuxtrack_rpath(ltr_pipe)
 
 # ltr_extractor CLI
 add_executable(ltr_extractor
@@ -295,6 +309,9 @@ target_link_libraries(ltr_extractor
     ${MXML_LIBRARIES}
 )
 
+# Set RPATH so ltr_extractor can find liblinuxtrack.so.0 at runtime
+set_linuxtrack_rpath(ltr_extractor)
+
 # ltr_recenter helper
 add_executable(ltr_recenter
     ltr_recenter.c
@@ -306,6 +323,9 @@ target_link_libraries(ltr_recenter
     ltr
     dl
 )
+
+# Set RPATH so ltr_recenter can find liblinuxtrack.so.0 at runtime
+set_linuxtrack_rpath(ltr_recenter)
 
 # ============================================================================
 # X-Plane Plugin (conditional)
