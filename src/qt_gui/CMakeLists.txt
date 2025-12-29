@@ -295,11 +295,8 @@ if(NOT APPLE)
     )
 endif()
 
-# Set RPATH
-set_target_properties(ltr_gui PROPERTIES
-    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
-    BUILD_WITH_INSTALL_RPATH TRUE
-)
+# Set RPATH so ltr_gui can find linuxtrack libraries at runtime
+set_linuxtrack_rpath(ltr_gui)
 
 # Precompiled header support
 # Note: CMake 3.16+ supports target_precompile_headers, but we'll handle it manually

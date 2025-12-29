@@ -91,10 +91,8 @@ if(NOT APPLE)
     )
 endif()
 
-set_target_properties(mickey PROPERTIES
-    INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack"
-    BUILD_WITH_INSTALL_RPATH TRUE
-)
+# Set RPATH so mickey can find linuxtrack libraries at runtime
+set_linuxtrack_rpath(mickey)
 
 # ============================================================================
 # Help File Generation

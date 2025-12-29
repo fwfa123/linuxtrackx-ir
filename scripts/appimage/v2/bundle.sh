@@ -504,7 +504,82 @@ EOHLP
     print_status "Removing bundled OpenGL driver libraries (use host drivers)"
     rm -f usr/lib/libGL.so.* usr/lib/libOpenGL.so.* usr/lib/libGLX.so.* usr/lib/libGLdispatch.so.* usr/lib/libGLU.so.* 2>/dev/null || true
     
-popd >/dev/null
+    # Create wrapper scripts for CLI tools to ensure AppImage environment is set
+    print_status "Creating wrapper scripts for CLI tools (ltr_pipe, ltr_extractor, ltr_recenter, ltr_server1)"
+    create_cli_wrapper() {
+        local tool_name="$1"
+        local wrapper_path="usr/bin/${tool_name}"
+        local binary_path="usr/bin/${tool_name}.bin"
+        
+        # If binary exists, rename it and create wrapper
+        if [[ -f "$wrapper_path" && -x "$wrapper_path" && ! -f "$binary_path" ]]; then
+            mv "$wrapper_path" "$binary_path"
+            cat > "$wrapper_path" << EOF
+#!/usr/bin/env bash
+# Wrapper script for ${tool_name} to ensure AppImage environment is properly set
+# This allows ${tool_name} to work when run directly from the AppImage
+
+# Get the directory where this script is located
+SCRIPT_DIR="\$(cd "\$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+
+# Detect AppImage context by looking for AppRun in parent directories
+# or checking if we're in a typical AppImage structure (usr/bin exists with AppRun in parent)
+APPDIR="\${APPDIR:-}"
+if [[ -z "\$APPDIR" ]]; then
+    # Check if we're in usr/bin and AppRun exists in parent
+    if [[ "\$SCRIPT_DIR" == */usr/bin ]] && [[ -f "\$(dirname "\$SCRIPT_DIR")/AppRun" ]]; then
+        APPDIR="\$(dirname "\$SCRIPT_DIR")"
+    # Check if we're in a squashfs-root (extracted AppImage)
+    elif [[ "\$SCRIPT_DIR" == */squashfs-root/usr/bin ]] || [[ "\$SCRIPT_DIR" == */AppDir/usr/bin ]]; then
+        APPDIR="\$(dirname "\$(dirname "\$SCRIPT_DIR")")"
+    # Try to find AppRun by walking up the directory tree
+    else
+        SEARCH_DIR="\$SCRIPT_DIR"
+        while [[ "\$SEARCH_DIR" != "/" ]]; do
+            if [[ -f "\$SEARCH_DIR/AppRun" ]]; then
+                APPDIR="\$SEARCH_DIR"
+                break
+            fi
+            SEARCH_DIR="\$(dirname "\$SEARCH_DIR")"
+        done
+    fi
+fi
+
+# Set AppImage environment if detected
+if [[ -n "\$APPDIR" && -d "\$APPDIR" && -f "\$APPDIR/AppRun" ]]; then
+    export APPDIR
+    export LD_LIBRARY_PATH="\${APPDIR}/usr/lib:\${APPDIR}/usr/lib/linuxtrack:\${APPDIR}/usr/lib/i386-linux-gnu/linuxtrack\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+    
+    # Set LINUXTRACK_LIBS for Wine bridge compatibility
+    if [[ -f "\${APPDIR}/usr/lib/linuxtrack/liblinuxtrack32.so.0" ]]; then
+        export LINUXTRACK_LIBS="\${APPDIR}/usr/lib/linuxtrack/liblinuxtrack32.so.0:\${APPDIR}/usr/lib/linuxtrack/liblinuxtrack.so.0"
+    elif [[ -f "\${APPDIR}/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0" ]]; then
+        export LINUXTRACK_LIBS="\${APPDIR}/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0:\${APPDIR}/usr/lib/linuxtrack/liblinuxtrack.so.0"
+    elif [[ -f "\${APPDIR}/usr/lib/linuxtrack/liblinuxtrack.so.0" ]]; then
+        export LINUXTRACK_LIBS="\${APPDIR}/usr/lib/linuxtrack/liblinuxtrack.so.0"
+    fi
+    
+    # Execute the actual binary with full path
+    exec "\${APPDIR}/usr/bin/${tool_name}.bin" "\$@"
+else
+    # Not in AppImage, execute directly (system installation or already has environment)
+    exec "\${SCRIPT_DIR}/${tool_name}.bin" "\$@"
+fi
+EOF
+            chmod +x "$wrapper_path"
+            print_status "Created wrapper for ${tool_name}"
+        elif [[ -f "$binary_path" ]]; then
+            print_status "Wrapper for ${tool_name} already exists"
+        else
+            print_warning "${tool_name} binary not found, skipping wrapper creation"
+        fi
+    }
+    
+    # Create wrappers for all CLI tools
+    create_cli_wrapper "ltr_pipe"
+    create_cli_wrapper "ltr_extractor"
+    create_cli_wrapper "ltr_recenter"
+    create_cli_wrapper "ltr_server1"
 
     # Verify library dependencies are correctly resolved
     print_status "Verifying library dependency resolution"
@@ -546,7 +621,7 @@ popd >/dev/null
 
     # Ensure 32-bit linuxtrack runtime is bundled if available on system
     print_status "Ensuring 32-bit liblinuxtrack is bundled if available"
-    DEST32_DIR="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
+    DEST32_DIR="$(pwd)/usr/lib/i386-linux-gnu/linuxtrack"
     if [[ ! -f "$DEST32_DIR/liblinuxtrack.so.0" ]]; then
         SYS_LTR32="/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
         if [[ -f "$SYS_LTR32" ]]; then
@@ -561,3 +636,6 @@ popd >/dev/null
         print_success "32-bit liblinuxtrack already present in AppDir"
     fi
 
+popd >/dev/null
+
+print_success "Bundle script completed successfully"
