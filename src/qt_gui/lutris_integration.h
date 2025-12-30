@@ -62,6 +62,7 @@ public:
     QString getLutrisConfigPath();
     QStringList getWinePrefixes();
     bool isValidWinePrefix(const QString &prefixPath);
+    bool hasGameConfigs(const QString &directoryPath);  // Check if directory contains .yml game config files
 
     // Custom path configuration
     void setCustomPaths(const QString &dbPath, const QString &cfgPath);
