@@ -4,8 +4,11 @@
 #include <QProcess>
 #include <QFileDialog>
 #include <QDir>
+#include <QFileInfo>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QSqlDatabase>
+#include <QSqlQuery>
 #include <zlib.h>
 #include "extractor.h"
 #include "utils.h"
@@ -556,26 +559,76 @@ void PluginInstall::installLutrisWineBridge()
     return;
   }
 
-  // Check if Lutris paths actually exist - if not, show configuration dialog
+  // Check if Lutris paths actually exist and are valid - if not, show configuration dialog
   QString dbPath = lutrisIntegration->getLutrisDatabasePath();
   QString cfgPath = lutrisIntegration->getLutrisConfigPath();
 
   QFileInfo dbFile(dbPath);
   QDir cfgDir(cfgPath);
 
-  bool dbExists = dbFile.exists();
+  bool dbExists = dbFile.exists() && dbFile.isFile();
   bool cfgExists = cfgDir.exists();
+  
+  // Additional validation: Check if config directory actually contains game config files
+  // This is important because the directory might exist but be empty or contain no .yml files
+  bool cfgValid = cfgExists && lutrisIntegration->hasGameConfigs(cfgPath);
+  
+  // Also check if database exists and has games - this helps detect path mismatches
+  // We check the database directly rather than parsing games (which requires config files)
+  bool dbHasGames = false;
+  if (dbExists) {
+    // Try to open database and check if it has wine games in the database
+    if (lutrisIntegration->openLutrisDatabase()) {
+      // Direct database query to check for wine games without requiring config files
+      QSqlDatabase db = QSqlDatabase::database(QStringLiteral("LutrisConnection"));
+      if (db.isOpen()) {
+        QSqlQuery query(db);
+        query.prepare(QStringLiteral("SELECT COUNT(*) FROM games WHERE runner = 'wine'"));
+        if (query.exec() && query.next()) {
+          int gameCount = query.value(0).toInt();
+          dbHasGames = (gameCount > 0);
+        }
+      }
+      lutrisIntegration->closeLutrisDatabase();
+    }
+  }
 
-  if (!dbExists || !cfgExists) {
-    QString message = QString::fromUtf8("Lutris was detected, but its configuration files were not found at:\n\n"
+  // Trigger dialog if:
+  // 1. Database doesn't exist, OR
+  // 2. Config directory doesn't exist, OR
+  // 3. Config directory exists but has no .yml files, OR
+  // 4. Database has games but config path is invalid (mismatch scenario)
+  bool shouldShowDialog = !dbExists || !cfgExists || !cfgValid || (dbHasGames && !cfgValid);
+  
+  if (shouldShowDialog) {
+    QString dbStatus = dbExists ? QString::fromUtf8("Found") : QString::fromUtf8("Not Found");
+    if (dbExists && dbHasGames) {
+      dbStatus += QString::fromUtf8(" (contains games)");
+    }
+    
+    QString cfgStatus = cfgExists ? QString::fromUtf8("Found") : QString::fromUtf8("Not Found");
+    if (cfgExists && !cfgValid) {
+      cfgStatus += QString::fromUtf8(" (no game config files)");
+    } else if (cfgExists && cfgValid) {
+      cfgStatus += QString::fromUtf8(" (valid)");
+    }
+    
+    QString message = QString::fromUtf8("Lutris was detected, but its configuration files were not found or are invalid at:\n\n"
                               "Database: %1 (%2)\n"
-                              "Config: %3 (%4)\n\n"
-                              "This can happen with non-standard Lutris installations.\n\n"
-                              "Would you like to configure custom paths?")
+                              "Config: %3 (%4)\n\n")
                               .arg(dbPath)
-                              .arg(dbExists ? QString::fromUtf8("Found") : QString::fromUtf8("Not Found"))
+                              .arg(dbStatus)
                               .arg(cfgPath)
-                              .arg(cfgExists ? QString::fromUtf8("Found") : QString::fromUtf8("Not Found"));
+                              .arg(cfgStatus);
+    
+    if (dbHasGames && !cfgValid) {
+      message += QString::fromUtf8("Games were found in the database, but the configuration files cannot be read.\n"
+                                   "This often happens with Lutris 5.19+ where config files are in a different location.\n\n");
+    } else {
+      message += QString::fromUtf8("This can happen with non-standard Lutris installations.\n\n");
+    }
+    
+    message += QString::fromUtf8("Would you like to configure custom paths?");
 
     QMessageBox::StandardButton result = QMessageBox::question(
       getParentWidget(),
