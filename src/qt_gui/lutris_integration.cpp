@@ -75,15 +75,60 @@ bool LutrisIntegration::initializePaths()
         return true;
     }
     
-    // Priority 3: Fall back to default home-based paths
+    // Priority 3: Fall back to default home-based paths with smart detection
     databasePath = homeDir + QString::fromUtf8("/.local/share/lutris/pga.db");
-    configPath = homeDir + QString::fromUtf8("/.config/lutris/games/");
+    
+    // Detect config path: Check for Lutris 5.19+ structure first, then fall back to older structure
+    QString configPathNew = homeDir + QString::fromUtf8("/.local/share/lutris/games/");
+    QString configPathOld = homeDir + QString::fromUtf8("/.config/lutris/games/");
+    
+    QDir configDirNew(configPathNew);
+    QDir configDirOld(configPathOld);
+    
+    bool newPathExists = configDirNew.exists();
+    bool oldPathExists = configDirOld.exists();
+    
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Checking config path locations:\n");
+    ltr_int_log_message("  Lutris 5.19+ path: %s (exists=%s)\n", 
+                       configPathNew.toUtf8().constData(), 
+                       newPathExists ? "yes" : "no");
+    ltr_int_log_message("  Older path: %s (exists=%s)\n", 
+                       configPathOld.toUtf8().constData(), 
+                       oldPathExists ? "yes" : "no");
+    
+    // Validate paths: check if they contain actual game config files
+    bool newPathValid = newPathExists && hasGameConfigs(configPathNew);
+    bool oldPathValid = oldPathExists && hasGameConfigs(configPathOld);
+    
+    ltr_int_log_message("  Lutris 5.19+ path validation: valid=%s\n", newPathValid ? "yes" : "no");
+    ltr_int_log_message("  Older path validation: valid=%s\n", oldPathValid ? "yes" : "no");
+    
+    // Choose path: prioritize newer structure if it exists and is valid,
+    // otherwise use older structure if it exists and is valid,
+    // otherwise default to newer structure (for new installations)
+    if (newPathValid) {
+        configPath = configPathNew;
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Selected Lutris 5.19+ config path (validated)\n");
+    } else if (oldPathValid) {
+        configPath = configPathOld;
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Selected older config path (validated)\n");
+    } else if (newPathExists) {
+        configPath = configPathNew;
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Selected Lutris 5.19+ config path (exists but no .yml files yet)\n");
+    } else if (oldPathExists) {
+        configPath = configPathOld;
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Selected older config path (exists but no .yml files yet)\n");
+    } else {
+        // Neither exists - default to newer structure for new installations
+        configPath = configPathNew;
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Neither path exists, defaulting to Lutris 5.19+ structure\n");
+    }
     
     // Debug logging to help identify path issues
-    ltr_int_log_message("LutrisIntegration::initializePaths() - Using default paths\n");
-    ltr_int_log_message("LutrisIntegration::initializePaths() - Final home directory: %s\n", homeDir.toUtf8().constData());
-    ltr_int_log_message("LutrisIntegration::initializePaths() - Database path: %s\n", databasePath.toUtf8().constData());
-    ltr_int_log_message("LutrisIntegration::initializePaths() - Config path: %s\n", configPath.toUtf8().constData());
+    ltr_int_log_message("LutrisIntegration::initializePaths() - Final paths:\n");
+    ltr_int_log_message("  Home directory: %s\n", homeDir.toUtf8().constData());
+    ltr_int_log_message("  Database path: %s\n", databasePath.toUtf8().constData());
+    ltr_int_log_message("  Config path: %s\n", configPath.toUtf8().constData());
     
     return true;
 }
@@ -615,6 +660,28 @@ bool LutrisIntegration::isValidWinePrefix(const QString &prefixPath)
     // Additional check for Windows directory
     QDir windowsDir(prefixPath + QString::fromUtf8("/drive_c/windows"));
     return windowsDir.exists();
+}
+
+bool LutrisIntegration::hasGameConfigs(const QString &directoryPath)
+{
+    if (directoryPath.isEmpty()) {
+        return false;
+    }
+    
+    QDir configDir(directoryPath);
+    if (!configDir.exists()) {
+        return false;
+    }
+    
+    // Check if directory contains .yml files (game configs)
+    QFileInfoList entries = configDir.entryInfoList(QDir::Files);
+    for (const QFileInfo &entry : entries) {
+        if (entry.suffix().toLower() == QString::fromUtf8("yml")) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 bool LutrisIntegration::installToLutrisGame(const QString &gameSlug)
