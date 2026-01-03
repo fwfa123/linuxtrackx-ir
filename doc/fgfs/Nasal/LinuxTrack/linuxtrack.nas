@@ -89,7 +89,8 @@ ltr_view_handler.init = func {
 	var lowpass_R = aircraft.lowpass.new(0.1);
 	var lowpass_X = aircraft.lowpass.new(0.1);
 	var lowpass_Y = aircraft.lowpass.new(0.1);
-	var lowpass_Z = aircraft.lowpass.new(0.1);
+	var lowpass_Z = aircraft.lowpass.new(0.3);
+	var prev_H = 0;
 
 	# Limiter for Z
 	var limit_Z = func(z) {
@@ -137,9 +138,29 @@ ltr_view_handler.init = func {
 	};
 
 	me.set_fg_Z = func(val) {
-		val = lowpass_Z.filter(val + get_default_fov());
+		# Scale down the Z values moderately - TrackIR Z needs adjustment for FOV
+		val = val * 0.1;  # Scale down by 10x
+
+		# Get current heading to detect rotation
+		var current_H = me.get_lt_H();
+		var heading_change = math.abs(current_H - prev_H);
+		prev_H = current_H;
+
+		# Apply very aggressive filtering during head rotation to eliminate cross-talk
+		if (heading_change > 2.0) {
+			# Heavy filtering during rotation
+			var heavy_filter = aircraft.lowpass.new(0.05); # Very slow response
+			val = heavy_filter.filter(val + get_default_fov());
+		} else {
+			# Normal filtering for intentional Z movement
+			val = lowpass_Z.filter(val + get_default_fov());
+		}
+
 		val = limit_Z(val);
 		set_fg_prop(fg_Z_name, val);
+
+		# Optional debug output (uncomment if needed)
+		# print("LinuxTrack Z: raw=", val, " heading_change=", heading_change, " fov=", get_default_fov());
 	};
 
 	me.get_lt_H = func { return get_lt_prop(lt_H_name); };
@@ -171,6 +192,8 @@ ltr_view_handler.reset = func {
 		me.set_fg_Y(0);
 	if (me.track_Z.getValue() == 1)
 		me.set_fg_Z(0);
+
+	prev_H = 0;
 };
 
 
