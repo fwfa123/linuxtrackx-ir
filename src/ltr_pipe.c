@@ -925,7 +925,7 @@ static void write_data_flightgear(const struct ltr_data *d)
 
 	int r = snprintf(buf, sizeof(buf),
 			"%f\t%f\t%f\t%f\t%f\t%f\n",
-			d->h, d->p, -d->r, d->x, d->y, d->z);
+			d->h, d->p, -d->r, d->x, d->y, -d->z);
 
 	xwrite(buf, r);
 }
