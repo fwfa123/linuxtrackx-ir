@@ -2,7 +2,42 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.25) continues development on GitLab for future development and releases.
+> **Note**: This version (0.99.29) continues development on GitLab for future development and releases.
+
+## [0.99.29] - TIR5V2 Compatibility Release (January 2026)
+
+### Major Changes
+- **TrackIR 5 Revision 2 (TIR5V2) Support**: Critical fixes resolving timeout issues that prevented TIR5V2 hardware from initializing properly
+- **Enhanced Timing System**: Separate TIR5V2 interface with doubled video delay (240ms) for proper memory mapping support
+- **Comprehensive Logging**: TIR5V2-specific USB packet logging for improved debugging capabilities
+
+### Added
+- **TIR5V2 Interface Functions**: `init_camera_tir5v2()`, `start_camera_tir5v2()`, `stop_camera_tir5v2()`, `close_camera_tir5v2()`
+- **USB Logging Infrastructure**: `log_usb_send()`, `log_usb_receive()`, `log_usb_error()` for TIR5V2 debugging
+- **Timing Measurements**: Comprehensive initialization and operation timing logged for diagnostics
+- **Device Routing**: Automatic TIR5V2 device detection and routing to enhanced interface
+
+### Fixed
+- **Critical**: TIR5V2 timeout issues - "Data receive request timed out" errors resolved
+- **Critical**: TIR5V2 device initialization now completes successfully
+- FlightGear Z-axis issues with TrackIR
+- Build error in hotkey_setup.ui (include path for myLineEdit custom widget)
+- USB logging helper function scope issues (compilation error)
+
+### Changed
+- **TIR5V2 Initialization**: Enhanced timing throughout camera startup sequence (10-50ms delays)
+- **Video On Delay**: TIR5V2 devices now use 240ms delay (doubled from 120ms) for different memory mapping
+- **Device Interface Selection**: TIR5V2 devices automatically use `tir5v2` interface while maintaining TIR5 compatibility
+- **Logging Verbosity**: Added comprehensive TIR5V2-specific logging with `[TIR5V2]` prefixes
+
+### Technical Details
+- TIR5V2 uses different memory address mapping (`0x00886904` vs TIR5's `0x005C6704`)
+- TIR5V2 firmware is 69 bytes larger than TIR5
+- Requires longer delays for memory access operations
+- Separate interface ensures TIR5 devices continue working normally
+- Available in both Qt5 (main) and Qt6 (qt6-migration) branches
+
+**Resolves:** GitHub Issue #36
 
 ## [0.99.25] - Arch Linux Wine32 Alternative Sources & Enhanced Wine Integration (2025)
 

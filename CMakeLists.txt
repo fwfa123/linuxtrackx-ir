@@ -2,7 +2,7 @@
 # Migrated from Autotools
 
 cmake_minimum_required(VERSION 3.16)
-project(LinuxTrack VERSION 0.99.28 LANGUAGES C CXX)
+project(LinuxTrack VERSION 0.99.29 LANGUAGES C CXX)
 
 # Set default installation prefix to /opt (matching Autotools)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
