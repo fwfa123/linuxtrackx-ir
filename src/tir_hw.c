@@ -57,6 +57,7 @@ static unsigned char unk_9[] =  {0x19, 0x04, 0x0F, 0x00, 0x0F};
 static unsigned char unk_a[] =  {0x19, 0x14, 0x10, 0x00, 0x01};
 static unsigned char unk_b[] =  {0x23, 0x90, 0x0B, 0x00, 0x01, 0x3C};
 static unsigned char unk_c[] =  {0x23, 0x90, 0xF0, 0x32, 0x01, 0x3C};
+
 static unsigned char unk_d[] =  {0x19, 0x14, 0x10, 0x00, 0x00};
 static unsigned char unk_e[] =  {0x1F, 0x20};
 
@@ -64,10 +65,36 @@ static bool ir_on = true;
 
 static dev_found device = NOT_TIR;
 
+// USB logging helpers for TIR5V2 debugging
+static void log_usb_send(const char *context, int ep, unsigned char data[], size_t size) {
+  if(device == TIR5V2) {
+    ltr_int_log_message("[TIR5V2] %s SEND EP%d: ", context, ep);
+    for(size_t i = 0; i < size && i < 16; i++) {
+      ltr_int_log_message("%02X ", data[i]);
+    }
+    if(size > 16) ltr_int_log_message("... (%zu bytes)", size);
+    ltr_int_log_message("\n");
+  }
+}
+
+static void log_usb_receive(const char *context, int ep, size_t received, size_t expected, int timeout) {
+  if(device == TIR5V2) {
+    ltr_int_log_message("[TIR5V2] %s RECV EP%d: %zu/%zu bytes (timeout %dms)\n",
+                       context, ep, received, expected, timeout);
+  }
+}
+
+static void log_usb_error(const char *context, const char *error) {
+  if(device == TIR5V2) {
+    ltr_int_log_message("[TIR5V2] %s ERROR: %s\n", context, error);
+  }
+}
+
 static tir_interface tir2;
 static tir_interface tir3;
 static tir_interface tir4;
 static tir_interface tir5;
+static tir_interface tir5v2;
 static tir_interface smartnav3;
 static tir_interface smartnav4;
 static tir_interface tir5v3;
@@ -195,16 +222,20 @@ static bool read_status_tir(tir_status_t *status)
 
   while(counter < 20){
     ltr_int_log_message("Requesting status.\n");
+    log_usb_send("STATUS_REQ", out_ep, Get_status, sizeof(Get_status));
     if(!ltr_int_send_data(out_ep, Get_status, sizeof(Get_status))){
+      log_usb_error("STATUS_REQ", "send failed");
       ltr_int_log_message("Couldn't send status request!\n");
       return false;
     }
 
     while(1){
       if(!ltr_int_receive_data(cfg_in_ep, ltr_int_packet, sizeof(ltr_int_packet), &t, 500)){
+        log_usb_receive("STATUS_REQ", cfg_in_ep, 0, sizeof(ltr_int_packet), 500);
         ltr_int_log_message("Couldn't receive status!\n");
         return false;
       }
+      log_usb_receive("STATUS_REQ", cfg_in_ep, t, sizeof(ltr_int_packet), 500);
       if((t > 2) && (ltr_int_packet[0] == 0x07) && (ltr_int_packet[1] == 0x20)){
         break;
       }
@@ -280,7 +311,9 @@ static bool read_rom_data_tir()
   struct timezone tz;
   gettimeofday(&tv1, &tz);
   while(counter < 10){
+    log_usb_send("ROM_DATA_REQ", out_ep, Get_conf, sizeof(Get_conf));
     if(!ltr_int_send_data(out_ep, Get_conf, sizeof(Get_conf))){
+      log_usb_error("ROM_DATA_REQ", "send failed");
       ltr_int_log_message("Couldn't send config data request!\n");
       return false;
     }
@@ -288,9 +321,11 @@ static bool read_rom_data_tir()
     while(1){
       ltr_int_log_message("Requesting data...\n");
       if(!ltr_int_receive_data(cfg_in_ep, ltr_int_packet, sizeof(ltr_int_packet), &t, 500)){
+        log_usb_receive("ROM_DATA_REQ", cfg_in_ep, 0, sizeof(ltr_int_packet), 500);
         ltr_int_log_message("Couldn't receive status!\n");
         return false;
       }
+      log_usb_receive("ROM_DATA_REQ", cfg_in_ep, t, sizeof(ltr_int_packet), 500);
       //Tir4/5 0x14, Tir3 0x09, SN4 0x15...
       if((t > 2) && (ltr_int_packet[1] == 0x40)){
         break;
@@ -727,7 +762,18 @@ static bool start_camera_tir4()
 
 static bool start_camera_tir5()
 {
+  bool is_tir5v2 = (device == TIR5V2);
+  if(is_tir5v2) {
+    ltr_int_log_message("=== start_camera_tir5 START (TIR5V2 device) ===\n");
+  } else {
+    ltr_int_log_message("=== start_camera_tir5 START (TIR5 device) ===\n");
+  }
+
+  struct timeval start_time;
+  gettimeofday(&start_time, NULL);
+
   stop_camera_tir();
+  log_usb_send("START_VIDEO_ON", out_ep, Video_on, sizeof(Video_on));
   ltr_int_send_data(out_ep, Video_on,sizeof(Video_on));
   {
     int delay = ltr_int_tir_get_video_on_delay();
@@ -743,6 +789,13 @@ static bool start_camera_tir5()
   }
   if(ltr_int_tir_get_status_indication())
     set_status_led_tir5(true);
+
+  // Log completion time
+  struct timeval end_time;
+  gettimeofday(&end_time, NULL);
+  long duration = time_diff_msec(&end_time, &start_time);
+  ltr_int_log_message("=== start_camera_tir5 END (took %ld ms) ===\n", duration);
+
   return true;
 }
 
@@ -930,6 +983,17 @@ static bool init_camera_tir5(bool force_fw_load, bool p_ir_on)
   tir_status_t status;
   ir_on = p_ir_on;
 
+  // TIR5V2 specific debugging
+  bool is_tir5v2 = (device == TIR5V2);
+  if(is_tir5v2) {
+    ltr_int_log_message("=== init_camera_tir5 START (TIR5V2 device) ===\n");
+  } else {
+    ltr_int_log_message("=== init_camera_tir5 START (TIR5 device) ===\n");
+  }
+
+  struct timeval init_start;
+  gettimeofday(&init_start, NULL);
+
   stop_camera_tir();
 
   read_rom_data_tir();
@@ -944,26 +1008,33 @@ static bool init_camera_tir5(bool force_fw_load, bool p_ir_on)
   }
   upload_firmware(&firmware);
   free(firmware.firmware);
+  log_usb_send("POST_FIRMWARE", out_ep, unk_7, sizeof(unk_7));
   ltr_int_send_data(out_ep, unk_7,sizeof(unk_7));
   flush_fifo_tir();
+  log_usb_send("INIT_STOP", out_ep, Camera_stop, sizeof(Camera_stop));
   ltr_int_send_data(out_ep, Camera_stop,sizeof(Camera_stop));
   read_status_tir(&status);
+  log_usb_send("CFG_RELOAD", out_ep, Cfg_reload, sizeof(Cfg_reload));
   ltr_int_send_data(out_ep, Cfg_reload,sizeof(Cfg_reload));
   ltr_int_set_threshold_tir(0x96);
   set_exposure(0x18F);
   control_ir_led_tir(true);
   control_status_led_tir(false, false);
   control_status_led_tir(false, false);
+  log_usb_send("PRECISION_MODE", out_ep, Precision_mode, sizeof(Precision_mode));
   ltr_int_send_data(out_ep, Precision_mode,sizeof(Precision_mode));
   control_status_led_tir(false, false);
   control_ir_led_tir(true);
   ltr_int_set_threshold_tir(0x76);
   set_exposure(0x15E);
   control_status_led_tir(false, false);
+  log_usb_send("PRECISION_MODE2", out_ep, Precision_mode, sizeof(Precision_mode));
   ltr_int_send_data(out_ep, Precision_mode,sizeof(Precision_mode));
   flush_fifo_tir();
+  log_usb_send("FINAL_STOP", out_ep, Camera_stop, sizeof(Camera_stop));
   ltr_int_send_data(out_ep, Camera_stop,sizeof(Camera_stop));
   control_ir_led_tir(true);
+  log_usb_send("VIDEO_ON", out_ep, Video_on, sizeof(Video_on));
   ltr_int_send_data(out_ep, Video_on,sizeof(Video_on));
   {
     int delay = ltr_int_tir_get_video_on_delay();
@@ -972,6 +1043,13 @@ static bool init_camera_tir5(bool force_fw_load, bool p_ir_on)
       ltr_int_usleep(delay);
     }
   }
+
+  // Log completion time
+  struct timeval init_end;
+  gettimeofday(&init_end, NULL);
+  long init_time = time_diff_msec(&init_end, &init_start);
+  ltr_int_log_message("=== init_camera_tir5 END (took %ld ms) ===\n", init_time);
+
   return true;
 }
 
@@ -1127,8 +1205,10 @@ bool ltr_int_open_tir(bool force_fw_load, bool switch_ir_on)
       tir_iface = &tir4;
       break;
     case TIR5:
-    case TIR5V2:
       tir_iface = &tir5;
+      break;
+    case TIR5V2:
+      tir_iface = &tir5v2;
       break;
     case TIR5V3:
       ltr_int_log_message("Initializing TrackIR 5 revision 3.\n");
@@ -1571,6 +1651,194 @@ static bool set_status_led_tir5v3(bool running)
   return send_packet_4_tir5v3(0x19, 0x04, brightness, leds, 50000);
 }
 
+// ========================================
+// TIR5V2 Specific Functions
+// ========================================
+
+static bool init_camera_tir5v2(bool force_fw_load, bool p_ir_on)
+{
+  (void) force_fw_load;
+  tir_status_t status;
+  ir_on = p_ir_on;
+
+  // TIR5V2 specific debugging with enhanced timing
+  ltr_int_log_message("=== init_camera_tir5v2 START (TIR5V2 device with enhanced timing) ===\n");
+
+  struct timeval init_start;
+  gettimeofday(&init_start, NULL);
+
+  stop_camera_tir();
+
+  read_rom_data_tir();
+  control_ir_led_tir(true);
+  flush_fifo_tir();
+  set_exposure(0x18F);
+
+  // TIR5V2: Add extra delay after exposure setting
+  ltr_int_usleep(10000);  // 10ms delay
+
+  read_status_tir(&status);
+  firmware_t firmware;
+  if(!load_firmware(&firmware)){
+    ltr_int_log_message("Error loading firmware!\n");
+    return false;
+  }
+  upload_firmware(&firmware);
+  free(firmware.firmware);
+
+  // TIR5V2: Enhanced delays after firmware upload
+  ltr_int_usleep(50000);  // 50ms delay for memory settling
+
+  log_usb_send("POST_FIRMWARE_V2", out_ep, unk_7, sizeof(unk_7));
+  ltr_int_send_data(out_ep, unk_7, sizeof(unk_7));
+  flush_fifo_tir();
+
+  // TIR5V2: Add delay before camera stop
+  ltr_int_usleep(5000);   // 5ms delay
+
+  ltr_int_send_data(out_ep, Camera_stop, sizeof(Camera_stop));
+  read_status_tir(&status);
+  log_usb_send("CFG_RELOAD_V2", out_ep, Cfg_reload, sizeof(Cfg_reload));
+  ltr_int_send_data(out_ep, Cfg_reload, sizeof(Cfg_reload));
+
+  // TIR5V2: Longer delay after config reload for memory mapping
+  ltr_int_usleep(20000);  // 20ms delay
+
+  ltr_int_set_threshold_tir(0x96);
+  set_exposure(0x18F);
+  control_ir_led_tir(true);
+  control_status_led_tir(false, false);
+  control_status_led_tir(false, false);
+  log_usb_send("PRECISION_MODE_V2", out_ep, Precision_mode, sizeof(Precision_mode));
+  ltr_int_send_data(out_ep, Precision_mode, sizeof(Precision_mode));
+  control_status_led_tir(false, false);
+  control_ir_led_tir(true);
+  ltr_int_set_threshold_tir(0x76);
+  set_exposure(0x15E);
+  control_status_led_tir(false, false);
+  log_usb_send("PRECISION_MODE2_V2", out_ep, Precision_mode, sizeof(Precision_mode));
+  ltr_int_send_data(out_ep, Precision_mode, sizeof(Precision_mode));
+  flush_fifo_tir();
+  log_usb_send("FINAL_STOP_V2", out_ep, Camera_stop, sizeof(Camera_stop));
+  ltr_int_send_data(out_ep, Camera_stop, sizeof(Camera_stop));
+  control_ir_led_tir(true);
+  log_usb_send("VIDEO_ON_V2", out_ep, Video_on, sizeof(Video_on));
+  ltr_int_send_data(out_ep, Video_on, sizeof(Video_on));
+
+  {
+    int delay = ltr_int_tir_get_video_on_delay();
+    ltr_int_log_message("init_camera_tir5v2: video_on_delay = %d microseconds\n", delay);
+    if(delay > 0){
+      // TIR5V2: Potentially longer delay for different memory mapping
+      ltr_int_usleep(delay * 2);  // Double the delay for TIR5V2
+    }
+  }
+
+  // Log completion time
+  struct timeval init_end;
+  gettimeofday(&init_end, NULL);
+  long init_time = time_diff_msec(&init_end, &init_start);
+  ltr_int_log_message("=== init_camera_tir5v2 END (took %ld ms with enhanced timing) ===\n", init_time);
+
+  return true;
+}
+
+static bool start_camera_tir5v2()
+{
+  ltr_int_log_message("=== start_camera_tir5v2 START (TIR5V2 device with enhanced timing) ===\n");
+
+  struct timeval start_time;
+  gettimeofday(&start_time, NULL);
+
+  stop_camera_tir();
+
+  // TIR5V2: Add delay before video on
+  ltr_int_usleep(10000);  // 10ms delay
+
+  log_usb_send("START_VIDEO_ON_V2", out_ep, Video_on, sizeof(Video_on));
+  ltr_int_send_data(out_ep, Video_on, sizeof(Video_on));
+
+  // TIR5V2: Add delay after video on for memory settling
+  ltr_int_usleep(15000);  // 15ms delay
+
+  {
+    int delay = ltr_int_tir_get_video_on_delay();
+    ltr_int_log_message("start_camera_tir5v2: video_on_delay = %d microseconds\n", delay);
+    if(delay > 0){
+      // TIR5V2: Potentially longer delay for different memory mapping
+      ltr_int_usleep(delay * 2);  // Double the delay for TIR5V2
+    }
+  }
+
+  if(ir_on){
+    control_ir_led_tir(true);
+  }else{
+    control_ir_led_tir(false);
+  }
+
+  // TIR5V2: Add delay before LED status check
+  ltr_int_usleep(5000);   // 5ms delay
+
+  if(ltr_int_tir_get_status_indication())
+    set_status_led_tir5(true);
+
+  // Log completion time
+  struct timeval end_time;
+  gettimeofday(&end_time, NULL);
+  long duration = time_diff_msec(&end_time, &start_time);
+  ltr_int_log_message("=== start_camera_tir5v2 END (took %ld ms with enhanced timing) ===\n", duration);
+
+  return true;
+}
+
+static bool stop_camera_tir5v2()
+{
+  ltr_int_log_message("Stopping TIR5V2 camera!\n");
+
+  // TIR5V2: Add delay before stop command
+  ltr_int_usleep(5000);   // 5ms delay
+
+  ltr_int_send_data(out_ep, Camera_stop, sizeof(Camera_stop));
+  control_ir_led_tir(false);
+  control_status_led_tir(false, false);
+
+  // TIR5V2: Add delay after stop
+  ltr_int_usleep(10000);  // 10ms delay
+
+  return true;
+}
+
+static bool close_camera_tir5v2()
+{
+  ltr_int_log_message("Closing TIR5V2 camera!\n");
+  stop_camera_tir5v2();
+
+  // TIR5V2: Enhanced closing sequence with delays
+  ltr_int_usleep(5000);   // 5ms delay
+  ltr_int_set_threshold_tir(0x96);
+  ltr_int_usleep(5000);   // 5ms delay
+  set_exposure(0x18F);
+  ltr_int_usleep(5000);   // 5ms delay
+  control_ir_led_tir(true);
+  ltr_int_usleep(5000);   // 5ms delay
+  control_status_led_tir(false, false);
+  ltr_int_usleep(5000);   // 5ms delay
+  log_usb_send("PRECISION_MODE_CLOSE_V2", out_ep, Precision_mode, sizeof(Precision_mode));
+  ltr_int_send_data(out_ep, Precision_mode, sizeof(Precision_mode));
+  ltr_int_usleep(5000);   // 5ms delay
+  flush_fifo_tir();
+  ltr_int_usleep(5000);   // 5ms delay
+  log_usb_send("FINAL_STOP_CLOSE_V2", out_ep, Camera_stop, sizeof(Camera_stop));
+  ltr_int_send_data(out_ep, Camera_stop, sizeof(Camera_stop));
+  ltr_int_usleep(5000);   // 5ms delay
+  control_ir_led_tir(false);
+  ltr_int_usleep(5000);   // 5ms delay
+  ltr_int_finish_usb(TIR_INTERFACE);
+
+  ltr_int_log_message("TIR5V2 camera closed.\n");
+  return true;
+}
+
 static bool read_status_tir5v3(tir_status_t *status)
 {
   assert(status != NULL);
@@ -1737,6 +2005,15 @@ static bool close_camera_tir5v3()
   ltr_int_log_message("TIR5 camera closed.\n");
   return true;
 }
+
+static tir_interface tir5v2 = {
+  .stop_camera_tir = stop_camera_tir5v2,
+  .start_camera_tir = start_camera_tir5v2,
+  .init_camera_tir = init_camera_tir5v2,
+  .close_camera_tir = close_camera_tir5v2,
+  .get_tir_info = get_tir5_info,              // Same as TIR5
+  .set_status_led_tir = set_status_led_tir5   // Same as TIR5
+};
 
 static tir_interface tir5v3 = {
   .stop_camera_tir = stop_camera_tir5v3,      //
