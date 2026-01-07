@@ -1429,6 +1429,7 @@ QString LinuxtrackGui::findLtrPipeExecutable()
     // Prefer dev/build-local binaries first
     QString appDir = QCoreApplication::applicationDirPath();
     QStringList devCandidates = {
+        appDir + QStringLiteral("/ltr_pipe"),        // Same directory as GUI (AppImage support)
         appDir + QStringLiteral("/../ltr_pipe"),
         appDir + QStringLiteral("/../../ltr_pipe"),
         appDir + QStringLiteral("/../src/ltr_pipe"),
