@@ -58,6 +58,13 @@ static unsigned char unk_a[] =  {0x19, 0x14, 0x10, 0x00, 0x01};
 static unsigned char unk_b[] =  {0x23, 0x90, 0x0B, 0x00, 0x01, 0x3C};
 static unsigned char unk_c[] =  {0x23, 0x90, 0xF0, 0x32, 0x01, 0x3C};
 
+static unsigned char unk_d[] =  {0x19, 0x14, 0x10, 0x00, 0x00};
+static unsigned char unk_e[] =  {0x1F, 0x20};
+
+static bool ir_on = true;
+
+static dev_found device = NOT_TIR;
+
 // USB logging helpers for TIR5V2 debugging
 static void log_usb_send(const char *context, int ep, unsigned char data[], size_t size) {
   if(device == TIR5V2) {
@@ -82,12 +89,6 @@ static void log_usb_error(const char *context, const char *error) {
     ltr_int_log_message("[TIR5V2] %s ERROR: %s\n", context, error);
   }
 }
-static unsigned char unk_d[] =  {0x19, 0x14, 0x10, 0x00, 0x00};
-static unsigned char unk_e[] =  {0x1F, 0x20};
-
-static bool ir_on = true;
-
-static dev_found device = NOT_TIR;
 
 static tir_interface tir2;
 static tir_interface tir3;
