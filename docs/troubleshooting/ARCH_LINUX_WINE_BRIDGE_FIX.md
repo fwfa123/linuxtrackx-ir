@@ -28,100 +28,52 @@ This is where the `c000007b` error occurs - when the NSIS installer tries to run
 
 ## Solutions
 
-### Solution 1: AppImage-Specific Fix (Recommended)
+### Solution 1: Build from source on Arch (recommended)
 
-Use the AppImage-specific fix script that rebuilds the wine bridge components before they get packaged:
+Build on Arch so the wine bridge is compiled with Arch’s wine paths. The project uses **CMake**; `cmake/FindWineLibs.cmake` detects `/usr/lib32/wine/i386-unix` and `/usr/lib/wine/x86_64-unix`. Ensure multilib and `wine`, `lib32-glibc`, `lib32-gcc-libs` are installed, then:
 
 ```bash
-# Fix the wine bridge components for AppImage
-./scripts/fix_appimage_wine_bridge.sh
+cd linuxtrackx-ir
+rm -rf build && mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
+# If FindWineLibs does not find paths, set explicitly:
+# cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON \
+#   -DWINE_LIBS_PATH=/usr/lib32/wine/i386-unix \
+#   -DWINE64_LIBS_PATH=/usr/lib/wine/x86_64-unix
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
 
-# Rebuild the AppImage with fixed components
+Use the built `linuxtrack-wine.exe` from the install (e.g. `/opt/share/linuxtrack/`) or rebuild the AppImage on Arch: `./scripts/appimage/build_appimage_phase4.sh`.
+
+### Solution 2: Override Wine paths in CMake
+
+If the auto-detected paths are wrong:
+
+```bash
+ls -la /usr/lib32/wine/i386-unix   # or /usr/lib32/wine
+ls -la /usr/lib/wine/x86_64-unix   # or /usr/lib/wine
+```
+
+Then:
+
+```bash
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON \
+  -DWINE_LIBS_PATH=/usr/lib32/wine/i386-unix \
+  -DWINE64_LIBS_PATH=/usr/lib/wine/x86_64-unix
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
+
+### Solution 3: AppImage rebuild on Arch
+
+To produce an AppImage whose wine bridge works on Arch, build and run the AppImage script on an Arch system (after a normal CMake build with wine bridge, as in Solution 1):
+
+```bash
 ./scripts/appimage/build_appimage_phase4.sh
 ```
 
-This script:
-- Rebuilds `check_data.exe` with Arch Linux wine library paths
-- Tests the rebuilt component with Wine
-- Prepares components for AppImage packaging
-- Creates verification scripts
-
-### Solution 2: Quick Fix Script
-
-Use the general Arch-specific fix script:
-
-```bash
-# Run the diagnostic script first
-./scripts/test_wine_bridge_arch.sh
-
-# Run the fix script
-./scripts/fix_wine_bridge_arch.sh
-```
-
-### Solution 3: Manual Fix
-
-If the scripts don't work, manually fix the wine library paths:
-
-1. **Find your Arch Linux wine paths**:
-   ```bash
-   ls -la /usr/lib/wine/
-   ls -la /usr/lib32/wine/
-   ```
-
-2. **Update the build configuration**:
-   ```bash
-   cd src/wine_bridge/client
-   
-   # Create Arch-specific Makefile
-   cat > Makefile.arch << 'EOF'
-   WINE_LIBS = -L/usr/lib/wine/i386-unix
-   CC = winegcc
-   CFLAGS = -g -O2 -Wall -Wextra -m32
-   LDFLAGS = -m32 -Wall -Wextra -g
-   
-   check_data.exe.so: check_data.o rest.o
-       $(CC) $(WINE_LIBS) $(LDFLAGS) -o $@ $^
-   
-   check_data.o: check_data.c rest.h
-       $(CC) -c $(CFLAGS) -o $@ $<
-   
-   rest.o: rest.c rest.h
-       $(CC) -c $(CFLAGS) -o $@ $<
-   EOF
-   
-   # Rebuild
-   make -f Makefile.arch
-   ```
-
-3. **Rebuild the wine bridge installer**:
-   ```bash
-   cd ../..
-   cd src/wine_bridge
-   make linuxtrack-wine.exe
-   ```
-
-4. **Rebuild the AppImage**:
-   ```bash
-   cd ../..
-   ./scripts/appimage/build_appimage_phase4.sh
-   ```
-
-### Solution 4: Update Configure.ac (Long-term Fix)
-
-For a permanent solution that works across all distributions:
-
-```bash
-# Update configure.ac with better distribution detection
-./scripts/update_configure_arch.sh
-
-# Regenerate build system
-./autogen.sh
-./configure
-
-# Rebuild everything
-make clean
-make
-```
+The scripts `fix_appimage_wine_bridge.sh`, `test_wine_bridge_arch.sh`, `fix_wine_bridge_arch.sh`, and `verify_wine_bridge_arch.sh` are not part of the current tree; use CMake and the steps above instead.
 
 ## Verification
 
@@ -138,29 +90,12 @@ wine src/wine_bridge/linuxtrack-wine.exe
 ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage
 ```
 
-## AppImage-Specific Workflow
+## AppImage workflow when building for Arch
 
-The complete workflow for fixing the AppImage issue:
-
-1. **Fix wine bridge components**:
-   ```bash
-   ./scripts/fix_appimage_wine_bridge.sh
-   ```
-
-2. **Verify the fix**:
-   ```bash
-   ./scripts/verify_wine_bridge_arch.sh
-   ```
-
-3. **Rebuild AppImage**:
-   ```bash
-   ./scripts/appimage/build_appimage_phase4.sh
-   ```
-
-4. **Test on Arch Linux**:
-   ```bash
-   ./LinuxTrack-X-IR-0.99.23-x86_64.AppImage
-   ```
+1. **Build on Arch** (Solution 1 or 2) so the wine bridge uses Arch’s paths.
+2. **Rebuild AppImage** (on the same Arch system):  
+   `./scripts/appimage/build_appimage_phase4.sh`
+3. **Test**: run the new AppImage on Arch.
 
 ## Troubleshooting
 
@@ -207,20 +142,14 @@ wine src/wine_bridge/client/check_data.exe.so
 
 ## Prevention
 
-To prevent this issue in future builds:
+1. **Build the wine bridge on the target distro** (or pass correct `-DWINE_LIBS_PATH` / `-DWINE64_LIBS_PATH` when cross-building).
+2. **Use `cmake/FindWineLibs.cmake`** for path detection; it knows common Arch paths.
+3. **Test on Arch** before publishing an AppImage that includes the wine bridge.
 
-1. **Use the updated configure.ac** with better distribution detection
-2. **Test on multiple distributions** before releasing
-3. **Use the Arch-specific build scripts** when building on Arch Linux
-4. **Include cross-distribution testing** in the build process
+## Relevant files
 
-## Files Modified
-
-- `src/wine_bridge/client/check_data.exe.so` - Rebuilt with Arch Linux paths
-- `src/wine_bridge/linuxtrack-wine.exe` - Updated wine bridge installer
-- `scripts/fix_appimage_wine_bridge.sh` - AppImage-specific fix script
-- `scripts/verify_wine_bridge_arch.sh` - Verification script
-- `configure.ac` - Updated with better distribution detection
+- `cmake/FindWineLibs.cmake` – detects `/usr/lib32/wine/i386-unix`, `/usr/lib32/wine`, `/usr/lib/wine/x86_64-unix`, etc.
+- `src/wine_bridge/` – wine bridge sources; built by CMake with `-DWINE_LIBS_PATH` / `-DWINE64_LIBS_PATH` if needed.
 
 ## Related Issues
 
@@ -233,11 +162,10 @@ To prevent this issue in future builds:
 
 If you continue to experience issues:
 
-1. Run the diagnostic script and share the output
-2. Check the wine version and installed packages
-3. Verify wine library paths on your system
-4. Test with a clean wine prefix
-5. Ensure the AppImage was rebuilt after fixing the components
+1. Check the wine version and installed packages (`wine --version`, `ls /usr/lib32/wine/`, `ls /usr/lib/wine/`)
+2. Rebuild from source on Arch with Solution 1 or 2
+3. Test with a clean wine prefix
+4. If using an AppImage, ensure it was built on Arch (or with the correct `WINE_LIBS_PATH`/`WINE64_LIBS_PATH`)
 
 ## References
 

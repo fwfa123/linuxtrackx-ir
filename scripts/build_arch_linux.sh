@@ -71,13 +71,13 @@ install_dependencies() {
     print_status "Installing build dependencies..."
     
     # Core build tools
-    sudo pacman -S --needed base-devel autoconf automake libtool
+    sudo pacman -S --needed base-devel cmake pkg-config
     
     # Qt6 dependencies (Arch Linux default)
-    sudo pacman -S --needed qt6-base qt6-tools
+    sudo pacman -S --needed qt6-base qt6-tools qt6-5compat
     
-    # Libraries
-    sudo pacman -S --needed opencv libusb mxml libx11 libxrandr
+    # Libraries (zlib omitted: CachyOS etc. use zlib-ng-compat which provides libz; CMake finds it)
+    sudo pacman -S --needed opencv libusb mxml mesa glu sqlite
     
     # Build tools
     sudo pacman -S --needed bison flex
@@ -132,122 +132,57 @@ install_wiimote_support() {
     fi
 }
 
-# Function to install OSC support
+# Function to install OSC support (liblo is in official [extra])
 install_osc_support() {
-    print_status "Installing OSC support..."
+    print_status "Installing OSC support (liblo)..."
     
-    local aur_helper=$(detect_aur_helper)
-    
-    if [ "$aur_helper" = "none" ]; then
-        print_error "No AUR helper found. Please install yay or paru first."
-        print_status "You can install yay manually:"
-        echo "sudo pacman -S --needed git base-devel"
-        echo "git clone https://aur.archlinux.org/yay.git"
-        echo "cd yay && makepkg -si"
-        return 1
-    fi
-    
-    print_status "Installing liblo from AUR using $aur_helper..."
-    $aur_helper -S liblo-ipv6 --noconfirm
-    
-    if [ $? -eq 0 ]; then
-        print_success "liblo-ipv6 installed successfully"
-        
-        # Test liblo installation
-        if pkg-config --exists liblo; then
-            print_success "liblo development files found"
+    if sudo pacman -S --needed liblo 2>/dev/null; then
+        if pkg-config --exists liblo 2>/dev/null; then
+            print_success "liblo installed (official [extra])"
         else
-            print_warning "liblo development files not found"
+            print_warning "liblo installed but pkg-config may need refresh"
         fi
     else
-        print_error "Failed to install liblo-ipv6"
-        print_status "Trying alternative package liblo-git..."
-        $aur_helper -S liblo-git --noconfirm
-        
-        if [ $? -eq 0 ]; then
-            print_success "liblo-git installed successfully"
-        else
-            print_error "Failed to install OSC support"
-            return 1
-        fi
+        print_error "Failed to install liblo. Try: sudo pacman -S liblo"
+        return 1
     fi
 }
 
-# Function to install X-Plane SDK
+# Function to install X-Plane SDK (manual download; that URL serves HTML, not a .zip)
 install_xplane_sdk() {
-    print_status "Installing X-Plane SDK..."
-    
-    # Create X-Plane SDK directory
     local sdk_dir="/opt/xplane-sdk"
-    sudo mkdir -p "$sdk_dir"
-    
-    print_status "Downloading X-Plane SDK 4.1.1..."
-    
-    # Download X-Plane SDK
-    local sdk_url="https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
-    local sdk_zip="/tmp/xplane-sdk-4.1.1.zip"
-    
-    if curl -L -o "$sdk_zip" "https://developer.x-plane.com/sdk/plugin-sdk-downloads/" 2>/dev/null; then
-        print_success "X-Plane SDK downloaded successfully"
-        
-        # Extract SDK
-        cd /tmp
-        unzip -q "$sdk_zip" -d "$sdk_dir"
-        
-        if [ $? -eq 0 ]; then
-            print_success "X-Plane SDK extracted to $sdk_dir"
-            
-            # Set up environment variables
-            echo "export XPLANE_SDK_PATH=$sdk_dir" | sudo tee -a /etc/profile.d/xplane-sdk.sh
+    if [ -d "$sdk_dir/CHeaders" ]; then
+        print_success "X-Plane SDK found at $sdk_dir"
+        if [ ! -f /etc/profile.d/xplane-sdk.sh ]; then
+            echo "export XPLANE_SDK_PATH=$sdk_dir" | sudo tee /etc/profile.d/xplane-sdk.sh
             echo "export XPLANE_SDK_INCLUDE=$sdk_dir/CHeaders" | sudo tee -a /etc/profile.d/xplane-sdk.sh
-            
-            print_success "X-Plane SDK environment variables configured"
-        else
-            print_error "Failed to extract X-Plane SDK"
-            return 1
         fi
-    else
-        print_error "Failed to download X-Plane SDK"
-        print_status "Please download manually from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
-        print_status "And extract to: $sdk_dir"
-        return 1
+        return 0
     fi
+    print_warning "X-Plane SDK not found at $sdk_dir/CHeaders"
+    print_status "Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
+    print_status "Extract so that $sdk_dir/CHeaders exists. Then re-run or pass -DXPLANE_SDK_PATH=$sdk_dir/CHeaders to cmake."
+    sudo mkdir -p "$sdk_dir"
+    return 0
 }
 
-# Function to install wine32 from AUR
+# Function to install Wine (multilib). AUR wine32 is fallback only.
 install_wine32() {
-    print_status "Checking wine32 installation..."
+    print_status "Installing Wine (multilib)..."
     
-    # Check if wine32 is already installed
-    if pacman -Q wine32 >/dev/null 2>&1; then
-        print_success "wine32 is already installed"
+    if pacman -Q wine >/dev/null 2>&1 && [ -d /usr/lib32/wine ] || [ -d /usr/lib32/wine/i386-unix ]; then
+        print_success "Wine and 32-bit libs appear present"
         return 0
     fi
     
-    # Check if wine is installed
-    if pacman -Q wine >/dev/null 2>&1; then
-        print_warning "wine is installed but wine32 is needed for 32-bit support"
-    fi
+    sudo pacman -S --needed wine wine-mono wine-gecko
+    sudo pacman -S --needed lib32-glibc lib32-gcc-libs
+    sudo pacman -S lib32-wine 2>/dev/null || true
     
-    local aur_helper=$(detect_aur_helper)
-    
-    if [ "$aur_helper" = "none" ]; then
-        print_error "No AUR helper found. Please install yay or paru first."
-        print_status "You can install yay manually:"
-        echo "sudo pacman -S --needed git base-devel"
-        echo "git clone https://aur.archlinux.org/yay.git"
-        echo "cd yay && makepkg -si"
-        return 1
-    fi
-    
-    print_status "Installing wine32 from AUR using $aur_helper..."
-    $aur_helper -S wine32 --noconfirm
-    
-    if [ $? -eq 0 ]; then
-        print_success "wine32 installed successfully"
+    if command -v winegcc >/dev/null 2>&1; then
+        print_success "Wine (multilib) installed"
     else
-        print_error "Failed to install wine32"
-        return 1
+        print_warning "winegcc not found. If build fails, enable multilib in /etc/pacman.conf and install lib32-wine, or try AUR wine32 as fallback."
     fi
 }
 
@@ -277,20 +212,17 @@ install_nsis() {
     fi
 }
 
-# Function to verify wine32 installation
+# Function to verify Wine (multilib) installation
 verify_wine32() {
-    print_status "Verifying wine32 installation..."
+    print_status "Verifying Wine (multilib)..."
     
-    # Check wine32 binary
-    if [ ! -f "/usr/bin/wine32" ] && [ ! -f "/usr/bin/wine" ]; then
-        print_error "wine32 binary not found"
+    if ! command -v wine >/dev/null 2>&1; then
+        print_error "wine not found"
         return 1
     fi
     
-    # Check wine32 libraries
-    if [ ! -d "/usr/lib32/wine/i386-unix" ] && [ ! -d "/usr/lib32/wine" ]; then
-        print_error "wine32 libraries not found"
-        return 1
+    if [ ! -d "/usr/lib32/wine" ] && [ ! -d "/usr/lib32/wine/i386-unix" ]; then
+        print_warning "32-bit wine libs not found at /usr/lib32/wine. Enable multilib and install lib32-wine (or AUR wine32 as fallback)."
     fi
     
     # Test winegcc
@@ -323,7 +255,7 @@ EOF
         return 1
     fi
     
-    print_success "wine32 installation verified"
+    print_success "Wine installation verified"
 }
 
 # Function to configure build
@@ -384,9 +316,10 @@ install_project() {
 verify_installation() {
     print_status "Verifying installation..."
     
-    # Check if binaries are installed
-    if [ -f "/opt/bin/ltr_gui" ]; then
-        print_success "ltr_gui installed successfully"
+    if command -v ltr_gui >/dev/null 2>&1; then
+        print_success "ltr_gui found in PATH"
+    elif [ -f "/opt/bin/ltr_gui" ]; then
+        print_success "ltr_gui at /opt/bin/ltr_gui (ensure /opt/bin in PATH)"
     else
         print_error "ltr_gui not found"
         return 1
@@ -410,7 +343,7 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --deps-only      Install dependencies only"
-    echo "  --wine32-only    Install wine32 only"
+    echo "  --wine32-only    Install Wine (multilib) only"
     echo "  --configure-only Configure build only"
     echo "  --build-only     Build only (assumes dependencies installed)"
     echo "  --install-only   Install only (assumes build completed)"
@@ -420,7 +353,7 @@ echo "  --test-osc       Test OSC support"
 echo "  --test-xplane    Test X-Plane SDK support"
 echo "  --help           Show this help message"
     echo ""
-    echo "Default behavior: Full installation (deps + wine32 + build + install)"
+    echo "Default behavior: Full installation (deps + Wine + build + install)"
 }
 
 # Main function
@@ -509,16 +442,13 @@ main() {
         verify_installation
         exit 0
     elif [ "$test_wiimote" = true ]; then
-        print_status "Testing Wiimote support..."
-        ./scripts/test_wiimote_support.sh
+        if pkg-config --exists cwiid 2>/dev/null; then print_success "cwiid: found"; else print_warning "cwiid: not found (yay -S cwiid)"; fi
         exit 0
     elif [ "$test_osc" = true ]; then
-        print_status "Testing OSC support..."
-        ./scripts/test_osc_support.sh
+        if pkg-config --exists liblo 2>/dev/null; then print_success "liblo: found"; else print_warning "liblo: not found (pacman -S liblo)"; fi
         exit 0
     elif [ "$test_xplane" = true ]; then
-        print_status "Testing X-Plane SDK support..."
-        ./scripts/test_xplane_sdk.sh
+        if [ -d /opt/xplane-sdk/CHeaders ]; then print_success "X-Plane SDK: found"; else print_warning "X-Plane SDK: not found at /opt/xplane-sdk/CHeaders"; fi
         exit 0
     elif [ "$build_only" = true ] || [ "$install_only" = true ] || [ "$configure_only" = true ]; then
         # Skip dependency installation for these modes

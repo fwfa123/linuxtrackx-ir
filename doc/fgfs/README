@@ -24,3 +24,24 @@ Example joystick file:
 
   fgfs/Input/Joysticks/LinuxTrack/uinput-abs.xml
 
+
+* FGCamera Integration
+=======================
+
+This plugin automatically detects when the FGCamera addon is active and has
+its LinuxTrack handler enabled. When detected, this plugin will:
+
+  - Continue to provide protocol setup (data feed to /sim/linuxtrack/data/*)
+  - Defer view control to FGCamera's offset management system
+  - Automatically resume direct view control if FGCamera is disabled
+
+This ensures both plugins can work together without conflicts. The protocol
+data feed remains active regardless of FGCamera status, allowing FGCamera to
+consume the tracking data through its handler system.
+
+To force direct view control even when FGCamera is active, set:
+
+  --prop:/sim/linuxtrack/force-direct-control=1
+
+Note: This property defaults to 0 (automatic detection enabled).
+

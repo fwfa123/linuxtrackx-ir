@@ -93,11 +93,10 @@ If you have an existing installation in `/usr/local` and want to migrate to `/op
 ## 🎮 Usage
 
 ### First Launch
+On **Wayland** (default on many modern distros, e.g. Arch): if the window does not appear, use `QT_QPA_PLATFORM=xcb ltr_gui`. Otherwise:
 ```bash
-# For X11 (recommended)
 ltr_gui
-
-# For Wayland (force X11 compatibility if needed)
+# If the GUI does not show on Wayland:
 QT_QPA_PLATFORM=xcb ltr_gui
 ```
 

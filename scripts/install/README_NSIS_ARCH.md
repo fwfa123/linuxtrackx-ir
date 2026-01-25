@@ -130,24 +130,17 @@ If all automated methods fail:
 
 ## Integration with LinuxTrack X-IR
 
-After successful NSIS installation:
+After successful NSIS installation, build LinuxTrack X-IR with **CMake** (see [arch-linux.md](../../docs/readme/arch-linux.md)):
 
-1. **Build LinuxTrack X-IR:**
-   ```bash
-   autoreconf -fiv
-   ./configure --prefix=/opt
-   make -j$(nproc)
-   sudo make install
-   ```
+```bash
+cd linuxtrackx-ir
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
 
-2. **Verify Windows Components:**
-   - Check that `linuxtrack-wine.exe` was created
-   - Verify NSIS installer functionality
-
-3. **Test Installation:**
-   ```bash
-   ./scripts/install/verify_installation.sh
-   ```
+Verify: `linuxtrack-wine.exe` under `/opt/share/linuxtrack/`, and run `./scripts/install/verify_installation.sh`.
 
 ## Support
 

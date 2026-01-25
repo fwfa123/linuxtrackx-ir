@@ -2,209 +2,83 @@
 
 ## Overview
 
-This guide provides step-by-step instructions for installing LinuxTrack X-IR on Arch Linux and its derivatives (Manjaro, EndeavourOS, etc.). It addresses common package name issues and provides solutions for problematic dependencies.
+This guide provides step-by-step instructions for installing LinuxTrack X-IR on Arch Linux and its derivatives (Manjaro, EndeavourOS, etc.) using **CMake** and **Qt6**. The project uses CMake only (autotools has been removed).
 
-**Note**: For comprehensive Arch Linux support with wine32 integration, see the full guide at `docs/guides/ARCH_LINUX_INSTALL_GUIDE.md`
+**See also:** [docs/readme/arch-linux.md](../../docs/readme/arch-linux.md) (primary) and [docs/guides/ARCH_LINUX_INSTALL_GUIDE.md](../../docs/guides/ARCH_LINUX_INSTALL_GUIDE.md) for more detail.
 
-## Common Issues on Arch Linux
+## Package name notes
 
-### 1. Package Name Differences
-- **`qt5-help`** → Not needed (included in `qt5-tools`)
-- **`libmxml`** → **`mxml`** (available in extras repository)
-- **`nsis`** → May have AUR issues (use our helper script)
+- **`libmxml`** → **`mxml`** (Arch package name)
+- **`liblo`** → **`liblo`** (official [extra], not AUR)
+- **`nsis`** → AUR or `./scripts/install/install_nsis_arch.sh`
+- **Qt:** **Qt6** only (`qt6-base`, `qt6-tools`, `qt6-5compat`). Do not use Qt5.
 
-### 2. Repository Differences
-- Some packages are in different repositories
-- AUR packages may have build issues
-- Package names may differ from other distributions
-
-## Installation Methods
-
-### Method 1: Standard Installation (Recommended)
+## Method 1: Level 1 (TrackIR-only, CMake + Qt6)
 
 ```bash
-# Update system
 sudo pacman -Syu
+sudo pacman -S --needed base-devel cmake pkg-config
+sudo pacman -S --needed libusb bison flex
+sudo pacman -S --needed qt6-base qt6-tools qt6-5compat
+sudo pacman -S --needed mxml mesa glu sqlite
+# zlib: on CachyOS etc. if "zlib vs zlib-ng-compat" conflict, answer N and skip. Else: sudo pacman -S zlib
 
-# Install core dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool
-sudo pacman -S --needed qt5-base qt5-tools qt5-x11extras
-sudo pacman -S --needed opencv libusb mxml libx11 libxrandr
-sudo pacman -S --needed bison flex lib32-glibc lib32-gcc-libs v4l-utils
-
-# Install NSIS using our helper script
-./scripts/install/install_nsis_arch.sh
-
-# Clone and build LinuxTrack X-IR
-git clone <repository-url>
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
 cd linuxtrackx-ir
-
-# Install Wine development tools
-cd scripts/dev
-./wine_dev_setup.sh
-cd ../..
-
-# Build and install
-autoreconf -fiv
-./configure --prefix=/opt
-make -j$(nproc)
-sudo make install
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
+sudo cmake --install .
 ```
 
-### Method 2: One-Command Installation
+## Method 2: Level 2 (+ Wine, NSIS)
+
+Enable **multilib** in `/etc/pacman.conf`, then:
 
 ```bash
-# Single command for all dependencies
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
-
-# Install NSIS
+sudo pacman -Syu
+sudo pacman -S --needed base-devel cmake pkg-config libusb zlib bison flex
+sudo pacman -S --needed qt6-base qt6-tools qt6-5compat mxml mesa glu sqlite
+sudo pacman -S --needed wine wine-mono wine-gecko
+sudo pacman -S --needed lib32-glibc lib32-gcc-libs
+sudo pacman -S --needed winetricks cabextract wget
 ./scripts/install/install_nsis_arch.sh
+
+cd linuxtrackx-ir
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
+cmake --build . -j$(nproc)
+sudo cmake --install .
 ```
 
-### Method 3: Manual Package Installation
+## First launch (Wayland is default on modern Arch)
 
-If you encounter issues with specific packages:
-
+If the GUI does not show on Wayland:
 ```bash
-# Install packages one by one to identify issues
-sudo pacman -S base-devel
-sudo pacman -S autoconf automake libtool
-sudo pacman -S qt5-base qt5-tools qt5-x11extras
-sudo pacman -S opencv libusb mxml
-sudo pacman -S libx11 libxrandr
-sudo pacman -S bison flex
-sudo pacman -S lib32-glibc lib32-gcc-libs
-sudo pacman -S v4l-utils
+QT_QPA_PLATFORM=xcb ltr_gui
 ```
-
-## Package Explanations
-
-### Core Build Tools
-- **`base-devel`**: Essential build tools (gcc, make, etc.)
-- **`autoconf automake libtool`**: Autotools for build system
-- **`bison flex`**: Parser generators
-
-### Qt5 Dependencies
-- **`qt5-base`**: Core Qt5 libraries
-- **`qt5-tools`**: Qt5 development tools (includes help functionality)
-- **`qt5-x11extras`**: X11 integration for Qt5
-
-### Libraries
-- **`opencv`**: Computer vision library
-- **`libusb`**: USB device access
-- **`mxml`**: XML parsing library (equivalent to libmxml)
-- **`libx11 libxrandr`**: X11 development libraries
-- **`v4l-utils`**: Video4Linux utilities
-
-### 32-bit Support
-- **`lib32-glibc lib32-gcc-libs`**: 32-bit libraries for Wine compatibility
-
-## Troubleshooting
-
-### Issue: "target not found: qt5-help"
-**Solution**: `qt5-help` is not needed. Qt5 help functionality is included in `qt5-tools`.
-
-### Issue: "target not found: libmxml"
-**Solution**: Use `mxml` instead of `libmxml`. The package is available in the extras repository.
-
-### Issue: "target not found: nsis"
-**Solution**: Use our NSIS installation script:
-```bash
-./scripts/install/install_nsis_arch.sh
-```
-
-### Issue: Package conflicts
-**Solution**: Try installing packages individually to identify the problematic package:
-```bash
-sudo pacman -S --needed package-name
-```
-
-### Issue: AUR package build failures
-**Solution**: Use our helper scripts that provide multiple installation methods:
-- NSIS: `./scripts/install/install_nsis_arch.sh`
-- Wine tools: `./scripts/dev/wine_dev_setup.sh`
+Otherwise: `ltr_gui`
 
 ## Verification
 
-After installation, verify that all components are working:
-
 ```bash
-# Check if NSIS is installed
-makensis /VERSION
-
-# Check if Qt5 tools are available
-qmake --version
-qhelpgenerator --help
-
-# Check if libraries are found
-pkg-config --exists opencv4
-pkg-config --exists libusb-1.0
-pkg-config --exists mxml
-
-# Test LinuxTrack installation
+ldconfig -p | grep linuxtrack
 ltr_gui
+ltr_server1 --help
+makensis /VERSION   # if Level 2
+pkg-config --exists mxml
+pkg-config --exists libusb-1.0
 ```
 
-## Alternative Package Managers
+## Troubleshooting
 
-If you prefer different package managers:
+- **`target not found: libmxml`** → Use `mxml`.
+- **`target not found: nsis`** → `./scripts/install/install_nsis_arch.sh` or AUR.
+- **32-bit / Wine** → `lib32-glibc`, `lib32-gcc-libs`; multilib enabled. The `build_32bit_libs.sh` script has been removed.
+- **GUI on Wayland** → `QT_QPA_PLATFORM=xcb ltr_gui`.
 
-### Using yay (AUR helper)
-```bash
-# Install yay if not already installed
-sudo pacman -S --needed git base-devel
-git clone https://aur.archlinux.org/yay.git
-cd yay
-makepkg -si
+## Additional resources
 
-# Install dependencies
-yay -S base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
-```
-
-### Using paru (Alternative AUR helper)
-```bash
-# Install paru
-sudo pacman -S --needed git base-devel
-git clone https://aur.archlinux.org/paru.git
-cd paru
-makepkg -si
-
-# Install dependencies
-paru -S base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils
-```
-
-## Distribution-Specific Notes
-
-### Manjaro
-- Uses pacman as the primary package manager
-- May have additional packages in the Manjaro repositories
-- Follow the standard Arch Linux instructions
-
-### EndeavourOS
-- Based on Arch Linux
-- Uses pacman and yay by default
-- Follow the standard Arch Linux instructions
-
-### ArcoLinux
-- Based on Arch Linux
-- May have additional packages in ArcoLinux repositories
-- Follow the standard Arch Linux instructions
-
-## Support
-
-If you encounter issues:
-
-1. **Check the troubleshooting section above**
-2. **Run our verification scripts**:
-   ```bash
-   ./scripts/install/verify_installation.sh
-   ```
-3. **Check system logs** for specific error messages
-4. **Report issues** on the LinuxTrack X-IR GitHub repository
-
-## Additional Resources
-
-- [Arch Linux Wiki](https://wiki.archlinux.org/)
-- [AUR Package Database](https://aur.archlinux.org/)
-- [LinuxTrack X-IR Documentation](docs/)
-- [NSIS Installation Script](scripts/install/install_nsis_arch.sh) 
+- [Arch Linux readme](../../docs/readme/arch-linux.md)
+- [NSIS script](install_nsis_arch.sh)
+- [NSIS README](README_NSIS_ARCH.md)

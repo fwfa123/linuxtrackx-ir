@@ -531,7 +531,7 @@ void SudoPasswordDialog::setupUI(const QString &title, const QString &instructio
     mainLayout->addLayout(buttonLayout);
 
     // Connect checkbox to enable/disable OK button
-    connect(installCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
+    connect(installCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
         okButton->setEnabled(state == Qt::Checked);
     });
 }
