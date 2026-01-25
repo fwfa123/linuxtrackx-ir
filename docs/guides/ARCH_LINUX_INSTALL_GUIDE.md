@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides comprehensive instructions for installing LinuxTrack X-IR on Arch Linux and its derivatives (Manjaro, EndeavourOS, etc.) with full 32-bit wine bridge support. The guide addresses the specific challenges of Arch Linux package management and provides solutions for wine32 integration.
+This guide provides comprehensive instructions for installing LinuxTrack X-IR on Arch Linux and its derivatives (Manjaro, EndeavourOS, etc.) with full 32-bit wine bridge support. Use **multilib** (wine, lib32-glibc, lib32-gcc-libs); AUR wine32 is an optional fallback.
 
 ## 🚀 Quick Start (Recommended)
 
@@ -18,8 +18,7 @@ cd linuxtrackx-ir
 ```
 
 This script will:
-- Install all required dependencies
-- Install wine32 from AUR
+- Install all required dependencies (Qt6, multilib wine, etc.)
 - Configure the build for Arch Linux
 - Build and install LinuxTrack X-IR
 - Verify the installation
@@ -37,14 +36,11 @@ The automated script handles all the complexity for you:
 # Install dependencies only
 ./scripts/build_arch_linux.sh --deps-only
 
-# Install wine32 only
-./scripts/build_arch_linux.sh --wine32-only
-
 # Build only (assumes dependencies installed)
 ./scripts/build_arch_linux.sh --build-only
 ```
 
-### Method 2: Manual Installation with wine32 Support
+### Method 2: Manual Installation with Wine (multilib)
 
 For users who prefer manual control:
 
@@ -57,11 +53,11 @@ sudo pacman -Syu
 # Install core build tools
 sudo pacman -S --needed base-devel cmake
 
-# Install Qt5 dependencies
-sudo pacman -S --needed qt5-base qt5-tools qt5-x11extras
+# Install Qt6 dependencies
+sudo pacman -S --needed qt6-base qt6-tools qt6-5compat
 
 # Install libraries
-sudo pacman -S --needed opencv libusb mxml libx11 libxrandr
+sudo pacman -S --needed opencv libusb mxml mesa glu sqlite
 
 # Install build tools
 sudo pacman -S --needed bison flex
@@ -85,14 +81,19 @@ cd ..
 rm -rf yay
 ```
 
-#### Step 3: Install wine32 and NSIS
+#### Step 3: Install Wine (multilib) and NSIS
+
+Enable multilib in `/etc/pacman.conf`, then:
 
 ```bash
-# Install wine32 from AUR (essential for 32-bit wine bridge)
-yay -S wine32
+# Wine (official) and 32-bit support
+sudo pacman -S wine wine-mono wine-gecko
+sudo pacman -S lib32-glibc lib32-gcc-libs
+sudo pacman -S lib32-wine 2>/dev/null || true
 
-# Install NSIS
-yay -S nsis
+# NSIS
+./scripts/install/install_nsis_arch.sh
+# or: yay -S nsis
 ```
 
 #### Step 4: Build and Install LinuxTrack X-IR
@@ -123,40 +124,16 @@ sudo usermod -a -G plugdev,input $USER
 
 ### Method 3: Prebuilt Installation
 
-For users who don't need wine bridge functionality:
+**Note:** `install_arch_prebuilt.sh` is deprecated. Prefer source build and [docs/readme/arch-linux.md](../readme/arch-linux.md) or `./scripts/build_arch_linux.sh`.
 
-```bash
-./scripts/install/install_arch_prebuilt.sh
-```
+## 🔧 Wine and multilib
 
-## 🔧 Wine32 Integration
+Wine bridge needs 32-bit wine libraries. Use **multilib** (enable in `/etc/pacman.conf`):
 
-### Why wine32 is Required
+- `wine` (official) + `lib32-glibc` `lib32-gcc-libs`
+- If `lib32-wine` exists: `sudo pacman -S lib32-wine`
 
-LinuxTrack X-IR's wine bridge components require 32-bit wine libraries to function properly. The standard wine package on Arch Linux doesn't include the necessary 32-bit components, which is why we need the wine32 package from AUR.
-
-### wine32 Installation
-
-The wine32 package provides:
-- 32-bit wine libraries in `/usr/lib32/wine/i386-unix`
-- 32-bit winegcc compiler
-- Compatibility with legacy Windows applications
-
-```bash
-# Install wine32 from AUR
-yay -S wine32
-
-# Verify installation
-ls -la /usr/lib32/wine/i386-unix/
-winegcc --version
-```
-
-### Wine Bridge Configuration
-
-The build system automatically detects wine32 and configures:
-- Wine library paths for Arch Linux
-- 32-bit compilation flags
-- Proper linking for wine bridge components
+FindWineLibs looks for `/usr/lib32/wine/i386-unix` or `/usr/lib32/wine` and `/usr/lib/wine/x86_64-unix`. AUR `wine32` is only an optional fallback if multilib does not provide these paths.
 
 ## 🎮 Wiimote Support
 
@@ -200,27 +177,17 @@ wminput -c /etc/cwiid/wminput/default
 
 ### OSC Integration
 
-LinuxTrack X-IR supports OSC (Open Sound Control) for network-based head tracking data transmission. On Arch Linux, liblo is available through AUR.
-
-#### Available Packages
-- **`liblo-ipv6`**: Stable version with IPv6 support (1:0.31-1, 1 vote)
-- **`liblo-git`**: Latest development version (0.29.r7.g5e0bda0-2, 0 votes)
+LinuxTrack X-IR supports OSC (Open Sound Control) for network-based head tracking data transmission. On Arch Linux, liblo is in official [extra]: `pacman -S liblo`.
 
 #### Installation
+**liblo is in official [extra]:** use pacman, not AUR.
 ```bash
-# Install liblo from AUR
-yay -S liblo-ipv6
-
-# Alternative: Install latest development version
-yay -S liblo-git
+sudo pacman -S liblo
 ```
 
 #### Verification
 ```bash
-# Check if liblo is installed
-pacman -Q liblo-ipv6
-
-# Test liblo development files
+pacman -Q liblo
 pkg-config --exists liblo
 pkg-config --modversion liblo
 ```
@@ -355,33 +322,30 @@ sudo cmake --install .
 | **Facetracker support** | ✅ Yes | Full support with OpenCV |
 | **XPlane plugin** | ✅ Yes | Available via X-Plane SDK 4.1.1 |
 | **Mickey** | ✅ Yes | Full support |
-| **Wine plugin** | ✅ Yes | With wine32 from AUR |
-| **OSC support** | ✅ Yes | Available via AUR (liblo-ipv6 or liblo-git) |
+| **Wine plugin** | ✅ Yes | With multilib wine (`wine`, `lib32-glibc`, `lib32-gcc-libs`) |
+| **OSC support** | ✅ Yes | `pacman -S liblo` (official [extra]) |
 | **PIE support** | ✅ Yes | Security feature enabled |
 
 ## 🔍 Troubleshooting
 
 ### Common Issues
 
-#### Issue: "wine32 not found"
+#### Issue: "wine32 / 32-bit Wine libs not found"
 **Symptoms**: Build fails with wine-related errors
-**Solution**:
+**Solution**: Use multilib. Enable [multilib] in `/etc/pacman.conf`, then:
 ```bash
-# Install wine32 from AUR
-yay -S wine32
-
-# Verify installation
-ls -la /usr/lib32/wine/i386-unix/
+sudo pacman -S wine wine-mono wine-gecko lib32-glibc lib32-gcc-libs
+sudo pacman -S lib32-wine 2>/dev/null || true
+ls -la /usr/lib32/wine/i386-unix/   # or /usr/lib32/wine/
 ```
+If multilib does not provide these paths, AUR `wine32` is an optional fallback: `yay -S wine32`.
 
 #### Issue: "winegcc not found"
 **Symptoms**: Build fails during wine bridge compilation
 **Solution**:
 ```bash
-# Ensure wine32 is properly installed
-pacman -Q wine32
-
-# Check winegcc availability
+# Ensure wine is installed (multilib)
+pacman -Q wine
 which winegcc
 winegcc --version
 ```
@@ -390,11 +354,9 @@ winegcc --version
 **Symptoms**: Wine bridge components fail to run
 **Solution**:
 ```bash
-# Reinstall wine32
-yay -R wine32
-yay -S wine32
-
-# Verify wine32 libraries
+# Reinstall wine and 32-bit support
+sudo pacman -S wine lib32-glibc lib32-gcc-libs
+sudo pacman -S lib32-wine 2>/dev/null || true
 ls -la /usr/lib32/wine/i386-unix/
 ```
 
@@ -441,9 +403,9 @@ cd paru && makepkg -si
 After installation, verify all components:
 
 ```bash
-# Check wine32 installation
-pacman -Q wine32
-ls -la /usr/lib32/wine/i386-unix/
+# Check wine (multilib)
+pacman -Q wine
+ls -la /usr/lib32/wine/i386-unix/  # or /usr/lib32/wine/
 
 # Check winegcc
 winegcc --version
@@ -451,9 +413,9 @@ winegcc --version
 # Check NSIS
 makensis /VERSION
 
-# Check Qt5 tools
-qmake --version
-qhelpgenerator --help
+# Check Qt6
+pkg-config --exists Qt6Core
+qhelpgenerator-qt6 --help 2>/dev/null || true
 
 # Check libraries
 pkg-config --exists opencv4
@@ -510,10 +472,10 @@ export LDFLAGS="-m32"
 - **`cmake`**: CMake build system (minimum version 3.16)
 - **`bison flex`**: Parser generators
 
-### Qt5 Dependencies
-- **`qt5-base`**: Core Qt5 libraries
-- **`qt5-tools`**: Qt5 development tools (includes help functionality)
-- **`qt5-x11extras`**: X11 integration for Qt5
+### Qt6 Dependencies
+- **`qt6-base`**: Core Qt6 libraries
+- **`qt6-tools`**: Qt6 development tools (includes help)
+- **`qt6-5compat`**: Qt5 compatibility module
 
 ### Libraries
 - **`opencv`**: Computer vision library for webcam and facetracker
@@ -524,7 +486,7 @@ export LDFLAGS="-m32"
 
 ### 32-bit Support
 - **`lib32-glibc lib32-gcc-libs`**: 32-bit libraries for Wine compatibility
-- **`wine32`**: 32-bit Wine from AUR (essential for wine bridge)
+- **`wine`**, **`lib32-glibc`**, **`lib32-gcc-libs`**: Wine and 32-bit support (multilib). **`lib32-wine`** if available.
 
 ## 🔄 Alternative Package Managers
 
@@ -536,7 +498,7 @@ git clone https://aur.archlinux.org/paru.git
 cd paru && makepkg -si
 
 # Install dependencies
-paru -S wine32 nsis
+paru -S nsis
 ```
 
 ### Using pacaur (Legacy AUR helper)
@@ -547,7 +509,7 @@ git clone https://aur.archlinux.org/pacaur.git
 cd pacaur && makepkg -si
 
 # Install dependencies
-pacaur -S wine32 nsis
+pacaur -S nsis
 ```
 
 ## 🎮 Usage After Installation
@@ -584,7 +546,7 @@ sudo usermod -a -G plugdev,input $USER
 
 - [Arch Linux Wiki](https://wiki.archlinux.org/)
 - [AUR Package Database](https://aur.archlinux.org/)
-- [wine32 AUR Package](https://aur.archlinux.org/packages/wine32)
+- [wine32 AUR](https://aur.archlinux.org/packages/wine32) (optional fallback if multilib does not provide 32-bit wine paths)
 - [LinuxTrack X-IR Documentation](docs/)
 - [Build Script Documentation](scripts/build_arch_linux.sh)
 
@@ -608,6 +570,6 @@ After successful installation, you should see:
 - ✅ Wine bridge components build successfully
 - ✅ TrackIR device detection works
 - ✅ Webcam support functions properly
-- ✅ All Qt5 components load correctly
+- ✅ All Qt6 components load correctly
 
 The wine bridge components should now work properly with 32-bit Windows applications, resolving the c000007b error that was previously encountered on Arch Linux. 

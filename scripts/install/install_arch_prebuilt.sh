@@ -288,25 +288,35 @@ display_post_install_instructions() {
 
 # Main installation function
 main() {
+    if [ "$1" != "--force" ]; then
+        echo "=========================================="
+        echo "DEPRECATED: install_arch_prebuilt.sh"
+        echo "=========================================="
+        echo "This script is deprecated. The prebuilt Wine bridge flow is unmaintained."
+        echo "Use instead:"
+        echo "  docs/readme/arch-linux.md"
+        echo "  ./scripts/build_arch_linux.sh"
+        echo ""
+        echo "To run this script anyway: $0 --force"
+        exit 0
+    fi
+    shift
+
     echo "=========================================="
-    echo "🍷 LinuxTrack X-IR Arch Linux Installer"
+    echo "LinuxTrack X-IR Arch Linux Installer (prebuilt, --force)"
     echo "=========================================="
-    echo "This installer uses prebuilt Wine bridge components"
-    echo "to avoid Wine development tool requirements."
-    echo
-    
+
     # Check if running as root
     if [ "$EUID" -eq 0 ]; then
         print_error "Please do not run this script as root"
         exit 1
     fi
-    
-    # Check if we're in the right directory
-    if [ ! -f "$PROJECT_ROOT/configure.ac" ]; then
+
+    if [ ! -f "$PROJECT_ROOT/CMakeLists.txt" ]; then
         print_error "Please run this script from the LinuxTrack X-IR project root"
         exit 1
     fi
-    
+
     # Installation steps
     install_dependencies || exit 1
     download_wine_bridge_package || exit 1

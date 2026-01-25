@@ -86,12 +86,16 @@ sudo apt install qt6-tools-dev-tools
 
 #### Arch Linux
 ```bash
-# 32-bit libraries (critical for Wine)
-./scripts/build_32bit_libs.sh
+# 32-bit headers (critical for Wine); multilib must be enabled in /etc/pacman.conf
+sudo pacman -S lib32-glibc lib32-gcc-libs
 
-# Wine (use stable, not staging)
-sudo pacman -S wine-stable
+# Wine (official 'wine'; if lib32-wine exists: sudo pacman -S lib32-wine)
+sudo pacman -S wine wine-mono wine-gecko
+
+# Wayland is default: if GUI does not show, use
+QT_QPA_PLATFORM=xcb ltr_gui
 ```
+The `build_32bit_libs.sh` script has been removed. Lib32-mxml and lib32-liblo are not required for the default CMake wine bridge build.
 
 #### Fedora/RHEL
 ```bash

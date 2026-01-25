@@ -26,6 +26,15 @@
 ##    --prop:/sim/linuxtrack/track-y=1
 ##    --prop:/sim/linuxtrack/track-z=1
 ##
+##  FGCamera Integration:
+##  ---------------------
+##  This script automatically detects when the FGCamera addon is active and
+##  has its LinuxTrack handler enabled. When detected, the script defers view
+##  control to FGCamera's offset management system while continuing to provide
+##  protocol data feed. To force direct control even when FGCamera is active:
+##
+##    --prop:/sim/linuxtrack/force-direct-control=1
+##
 
 var script_name = "linuxtrack.nas";
 
@@ -64,6 +73,72 @@ ltr_view_handler.init = func {
 	me.track_X   = props.globals.getNode(lt_tree ~ "/track-x", 1);
 	me.track_Y   = props.globals.getNode(lt_tree ~ "/track-y", 1);
 	me.track_Z   = props.globals.getNode(lt_tree ~ "/track-z", 1);
+
+	# FGCamera integration: Check if FGCamera is active and handling LinuxTrack
+	me.force_direct_control = props.globals.getNode(lt_tree ~ "/force-direct-control", 1);
+	if (me.force_direct_control.getValue() == nil) {
+		me.force_direct_control.setValue(0);
+	}
+	me.fgcamera_active = 0;
+	me._prev_fgcamera_active = 0;  # Track previous state to detect changes
+
+	# FGCamera detection function (must be defined before use)
+	me.checkFGCameraStatus = func {
+		# First check if FGCamera addon exists
+		var fgcamera_node = props.globals.getNode("/sim/fgcamera", 0);
+		if (fgcamera_node == nil) {
+			me.fgcamera_active = 0;
+			return;
+		}
+		
+		# Check if FGCamera LinuxTrack handler is enabled
+		# Use getNode with create=0 to avoid creating the node if it doesn't exist
+		var lt_handler = props.globals.getNode("/sim/fgcamera/handlers/linux-track", 0);
+		if (lt_handler == nil) {
+			# Handler property doesn't exist - FGCamera handler not configured
+			me.fgcamera_active = 0;
+			return;
+		}
+		
+		# Use getBoolValue() for compatibility (same as FGCamera uses internally)
+		# Only defer if handler is explicitly enabled (value == 1 or true)
+		var handler_enabled = lt_handler.getBoolValue();
+		if (handler_enabled == 1) {
+			# Handler is enabled - check if FGCamera is actually controlling current view
+			var fgcamera_enabled = props.globals.getNode("/sim/fgcamera/fgcamera-enabled", 0);
+			if (fgcamera_enabled != nil and fgcamera_enabled.getBoolValue() == 1) {
+				# Both handler enabled AND FGCamera active on current view - defer control
+				me.fgcamera_active = 1;
+			} else {
+				# Handler enabled but FGCamera not active on this view - use direct control
+				me.fgcamera_active = 0;
+			}
+		} else {
+			# Handler disabled (value == 0, nil, or false) - use direct control
+			me.fgcamera_active = 0;
+		}
+	};
+	
+	# Function to handle mode switching (called after set_fg_* functions are defined)
+	me.handleModeSwitch = func {
+		if (me._prev_fgcamera_active != me.fgcamera_active) {
+			if (me.fgcamera_active == 0 and me._prev_fgcamera_active == 1) {
+				# Switching from FGCamera control to direct control - reset offsets
+				me.set_fg_H(0);
+				me.set_fg_P(0);
+				me.set_fg_R(0);
+				if (me.track_X.getValue() == 1)
+					me.set_fg_X(0);
+				if (me.track_Y.getValue() == 1)
+					me.set_fg_Y(0);
+				if (me.track_Z.getValue() == 1)
+					me.set_fg_Z(0);
+			}
+			me._prev_fgcamera_active = me.fgcamera_active;
+		}
+	};
+
+	me.checkFGCameraStatus();
 
 	var default_fov_name = "default-field-of-view-deg";
 
@@ -170,6 +245,31 @@ ltr_view_handler.init = func {
 	me.get_lt_Y = func { return get_lt_prop(lt_Y_name); };
 	me.get_lt_Z = func { return get_lt_prop(lt_Z_name); };
 
+	# Check for mode switch now that all functions are defined
+	me.handleModeSwitch();
+
+	# Set up listener for FGCamera LinuxTrack handler status changes
+	var fgcamera_lt_node = props.globals.getNode("/sim/fgcamera/handlers/linux-track", 0);
+	if (fgcamera_lt_node != nil) {
+		me._fgcamera_listener = _setlistener("/sim/fgcamera/handlers/linux-track", func {
+			me.checkFGCameraStatus();
+			me.handleModeSwitch();
+			if (me.fgcamera_active == 1) {
+				printf("%s: FGCamera LinuxTrack handler active - deferring view control to FGCamera", script_name);
+			} else {
+				printf("%s: Using direct LinuxTrack view control", script_name);
+			}
+		});
+	}
+	
+	# Also listen for FGCamera enabled state changes
+	var fgcamera_enabled_node = props.globals.getNode("/sim/fgcamera/fgcamera-enabled", 0);
+	if (fgcamera_enabled_node != nil) {
+		me._fgcamera_enabled_listener = _setlistener("/sim/fgcamera/fgcamera-enabled", func {
+			me.checkFGCameraStatus();
+			me.handleModeSwitch();
+		});
+	}
 
 	printf("%s: initialized", script_name);
 	printf("%s: enabled heading, pitch, roll%s%s%s",
@@ -181,6 +281,13 @@ ltr_view_handler.init = func {
 
 
 ltr_view_handler.reset = func {
+
+	# Only reset if we're actually controlling the view
+	# (not when FGCamera is handling it)
+	me.checkFGCameraStatus();
+	if (me.fgcamera_active == 1 and me.force_direct_control.getValue() != 1) {
+		return;
+	}
 
 	me.set_fg_H(0);
 	me.set_fg_P(0);
@@ -201,6 +308,18 @@ ltr_view_handler.update = func {
 
 	if (me.enabled.getValue() == 0)
 		return 0;
+
+	# Check FGCamera status (update dynamically)
+	me.checkFGCameraStatus();
+	
+	# Handle mode switching (reset offsets if needed)
+	me.handleModeSwitch();
+
+	# If FGCamera is handling LinuxTrack, skip direct view updates
+	# Protocol still feeds data to /sim/linuxtrack/data/*, but we don't control views
+	if (me.fgcamera_active == 1 and me.force_direct_control.getValue() != 1) {
+		return 0;
+	}
 
 	var m_H =  1;
 	var m_P =  1;

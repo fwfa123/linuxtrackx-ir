@@ -8,9 +8,11 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
 
 ### **Arch Linux / Manjaro Users**
 ```bash
-# One-command installation (no Wine development tools required)
-./scripts/install/install_arch_prebuilt.sh
+# Recommended: source build (CMake + Qt6)
+./scripts/build_arch_linux.sh
+# Or: docs/readme/arch-linux.md for manual steps
 ```
+`install_arch_prebuilt.sh` is **deprecated**; use the above or [arch-linux.md](../../docs/readme/arch-linux.md).
 
 ### **Other Distributions**
 ```bash
@@ -25,10 +27,8 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
 ### **Distribution-Specific Installers**
 
 #### **Arch Linux / Manjaro**
-- **[install_arch_prebuilt.sh](install_arch_prebuilt.sh)** - Complete Arch Linux installation using prebuilt Wine bridge components
-  - **Purpose**: Install LinuxTrack without Wine development tools
-  - **Status**: Production Ready
-  - **Features**: Automated dependency installation, package download, build system modification
+- **[install_arch_prebuilt.sh](install_arch_prebuilt.sh)** - **DEPRECATED**. Use [../../docs/readme/arch-linux.md](../../docs/readme/arch-linux.md) or `./scripts/build_arch_linux.sh`.
+- **Recommended**: [docs/readme/arch-linux.md](../../docs/readme/arch-linux.md), [build_arch_linux.sh](../build_arch_linux.sh) (CMake + Qt6)
 
 #### **General Installation**
 - **[linuxtrack_install.sh](linuxtrack_install.sh)** - General LinuxTrack installation script
@@ -110,12 +110,13 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
 
 ### **Arch Linux / Manjaro**
 ```bash
-# Recommended: Prebuilt installation (no Wine development tools)
-./scripts/install/install_arch_prebuilt.sh
+# Recommended: ./scripts/build_arch_linux.sh or docs/readme/arch-linux.md (CMake + Qt6)
+./scripts/build_arch_linux.sh
 
-# Alternative: Standard installation (requires Wine development tools)
+# Alternative: linuxtrack_install.sh (if tailored for Arch)
 ./scripts/install/linuxtrack_install.sh
 ```
+`install_arch_prebuilt.sh` is deprecated.
 
 ### **Ubuntu / Debian / MX Linux**
 ```bash
@@ -193,7 +194,7 @@ sudo make install
 ### **Most Common Commands**
 ```bash
 # Arch Linux installation
-./scripts/install/install_arch_prebuilt.sh
+./scripts/build_arch_linux.sh
 
 # Health check
 ./scripts/install/linuxtrack_health_check.sh

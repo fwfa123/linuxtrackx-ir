@@ -104,8 +104,10 @@ set_linuxtrack_rpath(mickey)
 # Find qhelpgenerator for help file generation
 # Qt6.2+: Use Qt6 qhelpgenerator for best compatibility with Qt6 QHelpEngine
 # Help files generated with Qt5 qhelpgenerator may work but Qt6-generated files are recommended
+# Arch: qhelpgenerator is in /usr/lib/qt6/ (not in PATH). Debian/Fedora: often in qt6/bin.
 find_program(QT6_QHELPGENERATOR
     NAMES qhelpgenerator-qt6 qhelpgenerator
+    PATHS /usr/lib/qt6/bin /usr/lib/qt6 /usr/lib64/qt6/bin
 )
 
 set(HELP_QCH_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qch)
