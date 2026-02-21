@@ -239,7 +239,11 @@ QString LutrisIntegration::resolveWineBinaryPath(const QString &wineVersion)
             QString winePath = lutrisRunnersBasePath + QStringLiteral("/runners/wine/") + trimmed + QStringLiteral("/bin/wine");
             if (QFileInfo(winePath).exists() && QFileInfo(winePath).isExecutable())
                 return winePath;
-            QString protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/bin/wine");
+            // Proton (e.g. GE-Proton): try files/bin/wine first (Flatpak Lutris layout), then bin/wine
+            QString protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/files/bin/wine");
+            if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
+                return protonPath;
+            protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/bin/wine");
             if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
                 return protonPath;
             return QString();
