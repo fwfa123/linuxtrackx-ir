@@ -395,6 +395,8 @@ void LinuxtrackGui::on_XplanePluginButton_pressed()
 
 void LinuxtrackGui::on_SaveButton_pressed()
 {
+  // Persists main prefs (including Common Smoothing and Detailed Axis / ScpForm
+  // per-axis filter) to disk. SavePrefsOnExit() in closeEvent does the same on Quit.
   PREF.savePrefs();
 }
 
