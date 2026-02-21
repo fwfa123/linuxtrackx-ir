@@ -129,6 +129,7 @@ int ccc = PROFILE.isProfile(newName);
   setCurrentProfile(newName);
   if (ps != NULL) {
     ps->importProfile(tf);
+    PREF.savePrefs();
   }
   refresh();
 }

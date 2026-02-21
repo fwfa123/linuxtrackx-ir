@@ -244,23 +244,31 @@ void ProfileSetup::on_Smoothing_valueChanged(int val)
 
 void ProfileSetup::importProfile(QTextStream &tf)
 {
-  int version;
+  int version = 1;
   int ival;
-  float fval;
-  tf>>version;
-  tf>>fval;
-  TRACKER.setCommonFilterFactor(fval);
+  float fval = 0.5f;
+  tf >> version;
+  if(tf.atEnd()){
+    TRACKER.setCommonFilterFactor(fval);
+  } else {
+    tf >> fval;
+    if(fval < 0.0f) fval = 0.0f;
+    if(fval > 1.0f) fval = 1.0f;
+    TRACKER.setCommonFilterFactor(fval);
+  }
   for(int i = PITCH; i <= TZ; ++i){
+    if(tf.atEnd()) break;
     tf>>ival;
     TRACKER.axisChange((axis_t)i, AXIS_ENABLED, ival != 0);
+    if(tf.atEnd()) break;
     tf>>ival;
     TRACKER.axisChange((axis_t)i, AXIS_INVERTED, ival != 0);
     for(int j = AXIS_DEADZONE; j <= AXIS_FILTER; ++j){
+      if(tf.atEnd()) break;
       tf>>fval;
       TRACKER.axisChange((axis_t)i, (axis_param_t)j, fval);
     }
   }
-  
 }
 
 void ProfileSetup::exportProfile(QTextStream &tf)
