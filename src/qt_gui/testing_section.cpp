@@ -720,10 +720,13 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
             }
             
             if (!wineVersion.isEmpty()) {
-                QString homeDir = QDir::homePath();
-                QString winePath = QString::fromUtf8("%1/.local/share/lutris/runners/wine/%2/bin/wine").arg(homeDir, wineVersion);
+                QString winePath = lutrisIntegration->resolveWineBinaryPath(wineVersion);
+                if (winePath.isEmpty()) {
+                    qDebug() << "Lutris wine binary not found for version:" << wineVersion;
+                    QMessageBox::warning(nullptr, tr("Lutris Wine Not Found"),
+                                         tr("Lutris wine binary not found for version: %1").arg(wineVersion));
+                } else {
                 QFileInfo wineBinary(winePath);
-                
                 if (wineBinary.exists() && wineBinary.isExecutable()) {
                     QProcess process;
                     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -772,8 +775,9 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     }
                 } else {
                     qDebug() << "Lutris wine binary not found or not executable:" << winePath;
-                    QMessageBox::warning(nullptr, tr("Lutris Wine Not Found"), 
+                    QMessageBox::warning(nullptr, tr("Lutris Wine Not Found"),
                                          tr("Lutris wine binary not found: %1").arg(winePath));
+                }
                 }
             } else {
                 qDebug() << "Wine version not found for game:" << gameSlug;
