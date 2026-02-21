@@ -12,6 +12,9 @@
 #include <QDesktopWidget>
 #include <QCursor>
 #include <QPushButton>
+#include <QFile>
+#include <QTextStream>
+#include <QStandardPaths>
 #include "mickey.h"
 #include "mouse.h"
 #include "linuxtrack.h"
@@ -24,6 +27,19 @@
 
 //Time to wait after the tracking commences to perform a recentering [ms]
 const int settleTime = 2000; //2 seconds
+
+/** Write current smoothing to sync file so main linuxtrack GUI Save/Quit can persist it. */
+static void writeMickeySmoothingSyncFile(int value)
+{
+  QString path = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
+    + QStringLiteral("/linuxtrack/mickey_smoothing_sync");
+  QFile f(path);
+  if(!f.open(QIODevice::WriteOnly | QIODevice::Text))
+    return;
+  QTextStream out(&f);
+  out << value;
+  f.close();
+}
 
 
 void RestrainWidgetToScreen(QWidget * w)
@@ -761,6 +777,7 @@ void MickeyGUI::storePrefs()
   settings.setValue(QString::fromUtf8("StepOnly"), stepOnly);
   settings.setValue(QString::fromUtf8("Relative"), mickey->getRelative());
   settings.endGroup();
+  writeMickeySmoothingSyncFile(smoothing);
   
   //trans setup
   settings.beginGroup(QString::fromUtf8("Transform"));
@@ -785,6 +802,14 @@ void MickeyGUI::setStepOnly(bool value)
   }else{
     ui.CurveSlider->setEnabled(true);
   }
+}
+
+void MickeyGUI::on_SmoothingSlider_valueChanged(int val)
+{
+  smoothing = val;
+  emit axisChanged();
+  ui.ApplyButton->setEnabled(true);
+  writeMickeySmoothingSyncFile(smoothing);
 }
 
 void MickeyGUI::on_StepOnly_stateChanged(int state)

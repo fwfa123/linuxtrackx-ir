@@ -153,6 +153,12 @@ void Tracker::setProfile(QString p)
   PREF.getProfileSection(currentProfile, profileSection);
   //std::cout<<"Set profile "<<currentProfile.toStdString()<<" - "<<p.toStdString()<<"\n";
   ltr_int_init_axes(&axes, currentProfile.toUtf8().constData());
+  // Keep profileSection in sync with axes section so ltr_int_change() and axis
+  // persistence (save_val_flt) always use the same prefs section.
+  const char *sec = ltr_int_axes_get_section(axes);
+  if(sec != NULL){
+    profileSection = QString::fromUtf8(sec);
+  }
 
   common_ff = 1.0;
   int i;

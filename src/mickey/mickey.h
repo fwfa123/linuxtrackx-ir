@@ -208,8 +208,7 @@ class MickeyGUI : public QWidget
     {deadzone = val; emit axisChanged(); ui.ApplyButton->setEnabled(true);};
   void on_CurveSlider_valueChanged(int val)
     {curvature = val; emit axisChanged(); ui.ApplyButton->setEnabled(true);};
-  void on_SmoothingSlider_valueChanged(int val)
-    {smoothing = val; emit axisChanged(); ui.ApplyButton->setEnabled(true);};
+  void on_SmoothingSlider_valueChanged(int val);
   void on_RelativeCB_clicked(bool checked){mickey->setRelative(checked);changed = true;};
   void on_AbsoluteCB_clicked(bool checked){mickey->setRelative(!checked);changed = true;};
   void on_StepOnly_stateChanged(int state);
