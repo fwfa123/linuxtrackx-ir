@@ -8,6 +8,19 @@
 const QString TrackIRPermissionDialog::CONFIG_FILE = QString::fromUtf8("trackir_permissions.conf");
 const QString TrackIRPermissionDialog::DONT_SHOW_KEY = QString::fromUtf8("dont_show_permission_dialog");
 
+// Use /etc/udev/rules.d for local admin rules (highest priority)
+static QString udevRulesDir()
+{
+    return QString::fromUtf8("/etc/udev/rules.d");
+}
+
+static bool isUdevRulesInstalled()
+{
+    // Check /etc first (primary location), then legacy locations for backward compatibility
+    return QFile::exists(QString::fromUtf8("/etc/udev/rules.d/99-TIR.rules"))
+        || QFile::exists(QString::fromUtf8("/usr/lib/udev/rules.d/99-TIR.rules"))
+        || QFile::exists(QString::fromUtf8("/lib/udev/rules.d/99-TIR.rules"));
+}
 TrackIRPermissionDialog::TrackIRPermissionDialog(QWidget *parent)
     : QDialog(parent)
     , dontShowAgainCheckBox(nullptr)
@@ -136,7 +149,7 @@ void TrackIRPermissionDialog::onHelpClicked()
         tr("<h3>Manual Setup Instructions</h3>"
            "<p>If the automatic setup doesn't work, you can configure permissions manually:</p>"
            "<p><b>1. Install udev rules:</b></p>"
-           "<pre>sudo cp /path/to/linuxtrack/src/99-TIR.rules /lib/udev/rules.d/\n"
+           "<pre>sudo cp /path/to/linuxtrack/src/99-TIR.rules /etc/udev/rules.d/\n"
            "sudo udevadm control --reload-rules</pre>"
            "<p><b>2. Add user to required groups:</b></p>"
            "<pre>sudo usermod -a -G plugdev,input,uinput $USER</pre>"
