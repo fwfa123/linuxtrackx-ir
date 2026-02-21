@@ -44,6 +44,9 @@
 #include "testing_section.h"
 #include "about_dialog.h"
 #include "extractor.h"
+#include "trackir_permission_dialog.h"
+#include <linuxtrack.h>
+#include <ltlib_int.h>
 
 // Static string constants for better performance
 static const QString APP_TITLE = QStringLiteral("Linuxtrack");
@@ -923,7 +926,7 @@ void LinuxtrackGui::on_StartLtrPipeButton_pressed()
         static QString sec(QString::fromUtf8("Default"));
         TRACKER.start(sec);
         
-        // Verify process actually started after a short delay
+        // Verify process actually started and tracking state after a short delay
         QTimer::singleShot(1000, this, [this, format]() {
             QProcess checkProcess;
             checkProcess.start(QStringLiteral("pgrep"), QStringList() << QStringLiteral("ltr_pipe"));
@@ -937,6 +940,13 @@ void LinuxtrackGui::on_StartLtrPipeButton_pressed()
                 ui.LtrPipeStatusLabel->setText(tr("Launch Failed"));
                 QMessageBox::warning(this, tr("Process Not Found"),
                     tr("ltr_pipe process could not be found running. The launch may have failed."));
+            } else {
+                // If tracking failed to initialize (e.g. missing udev / device permissions), offer permission setup
+                linuxtrack_state_type state = ltr_int_get_tracking_state();
+                if (state < LINUXTRACK_OK && TrackIRPermissionDialog::shouldShowDialog()) {
+                    TrackIRPermissionDialog dialog(this);
+                    dialog.exec();
+                }
             }
         });
         
