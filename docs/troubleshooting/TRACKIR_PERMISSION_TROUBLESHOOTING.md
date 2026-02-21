@@ -36,12 +36,13 @@ ls -la /dev/bus/usb/001/002
 ### Step 2: Udev Rules Verification ✅
 
 ```bash
-# Check udev rules installation
-ls -la /lib/udev/rules.d/99-TIR.rules
+# Check udev rules installation (check primary location first)
+ls -la /etc/udev/rules.d/99-TIR.rules || ls -la /usr/lib/udev/rules.d/99-TIR.rules || ls -la /lib/udev/rules.d/99-TIR.rules
 # Expected: File exists with proper TrackIR rules
 
-# Verify rules content
-cat /lib/udev/rules.d/99-TIR.rules | grep 131d
+# Verify rules content (use whichever file was found)
+UDEV_FILE=$(ls /etc/udev/rules.d/99-TIR.rules 2>/dev/null || ls /usr/lib/udev/rules.d/99-TIR.rules 2>/dev/null || ls /lib/udev/rules.d/99-TIR.rules 2>/dev/null)
+cat "$UDEV_FILE" | grep 131d
 # Expected: Rules matching TrackIR USB ID 131d:0159
 
 # Test udev rule application
@@ -259,7 +260,7 @@ find /usr -name "*linuxtrack*" -o -name "*ltr*" 2>/dev/null
 ### Quick Permission Check
 ```bash
 # One-liner to check basic TrackIR setup
-lsusb | grep 131d && ls -la /lib/udev/rules.d/99-TIR.rules && groups | grep -E "(plugdev|linuxtrack)"
+lsusb | grep 131d && (ls -la /etc/udev/rules.d/99-TIR.rules || ls -la /usr/lib/udev/rules.d/99-TIR.rules || ls -la /lib/udev/rules.d/99-TIR.rules) && groups | grep -E "(plugdev|linuxtrack)"
 ```
 
 ### Library Conflict Detection
