@@ -677,6 +677,43 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     /* Check if we're running under Steam Proton */
     int is_steam_proton = is_steam_proton_environment();
     
+    /* Check if we're running from an AppImage mount point */
+    /* Try to detect AppImage by checking APPDIR environment variable */
+    char *appimage_root = NULL;
+    char *appdir_env = getenv("APPDIR");
+    if(appdir_env != NULL){
+      appimage_root = strdup(appdir_env);
+      fprintf(stderr, "DEBUG: Detected AppImage via APPDIR environment variable: %s\n", appimage_root);
+    }
+    
+    /* If AppImage detected, try AppImage library paths first (before system paths) */
+    if(appimage_root != NULL){
+      fprintf(stderr, "DEBUG: Trying AppImage library paths for Wine bridge\n");
+      static const char *appimage_wine_lib_paths[] = {
+        "/usr/lib/linuxtrack/liblinuxtrack32.so.0",      /* 32-bit library for Wine - PRIORITY */
+        "/usr/lib/linuxtrack/liblinuxtrack.so.0",         /* 64-bit library for Wine */
+        "/usr/lib/liblinuxtrack32.so.0",                  /* Alternative 32-bit location */
+        "/usr/lib/liblinuxtrack.so.0",                    /* Alternative 64-bit location */
+        "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",  /* 32-bit multiarch location */
+        NULL
+      };
+      
+      int j = 0;
+      while(appimage_wine_lib_paths[j] != NULL){
+        char *appimage_lib_path = construct_name(appimage_root, "", appimage_wine_lib_paths[j++]);
+        fprintf(stderr, "DEBUG: Trying AppImage Wine library path: %s\n", appimage_lib_path);
+        if((handle = linuxtrack_try_library(appimage_lib_path)) != NULL){
+          fprintf(stderr, "DEBUG: Successfully loaded library from AppImage Wine path: %s\n", appimage_lib_path);
+          free(appimage_lib_path);
+          free(appimage_root);
+          return handle;
+        }
+        free(appimage_lib_path);
+      }
+      free(appimage_root);
+      appimage_root = NULL;
+    }
+    
     /* Build path array based on environment */
     /* For Steam Proton: prioritize /opt paths (accessible in container, /usr is not accessible) */
     /* For regular Wine: prioritize /opt (default install location), then /usr/local (backward compatibility), then /usr (system) */
@@ -718,6 +755,56 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     return NULL;
   }
   fprintf(stderr, "DEBUG: linuxtrack_find_library using prefix: %s\n", prefix);
+  
+  /* Check if we're running from an AppImage mount point */
+  /* AppImage mount points are typically in /tmp/.mount_* */
+  int is_appimage = (strstr(prefix, ".mount_") != NULL) || (strstr(prefix, "/tmp/") != NULL && strstr(prefix, "usr/bin") != NULL);
+  
+  if(is_appimage){
+    fprintf(stderr, "DEBUG: Detected AppImage mount point, searching AppImage library directories directly\n");
+    
+    /* Extract AppImage root directory from prefix */
+    /* Prefix is typically /tmp/.mount_XXXXXX/usr/bin, we need /tmp/.mount_XXXXXX */
+    char *appimage_root = NULL;
+    char *usr_bin_pos = strstr(prefix, "/usr/bin");
+    if(usr_bin_pos != NULL){
+      size_t root_len = usr_bin_pos - prefix;
+      appimage_root = (char *)malloc(root_len + 1);
+      if(appimage_root != NULL){
+        strncpy(appimage_root, prefix, root_len);
+        appimage_root[root_len] = '\0';
+        fprintf(stderr, "DEBUG: Extracted AppImage root: %s\n", appimage_root);
+        
+        /* Try AppImage library paths directly */
+        static const char *appimage_lib_paths[] = {
+          "/usr/lib/linuxtrack/liblinuxtrack.so.0",
+          "/usr/lib/linuxtrack/liblinuxtrack32.so.0",
+          "/usr/lib/liblinuxtrack.so.0",
+          "/usr/lib/liblinuxtrack32.so.0",
+          "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0",
+          "/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack32.so.0",
+          NULL
+        };
+        
+        int j = 0;
+        while(appimage_lib_paths[j] != NULL){
+          name = construct_name(appimage_root, "", appimage_lib_paths[j++]);
+          fprintf(stderr, "DEBUG: Trying AppImage library path: %s\n", name);
+          if((handle = linuxtrack_try_library(name)) != NULL){
+            fprintf(stderr, "DEBUG: Successfully loaded library from AppImage path: %s\n", name);
+            free(name);
+            free(appimage_root);
+            free(prefix);
+            return handle;
+          }
+          free(name);
+        }
+        free(appimage_root);
+      }
+    }
+  }
+  
+  /* Standard prefix-based search */
   int i = 0;
   while(lib_locations[i] != NULL){
     name = construct_name(prefix, "/../", lib_locations[i++]);

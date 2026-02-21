@@ -60,7 +60,8 @@ public:
     // Utility methods
     QString getLutrisDatabasePath();
     QString getLutrisConfigPath();
-    /** Resolve Lutris runner version (e.g. "GE-Proton9-27") to full path to wine binary. Uses Flatpak runners path when applicable. Returns empty if not found. */
+    /** Resolve Lutris runner version (e.g. "GE-Proton9-27") to full path to wine binary. Uses Flatpak runners path when applicable. Returns empty if not found.
+     *  Issue #43: Same logic on Qt5 (main) and Qt6 (qt6-migration); supports Lutris Flatpak Wine/Proton paths. */
     QString resolveWineBinaryPath(const QString &wineVersion);
     QStringList getWinePrefixes();
     bool isValidWinePrefix(const QString &prefixPath);
