@@ -104,7 +104,10 @@ int ccc = PROFILE.isProfile(newName);
     refresh();
   }
   setCurrentProfile(newName);
-  ps->importProfile(tf);
+  if (ps != NULL) {
+    ps->importProfile(tf);
+    PREF.savePrefs();
+  }
   refresh();
 }
 
