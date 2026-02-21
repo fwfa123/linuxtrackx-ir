@@ -52,6 +52,7 @@ bool LutrisIntegration::initializePaths()
 
     // Priority 1: Check for custom paths from QSettings
     if (useCustomPaths && !customDatabasePath.isEmpty() && !customConfigPath.isEmpty()) {
+        lutrisRunnersBasePath.clear();
         databasePath = customDatabasePath;
         configPath = customConfigPath;
         ltr_int_log_message("LutrisIntegration::initializePaths() - Using custom paths from settings\n");
@@ -67,6 +68,7 @@ bool LutrisIntegration::initializePaths()
     }
 
     if (!lutrisRoot.isEmpty()) {
+        lutrisRunnersBasePath.clear();
         databasePath = lutrisRoot + QString::fromUtf8("pga.db");
         configPath = lutrisRoot + QString::fromUtf8("games/");
         ltr_int_log_message("LutrisIntegration::initializePaths() - Using environment variable LUTRIS_INSTALL_DIR: %s\n", lutrisRoot.toUtf8().constData());
@@ -76,6 +78,7 @@ bool LutrisIntegration::initializePaths()
     }
 
     // Priority 3: Fall back to default home-based paths with smart detection
+    lutrisRunnersBasePath.clear();
     databasePath = homeDir + QString::fromUtf8("/.local/share/lutris/pga.db");
     
     // Detect config path: Check for Lutris 5.19+ structure first, then fall back to older structure
@@ -195,6 +198,62 @@ QString LutrisIntegration::getLutrisDatabasePath()
 QString LutrisIntegration::getLutrisConfigPath()
 {
     return configPath;
+}
+
+QString LutrisIntegration::resolveWineBinaryPath(const QString &wineVersion)
+{
+    if (wineVersion.isEmpty())
+        return QString();
+
+    QString homeDir = getHomeDirectory();
+    QString trimmed = wineVersion.trimmed();
+    if (trimmed.startsWith(QStringLiteral("~")))
+        trimmed.replace(0, 1, homeDir);
+    if (trimmed.contains(QString::fromUtf8("$HOME")))
+        trimmed.replace(QString::fromUtf8("$HOME"), homeDir);
+
+    const bool hasBinWine = trimmed.contains(QStringLiteral("/bin/wine"));
+    const bool looksAbsolute = QDir::isAbsolutePath(trimmed) || trimmed.startsWith(QLatin1Char('/'));
+    const bool looksNativeRunner = trimmed.contains(QStringLiteral("/.local/share/lutris/runners/wine/"));
+    const bool looksFlatpakRunner = !lutrisRunnersBasePath.isEmpty() && trimmed.contains(lutrisRunnersBasePath);
+
+    if (looksAbsolute || looksNativeRunner || looksFlatpakRunner) {
+        QString path = trimmed;
+        if (QFileInfo(trimmed).isDir())
+            path = QDir(trimmed).filePath(QStringLiteral("bin/wine"));
+        QFileInfo fi(path);
+        if (fi.exists() && fi.isExecutable())
+            return path;
+        return QString();
+    }
+    if (hasBinWine) {
+        QFileInfo fi(trimmed);
+        if (fi.exists() && fi.isExecutable())
+            return trimmed;
+        return QString();
+    }
+
+    // Version slug (e.g. GE-Proton9-27): try runners/wine then runners/proton when Flatpak
+    if (!QDir::isAbsolutePath(trimmed)) {
+        if (!lutrisRunnersBasePath.isEmpty()) {
+            QString winePath = lutrisRunnersBasePath + QStringLiteral("/runners/wine/") + trimmed + QStringLiteral("/bin/wine");
+            if (QFileInfo(winePath).exists() && QFileInfo(winePath).isExecutable())
+                return winePath;
+            QString protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/bin/wine");
+            if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
+                return protonPath;
+            return QString();
+        }
+        QString nativePath = homeDir + QStringLiteral("/.local/share/lutris/runners/wine/") + trimmed + QStringLiteral("/bin/wine");
+        if (QFileInfo(nativePath).exists() && QFileInfo(nativePath).isExecutable())
+            return nativePath;
+        return QString();
+    }
+
+    QFileInfo fi(trimmed);
+    if (fi.exists() && fi.isExecutable())
+        return trimmed;
+    return QString();
 }
 
 bool LutrisIntegration::isLutrisInstalled()
@@ -768,7 +827,8 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
         // Determine resolution branch explicitly
         const bool hasBinWine = trimmedVersion.contains(QStringLiteral("/bin/wine"));
         const bool looksAbsolute = QDir::isAbsolutePath(trimmedVersion) || trimmedVersion.startsWith(QLatin1Char('/'));
-        const bool looksLikeLutrisRunnerPath = trimmedVersion.contains(QStringLiteral("/.local/share/lutris/runners/wine/"));
+        const bool looksLikeLutrisRunnerPath = trimmedVersion.contains(QStringLiteral("/.local/share/lutris/runners/wine/"))
+            || (!lutrisRunnersBasePath.isEmpty() && trimmedVersion.contains(lutrisRunnersBasePath));
 
         ltr_int_log_message("wineVersion resolution: trimmed='%s', hasBinWine=%s, isAbsolute=%s, looksRunnerPath=%s\n",
                             trimmedVersion.toUtf8().constData(),
@@ -795,10 +855,15 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
             ltr_int_log_message("Using provided Wine path containing /bin/wine: %s\n", winePath.toUtf8().constData());
         } else {
             ltr_int_log_message("DEBUG: Taking constructed path branch\n");
-            // Only construct if it's not already an absolute path
+            // Only construct if it's not already an absolute path; use shared resolver (Flatpak + native)
             if (!QDir::isAbsolutePath(trimmedVersion)) {
-                winePath = homeDir + QString::fromUtf8("/.local/share/lutris/runners/wine/") + trimmedVersion + QString::fromUtf8("/bin/wine");
-                ltr_int_log_message("Constructed Wine path from runner version: %s\n", winePath.toUtf8().constData());
+                winePath = resolveWineBinaryPath(trimmedVersion);
+                if (winePath.isEmpty()) {
+                    winePath = homeDir + QString::fromUtf8("/.local/share/lutris/runners/wine/") + trimmedVersion + QString::fromUtf8("/bin/wine");
+                    ltr_int_log_message("Constructed Wine path from runner version (resolveWineBinaryPath returned empty): %s\n", winePath.toUtf8().constData());
+                } else {
+                    ltr_int_log_message("Resolved Wine path from runner version: %s\n", winePath.toUtf8().constData());
+                }
             } else {
                 winePath = trimmedVersion;
                 ltr_int_log_message("Using absolute Wine path as-is: %s\n", winePath.toUtf8().constData());
@@ -1035,8 +1100,10 @@ void LutrisIntegration::setupFlatpakLutrisPaths()
     // Set up paths for Flatpak Lutris installation
     databasePath = flatpakDataPath + QStringLiteral("/lutris/pga.db");
     configPath = flatpakDataPath + QStringLiteral("/lutris/games/");
+    lutrisRunnersBasePath = flatpakDataPath + QStringLiteral("/lutris");
 
     ltr_int_log_message("LutrisIntegration::setupFlatpakLutrisPaths() - Flatpak Lutris paths configured:\n");
     ltr_int_log_message("  Database path: %s\n", databasePath.toUtf8().constData());
     ltr_int_log_message("  Config path: %s\n", configPath.toUtf8().constData());
+    ltr_int_log_message("  Runners base path: %s\n", lutrisRunnersBasePath.toUtf8().constData());
 }

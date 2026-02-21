@@ -60,6 +60,8 @@ public:
     // Utility methods
     QString getLutrisDatabasePath();
     QString getLutrisConfigPath();
+    /** Resolve Lutris runner version (e.g. "GE-Proton9-27") to full path to wine binary. Uses Flatpak runners path when applicable. Returns empty if not found. */
+    QString resolveWineBinaryPath(const QString &wineVersion);
     QStringList getWinePrefixes();
     bool isValidWinePrefix(const QString &prefixPath);
     bool hasGameConfigs(const QString &directoryPath);  // Check if directory contains .yml game config files
@@ -86,6 +88,8 @@ private:
     QString debugInfo;
     QString databasePath;
     QString configPath;
+    /** When non-empty (Flatpak Lutris), base path for runners e.g. .../data/lutris; runners/wine/ and runners/proton/ live under it. */
+    QString lutrisRunnersBasePath;
     // Custom path configuration
     bool useCustomPaths;
     QString customDatabasePath;
