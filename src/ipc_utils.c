@@ -437,8 +437,7 @@ int ltr_int_connect_to_socket(const char *name){
     ltr_int_log_message("Socket name '%s' too long (max. %d)\n", name, UNIX_PATH_MAX - 2);
     return -1;
   }
-  //ltr_int_log_message("Trying to open fifo '%s'...\n", name);
-  printf("Will try to connect to socket '%s'\n", name);
+  ltr_int_log_message("Connecting to socket '%s'...\n", name);
   struct sockaddr_un address;
   int socket_fd = -1;
 
@@ -459,6 +458,7 @@ int ltr_int_connect_to_socket(const char *name){
 
   if(connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) != 0){
     ltr_int_my_perror("connect");
+    close(socket_fd);
     return -1;
   }
 
