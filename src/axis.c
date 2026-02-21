@@ -660,6 +660,13 @@ void ltr_int_init_axes(ltr_axes_t *axes, const char *profile)
   pthread_mutex_unlock(&axes_mutex);
 }
 
+const char *ltr_int_axes_get_section(ltr_axes_t axes)
+{
+  if(axes == NULL)
+    return NULL;
+  return axes->section;
+}
+
 void ltr_int_close_axes(ltr_axes_t *axes)
 {
   if(axes == NULL){

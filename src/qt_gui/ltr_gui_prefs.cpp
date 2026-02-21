@@ -12,9 +12,38 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QDir>
+#include <QFile>
+#include <QTextStream>
+#include <QStandardPaths>
+#include <QSettings>
 #include <iostream>
 
 PrefProxy *PrefProxy::prf = NULL;
+
+static const char *MickeySmoothingSyncFileName = "mickey_smoothing_sync";
+
+/** Read Mickey smoothing from sync file (written by Mickey app) and persist to
+ *  QSettings(linuxtrack, mickey) so Save/Quit in main GUI preserves it. */
+static void syncMickeySmoothingFromFile()
+{
+  QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation)
+    + QStringLiteral("/linuxtrack");
+  QFile f(configDir + QStringLiteral("/") + QString::fromUtf8(MickeySmoothingSyncFileName));
+  if(!f.open(QIODevice::ReadOnly | QIODevice::Text))
+    return;
+  QTextStream in(&f);
+  int value = 33;
+  in >> value;
+  f.close();
+  if(value < 0 || value > 100)
+    return;
+  QSettings mickeySettings(QStringLiteral("linuxtrack"), QStringLiteral("mickey"));
+  mickeySettings.beginGroup(QStringLiteral("Axes"));
+  mickeySettings.setValue(QStringLiteral("Smoothing"), value);
+  mickeySettings.endGroup();
+  mickeySettings.sync();
+  f.remove(); // so next save does not re-apply stale value
+}
 
 static int warnMessage(const QString &message){
  return QMessageBox::warning(NULL, QStringLiteral("Linuxtrack"),
@@ -455,6 +484,8 @@ bool PrefProxy::getProfileSection(const QString &name, QString &section)
 bool PrefProxy::savePrefs()
 {
   bool res = ltr_int_save_prefs(NULL);
+  if(res)
+    syncMickeySmoothingFromFile();
   return res;
 }
 
