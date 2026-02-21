@@ -8,6 +8,21 @@
 const QString TrackIRPermissionDialog::CONFIG_FILE = QString::fromUtf8("trackir_permissions.conf");
 const QString TrackIRPermissionDialog::DONT_SHOW_KEY = QString::fromUtf8("dont_show_permission_dialog");
 
+// Prefer /usr/lib/udev/rules.d on FHS distros (e.g. Fedora), else /lib/udev/rules.d
+static QString udevRulesDir()
+{
+    if (QDir(QString::fromUtf8("/usr/lib/udev/rules.d")).exists()) {
+        return QString::fromUtf8("/usr/lib/udev/rules.d");
+    }
+    return QString::fromUtf8("/lib/udev/rules.d");
+}
+
+static bool isUdevRulesInstalled()
+{
+    return QFile::exists(QString::fromUtf8("/lib/udev/rules.d/99-TIR.rules"))
+        || QFile::exists(QString::fromUtf8("/usr/lib/udev/rules.d/99-TIR.rules"));
+}
+
 TrackIRPermissionDialog::TrackIRPermissionDialog(QWidget *parent)
     : QDialog(parent)
     , dontShowAgainCheckBox(nullptr)
@@ -86,7 +101,7 @@ void TrackIRPermissionDialog::setupUI()
 void TrackIRPermissionDialog::updateStatus()
 {
     QString status;
-    bool rulesInstalled = QFile::exists(QString::fromUtf8("/lib/udev/rules.d/99-TIR.rules"));
+    bool rulesInstalled = isUdevRulesInstalled();
     bool userInGroup = checkIfUserInGroup(QString::fromUtf8("plugdev"));
     
     if (rulesInstalled && userInGroup) {
@@ -167,9 +182,10 @@ bool TrackIRPermissionDialog::installUdevRules()
     out << rulesContent;
     tempFile.close();
     
-    // Copy rules to system location using pkexec or sudo
+    // Copy rules to system location using pkexec or sudo (prefer FHS path if it exists)
+    QString rulesDest = udevRulesDir() + QString::fromUtf8("/99-TIR.rules");
     QStringList arguments;
-    arguments << QString::fromUtf8("cp") << tempRulesFile << QString::fromUtf8("/lib/udev/rules.d/99-TIR.rules");
+    arguments << QString::fromUtf8("cp") << tempRulesFile << rulesDest;
     
     process.start(QString::fromUtf8("pkexec"), arguments);
     if (!process.waitForFinished(30000)) { // 30 second timeout
@@ -188,7 +204,7 @@ bool TrackIRPermissionDialog::installUdevRules()
     
     // Set proper permissions
     arguments.clear();
-    arguments << QString::fromUtf8("chmod") << QString::fromUtf8("644") << QString::fromUtf8("/lib/udev/rules.d/99-TIR.rules");
+    arguments << QString::fromUtf8("chmod") << QString::fromUtf8("644") << rulesDest;
     
     process.start(QString::fromUtf8("pkexec"), arguments);
     if (!process.waitForFinished(10000)) {
@@ -276,15 +292,15 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "KERNEL==\"uinput\", GROUP=\"uinput\", MODE=\"0660\"\n"
         "EOF\n"
         "\n"
-        "# Copy TrackIR rules to system location\n"
-        "cp /tmp/99-TIR.rules /lib/udev/rules.d/99-TIR.rules\n"
+        "# Copy TrackIR rules to system location (use FHS path if it exists)\n"
+        "cp /tmp/99-TIR.rules %1/99-TIR.rules\n"
         "\n"
         "# Copy Mickey rules to system location\n"
-        "cp /tmp/99-Mickey.rules /lib/udev/rules.d/99-Mickey.rules\n"
+        "cp /tmp/99-Mickey.rules %1/99-Mickey.rules\n"
         "\n"
         "# Set proper permissions\n"
-        "chmod 644 /lib/udev/rules.d/99-TIR.rules\n"
-        "chmod 644 /lib/udev/rules.d/99-Mickey.rules\n"
+        "chmod 644 %1/99-TIR.rules\n"
+        "chmod 644 %1/99-Mickey.rules\n"
         "\n"
         "# Create plugdev group if it doesn't exist (common on Arch Linux)\n"
         "if ! getent group plugdev > /dev/null 2>&1; then\n"
@@ -293,7 +309,7 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "fi\n"
         "\n"
         "# Add user to plugdev group\n"
-        "usermod -a -G plugdev,input \"%1\"\n"
+        "usermod -a -G plugdev,input \"%2\"\n"
         "\n"
         "# Create uinput group if it doesn't exist (as system group for udev)\n"
         "if ! getent group uinput > /dev/null 2>&1; then\n"
@@ -307,11 +323,11 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "fi\n"
         "\n"
         "# Add user to uinput group\n"
-        "usermod -a -G uinput \"%1\"\n"
+        "usermod -a -G uinput \"%2\"\n"
         "\n"
         "# On Arch Linux, also try adding to video group for OpenGL access\n"
         "if getent group video > /dev/null 2>&1; then\n"
-        "    usermod -a -G video \"%1\"\n"
+        "    usermod -a -G video \"%2\"\n"
         "    echo \"Added user to video group for OpenGL access\"\n"
         "fi\n"
         "\n"
@@ -323,7 +339,7 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "rm -f /tmp/99-Mickey.rules\n"
         "\n"
         "echo \"Installation completed successfully\"\n"
-    ).arg(currentUser);
+    ).arg(udevRulesDir()).arg(currentUser);
 
     // Write script to a temporary file
     QString tempScriptFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString::fromUtf8("/install_trackir_rules.sh");
