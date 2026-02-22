@@ -91,6 +91,8 @@ private:
     QString configPath;
     /** When non-empty (Flatpak Lutris), base path for runners e.g. .../data/lutris; runners/wine/ and runners/proton/ live under it. */
     QString lutrisRunnersBasePath;
+    /** Guard: only try on-demand Flatpak detection in resolveWineBinaryPath once per session. */
+    bool flatpakResolveAttempted = false;
     // Custom path configuration
     bool useCustomPaths;
     QString customDatabasePath;
