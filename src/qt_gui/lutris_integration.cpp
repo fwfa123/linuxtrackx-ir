@@ -126,6 +126,13 @@ bool LutrisIntegration::initializePaths()
         configPath = configPathNew;
         ltr_int_log_message("LutrisIntegration::initializePaths() - Neither path exists, defaulting to Lutris 5.19+ structure\n");
     }
+
+    // If native paths have no valid game configs or DB doesn't exist, try Flatpak Lutris
+    // (e.g. user has only Lutris via Flatpak but "lutris" is in PATH)
+    bool nativeDataValid = (newPathValid || oldPathValid) && QFileInfo(databasePath).exists();
+    if (!nativeDataValid && detectLutrisFlatpak()) {
+        ltr_int_log_message("LutrisIntegration::initializePaths() - Using Flatpak Lutris paths (native path had no valid data)\n");
+    }
     
     // Debug logging to help identify path issues
     ltr_int_log_message("LutrisIntegration::initializePaths() - Final paths:\n");
@@ -235,22 +242,110 @@ QString LutrisIntegration::resolveWineBinaryPath(const QString &wineVersion)
 
     // Version slug (e.g. GE-Proton9-27): try runners/wine then runners/proton when Flatpak
     if (!QDir::isAbsolutePath(trimmed)) {
+        ltr_int_log_message("resolveWineBinaryPath: resolving slug '%s', lutrisRunnersBasePath empty=%s\n",
+                            trimmed.toUtf8().constData(), lutrisRunnersBasePath.isEmpty() ? "yes" : "no");
         if (!lutrisRunnersBasePath.isEmpty()) {
             QString winePath = lutrisRunnersBasePath + QStringLiteral("/runners/wine/") + trimmed + QStringLiteral("/bin/wine");
+            ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak wine): %s\n", winePath.toUtf8().constData());
+            if (QFileInfo(winePath).exists() && QFileInfo(winePath).isExecutable())
+                return winePath;
+            // GE-Proton under runners/wine may use Proton tarball layout: files/bin/wine
+            winePath = lutrisRunnersBasePath + QStringLiteral("/runners/wine/") + trimmed + QStringLiteral("/files/bin/wine");
+            ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak wine/files): %s\n", winePath.toUtf8().constData());
             if (QFileInfo(winePath).exists() && QFileInfo(winePath).isExecutable())
                 return winePath;
             // Proton (e.g. GE-Proton): try files/bin/wine first (Flatpak Lutris layout), then bin/wine
             QString protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/files/bin/wine");
+            ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak proton/files): %s\n", protonPath.toUtf8().constData());
             if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
                 return protonPath;
             protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/bin/wine");
+            ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak proton): %s\n", protonPath.toUtf8().constData());
             if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
                 return protonPath;
+            // Fallback: try runtime/wine (some Flatpak layouts use runtime/ instead of runners/)
+            QString runtimeWinePath = lutrisRunnersBasePath + QStringLiteral("/runtime/wine/") + trimmed + QStringLiteral("/bin/wine");
+            ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak runtime/wine): %s\n", runtimeWinePath.toUtf8().constData());
+            if (QFileInfo(runtimeWinePath).exists() && QFileInfo(runtimeWinePath).isExecutable())
+                return runtimeWinePath;
+            runtimeWinePath = lutrisRunnersBasePath + QStringLiteral("/runtime/wine/") + trimmed + QStringLiteral("/files/bin/wine");
+            ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak runtime/wine/files): %s\n", runtimeWinePath.toUtf8().constData());
+            if (QFileInfo(runtimeWinePath).exists() && QFileInfo(runtimeWinePath).isExecutable())
+                return runtimeWinePath;
+            // Fallback: scan runners/wine and runners/proton for dir matching slug (e.g. case differs: ge-proton10-32)
+            for (const QString &subdir : { QStringLiteral("wine"), QStringLiteral("proton") }) {
+                QDir runnerDir(lutrisRunnersBasePath + QStringLiteral("/runners/") + subdir);
+                if (!runnerDir.exists())
+                    continue;
+                const QStringList entries = runnerDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+                for (const QString &dirName : entries) {
+                    if (dirName.compare(trimmed, Qt::CaseInsensitive) != 0)
+                        continue;
+                    QString candidate = runnerDir.absoluteFilePath(dirName) + QStringLiteral("/bin/wine");
+                    ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak %s scan): %s\n", subdir.toUtf8().constData(), candidate.toUtf8().constData());
+                    if (QFileInfo(candidate).exists() && QFileInfo(candidate).isExecutable())
+                        return candidate;
+                    candidate = runnerDir.absoluteFilePath(dirName) + QStringLiteral("/files/bin/wine");
+                    ltr_int_log_message("resolveWineBinaryPath: trying (Flatpak %s scan/files): %s\n", subdir.toUtf8().constData(), candidate.toUtf8().constData());
+                    if (QFileInfo(candidate).exists() && QFileInfo(candidate).isExecutable())
+                        return candidate;
+                }
+            }
+            // Log directory contents for debugging if runners dir exists
+            QDir runnersDir(lutrisRunnersBasePath + QStringLiteral("/runners"));
+            if (runnersDir.exists()) {
+                ltr_int_log_message("resolveWineBinaryPath: runners dir exists, subdirs: %s\n",
+                                    runnersDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot).join(QLatin1Char(',')).toUtf8().constData());
+                QDir wineDir(runnersDir.absoluteFilePath(QStringLiteral("wine")));
+                if (wineDir.exists())
+                    ltr_int_log_message("resolveWineBinaryPath: runners/wine contents: %s\n",
+                                        wineDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot).join(QLatin1Char(',')).toUtf8().constData());
+            } else {
+                ltr_int_log_message("resolveWineBinaryPath: runners dir does not exist at %s\n", runnersDir.absolutePath().toUtf8().constData());
+            }
+            ltr_int_log_message("resolveWineBinaryPath: no Flatpak Lutris path found for version: %s\n", trimmed.toUtf8().constData());
             return QString();
         }
+        // Native path: runners/wine/<slug>/bin/wine
         QString nativePath = homeDir + QStringLiteral("/.local/share/lutris/runners/wine/") + trimmed + QStringLiteral("/bin/wine");
+        ltr_int_log_message("resolveWineBinaryPath: trying (native wine): %s\n", nativePath.toUtf8().constData());
         if (QFileInfo(nativePath).exists() && QFileInfo(nativePath).isExecutable())
             return nativePath;
+        // Native runners/wine/<slug>/files/bin/wine (GE-Proton tarball layout)
+        nativePath = homeDir + QStringLiteral("/.local/share/lutris/runners/wine/") + trimmed + QStringLiteral("/files/bin/wine");
+        ltr_int_log_message("resolveWineBinaryPath: trying (native wine/files): %s\n", nativePath.toUtf8().constData());
+        if (QFileInfo(nativePath).exists() && QFileInfo(nativePath).isExecutable())
+            return nativePath;
+        // Native Proton fallback: runners/proton/<slug>/files/bin/wine or .../bin/wine
+        if (trimmed.contains(QStringLiteral("Proton"), Qt::CaseInsensitive)) {
+            QString nativeProtonPath = homeDir + QStringLiteral("/.local/share/lutris/runners/proton/") + trimmed + QStringLiteral("/files/bin/wine");
+            if (QFileInfo(nativeProtonPath).exists() && QFileInfo(nativeProtonPath).isExecutable())
+                return nativeProtonPath;
+            nativeProtonPath = homeDir + QStringLiteral("/.local/share/lutris/runners/proton/") + trimmed + QStringLiteral("/bin/wine");
+            if (QFileInfo(nativeProtonPath).exists() && QFileInfo(nativeProtonPath).isExecutable())
+                return nativeProtonPath;
+        }
+        // On-demand Flatpak check: if native path not found, try Flatpak Lutris once
+        if (!flatpakResolveAttempted) {
+            flatpakResolveAttempted = true;
+            ltr_int_log_message("resolveWineBinaryPath: native path not found, trying on-demand Flatpak detection\n");
+            if (detectLutrisFlatpak() && !lutrisRunnersBasePath.isEmpty()) {
+                QString winePath = lutrisRunnersBasePath + QStringLiteral("/runners/wine/") + trimmed + QStringLiteral("/bin/wine");
+                if (QFileInfo(winePath).exists() && QFileInfo(winePath).isExecutable())
+                    return winePath;
+                winePath = lutrisRunnersBasePath + QStringLiteral("/runners/wine/") + trimmed + QStringLiteral("/files/bin/wine");
+                if (QFileInfo(winePath).exists() && QFileInfo(winePath).isExecutable())
+                    return winePath;
+                QString protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/files/bin/wine");
+                if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
+                    return protonPath;
+                protonPath = lutrisRunnersBasePath + QStringLiteral("/runners/proton/") + trimmed + QStringLiteral("/bin/wine");
+                if (QFileInfo(protonPath).exists() && QFileInfo(protonPath).isExecutable())
+                    return protonPath;
+            }
+        }
+        ltr_int_log_message("resolveWineBinaryPath: no path found for version: %s (lutrisRunnersBasePath empty=%s)\n",
+                           trimmed.toUtf8().constData(), lutrisRunnersBasePath.isEmpty() ? "yes" : "no");
         return QString();
     }
 

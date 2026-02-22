@@ -191,6 +191,14 @@ sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
 | Permission denied on device | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not in launcher | Use `/usr/local` prefix instead of `/opt` |
 
+### Lutris (Flatpak)
+
+When Lutris is installed via Flatpak, game data and Wine/Proton runners live under **`~/.var/app/net.lutris.Lutris/data/lutris/`** (e.g. runners under `runners/wine/` and `runners/proton/`). LinuxtrackX-ir detects this path automatically when you run the prefix tester or install the Wine bridge.
+
+If you see **"Lutris wine binary not found for version: GE-Proton10-32"** (or a similar version) with Flatpak Lutris, the app should now use the Flatpak runners path automatically. If the issue persists, check the exact Wine/Proton version in the game's Lutris config and ensure that runner is installed in Lutris (e.g. via Lutris → Runners).
+
+If games show **"All library search attempts failed"** when launched from Lutris Flatpak, grant filesystem access using Flatseal; see **[Flatpak (Lutris and games)](flatpak.md)**.
+
 ## Advanced: Custom Build Combinations
 
 Combine cmake flags for your specific needs:
