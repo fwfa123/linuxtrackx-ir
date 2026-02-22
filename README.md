@@ -83,6 +83,7 @@ sudo cmake --build . --target uninstall
 - **[Debian/Ubuntu/MX Linux](docs/readme/debian-ubuntu.md)**
 - **[Arch Linux](docs/readme/arch-linux.md)**
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
+- **[Flatpak (Lutris and games)](docs/readme/flatpak.md)** - Using LinuxTrack when Lutris or games run from Flatpak (Flatseal, library path).
 
 Each guide includes package installation commands and level-specific build examples.
 
@@ -100,6 +101,8 @@ ltr_gui
 # For Wayland (force X11 compatibility if needed)
 QT_QPA_PLATFORM=xcb ltr_gui
 ```
+
+**Lutris or games from Flatpak:** If you run Lutris (or launch games) from Flatpak, the game runs in a sandbox and cannot see the host's Linuxtrack install. You may see "All library search attempts failed" in the game output. Grant the Lutris Flatpak access to your Linuxtrack install path (e.g. `/opt` or `/usr`) using **Flatseal**; see **[Flatpak (Lutris and games)](docs/readme/flatpak.md)**.
 
 ### Configuration Steps
 1. **Select your tracking device** (TrackIR, webcam, etc.)
@@ -176,6 +179,7 @@ groups $USER
 | Library not found | Run: `sudo ldconfig` |
 | TrackIR not detected | Check USB: `lsusb \| grep Track` |
 | Wine bridge fails | Check Wine 32-bit installation and MFC42 setup |
+| Library not found when game launched from Lutris Flatpak | Use Flatseal to allow filesystem access; see [Flatpak doc](docs/readme/flatpak.md) |
 
 **[Detailed troubleshooting guide](docs/readme/troubleshooting.md)** - Distribution-specific issues and advanced diagnostics.
 
