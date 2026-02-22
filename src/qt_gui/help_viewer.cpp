@@ -1,16 +1,6 @@
-#include <help_viewer.h>
-#include <QHelpEngine>
-HelpViewWidget::HelpViewWidget(QHelpEngine *he, QWidget *parent):QTextBrowser(parent), helpEngine(he)
+#include "help_viewer.h"
+
+HelpViewWidget::HelpViewWidget(QWidget *parent)
+  : QTextBrowser(parent)
 {
 }
-
-QVariant HelpViewWidget::loadResource(int type, const QUrl &name)
-{
-  if(name.scheme() == QString::fromUtf8("qthelp")){
-    return QVariant(helpEngine->fileData(name));
-  }else{
-    return QTextBrowser::loadResource(type, name);
-  }
-}
-
-

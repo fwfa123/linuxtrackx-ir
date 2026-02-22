@@ -218,7 +218,7 @@ endif()
 # Qt6.2+ requires C++17 (already set above)
 # The fixes in this codebase are compatible with Qt6.2+, but Qt6.5 is recommended
 find_package(Qt6 6.2 COMPONENTS Core Widgets OpenGL OpenGLWidgets REQUIRED)
-find_package(Qt6 QUIET COMPONENTS Help Sql Concurrent Network)
+find_package(Qt6 QUIET COMPONENTS Concurrent Network Sql)
 
 # Get Qt6 version and provide compatibility information
 if(Qt6Core_VERSION)
@@ -230,11 +230,6 @@ if(Qt6Core_VERSION)
 else()
     message(WARNING "Qt6 version could not be determined")
 endif()
-
-# Find qhelpgenerator for Qt6
-find_program(QT6_QHELPGENERATOR
-    NAMES qhelpgenerator-qt6 qhelpgenerator
-)
 
 # Wine detection
 find_program(WINEGCC_EXECUTABLE winegcc)

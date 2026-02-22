@@ -84,7 +84,7 @@ sudo cmake --build . --target uninstall
 - **[Arch Linux](docs/readme/arch-linux.md)**
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
 
-Each guide includes package installation commands and level-specific build examples.
+Each guide includes package installation commands and level-specific build examples. Fedora users: ensure mxml-devel (or libmxml-devel) and development-tools are installed; see [Fedora/RHEL](docs/readme/fedora-rhel.md). In-app help uses built-in HTML (no Qt Help tools or qhelpgenerator required).
 
 ### Migrating from /usr/local to /opt
 

@@ -10,7 +10,6 @@ sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
 sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools
 sudo apt install libqt6opengl6-dev  # Required for Qt6OpenGL CMake config
 sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
-sudo apt install sqlite3  # Required for Qt help system
 ```
 
 ### Wine Support (Level 2+)

@@ -9,9 +9,12 @@ sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
 sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
-sudo dnf install sqlite  # Required for Qt help system
 sudo dnf install qt5-qtx11extras-devel
 ```
+
+**Note (Development Tools):** If `sudo dnf groupinstall "Development Tools"` fails or is unavailable (e.g. on newer Fedora with dnf5), try `sudo dnf5 install development-tools` (or the equivalent group name for your release).
+
+**Note (mxml):** On Fedora the package is typically **mxml-devel**. If `libmxml-devel` is not found, run `sudo dnf install mxml-devel`.
 
 ### Wine Support (Level 2+)
 ```bash
@@ -49,33 +52,16 @@ sudo mkdir -p /opt/xplane-sdk
 sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ```
 
-## Qt6 Tools PATH Fix (IMPORTANT)
+## Qt6 and in-app help
 
-On Fedora/RHEL systems, Qt6 tools are installed in `/usr/lib64/qt6/bin/` which may not be in your default PATH. This causes build failures.
-
-**Before building, add Qt6 tools to your PATH:**
-```bash
-export PATH="/usr/lib64/qt6/bin:$PATH"
-```
-
-**To make this permanent, add to your `~/.bashrc`:**
-```bash
-echo 'export PATH="/usr/lib64/qt6/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-**Verify Qt6 tools are accessible:**
-```bash
-which qhelpgenerator qmake moc
-# Should show: /usr/lib64/qt6/bin/qhelpgenerator, etc.
-```
+In-app help is built from HTML in the repo; no qhelpgenerator or Qt Help tools are required. If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
 
 ## Build Commands
 
 ### Level 1: TrackIR Only
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -84,7 +70,7 @@ sudo cmake --install .
 ### Level 2: TrackIR + Wine (Most Common)
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -93,7 +79,7 @@ sudo cmake --install .
 ### Level 3: TrackIR + Wine + Webcam
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -102,7 +88,7 @@ sudo cmake --install .
 ### Level 4: TrackIR + Wine + Webcam + OSC
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -111,7 +97,7 @@ sudo cmake --install .
 ### Level 5: TrackIR + Wine + Webcam + OSC + Wiimote
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -120,7 +106,7 @@ sudo cmake --install .
 ### Level 6: Complete Build with X-Plane
 ```bash
 mkdir build && cd build
-export PATH="/usr/lib64/qt6/bin:$PATH"  # Required for Qt6 tools
+export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -147,9 +133,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 
 | Problem | Solution |
 |---------|----------|
-| `qhelpgenerator: command not found` | Add Qt6 tools to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
-| Build fails at help generation step | Qt6 tools not in PATH. Run: `export PATH="/usr/lib64/qt6/bin:$PATH" && make -j$(nproc)` |
-| `qmake: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH |
+| `qmake: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
 | `Could not find a package configuration file provided by "Qt6"` | Install Qt6 development packages: `sudo dnf install qt6-qtbase-devel qt6-qttools-devel` |
 | `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development: `sudo dnf install gcc-c++.i686` |
 

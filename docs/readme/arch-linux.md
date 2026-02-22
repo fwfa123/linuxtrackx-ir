@@ -7,7 +7,7 @@
 sudo pacman -S base-devel cmake pkg-config
 sudo pacman -S libusb bison flex
 sudo pacman -S qt6-base qt6-tools qt6-5compat
-sudo pacman -S mxml mesa glu sqlite  # mxml: Arch package name; required for Qt help
+sudo pacman -S mxml mesa glu  # mxml: Arch package name
 # zlib: if you get "zlib and zlib-ng-compat are in conflict", answer N and do NOT remove zlib-ng-compat.
 # zlib-ng-compat provides libz; CMake will find it. Only install zlib if neither is present.
 sudo pacman -S zlib   # omit if zlib-ng-compat is already installed (CachyOS, etc.)
