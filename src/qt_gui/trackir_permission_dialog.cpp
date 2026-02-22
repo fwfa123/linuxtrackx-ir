@@ -4,23 +4,11 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QDebug>
+#include <QtCore/qglobal.h>
 
 const QString TrackIRPermissionDialog::CONFIG_FILE = QString::fromUtf8("trackir_permissions.conf");
 const QString TrackIRPermissionDialog::DONT_SHOW_KEY = QString::fromUtf8("dont_show_permission_dialog");
 
-// Use /etc/udev/rules.d for local admin rules (highest priority)
-static QString udevRulesDir()
-{
-    return QString::fromUtf8("/etc/udev/rules.d");
-}
-
-static bool isUdevRulesInstalled()
-{
-    // Check /etc first (primary location), then legacy locations for backward compatibility
-    return QFile::exists(QString::fromUtf8("/etc/udev/rules.d/99-TIR.rules"))
-        || QFile::exists(QString::fromUtf8("/usr/lib/udev/rules.d/99-TIR.rules"))
-        || QFile::exists(QString::fromUtf8("/lib/udev/rules.d/99-TIR.rules"));
-}
 TrackIRPermissionDialog::TrackIRPermissionDialog(QWidget *parent)
     : QDialog(parent)
     , dontShowAgainCheckBox(nullptr)
@@ -543,10 +531,19 @@ void SudoPasswordDialog::setupUI(const QString &title, const QString &instructio
 
     mainLayout->addLayout(buttonLayout);
 
-    // Connect checkbox to enable/disable OK button (stateChanged exists in Qt5 and all Qt6; checkStateChanged is Qt 6.4+)
+    // Connect checkbox to enable/disable OK button. Qt 6.7+: checkStateChanged(Qt::CheckState); older Qt: stateChanged(int) with deprecation suppressed.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
+    connect(installCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
+        okButton->setEnabled(state == Qt::Checked);
+    });
+#else
+    QT_WARNING_PUSH
+    QT_WARNING_DISABLE_DEPRECATED
     connect(installCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
         okButton->setEnabled(state == static_cast<int>(Qt::Checked));
     });
+    QT_WARNING_POP
+#endif
 }
 
 void SudoPasswordDialog::onOkClicked()

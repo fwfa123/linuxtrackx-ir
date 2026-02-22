@@ -5,6 +5,7 @@
 #include <QtWidgets/QWidget>
 #include <QOpenGLWidget>
 #include <QImage>
+#include <QtCore/qglobal.h>
 #ifndef DARWIN
 #include <GL/glu.h>
 #else
@@ -29,8 +30,15 @@ static GLuint createTextureFromImage(const QImage &image)
   // QGLWidget::convertToGLFormat() (used in Qt4/Qt5) flipped the image vertically
   // to match OpenGL's bottom-left origin. QImage uses a top-left origin, so we need
   // to flip the image on upload to keep the UV mapping correct.
-  // mirrored(false, true) = vertical flip; works on Qt5 and all Qt6 (flipped() exists only in Qt 6.4+)
+  // Qt 6.9+: use flipped(Qt::Vertical); older Qt: mirrored(false, true) with deprecation suppressed.
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+  QImage glImage = image.convertToFormat(QImage::Format_RGBA8888).flipped(Qt::Vertical);
+#else
+  QT_WARNING_PUSH
+  QT_WARNING_DISABLE_DEPRECATED
   QImage glImage = image.convertToFormat(QImage::Format_RGBA8888).mirrored(false, true);
+  QT_WARNING_POP
+#endif
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, glImage.width(), glImage.height(), 0,
                GL_RGBA, GL_UNSIGNED_BYTE, glImage.bits());
   
