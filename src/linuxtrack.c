@@ -874,6 +874,9 @@ static void* linuxtrack_find_library(linuxtrack_state_type *problem)
     }
   }
   fprintf(stderr, "DEBUG: All library search attempts failed\n");
+  if (getenv("FLATPAK_ID") != NULL) {
+    fprintf(stderr, "DEBUG: Running in Flatpak; grant Lutris access to host path (e.g. with Flatseal: Filesystem -> Other files -> /opt). See docs/readme/flatpak.md\n");
+  }
   *problem = err_NOT_FOUND;
   return NULL;
 }
