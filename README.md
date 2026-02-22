@@ -21,6 +21,20 @@ chmod +x LinuxTrack-X-IR-*.AppImage
 ### **Alternative: Build from Source**
 Choose your installation level below, then see the detailed guides for your distribution.
 
+### **Issues to be aware of as you proceed**
+Have you installed Steam or Lutris from Flatpak? There are issues that you will have to correct with the sandbox design of Flatpak
+
+There are two branches.  
+main = QT5
+qt6_migration = QT6 Wayland compatible
+
+If you are running KDE use the qt6_migration branch to build from..
+```bash
+    # Clone the repository
+    git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+    git checkout qt6-migration
+```
+
 ## 🎯 Installation Levels
 
 Choose the level that matches your needs. Each level includes all features from previous levels.
