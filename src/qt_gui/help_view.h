@@ -6,43 +6,44 @@
 #include "help_viewer.h"
 
 class QSettings;
-class QHelpEngine;
-class QHelpContentWidget;
 class QSplitter;
-class HelpViewWidget;
+class QTreeWidget;
+class QTreeWidgetItem;
+class QPushButton;
 
-class HelpViewer : public QWidget{
+class HelpViewer : public QWidget
+{
   Q_OBJECT
   HelpViewer(QWidget *parent = 0);
   ~HelpViewer();
   static HelpViewer *hlp;
   static HelpViewer &getHlp();
   void ChangeHelpPage(QString name);
-  
-  // Robust help system initialization with comprehensive error handling
-  bool initializeHelpSystem(QString &helpFile, QHelpEngine *&helpEngine);
-  
- public:
+
+public:
   static void ShowWindow();
   static void ChangePage(QString name);
   static void CloseWindow();
   static void LoadPrefs(QSettings &settings);
   static void StorePrefs(QSettings &settings);
   static void RaiseWindow();
- private slots:
+
+private slots:
   void on_CloseButton_pressed();
+  void openWiki();
   void followLink(const QUrl &url);
-  //void currentTextChanged(const QString &currentText);
-  void helpInitialized();
-  void itemClicked(const QModelIndex &index);
- private:
+  void tocItemClicked(QTreeWidgetItem *item, int column);
+
+private:
+  void showPage(const QString &fileName);
+
   Ui::LogViewerForm ui;
+  QPushButton *wikiButton;
   QHBoxLayout *layout;
   QSplitter *splitter;
-  QHelpEngine *helpEngine;
-  QHelpContentWidget *contents;
+  QTreeWidget *tocTree;
   HelpViewWidget *viewer;
+  QString helpDir;
 };
 
 #endif
-

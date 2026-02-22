@@ -6,21 +6,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-# Find qhelpgenerator for help file generation
-# Qt6.2+: Use Qt6 qhelpgenerator for best compatibility with Qt6 QHelpEngine
-# Help files generated with Qt5 qhelpgenerator may work but Qt6-generated files are recommended
-# Arch: qhelpgenerator is in /usr/lib/qt6/ (not in PATH). Debian/Fedora: often in qt6/bin.
-find_program(QT6_QHELPGENERATOR
-    NAMES qhelpgenerator-qt6 qhelpgenerator
-    PATHS /usr/lib/qt6/bin /usr/lib/qt6 /usr/lib64/qt6/bin
-)
-
-if(QT6_QHELPGENERATOR)
-    message(STATUS "Qt6 qhelpgenerator found: ${QT6_QHELPGENERATOR}")
-else()
-    message(WARNING "Qt6 qhelpgenerator not found. Help file generation will fail. Install qt6-tools package.")
-endif()
-
 # Copy config.h to build directory (needed for HAVE_CONFIG_H)
 set(LOCAL_CONFIG_H ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 add_custom_command(
@@ -227,7 +212,6 @@ target_link_libraries(ltr_gui
     Qt6::Widgets
     Qt6::OpenGLWidgets
     Qt6::Network
-    Qt6::Help
     Qt6::Concurrent
     Qt6::Sql
     ltr
@@ -302,63 +286,15 @@ endif()
 # Set RPATH so ltr_gui can find linuxtrack libraries at runtime
 set_linuxtrack_rpath(ltr_gui)
 
+# Copy help files to build dir so running from build finds them
+add_custom_command(TARGET ltr_gui POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/help ${CMAKE_CURRENT_BINARY_DIR}/help
+    COMMENT "Copying help files to build directory"
+)
+
 # Precompiled header support
 # Note: CMake 3.16+ supports target_precompile_headers, but we'll handle it manually
 # for compatibility. The precomp_headers.h file will be included in sources.
-
-# ============================================================================
-# Qt Help System Generation
-# ============================================================================
-
-# Help file generation targets
-set(HELP_QCH_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qch)
-set(HELP_QHC_FILE ${CMAKE_CURRENT_BINARY_DIR}/help.qhc)
-
-if(QT6_QHELPGENERATOR)
-    # Generate help.qch from ltr_gui.qhp
-    add_custom_command(
-        OUTPUT ${HELP_QCH_FILE}
-        COMMAND ${QT6_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp -o ${HELP_QCH_FILE}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhp
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Generating Qt Help file (help.qch)"
-    )
-    
-    # Generate help.qhc from ltr_gui.qhcp
-    add_custom_command(
-        OUTPUT ${HELP_QHC_FILE}
-        COMMAND ${QT6_QHELPGENERATOR} ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp -o ${HELP_QHC_FILE}
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/ltr_gui.qhcp ${HELP_QCH_FILE}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Generating Qt Help collection (help.qhc)"
-    )
-    
-    # Fix help.qhc path after generation (modifies file in place)
-    add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
-        COMMAND chmod u+w ${HELP_QHC_FILE}
-        COMMAND ${CMAKE_COMMAND} -DHELP_QHC_FILE="${HELP_QHC_FILE}" -DHELP_QCH_FILE="${HELP_QCH_FILE}" -P "${CMAKE_SOURCE_DIR}/cmake/fix_help_qhc.cmake"
-        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
-        DEPENDS ${HELP_QHC_FILE}
-        COMMENT "Fixing help.qhc path references"
-    )
-    
-    # Custom target for help generation
-    add_custom_target(ltr_gui_help ALL
-        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/help.qhc.fixed
-    )
-else()
-    message(WARNING "Qt6 qhelpgenerator not found - help files will not be generated")
-    # Create empty files to avoid installation errors
-    add_custom_command(
-        OUTPUT ${HELP_QCH_FILE} ${HELP_QHC_FILE}
-        COMMAND ${CMAKE_COMMAND} -E touch ${HELP_QCH_FILE} ${HELP_QHC_FILE}
-        COMMENT "Creating placeholder help files (qhelpgenerator not found)"
-    )
-    add_custom_target(ltr_gui_help ALL
-        DEPENDS ${HELP_QCH_FILE} ${HELP_QHC_FILE}
-    )
-endif()
 
 # ============================================================================
 # Installation
@@ -385,10 +321,9 @@ install(FILES
     DESTINATION share/linuxtrack
 )
 
-# Install help files if they exist
-install(FILES
-    ${HELP_QHC_FILE}
-    ${HELP_QCH_FILE}
+# Install help HTML files (direct file help, no Qt Help compilation)
+install(DIRECTORY help/
     DESTINATION share/linuxtrack/help/ltr_gui
-    OPTIONAL
+    FILES_MATCHING PATTERN "*.htm" PATTERN "*.html" PATTERN "*.png"
 )
+
