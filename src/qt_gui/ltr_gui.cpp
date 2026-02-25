@@ -138,16 +138,6 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.PauseLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_PauseLtrPipeButton_pressed()));
   QObject::connect(ui.DeviceNameEdit, SIGNAL(textChanged(QString)), this, SLOT(on_DeviceNameEdit_textChanged(QString)));
 
-  // Build Advanced... menu programmatically
-  {
-    QMenu *advMenu = new QMenu(this);
-    QAction *otherPlatformAction = advMenu->addAction(QStringLiteral("Other Platform"));
-    QAction *winePrefixAction = advMenu->addAction(QStringLiteral("Wine Prefix"));
-    connect(otherPlatformAction, &QAction::triggered, this, &LinuxtrackGui::on_OtherPlatformButton_pressed);
-    connect(winePrefixAction, &QAction::triggered, this, &LinuxtrackGui::on_WinePrefixButton_pressed);
-    ui.AdvancedButton->setMenu(advMenu);
-  }
-
   // Wire prereq status changes to UI gating
   connect(pi, &PluginInstall::prereqStatusChanged, this, [this](bool ready){
     setGamingControlsEnabled(ready);
