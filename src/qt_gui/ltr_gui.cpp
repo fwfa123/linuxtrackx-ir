@@ -464,6 +464,9 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
       // Gaming tab selected: refresh prereq UI; TestingSection will start tracking as the workflow begins
       refreshGamingPrereqStatus();
       break;
+    case 5:
+      HelpViewer::ChangePage(QStringLiteral("advanced_tab.htm"));
+      break;
     default:
       break;
   }
