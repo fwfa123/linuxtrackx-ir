@@ -445,6 +445,11 @@ unpacked</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <location filename="../ltr.ui" line="208"/>
+        <source>Install Wine Bridge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <location filename="../ltr.ui" line="131"/>
         <source>TrackIR firmware:</source>
         <translation type="unfinished"></translation>
@@ -544,36 +549,6 @@ unpacked</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../ltr.ui" line="247"/>
-        <source>Advanced: start installation for other platforms</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="250"/>
-        <source>Other Platform Button</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="256"/>
-        <source>Other Platform</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="266"/>
-        <source>Advanced: install directly to a chosen Wine prefix</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="269"/>
-        <source>Direct Wine Prefix Button</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="275"/>
-        <source>Wine Prefix</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../ltr.ui" line="282"/>
         <source>Install the Linuxtrack plugin for X-Plane flight simulator</source>
         <translation type="unfinished"></translation>
@@ -586,16 +561,6 @@ unpacked</source>
     <message>
         <location filename="../ltr.ui" line="291"/>
         <source>Install Xplane plugin...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="298"/>
-        <source>Advanced...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../ltr.ui" line="301"/>
-        <source>Advanced installation options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
