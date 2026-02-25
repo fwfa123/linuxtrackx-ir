@@ -17,6 +17,7 @@
                 <section title="Tracking Setup" ref="help/axes_setup.htm"/>
                 <section title="TrackIR firmware and Wine integration" ref="help/extractor.htm"/>
                 <section title="Gaming Tab" ref="help/gaming_tab.htm"/>
+                <section title="Advanced Tab" ref="help/advanced_tab.htm"/>
                 <section title="XPlane plugin setup" ref="help/xpl_setup.htm"/>
                 <section title="Linuxtrack Interface" ref="help/interface.htm"/>
                 <section title="Wine games support" ref="help/wine.htm"/>
