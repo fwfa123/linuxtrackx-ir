@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+  <title>Advanced Tab</title>
+  <meta name="generator" content="Bluefish 2.0.2" >
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+<h1>Advanced Tab</h1>
+<p>
+<strong>This tab is for special uses of Linuxtrack.</strong> Most users should use the <strong>Tracking Window</strong> for starting Linuxtrack. Use the Start/Stop buttons in the Tracking Window to run head tracking for normal use.
+</p>
+<p>
+The Advanced tab provides the Linuxtrack Server (ltr_pipe) controls for special output formats such as uinput-abs for AntiMicroX, FlightGear, IL-2 Shturmovik, and Silent Wings. Use this tab only when you need one of these specific output modes.
+</p>
+
+<h2>Linuxtrack Server Section</h2>
+<p>
+The Linuxtrack Server section controls the head tracking data output format and server status:
+</p>
+
+<h3>Output Format</h3>
+<p>
+<strong>Dropdown:</strong> "Format" - Select the output format for head tracking data.
+</p>
+<p>
+<strong>Available formats:</strong>
+</p>
+<ul>
+  <li><strong>"uinput-abs (Antimicrox)"</strong> - Absolute input format compatible with Antimicrox and similar tools</li>
+  <li><strong>"FlightGear"</strong> - Format for FlightGear flight simulator</li>
+  <li><strong>"IL-2 Shturmovik"</strong> - Format for IL-2 Sturmovik series</li>
+  <li><strong>"Silent Wings"</strong> - Format for Silent Wings glider simulator</li>
+  <li><strong>"Default"</strong> - Default output format</li>
+</ul>
+
+<h3>Device Information</h3>
+<p>
+<strong>Text Field:</strong> "Device Name (Info Only)" - Shows the current device name (e.g., "tir1").
+</p>
+<p>
+<strong>Purpose:</strong> Displays the virtual device name that will be created for head tracking input.
+</p>
+
+<h3>Server Controls</h3>
+<p>
+<strong>Buttons:</strong>
+</p>
+<ul>
+  <li><strong>"Start"</strong> - Starts the Linuxtrack server to begin head tracking data output</li>
+  <li><strong>"Stop"</strong> - Stops the Linuxtrack server</li>
+  <li><strong>"Pause"</strong> - Temporarily pauses head tracking data output</li>
+</ul>
+
+<h3>Server Status</h3>
+<p>
+<strong>Status Message:</strong> Shows the current server status (e.g., "Ready", "Running", "Paused", "Stopped").
+</p>
+<p>
+<strong>Purpose:</strong> Provides real-time feedback about the Linuxtrack server state.
+</p>
+
+<h2>Server Workflow Example</h2>
+<p>
+Here's a comprehensive example workflow for setting up head tracking using the Linuxtrack server with various gaming scenarios:
+</p>
+
+<h3>Linuxtrack to AntiMicroX Integration</h3>
+<p>
+LinuxTrack includes a powerful feature that allows you to use head tracking with games that don't natively support TrackIR by using AntiMicroX to translate head movements into keyboard, mouse, or joystick inputs.
+</p>
+
+<h4>Prerequisites for AntiMicroX Integration</h4>
+<p>
+<strong>Install AntiMicroX:</strong> Most Linux distributions include AntiMicroX in their software repositories. Install it using your package manager or visit <a href="https://antimicrox.github.io/">https://antimicrox.github.io/</a> for more information.
+</p>
+
+<h4>Configure Linuxtrack Server</h4>
+<p>
+<strong>Launch Linuxtrack GUI:</strong> Start the Linuxtrack GUI application first.</p>
+<p>
+<strong>Open the Advanced tab:</strong> Switch to the Advanced tab in the main window.</p>
+<p>
+<strong>Set Output Format:</strong> In the Linuxtrack Server section, set the Format to "uinput-abs (Antimicrox)".</p>
+<p>
+<strong>Start Server:</strong> Click "Start" in the Linuxtrack Server section to begin joystick emulation mode.</p>
+
+<h4>Configure AntiMicroX</h4>
+<p>
+<strong>Launch AntiMicroX:</strong> Start AntiMicroX. You should see "LinuxTrack uinput-abs (Joystick 1)" appear in the device list.</p>
+
+<table>
+<tr>
+<td>
+<img src="Antimicrox1.png" alt="AntiMicroX interface showing Linuxtrack detected as joystick with unconfigured axes">
+</td>
+</tr>
+</table>
+
+<p>
+<strong>Axis Mapping:</strong> AntiMicroX will recognize the following Linuxtrack axes:
+</p>
+<ul>
+  <li><strong>Axis 1:</strong> Yaw (left/right head movement)</li>
+  <li><strong>Axis 2:</strong> Pitch (up/down head movement)</li>
+  <li><strong>Axis 3:</strong> Roll (head tilt)</li>
+  <li><strong>Axis 4:</strong> Move left/right</li>
+  <li><strong>Axis 5:</strong> Move up/down</li>
+  <li><strong>Axis 6:</strong> Move backwards/forwards</li>
+</ul>
+
+<h4>Gaming Examples</h4>
+<p>
+<strong>Jane's Longbow 2 (PCEM):</strong> Map Yaw and Pitch axes to number keypad keys (KP_4/KP_6 for yaw, KP_8/KP_2 for pitch). Adjust head movement speed in the game's ca.ini file.</p>
+<p>
+<strong>MechWarrior 2 (DOSBox):</strong> Map Pitch and Yaw axes to mouse movement for torso view and targeting reticle control.</p>
+<p>
+<strong>Flight Simulators:</strong> Map axes to joystick inputs for realistic flight control.</p>
+
+<h4>AntiMicroX Configuration Tips</h4>
+<p>
+<strong>Dead Zone:</strong> Set appropriate dead zones to prevent unwanted movement from small head motions.</p>
+<p>
+<strong>Max Zone:</strong> Adjust maximum zone to control the sensitivity of head movements.</p>
+<p>
+<strong>Profiles:</strong> Save different profiles for different games to quickly switch between configurations.</p>
+
+<table>
+<tr>
+<td>
+<img src="Antimicrox2.png" alt="AntiMicroX axis configuration dialog showing YAW axis setup with dead zone and mapping options">
+</td>
+</tr>
+</table>
+
+<p>
+<strong>Axis Configuration:</strong> Click on any axis to open the configuration dialog. Here you can set dead zones, maximum zones, and map the axis to keyboard keys, mouse movements, or other joystick inputs. The example shows YAW axis configuration with number keypad mapping (KP_8/KP_2 for up/down movement).</p>
+
+<h2>Troubleshooting</h2>
+<p>
+<strong>If the Linuxtrack server fails to start:</strong> Ensure tracking is working in the Tracking Window first. The server uses the same tracking pipeline.</p>
+<p>
+<strong>If the correct output format is not selected:</strong> Choose the format before clicking Start. Format cannot be changed while the server is running.</p>
+<p>
+For Wine Bridge, prerequisites, and game integration, see the <a href="gaming_tab.htm">Gaming Tab</a> and <a href="extractor.htm">TrackIR Firmware/Wine Integration Setup</a> guide.</p>
+
+</body>
+</html>

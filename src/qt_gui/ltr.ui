@@ -494,178 +494,6 @@
          </layout>
         </widget>
        </item>
-       <item>
-        <widget class="QGroupBox" name="LtrPipeControlGroupBox">
-         <property name="title">
-          <string>Linuxtrack Server</string>
-         </property>
-         <layout class="QVBoxLayout" name="ltrPipeControlLayout">
-          <item>
-           <layout class="QHBoxLayout" name="formatSelectionLayout">
-            <item>
-             <widget class="QLabel" name="FormatLabel">
-              <property name="accessibleName">
-               <string>Format Selection Label</string>
-              </property>
-              <property name="text">
-               <string>Format:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QComboBox" name="FormatComboBox">
-              <property name="toolTip">
-               <string>Select the output format for ltr_pipe</string>
-              </property>
-              <property name="accessibleName">
-               <string>Format Selection</string>
-              </property>
-              <item>
-               <property name="text">
-                <string>uinput-abs (Antimicrox)</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>FlightGear</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>IL-2 Shturmovik</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Silent Wings</string>
-               </property>
-              </item>
-              <item>
-               <property name="text">
-                <string>Default</string>
-               </property>
-              </item>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="deviceNameLayout">
-            <item>
-             <widget class="QLabel" name="DeviceNameLabel">
-              <property name="accessibleName">
-               <string>Device Name Label</string>
-              </property>
-              <property name="text">
-               <string>Device Name (Info Only):</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="DeviceNameEdit">
-              <property name="toolTip">
-               <string>Device name for reference (ltr_pipe always creates 'LinuxTrack uinput-abs')</string>
-              </property>
-              <property name="accessibleName">
-               <string>Device Name Input</string>
-              </property>
-              <property name="text">
-               <string>tir1</string>
-              </property>
-              <property name="placeholderText">
-               <string>Device name for reference only</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="controlButtonsLayout">
-            <item>
-             <widget class="QPushButton" name="StartLtrPipeButton">
-              <property name="toolTip">
-               <string>Start ltr_pipe with selected format</string>
-              </property>
-              <property name="accessibleName">
-               <string>Start ltr_pipe</string>
-              </property>
-              <property name="text">
-               <string>Start</string>
-              </property>
-              <property name="icon">
-               <iconset resource="ltr_rc.qrc">
-                <normaloff>:/ltr/icons/play.svg</normaloff>:/ltr/icons/play.svg</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="StopLtrPipeButton">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="toolTip">
-               <string>Stop ltr_pipe and cleanup devices</string>
-              </property>
-              <property name="accessibleName">
-               <string>Stop ltr_pipe</string>
-              </property>
-              <property name="text">
-               <string>Stop</string>
-              </property>
-              <property name="icon">
-               <iconset resource="ltr_rc.qrc">
-                <normaloff>:/ltr/icons/stop.svg</normaloff>:/ltr/icons/stop.svg</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="PauseLtrPipeButton">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="toolTip">
-               <string>Pause/resume ltr_pipe tracking</string>
-              </property>
-              <property name="accessibleName">
-               <string>Pause ltr_pipe</string>
-              </property>
-              <property name="text">
-               <string>Pause</string>
-              </property>
-              <property name="icon">
-               <iconset resource="ltr_rc.qrc">
-                <normaloff>:/ltr/icons/pause.svg</normaloff>:/ltr/icons/pause.svg</iconset>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <widget class="QLabel" name="LtrPipeStatusLabel">
-            <property name="accessibleName">
-             <string>ltr_pipe Status</string>
-            </property>
-            <property name="text">
-             <string>Ready</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
       </layout>
      </widget>
      <widget class="QWidget" name="tab_5">
@@ -957,6 +785,185 @@
             </property>
             <property name="text">
              <string>Launch Mickey (TrackIR)</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_6">
+      <attribute name="title">
+       <string>Advanced</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="advancedTabLayout">
+       <item>
+        <widget class="QLabel" name="AdvancedWarningLabel">
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="text">
+          <string>This tab is for special uses of Linuxtrack. Most users should use the Tracking Window for starting Linuxtrack.</string>
+         </property>
+         <property name="styleSheet">
+          <string>font-weight: bold; color: #c0392b;</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="LtrPipeControlGroupBox">
+         <property name="title">
+          <string>Linuxtrack Server</string>
+         </property>
+         <layout class="QVBoxLayout" name="ltrPipeControlLayout">
+          <item>
+           <layout class="QHBoxLayout" name="formatSelectionLayout">
+            <item>
+             <widget class="QLabel" name="FormatLabel">
+              <property name="accessibleName">
+               <string>Format Selection Label</string>
+              </property>
+              <property name="text">
+               <string>Format:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="FormatComboBox">
+              <property name="toolTip">
+               <string>Select the output format for ltr_pipe</string>
+              </property>
+              <property name="accessibleName">
+               <string>Format Selection</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>uinput-abs (Antimicrox)</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>FlightGear</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>IL-2 Shturmovik</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Silent Wings</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>Default</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="deviceNameLayout">
+            <item>
+             <widget class="QLabel" name="DeviceNameLabel">
+              <property name="accessibleName">
+               <string>Device Name Label</string>
+              </property>
+              <property name="text">
+               <string>Device Name (Info Only):</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="DeviceNameEdit">
+              <property name="toolTip">
+               <string>Device name for reference (ltr_pipe always creates 'LinuxTrack uinput-abs')</string>
+              </property>
+              <property name="accessibleName">
+               <string>Device Name Input</string>
+              </property>
+              <property name="text">
+               <string>tir1</string>
+              </property>
+              <property name="placeholderText">
+               <string>Device name for reference only</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="controlButtonsLayout">
+            <item>
+             <widget class="QPushButton" name="StartLtrPipeButton">
+              <property name="toolTip">
+               <string>Start ltr_pipe with selected format</string>
+              </property>
+              <property name="accessibleName">
+               <string>Start ltr_pipe</string>
+              </property>
+              <property name="text">
+               <string>Start</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ltr_rc.qrc">
+                <normaloff>:/ltr/icons/play.svg</normaloff>:/ltr/icons/play.svg</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="StopLtrPipeButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Stop ltr_pipe and cleanup devices</string>
+              </property>
+              <property name="accessibleName">
+               <string>Stop ltr_pipe</string>
+              </property>
+              <property name="text">
+               <string>Stop</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ltr_rc.qrc">
+                <normaloff>:/ltr/icons/stop.svg</normaloff>:/ltr/icons/stop.svg</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="PauseLtrPipeButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Pause/resume ltr_pipe tracking</string>
+              </property>
+              <property name="accessibleName">
+               <string>Pause ltr_pipe</string>
+              </property>
+              <property name="text">
+               <string>Pause</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ltr_rc.qrc">
+                <normaloff>:/ltr/icons/pause.svg</normaloff>:/ltr/icons/pause.svg</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="LtrPipeStatusLabel">
+            <property name="accessibleName">
+             <string>ltr_pipe Status</string>
+            </property>
+            <property name="text">
+             <string>Ready</string>
             </property>
            </widget>
           </item>
