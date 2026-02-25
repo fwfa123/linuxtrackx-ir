@@ -203,73 +203,65 @@
         </layout>
        </item>
        <item>
-        <layout class="QGridLayout" name="gridLayout_3">
-         <item row="0" column="0">
-          <widget class="QPushButton" name="SteamProtonButton">
-           <property name="toolTip">
-            <string>Install Linuxtrack Wine Bridge to a Steam (Proton) game</string>
-           </property>
-           <property name="accessibleName">
-            <string>Steam Install Button</string>
-           </property>
-           <property name="text">
-            <string>Steam (Proton)</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QPushButton" name="CustomPrefixButton">
-           <property name="toolTip">
-            <string>Install Linuxtrack Wine Bridge to a custom Wine prefix</string>
-           </property>
-           <property name="accessibleName">
-            <string>Custom Prefix Install Button</string>
-           </property>
-           <property name="text">
-            <string>Custom Prefix</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QPushButton" name="LutrisButton">
-           <property name="toolTip">
-            <string>Install Linuxtrack Wine Bridge to a Lutris game</string>
-           </property>
-           <property name="accessibleName">
-            <string>Lutris Install Button</string>
-           </property>
-           <property name="text">
-            <string>Lutris</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QPushButton" name="XplanePluginButton">
-           <property name="toolTip">
-            <string>Install the Linuxtrack plugin for X-Plane flight simulator</string>
-           </property>
-           <property name="accessibleName">
-            <string>X-Plane Plugin Install Button</string>
-           </property>
-           <property name="text">
-            <string>Install Xplane plugin...</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="3">
-          <widget class="QToolButton" name="AdvancedButton">
-           <property name="toolTip">
-            <string>Advanced installation options</string>
-           </property>
-           <property name="text">
-            <string>Advanced...</string>
-           </property>
-           <property name="popupMode">
-            <enum>QToolButton::InstantPopup</enum>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QGroupBox" name="WineBridgeGroupBox">
+         <property name="title">
+          <string>Install Wine Bridge</string>
+         </property>
+         <layout class="QHBoxLayout" name="wineBridgeButtonLayout">
+          <item>
+           <widget class="QPushButton" name="SteamProtonButton">
+            <property name="toolTip">
+             <string>Install Linuxtrack Wine Bridge to a Steam (Proton) game</string>
+            </property>
+            <property name="accessibleName">
+             <string>Steam Install Button</string>
+            </property>
+            <property name="text">
+             <string>Steam (Proton)</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="CustomPrefixButton">
+            <property name="toolTip">
+             <string>Install Linuxtrack Wine Bridge to a custom Wine prefix</string>
+            </property>
+            <property name="accessibleName">
+             <string>Custom Prefix Install Button</string>
+            </property>
+            <property name="text">
+             <string>Custom Prefix</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="LutrisButton">
+            <property name="toolTip">
+             <string>Install Linuxtrack Wine Bridge to a Lutris game</string>
+            </property>
+            <property name="accessibleName">
+             <string>Lutris Install Button</string>
+            </property>
+            <property name="text">
+             <string>Lutris</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="XplanePluginButton">
+         <property name="toolTip">
+          <string>Install the Linuxtrack plugin for X-Plane flight simulator</string>
+         </property>
+         <property name="accessibleName">
+          <string>X-Plane Plugin Install Button</string>
+         </property>
+         <property name="text">
+          <string>Install Xplane plugin...</string>
+         </property>
+        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer_3">
