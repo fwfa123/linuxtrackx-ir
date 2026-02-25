@@ -41,6 +41,7 @@ static const TocEntry toc[] = {
     {"Tracking Setup", "axes_setup.htm"},
     {"TrackIR firmware and Wine integration", "extractor.htm"},
     {"Gaming Tab", "gaming_tab.htm"},
+    {"Advanced Tab", "advanced_tab.htm"},
     {"XPlane plugin setup", "xpl_setup.htm"},
     {"Linuxtrack Interface", "interface.htm"},
     {"Wine games support", "wine.htm"},
