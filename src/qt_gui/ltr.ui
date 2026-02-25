@@ -203,6 +203,19 @@
         </layout>
        </item>
        <item>
+        <spacer name="verticalSpacer_4">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
         <widget class="QGroupBox" name="WineBridgeGroupBox">
          <property name="title">
           <string>Install Wine Bridge</string>
@@ -470,19 +483,6 @@
             </property>
            </widget>
           </item>
-          <item>
-           <spacer name="verticalSpacer_5">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
          </layout>
         </widget>
        </item>
@@ -512,7 +512,6 @@
             </property>
             <property name="font">
              <font>
-              <weight>75</weight>
               <bold>true</bold>
              </font>
             </property>
@@ -540,8 +539,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>98</width>
-               <height>93</height>
+               <width>953</width>
+               <height>191</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_system_details">
@@ -665,7 +664,6 @@
               </property>
               <property name="font">
                <font>
-                <weight>75</weight>
                 <bold>true</bold>
                </font>
               </property>
@@ -792,14 +790,14 @@
       <layout class="QVBoxLayout" name="advancedTabLayout">
        <item>
         <widget class="QLabel" name="AdvancedWarningLabel">
-         <property name="wordWrap">
-          <bool>true</bool>
+         <property name="styleSheet">
+          <string>font-weight: bold; color: #c0392b;</string>
          </property>
          <property name="text">
           <string>This tab is for special uses of Linuxtrack. Most users should use the Tracking Window for starting Linuxtrack.</string>
          </property>
-         <property name="styleSheet">
-          <string>font-weight: bold; color: #c0392b;</string>
+         <property name="wordWrap">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
