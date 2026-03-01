@@ -4,16 +4,15 @@
 
 ### Core Dependencies (All Levels)
 ```bash
-sudo dnf groupinstall "Development Tools"
+sudo dnf group install development-tools
 sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
 sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
 sudo dnf install qt5-qtx11extras-devel
+sudo dnf install mxml-devel
+sudo dnf install mesa-libGLU-devel.x86_64
 ```
-
-**Note (Development Tools):** If `sudo dnf groupinstall "Development Tools"` fails or is unavailable (e.g. on newer Fedora with dnf5), try `sudo dnf5 install development-tools` (or the equivalent group name for your release).
-
 **Note (mxml):** On Fedora the package is typically **mxml-devel**. If `libmxml-devel` is not found, run `sudo dnf install mxml-devel`.
 
 ### Wine Support (Level 2+)
