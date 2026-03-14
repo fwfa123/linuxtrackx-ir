@@ -13,6 +13,8 @@ class ProfileSelector : public QWidget
   ProfileSelector(QWidget *parent = 0);
   ~ProfileSelector();
   void refresh();
+  /** Return the profile name currently selected in the combo (for tab sync). */
+  QString currentProfileName() const;
  private:
    Ui::ProfileSelectorForm ui;
    ProfileSetup *ps;

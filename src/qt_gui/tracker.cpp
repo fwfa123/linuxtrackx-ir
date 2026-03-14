@@ -1,6 +1,7 @@
 #include "tracker.h"
 #include <tracking.h>
 #include <pref.hpp>
+#include <pref.h>
 #include <axis.h>
 #include <ltlib.h>
 #include <../ltr_srv_master.h>
@@ -11,6 +12,7 @@
 #include <unistd.h>
 #include <QApplication>
 #include <QMessageBox>
+#include <QTimer>
 
 Tracker *Tracker::trr = NULL;
 char *com_fname = NULL;
@@ -91,9 +93,19 @@ Tracker::Tracker() : axes(LTR_AXES_T_INITIALIZER), axes_valid(false),
                          QMessageBox::Ok);
   }
   master = new MasterThread();
+  saveDebounceTimer = new QTimer(this);
+  saveDebounceTimer->setSingleShot(true);
+  connect(saveDebounceTimer, SIGNAL(timeout()), this, SLOT(performDeferredSave()));
   ltr_int_set_callback_hooks(ltr_int_new_frame, ltr_int_state_changed, ltr_int_new_slave);
   setProfile(QString::fromUtf8("Default"));
   axes_valid = true;
+}
+
+void Tracker::performDeferredSave()
+{
+  if(ltr_int_need_saving()){
+    ltr_int_save_prefs(NULL);
+  }
 }
 
 Tracker::~Tracker()
@@ -218,18 +230,24 @@ bool Tracker::axisChange(axis_t axis, axis_param_t elem, bool enabled)
   ltr_int_set_axis_bool_param(axes, axis, elem, enabled);
   emit axisChanged(axis, elem);
   ltr_int_change(profileSection.toUtf8().constData(), axis, elem, enabled?1.0:0.0);
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
   return true;
 }
 
 bool Tracker::miscChange(axis_param_t elem, bool enabled)
 {
   ltr_int_change(NULL, MISC, elem, enabled?1.0:0.0);
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
   return true;
 }
 
 bool Tracker::miscChange(axis_param_t elem, float val)
 {
   ltr_int_change(NULL, MISC, elem, val);
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
   return true;
 }
 
@@ -249,6 +267,8 @@ bool Tracker::axisChange(axis_t axis, axis_param_t elem, float val)
   bool res = ltr_int_set_axis_param(axes, axis, elem, val);
   emit axisChanged(axis, elem);
   ltr_int_change(profileSection.toUtf8().constData(), axis, elem, val);
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
   return res;
 }
 
@@ -288,6 +308,8 @@ bool Tracker::setCommonFilterFactor(float c_f)
     ltr_int_change(profileSection.toUtf8().constData(), i, AXIS_FILTER, val);
   }
   emit setCommonFF(c_f);
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
   return res;
 }
 

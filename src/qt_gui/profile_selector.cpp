@@ -57,6 +57,11 @@ bool ProfileSelector::setCurrentProfile(QString prof)
   return true;
 }
 
+QString ProfileSelector::currentProfileName() const
+{
+  return ui.Profiles->currentText();
+}
+
 void ProfileSelector::on_Profiles_currentIndexChanged(const QString &text)
 {
   if((PROFILE.isProfile(text)) < 0){
@@ -67,7 +72,8 @@ void ProfileSelector::on_Profiles_currentIndexChanged(const QString &text)
     delete ps;
     ps = NULL;
   }
-  //std::cout<<"Changed index to "<<text.toStdString()<<"\n";
+  // Ensure Tracker's active profile matches the tab we're showing (profile sync for live settings).
+  TRACKER.setProfile(text);
   ps = new ProfileSetup(text, this);
   ui.AxesSetup->insertWidget(1, ps);
 }
