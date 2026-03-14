@@ -2,7 +2,25 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.29) continues development on GitLab for future development and releases.
+> **Note**: This version (0.99.30) continues development on GitLab for future development and releases.
+
+## [0.99.30] - Lutris, AppImage & UI Improvements (March 2026)
+
+### Major Changes
+- **Lutris / Flatpak / Wine**: Lutris Flatpak wine binary resolution and Proton via `files/bin/wine` (Issue #43); Flatseal doc for library path; Fedora 43 wine-wow64 paths and Wine lib probing
+- **UI / Gaming tab**: New Advanced tab (Linuxtrack Server moved from Gaming tab, with warning); Gaming tab "Install Wine Bridge" label, updated help; layout and help image updates
+- **Tracking**: Restore Linux PS3Eye (1415:2000) in device selector; fix freeze when re-starting tracking after Stop (Issue #47); fix smoothing save states (Issue #44)
+
+### Fixed
+- AppImage GUI unable to find `ltr_pipe` executable
+- SIGPIPE crash when tester program exits
+- Issue #41: udev path detection, graceful Start failure, socket close on connect fail
+- udev rules path: use `/etc/udev/rules.d/` for local admin rules
+
+### Changed
+- Troubleshooting and README docs: udev rules paths, quick issues section
+
+**Resolves:** GitHub Issues #41, #43, #44, #47
 
 ## [0.99.29] - TIR5V2 Compatibility Release (January 2026)
 
