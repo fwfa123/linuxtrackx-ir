@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QThread>
+#include <QTimer>
 #include <linuxtrack.h>
 #include <axis.h>
 #include <cal.h>
@@ -44,6 +45,7 @@ class Tracker : public QObject{
   ~Tracker();
   static Tracker *trr;
   MasterThread *master;
+  QTimer *saveDebounceTimer;
   ltr_axes_t axes;
   bool axes_valid;
   QString currentProfile;
@@ -56,6 +58,7 @@ class Tracker : public QObject{
   void wakeup();
   void recenter();
   void stop();
+  void performDeferredSave();
  signals:
   void stateChanged(int current_state);
   void newFrame(struct frame_type *frame);

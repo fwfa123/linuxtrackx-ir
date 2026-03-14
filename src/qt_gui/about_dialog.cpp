@@ -1,4 +1,5 @@
 #include "about_dialog.h"
+#include "ltr_gui_prefs.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -19,7 +20,7 @@ AboutDialog::AboutDialog(QWidget *parent) : QDialog(parent)
     setupUI();
     setWindowTitle(tr("About Linuxtrack X-IR"));
     setModal(true);
-    setFixedSize(500, 400);
+    setFixedSize(500, 480);
 }
 
 void AboutDialog::setupUI()
@@ -90,6 +91,18 @@ void AboutDialog::setupLayout()
         .arg(QStringLiteral(QT_VERSION_STR))
     );
     mainLayout->addWidget(creditsText);
+    
+    // Diagnostics (config path and master mode for support / AppImage troubleshooting)
+    QLabel *diagLabel = new QLabel(tr("Diagnostics (for support):"));
+    diagLabel->setStyleSheet(QStringLiteral("font-weight: bold; margin-top: 8px;"));
+    mainLayout->addWidget(diagLabel);
+    QString configPath = PREF.getRsrcDirPath() + QStringLiteral("linuxtrack1.conf");
+    QString diagText = tr("Config file: %1\nMaster: in-process (GUI)").arg(configPath);
+    QLabel *diagValue = new QLabel(diagText);
+    diagValue->setWordWrap(true);
+    diagValue->setStyleSheet(QStringLiteral("font-size: 11px; color: #444;"));
+    diagValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    mainLayout->addWidget(diagValue);
     
     // Links
     QHBoxLayout *linksLayout = new QHBoxLayout();
