@@ -51,6 +51,12 @@ APPDIR="$(dirname "$(readlink -f "$0")")"
 # CRITICAL: Export APPDIR so Wine bridge and other processes can detect AppImage
 export APPDIR
 
+# Ensure HOME is set so config path (~/.config/linuxtrack) is unambiguous (Tracking Setup / AppImage)
+if [ -z "${HOME:-}" ]; then
+  HOME="$(getent passwd "$(whoami)" 2>/dev/null | cut -d: -f6)"
+  export HOME="${HOME:-/tmp}"
+fi
+
 # Set up completely isolated environment for self-contained AppImage
 export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack:$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
 

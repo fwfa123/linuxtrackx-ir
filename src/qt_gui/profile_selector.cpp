@@ -75,11 +75,17 @@ bool ProfileSelector::setCurrentProfile(QString prof)
   return true;
 }
 
+QString ProfileSelector::currentProfileName() const
+{
+  return ui.Profiles->currentText();
+}
+
 void ProfileSelector::profilesCurrentTextChanged(const QString &text)
 {
   if((PROFILE.isProfile(text)) < 0){
     return;
   }
+  TRACKER.setProfile(text);
   if (ps == NULL) {
     // First-time creation: create the ProfileSetup widget and add it to layout
     ps = new ProfileSetup(text, this);
