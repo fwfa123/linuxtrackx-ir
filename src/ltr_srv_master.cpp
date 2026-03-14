@@ -172,12 +172,10 @@ bool ltr_int_register_slave(int socket, message_t &msg)
   ltr_int_init_axes(&tmp_axes, msg.str);
   ltr_int_close_axes(&tmp_axes);
 
-  if(save_prefs){
-    ltr_int_log_message("Checking for changed prefs...\n");
-    if(ltr_int_need_saving()){
-      ltr_int_log_message("Master is about to save changed preferences.\n");
-      ltr_int_save_prefs(NULL);
-    }
+  /* Persist prefs when a slave registers and there are unsaved changes (GUI and standalone). */
+  if(ltr_int_need_saving()){
+    ltr_int_log_message("Master is about to save changed preferences.\n");
+    ltr_int_save_prefs(NULL);
   }
 
   if(new_slave_hook != NULL){

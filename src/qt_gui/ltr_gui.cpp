@@ -418,6 +418,9 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
       break;
     case 2:
       HelpViewer::ChangePage(QStringLiteral("axes_setup.htm"));
+      if (ps != nullptr) {
+        TRACKER.setProfile(ps->currentProfileName());
+      }
       break;
     case 3:
       HelpViewer::ChangePage(QStringLiteral("misc.htm"));
