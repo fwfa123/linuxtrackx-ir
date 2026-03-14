@@ -1002,6 +1002,9 @@ void LinuxtrackGui::on_StartLtrPipeButton_pressed()
 
 void LinuxtrackGui::on_StopLtrPipeButton_pressed()
 {
+    // Stop the in-process tracker first so the camera is released cleanly.
+    // Otherwise re-starting tracking can freeze (TrackIR left in invalid state).
+    TRACKER.stop();
     // Stop ltr_pipe process
     stopLtrPipeProcess();
     
