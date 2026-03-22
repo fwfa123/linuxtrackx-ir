@@ -1,6 +1,9 @@
 #include "trackir_permission_dialog.h"
 #include <QApplication>
 #include <QDir>
+#include <QFile>
+#include <QProcess>
+#include <QWidget>
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QDebug>
@@ -32,7 +35,7 @@ TrackIRPermissionDialog::TrackIRPermissionDialog(QWidget *parent)
 {
     setupUI();
     setWindowIcon(QIcon(QStringLiteral(":/ltr/linuxtrack.svg")));
-    setWindowTitle(tr("TrackIR Permission Setup"));
+    setWindowTitle(tr("USB tracking device permissions"));
     setModal(true);
     setFixedSize(500, 300);
 }
@@ -47,13 +50,13 @@ void TrackIRPermissionDialog::setupUI()
     
     // Main message
     QLabel *messageLabel = new QLabel(tr(
-        "<h3>TrackIR Device Detected</h3>"
-        "<p>LinuxTrack has detected your TrackIR device, but you don't have "
-        "permissions to access it. This can be fixed by installing udev rules "
-        "and adding your user to the required groups.</p>"
+        "<h3>USB tracking device detected</h3>"
+        "<p>LinuxTrack detected a USB tracker (TrackIR/SmartNav and/or PlayStation Eye), but "
+        "your user may not have permission to access it. This can be fixed by installing udev "
+        "rules and adding your user to the required groups.</p>"
         "<p><b>What this will do:</b></p>"
         "<ul>"
-        "<li>Install udev rules to allow access to TrackIR devices</li>"
+        "<li>Install udev rules for TrackIR, PlayStation Eye (1415:2000), and Mickey/uinput</li>"
         "<li>Add your user to the required groups (plugdev, input, uinput)</li>"
         "<li>Reload udev rules to apply changes</li>"
         "</ul>"
@@ -146,19 +149,23 @@ void TrackIRPermissionDialog::onSkipClicked()
 
 void TrackIRPermissionDialog::onHelpClicked()
 {
-    QMessageBox::information(this, tr("TrackIR Permission Help"),
+    QMessageBox::information(this, tr("USB device permission help"),
         tr("<h3>Manual Setup Instructions</h3>"
            "<p>If the automatic setup doesn't work, you can configure permissions manually:</p>"
-           "<p><b>1. Install udev rules:</b></p>"
-           "<pre>sudo cp /path/to/linuxtrack/src/99-TIR.rules /etc/udev/rules.d/\n"
+           "<p><b>1. Install udev rules</b> (paths may be <code>/lib/udev/rules.d/</code> or <code>/etc/udev/rules.d/</code>):</p>"
+           "<pre>sudo cp /path/to/linuxtrack/src/99-TIR.rules /lib/udev/rules.d/\n"
+           "sudo cp /path/to/linuxtrack/src/99-PS3Eye.rules /lib/udev/rules.d/\n"
+           "sudo cp /path/to/linuxtrack/src/99-Mickey.rules /lib/udev/rules.d/\n"
            "sudo udevadm control --reload-rules</pre>"
            "<p><b>2. Add user to required groups:</b></p>"
            "<pre>sudo usermod -a -G plugdev,input,uinput $USER</pre>"
            "<p><b>3. Reboot your system</b></p>"
-           "<p><b>4. Test TrackIR access:</b></p>"
-           "<pre>lsusb | grep 131d</pre>"
-           "<p><b>Note:</b> You may need to create a 99-TIR.rules file with the content:</p>"
+           "<p><b>4. Test devices:</b></p>"
+           "<pre>lsusb | grep 131d   # TrackIR\n"
+           "lsusb | grep 1415     # PlayStation Eye</pre>"
+           "<p><b>Note:</b> TrackIR rule content (vendor 131d):</p>"
            "<pre>SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"</pre>"
+           "<p>PS3 Eye (1415:2000): see <code>99-PS3Eye.rules</code> in the source tree.</p>"
            "<p>For more detailed help, see the LinuxTrack documentation."));
 }
 
@@ -231,26 +238,24 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
 {
     // Show custom sudo dialog with manual instructions
     QString instructions = tr(
-        "TrackIR Setup Instructions:\n\n"
+        "USB tracking device setup:\n\n"
         "The automatic installation will:\n"
-        "• Install udev rules for TrackIR devices\n"
+        "• Install udev rules for TrackIR, PlayStation Eye (1415:2000), and Mickey/uinput\n"
         "• Add your user to required groups (plugdev, input, uinput)\n"
         "• Reload udev rules to apply changes\n\n"
         "If you prefer to do this manually, you can:\n\n"
-        "1. Install udev rules:\n"
-        "   sudo cp /path/to/linuxtrack/src/99-TIR.rules /etc/udev/rules.d/\n"
+        "1. Install udev rules under /etc/udev/rules.d/:\n"
+        "   sudo cp /path/to/linuxtrack/src/99-TIR.rules /path/to/linuxtrack/src/99-PS3Eye.rules /path/to/linuxtrack/src/99-Mickey.rules /etc/udev/rules.d/\n"
         "   sudo udevadm control --reload-rules\n\n"
         "2. Add user to groups:\n"
         "   sudo usermod -a -G plugdev,input,uinput $USER\n\n"
-        "3. <b>Reboot your system</b> for changes to take effect\n\n"
-        "4. Test TrackIR access:\n"
-        "   lsusb | grep 131d\n\n"
-        "Note: You may need to create a 99-TIR.rules file with the content:\n"
-        "   SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"\n\n"
+        "3. Reboot your system for changes to take effect\n\n"
+        "4. Test: lsusb | grep 131d   # TrackIR\n"
+        "   lsusb | grep 1415         # PlayStation Eye\n\n"
         "For more help, see the LinuxTrack documentation."
     );
 
-    SudoPasswordDialog dialog(tr("TrackIR Setup"), instructions, this);
+    SudoPasswordDialog dialog(tr("USB device setup"), instructions, this);
 
     if (dialog.exec() != QDialog::Accepted) {
         // User chose to cancel and do it manually
@@ -291,15 +296,20 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "KERNEL==\"uinput\", GROUP=\"uinput\", MODE=\"0660\"\n"
         "EOF\n"
         "\n"
-        "# Copy TrackIR rules to local admin location (/etc/udev/rules.d)\n"
-        "cp /tmp/99-TIR.rules %1/99-TIR.rules\n"
+        "# Create PlayStation Eye (PS3 Eye) udev rules\n"
+        "cat > /tmp/99-PS3Eye.rules << 'EOF'\n"
+        "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"1415\", ATTRS{idProduct}==\"2000\", MODE=\"0666\"\n"
+        "EOF\n"
         "\n"
-        "# Copy Mickey rules to system location\n"
+        "# Copy udev rules to local admin location (/etc/udev/rules.d)\n"
+        "cp /tmp/99-TIR.rules %1/99-TIR.rules\n"
         "cp /tmp/99-Mickey.rules %1/99-Mickey.rules\n"
+        "cp /tmp/99-PS3Eye.rules %1/99-PS3Eye.rules\n"
         "\n"
         "# Set proper permissions\n"
         "chmod 644 %1/99-TIR.rules\n"
         "chmod 644 %1/99-Mickey.rules\n"
+        "chmod 644 %1/99-PS3Eye.rules\n"
         "\n"
         "# Create plugdev group if it doesn't exist (common on Arch Linux)\n"
         "if ! getent group plugdev > /dev/null 2>&1; then\n"
@@ -336,6 +346,7 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "# Clean up temp files\n"
         "rm -f /tmp/99-TIR.rules\n"
         "rm -f /tmp/99-Mickey.rules\n"
+        "rm -f /tmp/99-PS3Eye.rules\n"
         "\n"
         "echo \"Installation completed successfully\"\n"
     ).arg(udevRulesDir()).arg(currentUser);
@@ -457,8 +468,8 @@ void TrackIRPermissionDialog::showInstallationResult(bool success, const QString
 void TrackIRPermissionDialog::showLogoutDialog()
 {
     QMessageBox::StandardButton reply = QMessageBox::question(this, tr("Installation Complete"),
-        tr("<h3>TrackIR permissions have been successfully configured!</h3>"
-           "<p>The TrackIR and Mickey udev rules have been installed and your user has been added to the required groups.</p>"
+        tr("<h3>USB permissions have been successfully configured!</h3>"
+           "<p>The TrackIR, PlayStation Eye, and Mickey udev rules have been installed and your user has been added to the required groups.</p>"
            "<p><b>For these changes to take effect, you need to:</b></p>"
            "<p>1. <b>Reboot your system</b></p>"
            "<p>2. Unplug and replug your TrackIR device</p>"
@@ -487,6 +498,36 @@ void TrackIRPermissionDialog::setDialogShown()
     QSettings settings(QStandardPaths::writableLocation(QStandardPaths::ConfigLocation) + QString::fromUtf8("/linuxtrack/") + CONFIG_FILE, QSettings::IniFormat);
     settings.setValue(DONT_SHOW_KEY, true);
     settings.sync();
+}
+
+bool TrackIRPermissionDialog::isPs3EyeUdevRuleInstalled()
+{
+    return QFile::exists(QString::fromUtf8("/lib/udev/rules.d/99-PS3Eye.rules"))
+        || QFile::exists(QString::fromUtf8("/usr/lib/udev/rules.d/99-PS3Eye.rules"))
+        || QFile::exists(QString::fromUtf8("/etc/udev/rules.d/99-PS3Eye.rules"));
+}
+
+void TrackIRPermissionDialog::offerIfPs3EyeNeedsUdev(QWidget *parent, bool deviceAccessibleViaPlugin)
+{
+#if defined(Q_OS_LINUX)
+    if (!parent || deviceAccessibleViaPlugin || isPs3EyeUdevRuleInstalled() || !shouldShowDialog()) {
+        return;
+    }
+    QProcess lsusb;
+    lsusb.start(QStringLiteral("lsusb"), QStringList());
+    if (!lsusb.waitForFinished(8000) || lsusb.exitCode() != 0) {
+        return;
+    }
+    const QByteArray out = lsusb.readAllStandardOutput();
+    if (!out.contains("1415:2000")) {
+        return;
+    }
+    TrackIRPermissionDialog dialog(parent);
+    dialog.exec();
+#else
+    Q_UNUSED(parent);
+    Q_UNUSED(deviceAccessibleViaPlugin);
+#endif
 }
 
 // SudoPasswordDialog implementation
