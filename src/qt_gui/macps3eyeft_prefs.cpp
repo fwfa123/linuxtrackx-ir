@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include "ui_m_ps3eye_ft_setup.h"
 #include "macps3eyeft_prefs.h"
+#include "trackir_permission_dialog.h"
 #include "ltr_gui_prefs.h"
 #include "ps3_prefs.h"
 #include "ps3eye_driver.h"
@@ -236,7 +237,7 @@ void MacP3eFtPrefs::on_WebcamResolutionsMac_activated(int index)
   ltr_int_ps3_set_ctrl_val(e_FPS, fps);
 }
 
-bool MacP3eFtPrefs::AddAvailableDevices(QComboBox &combo)
+bool MacP3eFtPrefs::AddAvailableDevices(QComboBox &combo, QWidget *dialogParent)
 {
   bool res = false;
   QString id;
@@ -246,7 +247,9 @@ bool MacP3eFtPrefs::AddAvailableDevices(QComboBox &combo)
     webcam_selected = true;
   }
   QVariant v;
-  if(find_p3e()){
+  const bool p3ok = find_p3e();
+  TrackIRPermissionDialog::offerIfPs3EyeNeedsUdev(dialogParent, p3ok);
+  if(p3ok){
     PrefsLink *pl = new PrefsLink(MACPS3EYE_FT, QString::fromUtf8("PS3Eye-face"));
     v.setValue(*pl);
     combo.addItem(QString::fromUtf8("Ps3Eye face tracker"), v);

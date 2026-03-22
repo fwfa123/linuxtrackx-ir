@@ -1,0 +1,2 @@
+# Sony PS3 Eye (USB 1415:2000) — libusb access without root
+SUBSYSTEM=="usb", ATTRS{idVendor}=="1415", ATTRS{idProduct}=="2000", MODE="0666"
