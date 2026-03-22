@@ -132,10 +132,10 @@
 #undef VERSION
 
 /* Webcam support enabled */
-@WEBCAM_SUPPORT@
+@WEBCAM_SUPPORT_DEFINE@
 
 /* Wiimote support enabled */
-@WIIMOTE_SUPPORT@
+@WIIMOTE_SUPPORT_DEFINE@
 
 /* Wine plugin enabled */
 @WINE_PLUGIN_SUPPORT@
