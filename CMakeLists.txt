@@ -193,8 +193,11 @@ else()
     message(STATUS "Webcam support: disabled")
 endif()
 
-# OpenCV (for face tracker)
+# OpenCV (for face tracker) — try opencv4 first, then opencv (distro naming differs)
 pkg_check_modules(OPENCV opencv4)
+if(NOT OPENCV_FOUND)
+    pkg_check_modules(OPENCV opencv)
+endif()
 if(OPENCV_FOUND AND WEBCAM_SUPPORT)
     set(FACE_TRACKER_SUPPORT TRUE)
     message(STATUS "Face tracker support: enabled")
@@ -392,6 +395,8 @@ else()
     set(WIIMOTE_SUPPORT_DEFINE "/* #undef WIIMOTE_SUPPORT */")
 endif()
 
+# Preserve boolean for src/CMakeLists.txt (config.h overwrites the string below)
+set(FACE_TRACKER_SUPPORT_BOOL ${FACE_TRACKER_SUPPORT})
 if(FACE_TRACKER_SUPPORT)
     set(FACE_TRACKER_SUPPORT "#define FACE_TRACKER_SUPPORT 1")
 else()
@@ -450,12 +455,11 @@ else()
 endif()
 
 # Configure header file using template
-# Temporarily set variables to strings for config.h generation
-# Store original boolean values
+# Store booleans used after configure (do not alias WEBCAM_SUPPORT/WIIMOTE_SUPPORT to *_DEFINE
+# strings — that breaks @ONLY substitution clarity and can confuse include order with a
+# stale tree config.h).
 set(WEBCAM_SUPPORT_BOOL ${WEBCAM_SUPPORT})
 set(WIIMOTE_SUPPORT_BOOL ${WIIMOTE_SUPPORT})
-set(WEBCAM_SUPPORT ${WEBCAM_SUPPORT_DEFINE})
-set(WIIMOTE_SUPPORT ${WIIMOTE_SUPPORT_DEFINE})
 configure_file(
     ${CMAKE_SOURCE_DIR}/config.h.in
     ${CMAKE_BINARY_DIR}/config.h
@@ -464,6 +468,7 @@ configure_file(
 # Restore boolean values for use in src/CMakeLists.txt (called after this)
 set(WEBCAM_SUPPORT ${WEBCAM_SUPPORT_BOOL})
 set(WIIMOTE_SUPPORT ${WIIMOTE_SUPPORT_BOOL})
+set(FACE_TRACKER_SUPPORT ${FACE_TRACKER_SUPPORT_BOOL})
 
 # Set library path define
 set(LIB_PATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack")

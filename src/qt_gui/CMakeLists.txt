@@ -249,6 +249,10 @@ target_compile_definitions(ltr_gui PRIVATE
     HAVE_CONFIG_H
     HELP_BASE="ltr_gui/"
 )
+# Match root WEBCAM_SUPPORT so the GUI always sees WEBCAM_SUPPORT even if the wrong config.h is picked up.
+if(WEBCAM_SUPPORT)
+    target_compile_definitions(ltr_gui PRIVATE WEBCAM_SUPPORT=1)
+endif()
 
 # Platform-specific compile definitions
 if(NOT APPLE)
@@ -257,12 +261,13 @@ if(NOT APPLE)
     )
 endif()
 
-# Include directories
+# Include directories — put ${CMAKE_BINARY_DIR} first so generated config.h wins over any
+# stale config.h elsewhere in the tree (e.g. legacy autotools file at repo root).
 target_include_directories(ltr_gui PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
     ${CMAKE_BINARY_DIR}
     ${CMAKE_BINARY_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 # Compile options
