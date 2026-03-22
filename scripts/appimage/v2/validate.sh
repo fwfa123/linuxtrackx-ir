@@ -28,17 +28,33 @@ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/
     fi
 done
 
+# PS3 Eye plugin (USB 1415:2000)
+if [[ -f "$APPDIR/usr/lib/linuxtrack/libp3e.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libp3e.so.0.0.0" ]]; then
+    print_success "Found PS3 Eye driver library (libp3e)"
+else
+    print_error "Missing PS3 Eye library: usr/lib/linuxtrack/libp3e.so.0 (or .so.0.0.0)"
+    failures=$((failures+1))
+fi
+
 # Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON)
 if [[ -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0.0.0" ]]; then
     print_status "Found webcam driver library (libwc)"
     opencv_bundled=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
     if [[ "$opencv_bundled" -gt 0 ]]; then
-        print_success "OpenCV runtime libraries present in AppDir for libwc"
+        print_success "OpenCV runtime libraries present in AppDir for libwc / facetrack drivers"
     else
-        print_warning "No libopencv_*.so in AppDir — face tracking may fail if libwc is not linked to OpenCV"
+        print_warning "No libopencv_*.so in AppDir — face tracking may fail if libwc or libp3eft link to OpenCV"
     fi
 else
     print_warning "libwc not in AppDir (webcam support may be disabled in this build)"
+fi
+
+if [[ -f "$APPDIR/usr/lib/linuxtrack/libp3eft.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libp3eft.so.0.0.0" ]]; then
+    print_status "Found PS3 Eye facetrack library (libp3eft)"
+    opencv_for_p3=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
+    if [[ "$opencv_for_p3" -eq 0 ]]; then
+        print_warning "libp3eft present but no libopencv_*.so in AppDir — PS3 Eye face tracking may fail at runtime"
+    fi
 fi
 
 # Ensure 3D assets exist (GL 3D view)
