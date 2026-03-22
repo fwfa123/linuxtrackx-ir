@@ -33,6 +33,9 @@ sudo dnf install cabextract wget  # REQUIRED: For alternative installation metho
 sudo dnf install libv4l-devel v4l-utils opencv-devel
 ```
 
+### AppImage / packaging build (maintainers)
+Install the **Webcam Support (Level 3+)** packages on the machine that builds the AppImage so webcam, PS3 Eye (`libp3e`), and OpenCV-based facetrack plugins are included. Users who only run the AppImage are not required to install `opencv-devel` on their system.
+
 ### OSC Support (Level 4+)
 ```bash
 sudo dnf install liblo-devel

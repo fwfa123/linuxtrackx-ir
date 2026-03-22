@@ -26,6 +26,9 @@ sudo apt install nsis  # REQUIRED: For Wine bridge installer generation
 sudo apt install libv4l-dev v4l-utils libopencv-dev
 ```
 
+### AppImage / packaging build (maintainers)
+The AppImage `prepare` step configures with webcam enabled. On the machine that runs `./scripts/appimage/build_appimage_phase4.sh` (or the v2 pipeline), install at least the **Webcam Support (Level 3+)** packages above so `libwc`, **PS3 Eye** (`libp3e`), and (with OpenCV) **PS3 facetrack** (`libp3eft`) are built and bundled. People who only download the AppImage do not need `libopencv-dev` on their system.
+
 ### OSC Support (Level 4+)
 ```bash
 sudo apt install libv4l-dev v4l-utils libopencv-dev
@@ -123,7 +126,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
-| OpenCV detection failed | Build succeeds but no webcam support. Install: `sudo apt install libopencv-dev` |
+| OpenCV detection failed | Facetrack / `libp3eft` missing; webcam without face mode may still work. On the **build** machine: `sudo apt install libopencv-dev`. AppImage users should get OpenCV from the bundle, not the distro. |
 
 ### Qt6 Tools PATH (Rare)
 If Qt6 tools aren't found, they should be in `/usr/lib/x86_64-linux-gnu/qt6/bin/`. Add to PATH if needed:

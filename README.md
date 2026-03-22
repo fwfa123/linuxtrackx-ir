@@ -215,6 +215,8 @@ For advanced users who want to create AppImages:
 ./scripts/appimage/build_appimage_phase4.sh --clean
 ```
 
+Build the AppImage on a machine that has the same **development** packages as a full source build (see your distro guide). The packaging scripts enable webcam support (`ENABLE_WEBCAM=ON`), so install **V4L** and **OpenCV development** packages (e.g. Debian/Ubuntu: `libv4l-dev`, `libopencv-dev`) on the **build host** if you want webcam face tracking and PS3 Eye facetrack (`libp3eft`) in the image. **End users** who only run the published AppImage do **not** need OpenCV installed system-wide; OpenCV should be bundled inside the AppImage when the release was built with it. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time.
+
 **[Full advanced documentation](docs/technical/)** - CMake options, packaging, and development guides.
 
 ## 🤝 Contributing
