@@ -4,6 +4,7 @@
 #include "ui_m_ps3eye_setup.h"
 #include "macps3eye_prefs.h"
 #include "ltr_gui_prefs.h"
+#include "trackir_permission_dialog.h"
 #include "ps3_prefs.h"
 #include "ps3eye_driver.h"
 #include "dyn_load.h"
@@ -229,7 +230,7 @@ void MacP3ePrefs::on_WebcamMaxBlobMac_valueChanged(int i)
   if(!initializing) ltr_int_wc_set_max_blob(i);
 }
 
-bool MacP3ePrefs::AddAvailableDevices(QComboBox &combo)
+bool MacP3ePrefs::AddAvailableDevices(QComboBox &combo, QWidget *dialogParent)
 {
   bool res = false;
   QString id;
@@ -239,7 +240,9 @@ bool MacP3ePrefs::AddAvailableDevices(QComboBox &combo)
     webcam_selected = true;
   }
   QVariant v;
-  if(find_p3e()){
+  const bool p3ok = find_p3e();
+  TrackIRPermissionDialog::offerIfPs3EyeNeedsUdev(dialogParent, p3ok);
+  if(p3ok){
     PrefsLink *pl = new PrefsLink(MACPS3EYE, QString::fromUtf8("PS3Eye"));
     v.setValue(*pl);
     combo.addItem(QString::fromUtf8("Ps3Eye"), v);

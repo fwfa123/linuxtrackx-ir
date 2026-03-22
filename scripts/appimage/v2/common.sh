@@ -343,6 +343,7 @@ copy_udev_rules_if_present() {
     print_status "Copying udev rules if present"
     ensure_dir "$APPDIR/udev/rules.d"
     copy_if_exists "$PROJECT_ROOT/src/99-TIR.rules" "$APPDIR/udev/rules.d/"
+    copy_if_exists "$PROJECT_ROOT/src/99-PS3Eye.rules" "$APPDIR/udev/rules.d/"
     copy_if_exists "$PROJECT_ROOT/src/99-Mickey.rules" "$APPDIR/udev/rules.d/"
 }
 
