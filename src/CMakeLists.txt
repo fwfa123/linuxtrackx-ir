@@ -226,6 +226,13 @@ if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
         webcam_driver.c
         runloop.c
     )
+
+    if(FACE_TRACKER_SUPPORT)
+        target_sources(wc PRIVATE facetrack.cpp)
+        target_include_directories(wc PRIVATE ${OPENCV_INCLUDE_DIRS})
+        target_compile_options(wc PRIVATE ${OPENCV_CFLAGS_OTHER})
+        target_compile_definitions(wc PRIVATE OPENCV)
+    endif()
     
     set_target_properties(wc PROPERTIES
         VERSION 0.0.0
@@ -237,6 +244,9 @@ if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
         ltr
         ${LIBV4L2_LIBRARY}
     )
+    if(FACE_TRACKER_SUPPORT)
+        target_link_libraries(wc PRIVATE ${OPENCV_LIBRARIES})
+    endif()
     
     # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/webcam_driver.sym)
     #     target_link_options(wc PRIVATE
