@@ -12,6 +12,7 @@
 #include "webcam_prefs.h"
 #include "webcam_ft_prefs.h"
 #include "joy_prefs.h"
+/* PS3 Eye prefs UI (name says Mac; also used on Linux when libp3e/libp3eft are installed). */
 #include "macps3eye_prefs.h"
 #include "macps3eyeft_prefs.h"
 #endif
@@ -306,6 +307,7 @@ void DeviceSetup::refresh()
   res |= MacWebcamFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= MacWebcamPrefs::AddAvailableDevices(*(ui.DeviceSelector));
 #else
+  /* Optional libp3e/libp3eft: adds PS3 Eye entries when those plugins load and see a device. */
   res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= MacP3eFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= WebcamFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));

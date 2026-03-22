@@ -2,6 +2,7 @@
 #include "webcam_driver.h"
 #include "list.h"
 #include "dyn_load.h"
+#include "utils.h"
 
 #include <assert.h>
 #include <iostream>
@@ -44,9 +45,13 @@ WebcamLibProxy::WebcamLibProxy(){
 #ifdef WEBCAM_SUPPORT
   if((libhandle = ltr_int_load_library((char *)"libwc", functions)) != NULL){
     webcamInfoOk = true;
+  }else{
+    ltr_int_log_message("Webcam UI: libwc did not load — V4L webcams will not appear. "
+                        "Install the webcam driver (libwc) and check PREFIX / LD_LIBRARY_PATH.\n");
   }
 #else
   webcamInfoOk = false;
+  ltr_int_log_message("Webcam UI: built without WEBCAM_SUPPORT (configure with -DENABLE_WEBCAM=ON).\n");
 #endif
 }
 
