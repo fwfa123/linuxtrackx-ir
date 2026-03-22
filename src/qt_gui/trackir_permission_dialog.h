@@ -14,6 +14,8 @@
 #include <QMessageBox>
 #include <QSettings>
 
+class QWidget;
+
 class TrackIRPermissionDialog : public QDialog
 {
     Q_OBJECT
@@ -24,6 +26,13 @@ public:
 
     static bool shouldShowDialog();
     static void setDialogShown();
+    /** True if PS3 Eye udev rule is present (common locations). */
+    static bool isPs3EyeUdevRuleInstalled();
+    /**
+     * Linux: if lsusb shows PS3 Eye (1415:2000), the udev rule is missing, the user has not
+     * suppressed the dialog, and the plugin cannot access the device, show the permission wizard.
+     */
+    static void offerIfPs3EyeNeedsUdev(QWidget *parent, bool deviceAccessibleViaPlugin);
 
 private slots:
     void onInstallRulesClicked();

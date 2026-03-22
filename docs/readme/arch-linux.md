@@ -30,6 +30,9 @@ sudo pacman -S winetricks cabextract wget
 sudo pacman -S libv4l v4l-utils opencv
 ```
 
+### AppImage / packaging build (maintainers)
+Install the **Webcam Support (Level 3+)** packages on the build host so the AppImage includes `libwc`, PS3 Eye (`libp3e`), and OpenCV-linked facetrack drivers where applicable. End users running the released AppImage do not need system OpenCV if the image was bundled correctly.
+
 ### OSC Support (Level 4+)
 ```bash
 sudo pacman -S liblo

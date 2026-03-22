@@ -49,7 +49,7 @@ sudo usermod -a -G plugdev,input $USER
 | Missing 32-bit headers | `bits/libc-header-start.h: No such file or directory` | **REQUIRED for Wine support**: Install 32-bit dev headers for your distro |
 | Qt5 tools not found | `qmake: command not found` | Add Qt5 bin directory to PATH (see distro guide) |
 | Wine dev tools missing | `winegcc: command not found` | Install Wine development packages |
-| OpenCV detection failed | Build succeeds but no webcam | Install OpenCV dev packages (non-critical) |
+| OpenCV detection failed | Build succeeds without facetrack / `libp3eft` | **Build-time only**: install OpenCV dev packages on the **builder** (see distro guide). AppImage **end users** should not need system OpenCV if the release bundles `libopencv_*`. |
 | ldconfig permission denied | Warning during install | Use `-DENABLE_LDCONFIG=OFF` for packaging |
 
 ### Runtime Issues

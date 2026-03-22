@@ -255,6 +255,49 @@ if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
     # endif()
 endif()
 
+# libp3e / libp3eft: PS3 Eye USB plugins (loaded by cal.c; not used on macOS build)
+if(NOT APPLE)
+    add_library(p3e SHARED
+        ps3eye_driver.c
+        runloop.c
+    )
+
+    set_target_properties(p3e PROPERTIES
+        VERSION 0.0.0
+        SOVERSION 0
+        OUTPUT_NAME "p3e"
+    )
+
+    target_link_libraries(p3e
+        ltr
+        ${MATH_LIBRARY}
+    )
+
+    if(FACE_TRACKER_SUPPORT)
+        add_library(p3eft SHARED
+            ps3eye_driver.c
+            runloop.c
+            facetrack.cpp
+        )
+
+        target_include_directories(p3eft PRIVATE ${OPENCV_INCLUDE_DIRS})
+        target_compile_options(p3eft PRIVATE ${OPENCV_CFLAGS_OTHER})
+        target_compile_definitions(p3eft PRIVATE OPENCV)
+
+        set_target_properties(p3eft PROPERTIES
+            VERSION 0.0.0
+            SOVERSION 0
+            OUTPUT_NAME "p3eft"
+        )
+
+        target_link_libraries(p3eft
+            ltr
+            ${MATH_LIBRARY}
+        )
+        target_link_libraries(p3eft PRIVATE ${OPENCV_LIBRARIES})
+    endif()
+endif()
+
 # ============================================================================
 # Helper Functions
 # ============================================================================
@@ -418,6 +461,19 @@ if(WEBCAM_SUPPORT)
     )
 endif()
 
+if(NOT APPLE)
+    install(TARGETS p3e
+        LIBRARY DESTINATION lib/linuxtrack
+        ARCHIVE DESTINATION lib/linuxtrack
+    )
+    if(FACE_TRACKER_SUPPORT)
+        install(TARGETS p3eft
+            LIBRARY DESTINATION lib/linuxtrack
+            ARCHIVE DESTINATION lib/linuxtrack
+        )
+    endif()
+endif()
+
 if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
     install(TARGETS xlinuxtrack9
         LIBRARY DESTINATION lib/linuxtrack
@@ -516,6 +572,7 @@ install(FILES
     linuxtrack_hello_world.c
     linuxtrack_hello_world_adv.c
     99-TIR.rules
+    99-PS3Eye.rules
     99-Mickey.rules
     haarcascade_frontalface_alt2.xml
     DESTINATION share/linuxtrack
