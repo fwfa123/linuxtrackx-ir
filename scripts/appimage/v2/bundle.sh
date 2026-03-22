@@ -466,6 +466,29 @@ EOHLP
         done
     done
 
+    # libwc is dlopen'd (not linked from ltr_gui); linuxdeploy does not pull OpenCV deps — copy them from ldd
+    wc_so=""
+    for candidate in usr/lib/linuxtrack/libwc.so.0.0.0 usr/lib/linuxtrack/libwc.so.0 usr/lib/linuxtrack/libwc.so; do
+        if [[ -f "$candidate" ]]; then
+            wc_so="$candidate"
+            break
+        fi
+    done
+    if [[ -n "$wc_so" ]]; then
+        print_status "Bundling libwc transitive deps (OpenCV / TBB / GOMP) for dlopen'd driver"
+        while IFS= read -r line; do
+            so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ')
+            [[ -z "$so_path" || "$so_path" == "not" || ! -f "$so_path" ]] && continue
+            base=$(basename "$so_path")
+            case "$base" in
+                libopencv*.so*|libtbb*.so*|libgomp*.so*)
+                    cp -n "$so_path" usr/lib/ 2>/dev/null || cp -f "$so_path" usr/lib/ 2>/dev/null || true
+                    print_status "Bundled libwc dependency: $base"
+                    ;;
+            esac
+        done < <(ldd "$wc_so" 2>/dev/null || true)
+    fi
+
     # CRITICAL: Ensure all linuxtrack libraries use bundled dependencies
     print_status "Fixing library dependencies to use bundled versions"
     for lib in usr/lib/linuxtrack/*.so*; do

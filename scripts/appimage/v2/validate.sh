@@ -28,6 +28,19 @@ for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/
     fi
 done
 
+# Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON)
+if [[ -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0.0.0" ]]; then
+    print_status "Found webcam driver library (libwc)"
+    opencv_bundled=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
+    if [[ "$opencv_bundled" -gt 0 ]]; then
+        print_success "OpenCV runtime libraries present in AppDir for libwc"
+    else
+        print_warning "No libopencv_*.so in AppDir — face tracking may fail if libwc is not linked to OpenCV"
+    fi
+else
+    print_warning "libwc not in AppDir (webcam support may be disabled in this build)"
+fi
+
 # Ensure 3D assets exist (GL 3D view)
 print_status "Validating 3D model assets"
 for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj; do

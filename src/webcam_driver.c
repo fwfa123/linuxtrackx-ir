@@ -80,21 +80,19 @@ static char *get_webcam_id(int fd)
   //Query device capabilities
   int ioctl_res = v4l2_ioctl(fd, VIDIOC_QUERYCAP, &capability);
   if(ioctl_res == 0){
-    __u32 cap = capability.capabilities;
-    __u32 dev_cap = capability.device_caps;
+    /* Prefer device_caps when V4L2_CAP_DEVICE_CAPS is set (V4L2 API; fixes UVC nodes
+     * that advertise capture/streaming only in device_caps). */
+    __u32 caps = capability.capabilities;
+    if(caps & V4L2_CAP_DEVICE_CAPS){
+      caps = capability.device_caps;
+    }
     ltr_int_log_message("  Found V4L2 webcam: '%s'\n",
       		capability.card);
-    //Look for capabilities we need
-    if((cap & V4L2_CAP_VIDEO_CAPTURE) &&
-      (cap & V4L2_CAP_STREAMING) && (dev_cap & V4L2_CAP_VIDEO_CAPTURE)){
-      ////for leading space infested name verification
-      //  char *spaced_name = NULL;
-      //  asprintf(&spaced_name, " %s",(char *)capability.card);
-      //  return spaced_name;
+    if((caps & V4L2_CAP_VIDEO_CAPTURE) && (caps & V4L2_CAP_STREAMING)){
       return ltr_int_my_strdup((char *)capability.card);
-    }else{
-      ltr_int_log_message("  Found V4L2 webcam but it doesn't support streaming:-(\n");
     }
+    ltr_int_log_message("  Found V4L2 device but it lacks capture+streaming (caps=0x%x):-(\n",
+        (unsigned int)caps);
   }
   return NULL;
 }
