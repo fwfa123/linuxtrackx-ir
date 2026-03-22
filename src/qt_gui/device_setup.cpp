@@ -257,8 +257,8 @@ void DeviceSetup::refresh()
   res |= MacWebcamPrefs::AddAvailableDevices(*(ui.DeviceSelector));
 #else
   /* Optional libp3e/libp3eft: adds PS3 Eye entries when those plugins load and see a device. */
-  res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector));
-  res |= MacP3eFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));
+  res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
+  res |= MacP3eFtPrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
   res |= WebcamFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= WebcamPrefs::AddAvailableDevices(*(ui.DeviceSelector));
   res |= JoyPrefs::AddAvailableDevices(*(ui.DeviceSelector));

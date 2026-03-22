@@ -12,7 +12,7 @@ class MacP3ePrefs : public QWidget{
  public:
   MacP3ePrefs(const QString &dev_id, QWidget *parent = 0);
   ~MacP3ePrefs();
-  static bool AddAvailableDevices(QComboBox &combo);
+  static bool AddAvailableDevices(QComboBox &combo, QWidget *dialogParent = nullptr);
  private:
   const QString id;
   bool Activate(const QString &ID, bool init = false);
