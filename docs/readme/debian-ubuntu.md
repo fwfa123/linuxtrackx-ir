@@ -34,12 +34,15 @@ The AppImage `prepare` step configures with webcam enabled. On the machine that 
 sudo apt install libv4l-dev v4l-utils libopencv-dev
 ```
 
-### Wiimote Support (Level 5+)
+### Wiimote Support (Level 6+)
 ```bash
 sudo apt install libcwiid-dev
+
+# Verify pkg-config can see the installed cwiid.pc
+pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not found; check libcwiid installation."
 ```
 
-### X-Plane Support (Level 6)
+### X-Plane Support (Level 5+)
 ```bash
 # Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
 # Extract to: /opt/xplane-sdk/
@@ -81,15 +84,15 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 5: TrackIR + Wine + Webcam + OSC + Wiimote
+### Level 5: TrackIR + Wine + Webcam + OSC + X-Plane
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 6: Complete Build with X-Plane
+### Level 6: Complete Build with X-Plane + Wiimote
 ```bash
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders

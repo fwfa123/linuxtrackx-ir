@@ -41,12 +41,30 @@ Install the **Webcam Support (Level 3+)** packages on the machine that builds th
 sudo dnf install liblo-devel
 ```
 
-### Wiimote Support (Level 5+)
+### Wiimote Support (Level 6+)
+Fedora may not ship `libcwiid-devel`. If `dnf install libcwiid-devel` fails, build CWiiD (cwiid) from source:
 ```bash
-sudo dnf install libcwiid-devel
+# Install build prereqs (Bluetooth dev headers + autotools)
+sudo dnf install -y git autoconf automake libtool bluez-libs-devel
+
+git clone https://github.com/mzimmerman/cwiid.git
+cd cwiid
+aclocal
+autoconf
+./configure \
+  --prefix=/usr/local \
+  --with-cwiid-config-dir=/etc/cwiid/ \
+  --without-gtk \
+  --without-python
+make -j$(nproc)
+sudo make install
+sudo ldconfig
+
+# Verify pkg-config can see the installed cwiid.pc
+pkg-config --exists cwiid && pkg-config --modversion cwiid
 ```
 
-### X-Plane Support (Level 6)
+### X-Plane Support (Level 5+)
 ```bash
 # Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
 # Extract to: /opt/xplane-sdk/
@@ -96,19 +114,20 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 5: TrackIR + Wine + Webcam + OSC + Wiimote
+### Level 5: TrackIR + Wine + Webcam + OSC + X-Plane
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 6: Complete Build with X-Plane
+### Level 6: Complete Build with X-Plane + Wiimote
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
+export PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
@@ -174,6 +193,7 @@ sudo ln -s /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake
 | Problem | Solution |
 |---------|----------|
 | `Couldn't load library 'libwc.so.0'` | Update library cache: `sudo ldconfig` |
+| Wiimote build disabled (`pkg-config` cannot find `cwiid`) | Ensure `cwiid.pc` is installed, then set `PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"` and rerun CMake with `-DENABLE_WIIMOTE=ON` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
 | Application not in launcher | Use `/usr/local` prefix instead of `/opt` |
