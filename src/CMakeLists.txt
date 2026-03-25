@@ -245,7 +245,7 @@ if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
         ${LIBV4L2_LIBRARY}
     )
     if(FACE_TRACKER_SUPPORT)
-        target_link_libraries(wc PRIVATE ${OPENCV_LIBRARIES})
+        target_link_libraries(wc ${OPENCV_LIBRARIES})
     endif()
     
     # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/webcam_driver.sym)
@@ -294,7 +294,7 @@ if(NOT APPLE)
             ltr
             ${MATH_LIBRARY}
         )
-        target_link_libraries(p3eft PRIVATE ${OPENCV_LIBRARIES})
+        target_link_libraries(p3eft ${OPENCV_LIBRARIES})
     endif()
 endif()
 
