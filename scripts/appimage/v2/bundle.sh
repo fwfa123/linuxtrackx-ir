@@ -349,6 +349,7 @@ EOHLP
                 break
             fi
         done < <(printf "%s\n" \
+            /usr/lib64/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/qt/plugins/platforms/libqxcb.so)
@@ -358,8 +359,10 @@ EOHLP
     print_status "Ensuring Qt SQLite driver is present"
     SQLITE_FOUND=false
 
-    # Search multiple locations for SQLite driver
+    # Search multiple locations for SQLite driver (Debian: lib/x86_64-linux-gnu; Fedora/RHEL: lib64)
     SQLITE_LOCATIONS=(
+        "/usr/lib64/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib64/qt5/plugins/sqldrivers/libqsqlite.so.5"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
@@ -404,10 +407,19 @@ EOHLP
         fi
     done
 
-    # Also search using find for any SQLite drivers
+    # Also search using find (scoped to Qt plugin trees — avoids slow full /usr scans on Fedora etc.)
     if [[ "$SQLITE_FOUND" = false ]]; then
-        print_status "SQLite driver not found in standard locations, searching with find..."
-        SQLITE_FIND=$(find /usr -name "libqsqlite.so*" -type f 2>/dev/null | head -1)
+        print_status "SQLite driver not found in standard locations, searching Qt sqldrivers dirs..."
+        SQLITE_FIND=""
+        for search_root in /usr/lib64/qt5/plugins/sqldrivers /usr/lib/qt5/plugins/sqldrivers /usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers /usr/lib/qt/plugins/sqldrivers; do
+            if [[ -d "$search_root" ]]; then
+                SQLITE_FIND=$(find "$search_root" -maxdepth 1 -name "libqsqlite.so*" -type f 2>/dev/null | head -1)
+                [[ -n "$SQLITE_FIND" ]] && break
+            fi
+        done
+        if [[ -z "$SQLITE_FIND" ]]; then
+            SQLITE_FIND=$(find /usr/lib64/qt5 /usr/lib/qt5 /usr/lib/x86_64-linux-gnu/qt5 -path "*/sqldrivers/libqsqlite.so*" -type f 2>/dev/null | head -1)
+        fi
         if [[ -n "$SQLITE_FIND" && -f "$SQLITE_FIND" ]]; then
             print_status "Found SQLite driver with find at: $SQLITE_FIND"
             # Ensure both directories exist

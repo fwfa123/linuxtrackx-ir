@@ -7,11 +7,13 @@
 sudo dnf groupinstall "Development Tools"
 sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
-sudo dnf install qt5-qtbase-devel qt5-qmake qt5-qttools-devel
-sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
+sudo dnf install qt5-qtbase-devel qt5-qttools-devel
+sudo dnf install mxml-devel mesa-libGL-devel mesa-libGLU-devel
 sudo dnf install sqlite  # Required for Qt help system
 sudo dnf install qt5-qtx11extras-devel
 ```
+
+**Fedora package names:** There is no `qt5-qmake` package—`qmake-qt5` is included in `qt5-qtbase-devel`. Mini-XML development files are in **`mxml-devel`** (Debian/Ubuntu equivalent: `libmxml-dev`; Fedora does not ship `libmxml-devel`).
 
 ### Wine Support (Level 2+)
 ```bash
@@ -72,7 +74,7 @@ sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 
 ## Qt5 Tools PATH Fix (IMPORTANT)
 
-On Fedora/RHEL systems, Qt5 tools are installed in `/usr/lib64/qt5/bin/` which may not be in your default PATH. This causes build failures.
+On Fedora/RHEL systems, Qt5 tools (including **`qmake-qt5`**) are installed in `/usr/lib64/qt5/bin/`, which may not be in your default PATH. This causes build failures.
 
 **Before building, add Qt5 tools to your PATH:**
 ```bash
@@ -87,7 +89,7 @@ source ~/.bashrc
 
 **Verify Qt5 tools are accessible:**
 ```bash
-which qhelpgenerator qmake moc
+which qhelpgenerator qmake-qt5 moc
 # Should show: /usr/lib64/qt5/bin/qhelpgenerator, etc.
 ```
 
@@ -171,7 +173,7 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 |---------|----------|
 | `qhelpgenerator: command not found` | Add Qt5 tools to PATH: `export PATH="/usr/lib64/qt5/bin:$PATH"` |
 | Build fails at help generation step | Qt5 tools not in PATH. Run: `export PATH="/usr/lib64/qt5/bin:$PATH" && make -j$(nproc)` |
-| `qmake: command not found` | Qt5 tools not in PATH. Add `/usr/lib64/qt5/bin` to PATH |
+| `qmake` / `qmake-qt5: command not found` | Qt5 tools not in PATH. Add `/usr/lib64/qt5/bin` to PATH (Fedora uses `qmake-qt5` from `qt5-qtbase-devel`) |
 | `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development: `sudo dnf install gcc-c++.i686` |
 
 ### 32-bit Library Issues
@@ -189,9 +191,9 @@ ls /usr/local/lib/linuxtrack/wine_bridge/
 # If you encounter missing library errors during build
 sudo dnf install -y gcc-c++.i686 zlib-ng-compat-devel.i686 libusb1-devel.i686 mxml-devel.i686 libv4l-devel.i686
 
-# If Qt5 qmake is not found
+# If something still expects qmake under /usr/lib/qt5/bin (unusual on Fedora)
 sudo mkdir -p /usr/lib/qt5/bin
-sudo ln -s /usr/lib64/qt5/bin/qmake /usr/lib/qt5/bin/qmake
+sudo ln -sf /usr/lib64/qt5/bin/qmake-qt5 /usr/lib/qt5/bin/qmake
 ```
 
 ### Wine Issues
