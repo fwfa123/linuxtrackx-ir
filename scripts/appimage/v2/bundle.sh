@@ -17,6 +17,9 @@ print_status "Bundle: dependencies into AppDir (linuxdeploy-first)"
 [[ -x "$LINUXDEPLOY_QT" ]] || print_warning "linuxdeploy-plugin-qt not found or not executable; will try without"
 
 pushd "$APPDIR" >/dev/null
+    # linuxdeploy / plugin use an embedded strip that breaks modern ELF (.relr.dyn); CLI --dont-strip + NO_STRIP for plugin
+    export NO_STRIP=1
+
     # CRITICAL: Set LD_LIBRARY_PATH so linuxdeploy can find liblinuxtrack.so.0
     # The linuxtrack libraries are installed in usr/lib/linuxtrack (subdirectory)
     # Without this, linuxdeploy fails with "Could not find dependency: liblinuxtrack.so.0"
@@ -25,11 +28,12 @@ pushd "$APPDIR" >/dev/null
     print_status "Set LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 
     # linuxdeploy to discover and copy runtime deps
-    print_status "Running linuxdeploy"
+    # --dont-strip: bundled strip in linuxdeploy AppImage is too old for modern ELF (.relr.dyn); fails on Fedora/glibc toolchains
+    print_status "Running linuxdeploy (with --dont-strip for RELR-safe binaries)"
     DESKTOP_FILE="usr/share/applications/linuxtrack.desktop"
     ICON_FILE="linuxtrack.png"
     [ -f "$ICON_FILE" ] || ICON_FILE="usr/share/icons/hicolor/48x48/apps/linuxtrack.png"
-    "$LINUXDEPLOY" --appdir . \
+    "$LINUXDEPLOY" --appdir . --dont-strip \
         -e usr/bin/ltr_gui \
         -d "$DESKTOP_FILE" \
         -i "$ICON_FILE" \
@@ -47,17 +51,24 @@ pushd "$APPDIR" >/dev/null
         print_status "Running linuxdeploy-plugin-qt"
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
         
-        # Modify qt.conf to include both plugin paths for maximum compatibility
+        # Replace qt.conf so QLibraryInfo uses AppDir usr/ prefix (not host /usr/lib64/qt5/plugins).
+        # setLibraryPaths() before QApplication caused segfaults on Fedora; qt.conf is the supported fix.
         if [[ -f usr/bin/qt.conf ]]; then
-            print_status "Modifying qt.conf to include both plugin paths"
-            # Backup original
-            cp usr/bin/qt.conf usr/bin/qt.conf.backup
-            # Update to include both plugin paths
-            sed -i 's|Plugins = plugins|Plugins = plugins:lib/qt5/plugins|' usr/bin/qt.conf
-            print_success "Updated qt.conf to include both plugin paths"
-        else
-            print_warning "qt.conf not found after Qt deployment"
+            cp -f usr/bin/qt.conf usr/bin/qt.conf.from_linuxdeploy
         fi
+        print_status "Writing usr/bin/qt.conf for AppDir-only Qt paths (fixes Qt version mix on Fedora)"
+        cat > usr/bin/qt.conf << 'QTEOF'
+[Paths]
+Prefix = ..
+Plugins = plugins:lib/qt5/plugins
+Libraries = lib
+Binaries = bin
+QTEOF
+        if [[ -d usr/share/qt5/translations ]]; then
+            echo "Translations = share/qt5/translations" >> usr/bin/qt.conf
+            print_status "qt.conf: Translations = share/qt5/translations"
+        fi
+        print_success "usr/bin/qt.conf: Prefix=.. (relative to usr/bin → usr/), plugins = usr/plugins and usr/lib/qt5/plugins"
     fi
 
     # Inject help runtime handling into the linuxdeploy Qt hook so AppRun sets QT_HELP_PATH to a writable dir
@@ -94,14 +105,14 @@ EOHLP
         print_warning "AppRun.wrapped not found; Qt hook should handle help path"
     fi
 
-    # Ensure Qt Help module is properly bundled
+    # Ensure Qt Help module is properly bundled (Fedora: /usr/lib64; debian: multiarch or qt5/lib; may be symlinks only)
     print_status "Verifying Qt Help module bundling"
-    if [[ ! -f usr/lib/libQt5Help.so.5 && ! -f usr/lib/libQt5Help.so ]]; then
-        print_warning "Qt5Help library not found in bundled libraries"
-        # Try to find and copy Qt5Help from system
-        for qt5help in /usr/lib/x86_64-linux-gnu/libQt5Help.so.5* /usr/lib/libQt5Help.so.5* /usr/lib/qt5/lib/libQt5Help.so.5*; do
-            if [[ -f "$qt5help" ]]; then
-                cp -f "$qt5help" usr/lib/
+    if [[ -z "$(find usr/lib \( -name 'libQt5Help.so' -o -name 'libQt5Help.so.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]; then
+        print_warning "Qt5Help library not found under usr/lib; copying from host"
+        for qt5help in /usr/lib64/libQt5Help.so.5* /usr/lib64/qt5/lib/libQt5Help.so.5* \
+            /usr/lib/x86_64-linux-gnu/libQt5Help.so.5* /usr/lib/libQt5Help.so.5* /usr/lib/qt5/lib/libQt5Help.so.5*; do
+            if [[ -e "$qt5help" ]]; then
+                cp -L -f "$qt5help" usr/lib/ 2>/dev/null || cp -f "$qt5help" usr/lib/
                 print_success "Copied Qt5Help library: $(basename "$qt5help")"
                 break
             fi
@@ -112,12 +123,12 @@ EOHLP
 
     # Ensure Qt SQL module is properly bundled (required for help system)
     print_status "Verifying Qt SQL module bundling"
-    if [[ ! -f usr/lib/libQt5Sql.so.5 && ! -f usr/lib/libQt5Sql.so ]]; then
-        print_warning "Qt5Sql library not found in bundled libraries"
-        # Try to find and copy Qt5Sql from system
-        for qt5sql in /usr/lib/x86_64-linux-gnu/libQt5Sql.so.5* /usr/lib/libQt5Sql.so.5* /usr/lib/qt5/lib/libQt5Sql.so.5*; do
-            if [[ -f "$qt5sql" ]]; then
-                cp -f "$qt5sql" usr/lib/
+    if [[ -z "$(find usr/lib \( -name 'libQt5Sql.so' -o -name 'libQt5Sql.so.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]; then
+        print_warning "Qt5Sql library not found under usr/lib; copying from host"
+        for qt5sql in /usr/lib64/libQt5Sql.so.5* /usr/lib64/qt5/lib/libQt5Sql.so.5* \
+            /usr/lib/x86_64-linux-gnu/libQt5Sql.so.5* /usr/lib/libQt5Sql.so.5* /usr/lib/qt5/lib/libQt5Sql.so.5*; do
+            if [[ -e "$qt5sql" ]]; then
+                cp -L -f "$qt5sql" usr/lib/ 2>/dev/null || cp -f "$qt5sql" usr/lib/
                 print_success "Copied Qt5Sql library: $(basename "$qt5sql")"
                 break
             fi
@@ -125,6 +136,59 @@ EOHLP
     else
         print_success "Qt5Sql library found in bundled libraries"
     fi
+
+    # Qt OpenGL module (3D view); linuxdeploy often omits on Ubuntu
+    print_status "Verifying Qt5OpenGL module bundling"
+    if [[ -z "$(find usr/lib \( -name 'libQt5OpenGL.so' -o -name 'libQt5OpenGL.so.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]; then
+        print_warning "Qt5OpenGL not under usr/lib; copying from host"
+        for qt5ogl in /usr/lib64/libQt5OpenGL.so.5* /usr/lib64/qt5/lib/libQt5OpenGL.so.5* \
+            /usr/lib/x86_64-linux-gnu/libQt5OpenGL.so.5* /usr/lib/libQt5OpenGL.so.5* /usr/lib/qt5/lib/libQt5OpenGL.so.5*; do
+            if [[ -e "$qt5ogl" ]]; then
+                cp -L -f "$qt5ogl" usr/lib/ 2>/dev/null || cp -f "$qt5ogl" usr/lib/
+                print_success "Copied Qt5OpenGL library: $(basename "$qt5ogl")"
+                break
+            fi
+        done
+    else
+        print_success "Qt5OpenGL library found in bundled libraries"
+    fi
+
+    # Network bearer plugins — if missing, Qt loads host /usr/lib64/qt5/plugins/bearer (patch mismatch vs bundled Qt)
+    print_status "Ensuring Qt bearer plugins from build host"
+    ensure_dir usr/lib/qt5/plugins/bearer
+    bearer_n=$({ find usr/lib/qt5/plugins/bearer -maxdepth 1 -name '*.so' \( -type f -o -type l \) 2>/dev/null || true; } | wc -l)
+    if [[ "$bearer_n" -lt 1 ]]; then
+        for bdir in /usr/lib64/qt5/plugins/bearer /usr/lib/x86_64-linux-gnu/qt5/plugins/bearer /usr/lib/qt5/plugins/bearer; do
+            if [[ -d "$bdir" ]]; then
+                shopt -s nullglob
+                for bso in "$bdir"/*.so; do
+                    [[ -e "$bso" ]] || continue
+                    cp -f "$bso" usr/lib/qt5/plugins/bearer/ 2>/dev/null || true
+                done
+                shopt -u nullglob
+                print_status "Copied bearer plugins from $bdir"
+                break
+            fi
+        done
+    fi
+
+    # XCB GLX/EGL integration plugins — must match bundled Qt; missing/mismatched plugins => "neither GLX nor EGL are enabled"
+    print_status "Ensuring Qt xcbglintegrations plugins from build host (libqxcb-glx-integration / libqxcb-egl-integration)"
+    for gintdir in /usr/lib64/qt5/plugins/xcbglintegrations /usr/lib/x86_64-linux-gnu/qt5/plugins/xcbglintegrations /usr/lib/qt5/plugins/xcbglintegrations; do
+        if [[ -d "$gintdir" ]]; then
+            ensure_dir usr/lib/qt5/plugins/xcbglintegrations
+            ensure_dir usr/plugins/xcbglintegrations
+            shopt -s nullglob
+            for gso in "$gintdir"/*.so; do
+                [[ -e "$gso" ]] || continue
+                cp -f "$gso" usr/lib/qt5/plugins/xcbglintegrations/ 2>/dev/null || true
+                cp -f "$gso" usr/plugins/xcbglintegrations/ 2>/dev/null || true
+            done
+            shopt -u nullglob
+            print_status "Copied xcbglintegrations from $gintdir"
+            break
+        fi
+    done
 
     # Ensure Qt plugin directories exist
     ensure_dir usr/lib/qt5/plugins/platforms
@@ -449,7 +513,7 @@ EOHLP
     print_status "Bundling common system libraries for self-contained runtime"
     for so in \
         libX11.so.6 libX11-xcb.so.1 libXrender.so.1 libXau.so.6 libXdmcp.so.6 \
-        libxcb.so.1 libxcb-icccm.so.4 libxcb-image.so.0 libxcb-shm.so.0 libxcb-keysyms.so.1 libxcb-randr.so.0 \
+        libxcb.so.1 libxcb-glx.so.0 libxcb-icccm.so.4 libxcb-image.so.0 libxcb-shm.so.0 libxcb-keysyms.so.1 libxcb-randr.so.0 \
         libxcb-render-util.so.0 libxcb-render.so.0 libxcb-shape.so.0 libxcb-sync.so.1 libxcb-xfixes.so.0 libxcb-xinerama.so.0 libxcb-xkb.so.1 libxcb-xinput.so.0 \
         libfreetype.so.6 libfontconfig.so.1 libharfbuzz.so.0 libgraphite2.so.3 \
         libdbus-1.so.3 libsystemd.so.0 libgcrypt.so.20 libgpg-error.so.0 \
@@ -459,48 +523,120 @@ EOHLP
         if [[ "$so" == libGL.so.1 || "$so" == libOpenGL.so.0 || "$so" == libGLX.so.0 || "$so" == libGLdispatch.so.0 || "$so" == libGLU.so.1 ]]; then
             continue
         fi
-        for dir in /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
+        # Fedora/RHEL use /usr/lib64; Debian/Ubuntu use multiarch paths — search 64-bit dirs first
+        for dir in /usr/lib64 /lib64 /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
             if [[ -f "$dir/$so" ]]; then
                 cp -n "$dir/$so" usr/lib/ 2>/dev/null || true
                 break
             fi
         done
     done
+    if [[ ! -e usr/lib/libxcb-glx.so.0 ]]; then
+        print_warning "libxcb-glx.so.0 missing from AppDir — Qt needs it for GLX (3D view). On Fedora/RHEL install package libxcb (no separate libxcb-glx RPM; the .so is in libxcb). Debian/Ubuntu: libxcb-glx0. Then rebuild."
+    fi
 
-    # Extra libs frequently not bundled by linuxdeploy but required
-    for so in libcom_err.so.2 libusb-1.0.so.0 libudev.so.1 libv4l2.so.0 libv4lconvert.so.0 libjpeg.so.62; do
-        for dir in /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
+    # Extra libs frequently not bundled by linuxdeploy but required (Fedora: /usr/lib64 /lib64 first)
+    _ltr_host_lib_dirs=(/usr/lib64 /lib64 /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /usr/lib /lib)
+    for so in libcom_err.so.2 libusb-1.0.so.0 libudev.so.1 libv4l2.so.0 libv4lconvert.so.0 libjpeg.so.62 libmxml.so.1; do
+        for dir in "${_ltr_host_lib_dirs[@]}"; do
             if [[ -f "$dir/$so" ]]; then
-                cp -n "$dir/$so" usr/lib/ 2>/dev/null || true
+                cp -n "$dir/$so" usr/lib/ 2>/dev/null || cp -f "$dir/$so" usr/lib/ 2>/dev/null || true
                 print_status "Bundled critical library: $so"
                 break
             fi
         done
     done
+    unset _ltr_host_lib_dirs
 
-    # libwc / libp3eft are dlopen'd (not linked from ltr_gui); linuxdeploy does not pull OpenCV deps — copy from ldd
-    for plugin_base in libwc libp3eft; do
-        plug_so=""
-        for candidate in usr/lib/linuxtrack/${plugin_base}.so.0.0.0 usr/lib/linuxtrack/${plugin_base}.so.0 usr/lib/linuxtrack/${plugin_base}.so; do
-            if [[ -f "$candidate" ]]; then
-                plug_so="$candidate"
-                break
+    # libwc / libp3eft are dlopen'd (not linked from ltr_gui); linuxdeploy does not pull OpenCV deps.
+    # Fedora OpenCV pulls dozens of libopencv_* modules (direct + transitive). Single-pass ldd on the
+    # plugin misses deps that only appear once intermediate OpenCV DSOs are in usr/lib — iterate to closure.
+    _ltr_appdir_abs="$(pwd -P)"
+    ltr_dep_bundlable() {
+        case "$1" in
+            # Intentionally omit libgomp: bundling it shadows the host and can load two OpenMP runtimes
+            # (OpenCV vs Qt/Mesa), breaking GLX/EGL context creation on Fedora bare metal.
+            libopencv*.so*|libopencv_*.so*|libtbb*.so*|libflexiblas*.so*|libopenblas*.so*|libblas.so*|liblapack.so*|libgfortran*.so*|libquadmath.so*|libprotobuf*.so*)
+                return 0
+                ;;
+        esac
+        return 1
+    }
+    ltr_copy_ldd_host_deps() {
+        local elf="$1"
+        local tag="$2"
+        local did_copy=0
+        [[ -f "$elf" ]] || return 1
+        while IFS= read -r line; do
+            local so_path base dest
+            so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ')
+            [[ -z "$so_path" || "$so_path" == "not" || ! -f "$so_path" ]] && continue
+            [[ "$so_path" == "$_ltr_appdir_abs"/* ]] && continue
+            base=$(basename "$so_path")
+            # Never vendor GL/EGL/GBM stacks; must match host GPU drivers (same rule as libGL*.so below).
+            case "$base" in
+                libEGL.so*|libGLES*.so*|libgbm.so*|libGL.so*|libGLX.so*|libOpenGL.so*|libGLdispatch.so*|libGLU.so*)
+                    continue
+                    ;;
+            esac
+            ltr_dep_bundlable "$base" || continue
+            dest="usr/lib/$base"
+            if [[ ! -f "$dest" ]]; then
+                if cp -f "$so_path" usr/lib/ 2>/dev/null; then
+                    print_status "Bundled ${tag} dependency: $base"
+                    did_copy=1
+                fi
+            fi
+        done < <(ldd "$elf" 2>/dev/null || true)
+        [[ "$did_copy" -eq 1 ]] && return 0
+        return 1
+    }
+    print_status "Bundling libwc/libp3eft OpenCV+ stack (iterative ldd closure)"
+    _ltr_round=0
+    _ltr_any=1
+    while [[ "$_ltr_any" -eq 1 && "$_ltr_round" -lt 40 ]]; do
+        _ltr_any=0
+        _ltr_round=$((_ltr_round + 1))
+        for plugin_base in libwc libp3eft; do
+            plug_so=""
+            for candidate in usr/lib/linuxtrack/${plugin_base}.so.0.0.0 usr/lib/linuxtrack/${plugin_base}.so.0 usr/lib/linuxtrack/${plugin_base}.so; do
+                if [[ -f "$candidate" ]]; then
+                    plug_so="$candidate"
+                    break
+                fi
+            done
+            [[ -n "$plug_so" ]] || continue
+            if ltr_copy_ldd_host_deps "$plug_so" "$plugin_base"; then
+                _ltr_any=1
             fi
         done
-        if [[ -n "$plug_so" ]]; then
-            print_status "Bundling ${plugin_base} transitive deps (OpenCV / TBB / GOMP) for dlopen'd driver"
-            while IFS= read -r line; do
-                so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ')
-                [[ -z "$so_path" || "$so_path" == "not" || ! -f "$so_path" ]] && continue
-                base=$(basename "$so_path")
-                case "$base" in
-                    libopencv*.so*|libtbb*.so*|libgomp*.so*)
-                        cp -n "$so_path" usr/lib/ 2>/dev/null || cp -f "$so_path" usr/lib/ 2>/dev/null || true
-                        print_status "Bundled ${plugin_base} dependency: $base"
-                        ;;
-                esac
-            done < <(ldd "$plug_so" 2>/dev/null || true)
-        fi
+        shopt -s nullglob
+        for elf in usr/lib/libopencv*.so* usr/lib/libtbb*.so* usr/lib/libflexiblas*.so* usr/lib/libprotobuf*.so*; do
+            [[ -f "$elf" ]] || continue
+            if ltr_copy_ldd_host_deps "$elf" "$(basename "$elf")"; then
+                _ltr_any=1
+            fi
+        done
+        shopt -u nullglob
+    done
+    if [[ "$_ltr_round" -ge 40 ]]; then
+        print_warning "OpenCV bundle iteration hit safety cap (40); check ldd for missing deps"
+    fi
+    unset -f ltr_dep_bundlable ltr_copy_ldd_host_deps
+    unset _ltr_appdir_abs _ltr_round _ltr_any
+
+    # FlexiBLAS backend wrappers (Fedora/RHEL); dlopen'd and not always listed on libwc ldd
+    for flexdir in /usr/lib64/flexiblas /usr/lib/flexiblas; do
+        [[ -d "$flexdir" ]] || continue
+        ensure_dir usr/lib/flexiblas
+        shopt -s nullglob
+        for so in "$flexdir"/*.so*; do
+            [[ -f "$so" ]] || continue
+            cp -n "$so" usr/lib/flexiblas/ 2>/dev/null || cp -f "$so" usr/lib/flexiblas/ 2>/dev/null || true
+        done
+        shopt -u nullglob
+        print_status "Bundled FlexiBLAS backends from $flexdir"
+        break
     done
 
     # CRITICAL: Ensure all linuxtrack libraries use bundled dependencies
@@ -537,9 +673,12 @@ EOHLP
         print_warning "patchelf not available; skipping rpath adjustments"
     fi
     
-    # Ensure no OpenGL driver libraries are bundled (can break GL context)
-    print_status "Removing bundled OpenGL driver libraries (use host drivers)"
-    rm -f usr/lib/libGL.so.* usr/lib/libOpenGL.so.* usr/lib/libGLX.so.* usr/lib/libGLdispatch.so.* usr/lib/libGLU.so.* 2>/dev/null || true
+    # Ensure no OpenGL / EGL / GBM stacks are bundled (must match host GPU drivers; OpenCV ldd can pull these on some hosts)
+    print_status "Removing bundled GL/EGL/GBM libraries (use host drivers)"
+    rm -f usr/lib/libGL.so.* usr/lib/libOpenGL.so.* usr/lib/libGLX.so.* usr/lib/libGLdispatch.so.* usr/lib/libGLU.so.* \
+        usr/lib/libEGL.so.* usr/lib/libGLESv2.so.* usr/lib/libGLESv1_CM.so.* usr/lib/libgbm.so.* 2>/dev/null || true
+    # Strip bundled libgomp if present (e.g. older bundle or linuxdeploy); prefer host OpenMP for one runtime in-process
+    rm -f usr/lib/libgomp.so* 2>/dev/null || true
     
     # Create wrapper scripts for CLI tools to ensure AppImage environment is set
     print_status "Creating wrapper scripts for CLI tools (ltr_pipe, ltr_extractor, ltr_recenter, ltr_server1)"

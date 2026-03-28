@@ -58,7 +58,32 @@ if [ -z "${HOME:-}" ]; then
 fi
 
 # Set up completely isolated environment for self-contained AppImage
-export LD_LIBRARY_PATH="$APPDIR/usr/lib:$APPDIR/usr/lib/linuxtrack:$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
+_LTR_LD="$APPDIR/usr/lib"
+if [ -d "$APPDIR/usr/lib/flexiblas" ]; then
+    _LTR_LD="$_LTR_LD:$APPDIR/usr/lib/flexiblas"
+fi
+export LD_LIBRARY_PATH="$_LTR_LD:$APPDIR/usr/lib/linuxtrack:$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
+unset _LTR_LD
+
+# Fedora/RHEL OpenCV links FlexiBLAS; bundle OpenBLAS and point FlexiBLAS at it (avoids host /etc/flexiblasrc)
+_flex_backend=""
+for _c in "$APPDIR/usr/lib/libopenblas.so.0" "$APPDIR/usr/lib/libopenblas.so"; do
+    if [ -f "$_c" ]; then
+        _flex_backend="$_c"
+        break
+    fi
+done
+if [ -z "$_flex_backend" ]; then
+    for _c in "$APPDIR/usr/lib"/libopenblas*.so*; do
+        [ -f "$_c" ] || continue
+        _flex_backend="$_c"
+        break
+    done
+fi
+if [ -n "$_flex_backend" ]; then
+    export FLEXIBLAS_DEFAULT_LIBRARY="$_flex_backend"
+fi
+unset _flex_backend _c
 
 # CRITICAL: Set LINUXTRACK_LIBS so Wine bridge can find libraries when running from AppImage
 # This is especially important for Steam/Proton which doesn't use AppRun directly
@@ -73,15 +98,12 @@ fi
 
 # CRITICAL: Complete Qt isolation to prevent version mixing
 export QT_DISABLE_VERSION_CHECK=1
-export QT_LOGGING_RULES="qt.qpa.*=false"
-export QT_DEBUG_PLUGINS=0
-export QT_QPA_PLATFORM_PLUGIN_NAMES="xcb"
 
 # Qt plugin paths - support both layouts
 QT_PLUG_ROOT="$APPDIR/usr/plugins"
 if [ -d "$QT_PLUG_ROOT" ]; then
     export QT_PLUGIN_PATH="$QT_PLUG_ROOT:$APPDIR/usr/lib/qt5/plugins"
-    export QT_QPA_PLATFORM_PLUGIN_PATH="$QT_PLUG_ROOT/platforms"
+    export QT_QPA_PLATFORM_PLUGIN_PATH="$QT_PLUG_ROOT/platforms:$APPDIR/usr/lib/qt5/plugins/platforms"
     export QT_SQL_DRIVER_PATH="$QT_PLUG_ROOT/sqldrivers:$APPDIR/usr/lib/qt5/plugins/sqldrivers"
 else
     export QT_PLUGIN_PATH="$APPDIR/usr/lib/qt5/plugins"
@@ -92,6 +114,12 @@ export QT_STYLE_PATH="$APPDIR/usr/lib/qt5/plugins/styles"
 
 # Force X11 usage to avoid Wayland compatibility issues
 export QT_QPA_PLATFORM="xcb"
+# Qt 5.x expects xcb_glx or xcb_egl — NOT "glx" (wrong key breaks QXcbGlIntegrationFactory::create).
+# Default: leave unset so Qt tries xcb_glx then xcb_egl. Override at runtime:
+#   LTR_XCB_GL_INTEGRATION=xcb_egl ./AppImage   (often helps on XWayland / when GLX xcb fails)
+if [ -n "${LTR_XCB_GL_INTEGRATION:-}" ]; then
+  export QT_XCB_GL_INTEGRATION="$LTR_XCB_GL_INTEGRATION"
+fi
 export QT_AUTO_SCREEN_SCALE_FACTOR=0
 export QT_SCALE_FACTOR=1
 
@@ -99,11 +127,22 @@ export QT_SCALE_FACTOR=1
 export GIO_EXTRA_MODULES="$APPDIR/usr/lib/gio/modules"
 export GI_TYPELIB_PATH="$APPDIR/usr/lib/girepository-1.0"
 export GSETTINGS_SCHEMA_DIR="$APPDIR/usr/share/glib-2.0/schemas"
-export G_DEBUG="fatal-warnings"
+# Do not set G_DEBUG=fatal-warnings: Qt/GTK platform themes emit CSS parse warnings that become fatal and abort (SIGTRAP).
+unset G_DEBUG 2>/dev/null || true
 
-# Help system debugging and configuration
-export QT_DEBUG_PLUGINS=1
-export QT_LOGGING_RULES="qt.help.*=true;qt.qpa.*=false;qt.sql.*=true"
+# Help / Qt logging: keep terminal quiet (QT_DEBUG_PLUGINS=1 prints every plugin metadata scan, often from host /usr/lib64)
+if [ "${LTR_QT_VERBOSE:-0}" = "1" ]; then
+    export QT_DEBUG_PLUGINS=1
+    # qt.qpa.gl before qt.qpa.* so GLX/EGL integration debug is visible when diagnosing 3D view
+    export QT_LOGGING_RULES="qt.help.*=true;qt.qpa.gl=true;qt.qpa.*=false;qt.sql.*=true"
+else
+    export QT_DEBUG_PLUGINS=0
+    export QT_LOGGING_RULES="qt.qpa.*=false;qt.sql.*=false;qt.help.*=false"
+fi
+# GTK "Theme parsing error" often comes from Qt loading gtk2/gtk3 QPA styles with distro CSS; Fusion avoids that bridge.
+if [ "${LTR_USE_GTK_QT_STYLE:-0}" != "1" ]; then
+    export QT_STYLE_OVERRIDE="${QT_STYLE_OVERRIDE:-Fusion}"
+fi
 
 # Enhanced help system setup with comprehensive error handling and fallbacks
 HELP_RUNTIME_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/linuxtrack/help"
