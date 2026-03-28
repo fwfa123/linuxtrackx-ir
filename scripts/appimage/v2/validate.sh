@@ -10,6 +10,13 @@ print_status "Validate: auditing AppDir"
 
 failures=0
 
+# True if usr/lib/linuxtrack has any lib<stem>.so or lib<stem>.so.* (file or symlink)
+linuxtrack_lib_present() {
+    local stem="$1"
+    [[ -d "$APPDIR/usr/lib/linuxtrack" ]] || return 1
+    [[ -n "$(find "$APPDIR/usr/lib/linuxtrack" -maxdepth 1 \( -name "lib${stem}.so" -o -name "lib${stem}.so.*" \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]
+}
+
 # Ensure core binaries
 for bin in usr/bin/ltr_gui; do
     if [[ ! -x "$APPDIR/$bin" ]]; then
@@ -18,30 +25,45 @@ for bin in usr/bin/ltr_gui; do
     fi
 done
 
-# Ensure TrackIR device detection libraries
-for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltr.so; do
-    if [[ ! -f "$APPDIR/$lib" ]]; then
-        print_error "Missing TrackIR library: $lib"
-        failures=$((failures+1))
+# Ensure TrackIR device detection libraries (accept versioned SONAME only; AppDir may omit unversioned symlinks)
+for stem in tir ltusb1 ltr; do
+    if linuxtrack_lib_present "$stem"; then
+        print_status "Found TrackIR library: lib${stem}.so* in usr/lib/linuxtrack"
     else
-        print_status "Found TrackIR library: $lib"
+        print_error "Missing TrackIR library: lib${stem}.so* under usr/lib/linuxtrack"
+        failures=$((failures+1))
     fi
 done
 
 # PS3 Eye plugin (USB 1415:2000)
-if [[ -f "$APPDIR/usr/lib/linuxtrack/libp3e.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libp3e.so.0.0.0" ]]; then
+if linuxtrack_lib_present p3e; then
     print_success "Found PS3 Eye driver library (libp3e)"
 else
-    print_error "Missing PS3 Eye library: usr/lib/linuxtrack/libp3e.so.0 (or .so.0.0.0)"
+    print_error "Missing PS3 Eye library: libp3e.so* under usr/lib/linuxtrack"
     failures=$((failures+1))
 fi
 
 # Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON)
-if [[ -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0.0.0" ]]; then
+if linuxtrack_lib_present wc; then
     print_status "Found webcam driver library (libwc)"
-    opencv_bundled=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
+    opencv_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
     if [[ "$opencv_bundled" -gt 0 ]]; then
         print_success "OpenCV runtime libraries present in AppDir for libwc / facetrack drivers"
+        flexiblas_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libflexiblas*.so*' 2>/dev/null || true; } | wc -l)
+        openblas_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopenblas*.so*' 2>/dev/null || true; } | wc -l)
+        if [[ "$flexiblas_bundled" -eq 0 ]]; then
+            print_warning "OpenCV present but no libflexiblas*.so in AppDir — Fedora/RHEL builds may abort at FlexiBLAS init (check bundle.sh)"
+        else
+            print_status "FlexiBLAS library present for OpenCV stack"
+        fi
+        if [[ "$openblas_bundled" -eq 0 ]]; then
+            print_warning "OpenCV/FlexiBLAS stack but no libopenblas*.so in AppDir — set FLEXIBLAS_DEFAULT_LIBRARY may fail (check bundle.sh)"
+        else
+            print_status "OpenBLAS library present for FlexiBLAS backend"
+        fi
+        if [[ -d "$APPDIR/usr/lib/flexiblas" ]]; then
+            print_status "FlexiBLAS backend directory present: usr/lib/flexiblas"
+        fi
     else
         print_warning "No libopencv_*.so in AppDir — face tracking may fail if libwc or libp3eft link to OpenCV"
     fi
@@ -49,11 +71,16 @@ else
     print_warning "libwc not in AppDir (webcam support may be disabled in this build)"
 fi
 
-if [[ -f "$APPDIR/usr/lib/linuxtrack/libp3eft.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libp3eft.so.0.0.0" ]]; then
+if linuxtrack_lib_present p3eft; then
     print_status "Found PS3 Eye facetrack library (libp3eft)"
-    opencv_for_p3=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
+    opencv_for_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
     if [[ "$opencv_for_p3" -eq 0 ]]; then
         print_warning "libp3eft present but no libopencv_*.so in AppDir — PS3 Eye face tracking may fail at runtime"
+    elif [[ "$opencv_for_p3" -gt 0 ]]; then
+        flexiblas_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libflexiblas*.so*' 2>/dev/null || true; } | wc -l)
+        openblas_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopenblas*.so*' 2>/dev/null || true; } | wc -l)
+        [[ "$flexiblas_p3" -gt 0 ]] || print_warning "libp3eft + OpenCV but no libflexiblas*.so — FlexiBLAS may fail on Fedora/RHEL"
+        [[ "$openblas_p3" -gt 0 ]] || print_warning "libp3eft + OpenCV but no libopenblas*.so — FlexiBLAS backend may be missing"
     fi
 fi
 
@@ -84,6 +111,14 @@ if [[ "$has_libusb" != true || "$has_libudev" != true ]]; then
     [[ "$has_libusb" == true ]] || missing_list+=("libusb-1.0.so.0")
     [[ "$has_libudev" == true ]] || missing_list+=("libudev.so.1")
     print_warning "USB libraries missing: ${missing_list[*]} - TrackIR device detection may fail"
+fi
+
+# Mini-XML (ltr_gui, ltr_extractor); linuxdeploy often omits on Fedora
+if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libmxml.so*' -print -quit 2>/dev/null)" ]]; then
+    print_status "Found Mini-XML library (libmxml) for GUI/tools"
+else
+    print_error "Missing libmxml.so* in usr/lib — ltr_gui will fail on clean systems (bundle.sh extra libs)"
+    failures=$((failures+1))
 fi
 
 # Verify rpath settings on critical libraries
@@ -189,10 +224,18 @@ else
     print_warning "sqlite3 not available; skipping detailed help database validation"
 fi
 
-# Check Qt Help and SQL module libraries
-print_status "Checking Qt Help and SQL module libraries"
-HELP_LIB=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt5Help.so*' 2>/dev/null || true; } | wc -l)
-SQL_LIB=$({ find "$APPDIR/usr/lib" -maxdepth 1 -type f -name 'libQt5Sql.so*' 2>/dev/null || true; } | wc -l)
+# Check Qt Help and SQL module libraries (symlinks are normal; search qt5/lib and lib64 layouts)
+print_status "Checking Qt Help, SQL, and OpenGL module libraries"
+HELP_LIB=0
+SQL_LIB=0
+OPENGL_LIB=0
+for _qt_root in "$APPDIR/usr/lib" "$APPDIR/usr/lib64" "$APPDIR/usr/lib/qt5/lib"; do
+    [[ -d "$_qt_root" ]] || continue
+    HELP_LIB=$((HELP_LIB + $(find "$_qt_root" \( -type f -o -type l \) -name 'libQt5Help.so*' 2>/dev/null | wc -l)))
+    SQL_LIB=$((SQL_LIB + $(find "$_qt_root" \( -type f -o -type l \) -name 'libQt5Sql.so*' 2>/dev/null | wc -l)))
+    OPENGL_LIB=$((OPENGL_LIB + $(find "$_qt_root" \( -type f -o -type l \) -name 'libQt5OpenGL.so*' 2>/dev/null | wc -l)))
+done
+unset _qt_root
 
 if [[ $HELP_LIB -gt 0 ]]; then
     print_success "Qt5Help library present"
@@ -205,6 +248,13 @@ if [[ $SQL_LIB -gt 0 ]]; then
     print_success "Qt5Sql library present"
 else
     print_error "Qt5Sql library missing; help system will fail"
+    failures=$((failures+1))
+fi
+
+if [[ $OPENGL_LIB -gt 0 ]]; then
+    print_success "Qt5OpenGL library present"
+else
+    print_error "Qt5OpenGL library missing; 3D view / GL init will fail on clean systems"
     failures=$((failures+1))
 fi
 
@@ -265,10 +315,13 @@ fi
 if [[ "${WITH_WINE_BRIDGE:-1}" == "1" ]]; then
     print_status "Checking 32-bit linuxtrack runtime for Wine"
     LTR32_PATH="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+    LTR32_ALT="$APPDIR/usr/lib/linuxtrack/liblinuxtrack32.so.0"
     if [[ -f "$LTR32_PATH" ]]; then
         print_success "32-bit liblinuxtrack present: ${LTR32_PATH#$APPDIR/}"
+    elif [[ -f "$LTR32_ALT" ]]; then
+        print_success "32-bit liblinuxtrack present: ${LTR32_ALT#$APPDIR/}"
     else
-        print_error "Missing 32-bit liblinuxtrack.so.0 at usr/lib/i386-linux-gnu/linuxtrack/ (required for 32-bit Wine prefixes)"
+        print_error "Missing 32-bit liblinuxtrack (expected usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0 or usr/lib/linuxtrack/liblinuxtrack32.so.0)"
         failures=$((failures+1))
     fi
 fi
@@ -314,11 +367,60 @@ toolchain_allow=(
   "/lib/x86_64-linux-gnu/libstdc++.so.6"
   "/lib/x86_64-linux-gnu/libresolv.so.2"
   "/lib/x86_64-linux-gnu/libz.so.1"
+  # Fedora/RHEL (ldd resolves to /lib64 and /usr/lib64)
+  "/lib64/libc.so.6"
+  "/lib64/libm.so.6"
+  "/lib64/libpthread.so.0"
+  "/lib64/libdl.so.2"
+  "/lib64/librt.so.1"
+  "/lib64/libgcc_s.so.1"
+  "/lib64/libstdc++.so.6"
+  "/usr/lib64/libgcc_s.so.1"
+  "/usr/lib64/libstdc++.so.6"
+  "/lib64/libresolv.so.2"
+  "/lib64/libz.so.1"
+  "/lib64/libnss_dns.so.2"
+  "/lib64/libnss_files.so.2"
+  "/lib64/ld-linux-x86-64.so.2"
+)
+# OpenCV / protobuf / gRPC stacks on Fedora pull Abseil, Samba private DSOs, etc. — never bundle these; treat as host stack.
+ldd_host_noise_patterns=(
+  '^/usr/lib64/samba/.*\\.so'
+  '^/lib64/libabsl_.*\\.so'
+  '^/usr/lib64/libabsl_.*\\.so'
+  '^/lib64/libutf8_(range|validity)[^/]*\\.so'
+  '^/usr/lib64/libutf8_(range|validity)[^/]*\\.so'
+  '^/lib64/libre2\\.so'
+  '^/usr/lib64/libre2\\.so'
+  '^/lib64/lib(P|p)cre[^/]*\\.so'
+  '^/usr/lib64/lib(P|p)cre[^/]*\\.so'
+  '^/lib64/libssl\\.so'
+  '^/usr/lib64/libssl\\.so'
+  '^/lib64/libcrypto\\.so'
+  '^/usr/lib64/libcrypto\\.so'
+  '^/lib64/libgssapi.*\\.so'
+  '^/usr/lib64/libgssapi.*\\.so'
+  '^/lib64/libkrb5.*\\.so'
+  '^/usr/lib64/libkrb5.*\\.so'
+  '^/lib64/libcom_err\\.so'
+  '^/usr/lib64/libcom_err\\.so'
+  '^/lib64/libkeyutils\\.so'
+  '^/usr/lib64/libkeyutils\\.so'
+  '^/lib64/libcares\\.so'
+  '^/usr/lib64/libcares\\.so'
+  '^/lib64/libnghttp2\\.so'
+  '^/usr/lib64/libnghttp2\\.so'
+  '^/lib64/libunistring\\.so'
+  '^/usr/lib64/libunistring\\.so'
+  '^/lib64/libffi\\.so'
+  '^/usr/lib64/libffi\\.so'
 )
 
 if command -v ldd >/dev/null 2>&1; then
-    print_status "Running ldd audit"
+    print_status "Running ldd audit (set VALIDATE_LDD_VERBOSE=1 for per-line host deps; noisy OpenCV/Fedora stacks are summarized)"
     critical_external_deps=0
+    ldd_external_other=0
+    _ltr_verbose="${VALIDATE_LDD_VERBOSE:-0}"
 
     while IFS= read -r -d '' elf; do
         while IFS= read -r line; do
@@ -327,25 +429,23 @@ if command -v ldd >/dev/null 2>&1; then
             [[ "$so_path" = "not" ]] && continue
 
             if [[ "$so_path" != $APPDIR/* ]]; then
-                # Check for critical dependencies that should be bundled
-                critical_deps=("libusb-1.0.so" "libudev.so")
-                is_critical=false
-                for critical in "${critical_deps[@]}"; do
-                    if [[ "$so_path" == *"$critical"* ]]; then
-                        # If a bundled copy exists inside AppDir, downgrade to warning
-                        so_name=$(basename "$so_path")
-                        if [[ -f "$APPDIR/usr/lib/$so_name" ]]; then
-                            print_warning "External dep resolved to system but bundled present: $elf -> $so_path (using $APPDIR/usr/lib/$so_name at runtime)"
-                        else
-                            print_error "Critical external dep (should be bundled): $elf -> $so_path"
-                            is_critical=true
-                            critical_external_deps=$((critical_external_deps+1))
-                        fi
-                        break
+                # Critical: USB stack must be bundled for device access (match soname loosely; Fedora paths differ)
+                if [[ "$so_path" == *libusb-1.0.so* ]]; then
+                    if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libusb-1.0.so*' -print -quit 2>/dev/null)" ]]; then
+                        [[ "$_ltr_verbose" == "1" ]] && print_warning "External libusb path but bundled copy exists: $elf -> $so_path"
+                    else
+                        print_error "Critical external dep (should be bundled): $elf -> $so_path"
+                        critical_external_deps=$((critical_external_deps + 1))
                     fi
-                done
-
-                if [[ "$is_critical" = true ]]; then
+                    continue
+                fi
+                if [[ "$so_path" == *libudev.so* ]]; then
+                    if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libudev.so*' -print -quit 2>/dev/null)" ]]; then
+                        [[ "$_ltr_verbose" == "1" ]] && print_warning "External libudev path but bundled copy exists: $elf -> $so_path"
+                    else
+                        print_error "Critical external dep (should be bundled): $elf -> $so_path"
+                        critical_external_deps=$((critical_external_deps + 1))
+                    fi
                     continue
                 fi
 
@@ -359,22 +459,32 @@ if command -v ldd >/dev/null 2>&1; then
                     fi
                 done
 
-                # Allow broad system patterns
                 for rx in "${system_allow_patterns[@]}"; do
                     if [[ "$so_path" =~ $rx ]]; then
                         continue 2
                     fi
                 done
 
-                print_warning "External dep (acceptable): $elf -> $so_path"
+                for rx in "${ldd_host_noise_patterns[@]}"; do
+                    if [[ "$so_path" =~ $rx ]]; then
+                        continue 2
+                    fi
+                done
+
+                ldd_external_other=$((ldd_external_other + 1))
+                [[ "$_ltr_verbose" == "1" ]] && print_warning "External dep (acceptable): $elf -> $so_path"
             fi
         done < <(ldd "$elf" 2>/dev/null || true)
     done < <(find "$APPDIR/usr/bin" "$APPDIR/usr/lib" "$APPDIR/usr/lib/linuxtrack" -type f \( -perm -111 -o -name "*.so*" \) -print0 2>/dev/null)
 
     if [[ $critical_external_deps -gt 0 ]]; then
-        print_error "Found $critical_external_deps critical external dependencies"
-        failures=$((failures+critical_external_deps))
+        print_error "Found $critical_external_deps critical external dependencies (libusb / libudev not bundled in usr/lib)"
+        failures=$((failures + critical_external_deps))
     fi
+    if [[ "$ldd_external_other" -gt 0 ]]; then
+        print_status "ldd audit: $ldd_external_other additional host-only dependency resolutions (graphics/X11/etc.); omitted from log unless VALIDATE_LDD_VERBOSE=1"
+    fi
+    unset _ltr_verbose
 else
     print_warning "ldd not available; skipping dependency audit"
 fi

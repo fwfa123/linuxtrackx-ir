@@ -9,12 +9,15 @@ print_status "Optimize: size and content pruning (conservative)"
 [[ -d "$APPDIR" ]] || die "AppDir not found: $APPDIR. Run prepare.sh first."
 
 pushd "$APPDIR" >/dev/null
-    # Strip binaries and libraries where safe
+    # Strip executables only; skip most shared libs (RELR/.relr.dyn needs recent binutils — avoid corrupting bundled deps)
     if command -v strip >/dev/null 2>&1; then
-        print_status "Stripping binaries and libraries"
+        print_status "Stripping usr/bin executables only (skipping .so — RELR / linuxdeploy compatibility)"
         find usr/bin -type f -executable -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
-        find usr/lib -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
-        find usr/lib/linuxtrack -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
+        if [[ "${APPDIR_STRIP_SHARED:-0}" == "1" ]]; then
+            print_status "APPDIR_STRIP_SHARED=1: stripping shared libraries (best-effort)"
+            find usr/lib -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
+            find usr/lib/linuxtrack -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
+        fi
     else
         print_warning "strip not available; skipping stripping"
     fi
