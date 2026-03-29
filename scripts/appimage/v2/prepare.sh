@@ -16,7 +16,7 @@ ensure_dir "$APPDIR"
 pushd "$PROJECT_ROOT" >/dev/null
     require_cmd cmake
     require_cmd make
-    require_cmd qhelpgenerator
+    require_qhelpgenerator
 
     print_status "Preparing CMake build"
     rm -rf build
@@ -67,7 +67,9 @@ pushd "$PROJECT_ROOT" >/dev/null
         QT5_QHELPGENERATOR=""
         if command -v qhelpgenerator-qt5 >/dev/null 2>&1; then
             QT5_QHELPGENERATOR="qhelpgenerator-qt5"
-        elif [[ -f "/usr/lib/qt5/bin/qhelpgenerator" ]]; then
+        elif [[ -x "/usr/lib64/qt5/bin/qhelpgenerator" ]]; then
+            QT5_QHELPGENERATOR="/usr/lib64/qt5/bin/qhelpgenerator"
+        elif [[ -x "/usr/lib/qt5/bin/qhelpgenerator" ]]; then
             QT5_QHELPGENERATOR="/usr/lib/qt5/bin/qhelpgenerator"
         elif command -v qhelpgenerator >/dev/null 2>&1; then
             QT5_QHELPGENERATOR="qhelpgenerator"
