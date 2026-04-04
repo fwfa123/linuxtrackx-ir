@@ -33,24 +33,15 @@ sudo pacman -S winetricks cabextract wget
 
 ### Webcam Support (Level 3+)
 ```bash
-sudo pacman -S libv4l v4l-utils opencv
+sudo pacman -S libv4l v4l-utils
 ```
 
 ### AppImage / packaging build (maintainers)
-Install the **Webcam Support (Level 3+)** packages on the build host so the AppImage includes `libwc`, PS3 Eye (`libp3e`), and OpenCV-linked facetrack drivers where applicable. End users running the released AppImage do not need system OpenCV if the image was bundled correctly.
+The v2 `prepare.sh` uses `-DENABLE_WEBCAM=ON` and `-DENABLE_FACE_TRACKER=ON`. Install **Webcam Support (Level 3+)** and **Face tracking (Level 6+)** packages on the build host so the AppImage includes `libwc`, PS3 Eye (`libp3e`), and OpenCV-linked facetrack drivers where applicable. End users running the released AppImage do not need system OpenCV if the image was bundled correctly.
 
 ### OSC Support (Level 4+)
 ```bash
 sudo pacman -S liblo   # official [extra], not AUR
-```
-
-### Wiimote Support (Level 6+)
-```bash
-# From AUR (use yay or your preferred AUR helper)
-yay -S libcwiid
-
-# Verify pkg-config can see the installed cwiid.pc
-pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not found; check your libcwiid installation and PKG_CONFIG_PATH."
 ```
 
 ### X-Plane Support (Level 5+)
@@ -59,6 +50,21 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not
 # Extract to: /opt/xplane-sdk/
 sudo mkdir -p /opt/xplane-sdk
 sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
+```
+
+### Face tracking (Level 6+)
+Requires Level 3 (webcam). Install OpenCV and pass `-DENABLE_FACE_TRACKER=ON` (default is **OFF**).
+```bash
+sudo pacman -S opencv
+```
+
+### Wiimote Support (Level 7+)
+```bash
+# From AUR (use yay or your preferred AUR helper)
+yay -S libcwiid
+
+# Verify pkg-config can see the installed cwiid.pc
+pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not found; check your libcwiid installation and PKG_CONFIG_PATH."
 ```
 
 ## Build Commands
@@ -103,10 +109,18 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 6: Complete Build with X-Plane + Wiimote
+### Level 6: + Face tracking
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
+
+### Level 7: + Wiimote
+```bash
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
