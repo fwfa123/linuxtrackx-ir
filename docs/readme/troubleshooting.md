@@ -59,6 +59,7 @@ sudo usermod -a -G plugdev,input $USER
 | PS3 Eye plugin missing `ltr_int_find_p3e` | `Couldn't load library '.../libp3e.so.0' - undefined symbol: ltr_int_find_p3e` | **Fixed in current builds**: `ps3eye_driver` resolves `ltr_int_find_p3e` (and related USB helpers) via **dlsym** from `libltusb1` after `dlopen`, same as other `usb_ifc` pointers. Rebuild/reinstall `libp3e` / `libltusb1`. |
 | Missing `libp3eft` at runtime | `libp3eft.so.0: cannot open shared object file` | Expected if face tracking was not built: enable `ENABLE_FACE_TRACKER=ON`, install OpenCV dev packages on the **builder**, rebuild, and install. Same as “OpenCV detection failed” above for AppImage/source installs. |
 | V4L2 node not usable | `lacks capture+streaming (caps=0x...)` | Many cameras expose several `/dev/video*` nodes; use the one with **Video Capture** (try `v4l2-ctl -d /dev/videoN --all`). Metadata-only nodes lack `VIDEO_CAPTURE`. |
+| Missing model / fresh profile | Log: `No Global->Model in preferences`; AppImage/VM abort (older builds asserted) | Ensure `~/.config/linuxtrack/` (or GUI resource dir) gets **`linuxtrack1.conf`** with `[Global]` **`Model = …`** (ship default from `src/linuxtrack1.conf` in the image, or pick a model once in the GUI). |
 | Library not found | `Couldn't load library 'libwc.so.0'` | Run `sudo ldconfig` |
 | GUI not displaying | Window doesn't appear | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Black/blank dialogs | Lutris/Steam game selection dialogs appear black | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
