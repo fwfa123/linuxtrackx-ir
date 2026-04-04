@@ -30,18 +30,32 @@ sudo dnf install cabextract wget  # REQUIRED: For alternative installation metho
 
 ### Webcam Support (Level 3+)
 ```bash
-sudo dnf install libv4l-devel v4l-utils opencv-devel
+sudo dnf install libv4l-devel v4l-utils
 ```
 
 ### AppImage / packaging build (maintainers)
-Install the **Webcam Support (Level 3+)** packages on the machine that builds the AppImage so webcam, PS3 Eye (`libp3e`), and OpenCV-based facetrack plugins are included. Users who only run the AppImage are not required to install `opencv-devel` on their system.
+The v2 `prepare.sh` uses `-DENABLE_WEBCAM=ON` and `-DENABLE_FACE_TRACKER=ON`. Install **Webcam Support (Level 3+)** and **Face tracking (Level 6+)** packages on the machine that builds the AppImage so webcam, PS3 Eye (`libp3e`), and OpenCV-based facetrack plugins are included. Users who only run the AppImage are not required to install `opencv-devel` on their system.
 
 ### OSC Support (Level 4+)
 ```bash
 sudo dnf install liblo-devel
 ```
 
-### Wiimote Support (Level 6+)
+### X-Plane Support (Level 5+)
+```bash
+# Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
+# Extract to: /opt/xplane-sdk/
+sudo mkdir -p /opt/xplane-sdk
+sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
+```
+
+### Face tracking (Level 6+)
+Requires Level 3 (webcam). Pass `-DENABLE_FACE_TRACKER=ON` to enable OpenCV-based face tracking when CMake finds OpenCV (default is **OFF**).
+```bash
+sudo dnf install opencv-devel
+```
+
+### Wiimote Support (Level 7+)
 Fedora may not ship `libcwiid-devel`. If `dnf install libcwiid-devel` fails, build CWiiD (cwiid) from source:
 ```bash
 # Install build prereqs (Bluetooth dev headers + autotools)
@@ -62,14 +76,6 @@ sudo ldconfig
 
 # Verify pkg-config can see the installed cwiid.pc
 pkg-config --exists cwiid && pkg-config --modversion cwiid
-```
-
-### X-Plane Support (Level 5+)
-```bash
-# Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
-# Extract to: /opt/xplane-sdk/
-sudo mkdir -p /opt/xplane-sdk
-sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ```
 
 ## Qt5 Tools PATH Fix (IMPORTANT)
@@ -140,12 +146,21 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 6: Complete Build with X-Plane + Wiimote
+### Level 6: + Face tracking
+```bash
+mkdir build && cd build
+export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
+
+### Level 7: + Wiimote
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt5/bin:$PATH"  # Required for Qt5 tools
 export PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
