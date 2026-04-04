@@ -18,6 +18,14 @@ pushd "$PROJECT_ROOT" >/dev/null
     require_cmd make
     require_qhelpgenerator
 
+    # Wiimote (wii_server): CMake enables WIIMOTE_SUPPORT automatically when pkg-config finds libcwiid.
+    # To fail fast when a release must include Wiimote, set REQUIRE_WIIMOTE=1 (install libcwiid-devel / libcwiid-dev first).
+    if [[ "${REQUIRE_WIIMOTE:-0}" == "1" ]]; then
+        require_cmd pkg-config
+        pkg-config --exists cwiid || die "REQUIRE_WIIMOTE=1 but libcwiid not found (e.g. Fedora: dnf install libcwiid-devel; Debian: apt install libcwiid-dev)"
+        print_status "REQUIRE_WIIMOTE=1: pkg-config cwiid OK"
+    fi
+
     print_status "Preparing CMake build"
     rm -rf build
     mkdir -p build
