@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Post-build checks for a LinuxTrack-X-IR AppImage (content + optional headless launch).
+# Usage: scripts/appimage/v2/smoke_appimage.sh [path/to/AppImage]
+# Default: ${APP_NAME}-${VERSION}-x86_64.AppImage in repo root (see config.sh).
+# Env:
+#   SMOKE_LAUNCH=1  — try a short headless run (QT_QPA_PLATFORM=offscreen); needs a writable HOME.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=config.sh
+source "$SCRIPT_DIR/config.sh"
+# shellcheck source=common.sh
+source "$SCRIPT_DIR/common.sh"
+
+APPIMAGE="${1:-$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage}"
+
+[[ -f "$APPIMAGE" ]] || die "AppImage not found: $APPIMAGE"
+
+print_status "Smoke test: $APPIMAGE"
+
+failures=0
+
+OFF=$("$APPIMAGE" --appimage-offset 2>/dev/null) || die "Failed to read --appimage-offset"
+[[ "$OFF" =~ ^[0-9]+$ ]] || die "Unexpected appimage-offset: $OFF"
+
+# --- Inventory (no full extract): inode count and optional paths ---
+inode_count=$(unsquashfs -s -o "$OFF" "$APPIMAGE" 2>/dev/null | sed -n 's/^Number of inodes \([0-9][0-9]*\).*/\1/p')
+if [[ -n "${inode_count:-}" ]]; then
+    print_status "Squashfs inodes: $inode_count"
+fi
+
+qm_count=$(unsquashfs -l -o "$OFF" "$APPIMAGE" 2>/dev/null | grep -c '\.qm$' || true)
+if [[ "$qm_count" -eq 0 ]]; then
+    print_warning "No bundled Qt .qm files in AppImage (ltr_gui may still load translations from embedded resources)"
+else
+    print_status "Bundled Qt .qm files: $qm_count"
+fi
+
+if unsquashfs -l -o "$OFF" "$APPIMAGE" 2>/dev/null | grep -q 'usr/bin/wii_server'; then
+    print_status "Wiimote: wii_server is bundled"
+else
+    print_warning "Wiimote: wii_server not in AppImage (build host had no libcwiid — see prepare.sh REQUIRE_WIIMOTE)"
+fi
+
+# --- Extract to a temp dir for file and sqlite checks ---
+TMP=$(mktemp -d)
+HOME_TMP=""
+cleanup() { rm -rf "$TMP" "${HOME_TMP:-}"; }
+trap cleanup EXIT
+
+cd "$TMP"
+APPIMAGE_EXTRACT_AND_RUN=1 "$APPIMAGE" --appimage-extract >/dev/null
+ROOT="$TMP/squashfs-root"
+
+require_help_sqlite() {
+    local f="$1"
+    local label="$2"
+    if [[ ! -f "$f" ]]; then
+        print_error "Missing $label: $f"
+        return 1
+    fi
+    if command -v sqlite3 >/dev/null 2>&1; then
+        if sqlite3 "$f" ".tables" >/dev/null 2>&1; then
+            print_success "Help SQLite OK: $label"
+        else
+            print_error "Help file is not a valid SQLite DB: $f"
+            return 1
+        fi
+    else
+        print_warning "sqlite3 not installed; skipping SQLite check for $label"
+    fi
+    return 0
+}
+
+for pair in \
+    "$ROOT/usr/share/linuxtrack/help/ltr_gui/help.qhc:ltr_gui help.qhc" \
+    "$ROOT/usr/share/linuxtrack/help/ltr_gui/help.qch:ltr_gui help.qch" \
+    "$ROOT/usr/share/linuxtrack/help/mickey/help.qhc:mickey help.qhc" \
+    "$ROOT/usr/share/linuxtrack/help/mickey/help.qch:mickey help.qch"; do
+    f="${pair%%:*}"
+    lab="${pair##*:}"
+    require_help_sqlite "$f" "$lab" || failures=$((failures + 1))
+done
+
+for icon in \
+    "$ROOT/usr/share/icons/hicolor/48x48/apps/linuxtrack.png" \
+    "$ROOT/linuxtrack.png"; do
+    if [[ -f "$icon" ]]; then
+        print_success "Icon present: ${icon#$ROOT/}"
+    else
+        print_error "Missing icon: ${icon#$ROOT/}"
+        failures=$((failures + 1))
+    fi
+done
+
+if [[ -f "$ROOT/usr/share/icons/hicolor/scalable/apps/linuxtrack.svg" ]]; then
+    print_status "Scalable icon present (optional)"
+fi
+
+[[ -x "$ROOT/usr/bin/ltr_gui" ]] || { print_error "ltr_gui not executable"; failures=$((failures + 1)); }
+
+# 32-bit Wine bridge runtime (package.sh checks this too)
+if [[ -f "$ROOT/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0" ]]; then
+    print_success "32-bit liblinuxtrack for Wine bridge present"
+else
+    print_error "Missing usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+    failures=$((failures + 1))
+fi
+
+# --- Optional short launch (offscreen); does not require imageformat plugins for window chrome ---
+if [[ "${SMOKE_LAUNCH:-0}" == "1" ]]; then
+    HOME_TMP=$(mktemp -d)
+    print_status "SMOKE_LAUNCH=1: running AppRun briefly (QT_QPA_PLATFORM=offscreen)"
+    set +e
+    timeout 10 env HOME="$HOME_TMP" QT_QPA_PLATFORM=offscreen APPDIR="$ROOT" "$ROOT/AppRun" >/dev/null 2>&1
+    rc=$?
+    set -e
+    if [[ "$rc" -eq 124 ]]; then
+        print_success "AppRun still running after timeout (expected for GUI)"
+    elif [[ "$rc" -eq 0 ]]; then
+        print_success "AppRun exited 0"
+    else
+        print_warning "AppRun exited with code $rc (may be OK if no offscreen Qt plugin)"
+    fi
+fi
+
+if [[ "$failures" -ne 0 ]]; then
+    die "Smoke test failed ($failures error(s))"
+fi
+print_success "Smoke test passed"
