@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <assert.h>
 #include "pose.h"
 #include "pref.h"
 #include "pref_global.h"
@@ -336,14 +335,25 @@ static bool setup_clip(reflector_model_type *rm, char *model_section)
 
 bool ltr_int_get_model_setup(reflector_model_type *rm)
 {
-  assert(rm != NULL);
+  if(rm == NULL){
+    return false;
+  }
   char *model_section = ltr_int_get_model_section();
-  assert(model_section != NULL);
+  if(model_section == NULL){
+    ltr_int_log_message(
+        "No Global->Model in preferences (fresh profile, incomplete config, or default "
+        "linuxtrack1.conf not installed). Configure a model in the GUI or merge defaults.\n");
+    return false;
+  }
   bool res = false;
   char *model_type = ltr_int_get_key(model_section, "Model-type");
-  ltr_int_log_message("Model setup: section='%s', Model-type='%s'\n", 
+  ltr_int_log_message("Model setup: section='%s', Model-type='%s'\n",
                       model_section, model_type ? model_type : "(null)");
-  assert(model_type != NULL);
+  if(model_type == NULL){
+    ltr_int_log_message("Section '%s' has no Model-type key.\n", model_section);
+    free(model_section);
+    return false;
+  }
 
   if(strcasecmp(model_type, "Cap") == 0){
     res = setup_cap(rm, model_section);
