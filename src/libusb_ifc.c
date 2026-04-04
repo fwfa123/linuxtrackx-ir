@@ -19,6 +19,11 @@ bool ltr_int_init_usb(void)
     comm_dbg_flag = ltr_int_get_dbg_flag('u');
   }
 
+  if(usb_context != NULL){
+    ltr_int_log_message("libusb context already active, reusing.\n");
+    return true;
+  }
+
   int res = libusb_init(&usb_context);
   if(res != 0){
     ltr_int_log_message("Problem initializing libusb!\n");
@@ -407,8 +412,10 @@ void ltr_int_finish_usb(unsigned int interface)
   }
   ltr_int_log_message("Closing TrackIR handle.\n");
   libusb_close(handle);
+  handle = NULL;
   ltr_int_log_message("Exiting libusb.\n");
   libusb_exit(usb_context);
+  usb_context = NULL;
   ltr_int_log_message("Libusb exited.\n");
 }
 
