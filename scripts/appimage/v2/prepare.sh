@@ -28,7 +28,8 @@ pushd "$PROJECT_ROOT" >/dev/null
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DENABLE_XPLANE=ON \
         -DENABLE_LDCONFIG=OFF \
-        -DENABLE_WEBCAM=ON
+        -DENABLE_WEBCAM=ON \
+        -DENABLE_FACE_TRACKER=ON
 
     print_status "Building"
     cmake --build . -j"$JOBS"

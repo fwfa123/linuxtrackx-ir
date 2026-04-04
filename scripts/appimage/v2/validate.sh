@@ -43,7 +43,7 @@ else
     failures=$((failures+1))
 fi
 
-# Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON)
+# Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON -DENABLE_FACE_TRACKER=ON)
 if linuxtrack_lib_present wc; then
     print_status "Found webcam driver library (libwc)"
     opencv_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
