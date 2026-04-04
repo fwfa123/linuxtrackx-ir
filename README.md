@@ -26,7 +26,7 @@ Have you installed Steam or Lutris from Flatpak? There are issues that you will 
 
 There are two branches.  
 main = QT5
-qt6_migration = QT6 Wayland compatible
+qt6_migration = QT6
 
 If you are running KDE use the qt6_migration branch to build from..
 ```bash
