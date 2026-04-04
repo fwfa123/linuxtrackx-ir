@@ -22,14 +22,19 @@ pushd "$PROJECT_ROOT" >/dev/null
     rm -rf build
     mkdir -p build
 
-    print_status "Configuring with CMake"
+    # README installation level 5: Wine bridge + webcam + OSC + X-Plane (no OpenCV facetrack)
+    : "${XPLANE_SDK_PATH:=/opt/xplane-sdk/CHeaders}"
+    print_status "Configuring with CMake (level 5: LTR32+webcam+OSC+X-Plane, ENABLE_FACE_TRACKER=OFF)"
     cd build
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=/usr \
-        -DENABLE_XPLANE=ON \
         -DENABLE_LDCONFIG=OFF \
+        -DENABLE_LTR_32LIB_ON_X64=ON \
         -DENABLE_WEBCAM=ON \
-        -DENABLE_FACE_TRACKER=ON
+        -DENABLE_OSC=ON \
+        -DENABLE_FACE_TRACKER=OFF \
+        -DENABLE_XPLANE=ON \
+        "-DXPLANE_SDK_PATH=${XPLANE_SDK_PATH}"
 
     print_status "Building"
     cmake --build . -j"$JOBS"
