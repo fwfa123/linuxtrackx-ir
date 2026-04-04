@@ -16,17 +16,21 @@
 
 init_usb_fun *ltr_int_init_usb = NULL;
 find_tir_fun *ltr_int_find_tir = NULL;
+find_p3e_fun *ltr_int_find_p3e = NULL;
 prepare_device_fun *ltr_int_prepare_device = NULL;
 send_data_fun *ltr_int_send_data = NULL;
 receive_data_fun *ltr_int_receive_data = NULL;
+ctrl_data_fun *ltr_int_ctrl_data = NULL;
 finish_usb_fun *ltr_int_finish_usb = NULL;
 
 static lib_fun_def_t functions[] = {
   {(char *)"ltr_int_init_usb", (void*) &ltr_int_init_usb},
   {(char *)"ltr_int_find_tir", (void*) &ltr_int_find_tir},
+  {(char *)"ltr_int_find_p3e", (void*) &ltr_int_find_p3e},
   {(char *)"ltr_int_prepare_device", (void*) &ltr_int_prepare_device},
   {(char *)"ltr_int_send_data", (void*) &ltr_int_send_data},
   {(char *)"ltr_int_receive_data", (void*) &ltr_int_receive_data},
+  {(char *)"ltr_int_ctrl_data", (void*) &ltr_int_ctrl_data},
   {(char *)"ltr_int_finish_usb", (void*) &ltr_int_finish_usb},
   {NULL, NULL}
 };
@@ -1258,12 +1262,32 @@ int ltr_int_tracker_get_frame(struct camera_control_block *ccb, struct frame_typ
 
 int ltr_int_ps3eye_found(void)
 {
-  if(!ltr_int_init_usb()){
-    ltr_int_log_message("Failed to initialize usb!\n");
+  void *usb_dl = NULL;
+  /* Same usb_ifc pointers as ltr_int_tracker_init: they are filled only by
+   * ltr_int_load_library("libltusb1", functions). Calling init/find/finish
+   * without loading libltusb1 leaves dlsym slots NULL and crashes. */
+  bool borrowed = (libhandle != NULL);
+  if(borrowed){
+    usb_dl = libhandle;
+  }else if((usb_dl = ltr_int_load_library((char *)"libltusb1", functions)) == NULL){
+    ltr_int_log_message("Problem loading library libltusb1!\n");
     return 0;
   }
+
+  if(!ltr_int_init_usb()){
+    ltr_int_log_message("Failed to initialize usb!\n");
+    if(!borrowed){
+      ltr_int_unload_library(usb_dl, functions);
+    }
+    return 0;
+  }
+
   bool res = ltr_int_find_p3e();
   ltr_int_finish_usb(-1);
+
+  if(!borrowed){
+    ltr_int_unload_library(usb_dl, functions);
+  }
   return res;
 }
 

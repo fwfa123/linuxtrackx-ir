@@ -268,6 +268,9 @@ if(NOT APPLE)
         OUTPUT_NAME "p3e"
     )
 
+    # libltusb1 is loaded at runtime via ltr_int_load_library; ps3eye_driver fills
+    # ltr_int_find_p3e (and other usb_ifc pointers) from dlsym — do not link ltusb1
+    # into libp3e or the loader may bind the wrong symbol type vs. pointer slots.
     target_link_libraries(p3e
         ltr
         ${MATH_LIBRARY}
