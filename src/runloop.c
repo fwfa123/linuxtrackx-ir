@@ -26,8 +26,12 @@ int ltr_int_rl_run(struct camera_control_block *ccb, frame_callback_fun cbk)
     ltr_int_cal_set_state(err_NOT_INITIALIZED);
     return -1;
   }
-  struct reflector_model_type rm;
-  ltr_int_get_model_setup(&rm);
+  struct reflector_model_type rm = {0};
+  if(!ltr_int_get_model_setup(&rm)){
+    ltr_int_log_message(
+        "Runloop: ltr_int_get_model_setup failed; using CAP (three-reflector) placeholder.\n");
+    rm.type = CAP;
+  }
   ltr_int_log_message("Runloop: Initial model type=%d\n", rm.type);
   // Announce model change to ensure tracking system initializes with correct model
   ltr_int_announce_model_change();
