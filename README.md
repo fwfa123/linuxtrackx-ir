@@ -45,10 +45,11 @@ Choose the level that matches your needs. Each level includes all features from 
 | **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires 32-bit Wine + NSIS**) |
 
 > **⚠️ Important**: Level 2 requires 32-bit Wine support for MFC42 library installation and NSIS for Wine bridge installer generation. See your distribution's guide for specific installation commands.
-| **3: + Webcam** | Alternative face tracking | Level 2 + webcam/OpenCV support |
+| **3: + Webcam** | Webcam / optical tracking (V4L) | Level 2 + webcam drivers |
 | **4: + OSC** | External applications/MIDI | Level 3 + Open Sound Control |
-| **5: + Wiimote** | Nintendo Wii Remote | Level 4 + Wiimote support |
-| **6: + X-Plane** | Flight simulator | Level 5 + X-Plane plugin |
+| **5: + X-Plane** | Flight simulator | Level 4 + X-Plane plugin |
+| **6: + Face tracking** | OpenCV-based face tracking (`libwc` facetrack, `libp3eft`) | Level 5 + face tracking (OpenCV) |
+| **7: + Wiimote** | Nintendo Wii Remote | Level 6 + Wiimote support |
 
 ## 🛠️ Build Overview
 
@@ -87,8 +88,9 @@ sudo cmake --build . --target uninstall
 | 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON` | + Wine support (**requires 32-bit Wine installed**) |
 | 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON` | + Webcam |
 | 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
-| 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON` | + Wiimote |
-| 6 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
+| 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
+| 6 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + Face tracking |
+| 7 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + Wiimote |
 
 > **Note**: `/opt` is the default install prefix and is recommended for Steam Proton compatibility. Symlinks are automatically created in `/usr/local/bin` for PATH compatibility.
 
@@ -215,7 +217,7 @@ For advanced users who want to create AppImages:
 ./scripts/appimage/build_appimage_phase4.sh --clean
 ```
 
-Build the AppImage on a machine that has the same **development** packages as a full source build (see your distro guide). The packaging scripts enable webcam support (`ENABLE_WEBCAM=ON`), so install **V4L** and **OpenCV development** packages (e.g. Debian/Ubuntu: `libv4l-dev`, `libopencv-dev`) on the **build host** if you want webcam face tracking and PS3 Eye facetrack (`libp3eft`) in the image. **End users** who only run the published AppImage do **not** need OpenCV installed system-wide; OpenCV should be bundled inside the AppImage when the release was built with it. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time.
+Build the AppImage on a machine that has the same **development** packages as a full source build (see your distro guide). The v2 packaging script enables webcam support (`ENABLE_WEBCAM=ON`) and opts in to face tracking (`ENABLE_FACE_TRACKER=ON`) so OpenCV facetrack can be built when **Level 3+** and **Level 6+** packages are installed. **End users** who only run the published AppImage do **not** need OpenCV installed system-wide; OpenCV should be bundled inside the AppImage when the release was built with it. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time.
 
 **[Full advanced documentation](docs/technical/)** - CMake options, packaging, and development guides.
 

@@ -10,6 +10,13 @@ print_status "Validate: auditing AppDir"
 
 failures=0
 
+# True if usr/lib/linuxtrack has any lib<stem>.so or lib<stem>.so.* (file or symlink)
+linuxtrack_lib_present() {
+    local stem="$1"
+    [[ -d "$APPDIR/usr/lib/linuxtrack" ]] || return 1
+    [[ -n "$(find "$APPDIR/usr/lib/linuxtrack" -maxdepth 1 \( -name "lib${stem}.so" -o -name "lib${stem}.so.*" \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]
+}
+
 # Ensure core binaries
 for bin in usr/bin/ltr_gui; do
     if [[ ! -x "$APPDIR/$bin" ]]; then
@@ -18,30 +25,45 @@ for bin in usr/bin/ltr_gui; do
     fi
 done
 
-# Ensure TrackIR device detection libraries
-for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltr.so; do
-    if [[ ! -f "$APPDIR/$lib" ]]; then
-        print_error "Missing TrackIR library: $lib"
-        failures=$((failures+1))
+# Ensure TrackIR device detection libraries (accept versioned SONAME only; AppDir may omit unversioned symlinks)
+for stem in tir ltusb1 ltr; do
+    if linuxtrack_lib_present "$stem"; then
+        print_status "Found TrackIR library: lib${stem}.so* in usr/lib/linuxtrack"
     else
-        print_status "Found TrackIR library: $lib"
+        print_error "Missing TrackIR library: lib${stem}.so* under usr/lib/linuxtrack"
+        failures=$((failures+1))
     fi
 done
 
 # PS3 Eye plugin (USB 1415:2000)
-if [[ -f "$APPDIR/usr/lib/linuxtrack/libp3e.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libp3e.so.0.0.0" ]]; then
+if linuxtrack_lib_present p3e; then
     print_success "Found PS3 Eye driver library (libp3e)"
 else
-    print_error "Missing PS3 Eye library: usr/lib/linuxtrack/libp3e.so.0 (or .so.0.0.0)"
+    print_error "Missing PS3 Eye library: libp3e.so* under usr/lib/linuxtrack"
     failures=$((failures+1))
 fi
 
-# Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON)
-if [[ -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libwc.so.0.0.0" ]]; then
+# Webcam + face tracking (prepare.sh uses -DENABLE_WEBCAM=ON -DENABLE_FACE_TRACKER=ON)
+if linuxtrack_lib_present wc; then
     print_status "Found webcam driver library (libwc)"
-    opencv_bundled=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
+    opencv_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
     if [[ "$opencv_bundled" -gt 0 ]]; then
         print_success "OpenCV runtime libraries present in AppDir for libwc / facetrack drivers"
+        flexiblas_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libflexiblas*.so*' 2>/dev/null || true; } | wc -l)
+        openblas_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopenblas*.so*' 2>/dev/null || true; } | wc -l)
+        if [[ "$flexiblas_bundled" -eq 0 ]]; then
+            print_warning "OpenCV present but no libflexiblas*.so in AppDir — Fedora/RHEL builds may abort at FlexiBLAS init (check bundle.sh)"
+        else
+            print_status "FlexiBLAS library present for OpenCV stack"
+        fi
+        if [[ "$openblas_bundled" -eq 0 ]]; then
+            print_warning "OpenCV/FlexiBLAS stack but no libopenblas*.so in AppDir — set FLEXIBLAS_DEFAULT_LIBRARY may fail (check bundle.sh)"
+        else
+            print_status "OpenBLAS library present for FlexiBLAS backend"
+        fi
+        if [[ -d "$APPDIR/usr/lib/flexiblas" ]]; then
+            print_status "FlexiBLAS backend directory present: usr/lib/flexiblas"
+        fi
     else
         print_warning "No libopencv_*.so in AppDir — face tracking may fail if libwc or libp3eft link to OpenCV"
     fi
@@ -49,11 +71,16 @@ else
     print_warning "libwc not in AppDir (webcam support may be disabled in this build)"
 fi
 
-if [[ -f "$APPDIR/usr/lib/linuxtrack/libp3eft.so.0" || -f "$APPDIR/usr/lib/linuxtrack/libp3eft.so.0.0.0" ]]; then
+if linuxtrack_lib_present p3eft; then
     print_status "Found PS3 Eye facetrack library (libp3eft)"
-    opencv_for_p3=$({ find "$APPDIR/usr/lib" -maxdepth 1 -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
+    opencv_for_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
     if [[ "$opencv_for_p3" -eq 0 ]]; then
         print_warning "libp3eft present but no libopencv_*.so in AppDir — PS3 Eye face tracking may fail at runtime"
+    elif [[ "$opencv_for_p3" -gt 0 ]]; then
+        flexiblas_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libflexiblas*.so*' 2>/dev/null || true; } | wc -l)
+        openblas_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopenblas*.so*' 2>/dev/null || true; } | wc -l)
+        [[ "$flexiblas_p3" -gt 0 ]] || print_warning "libp3eft + OpenCV but no libflexiblas*.so — FlexiBLAS may fail on Fedora/RHEL"
+        [[ "$openblas_p3" -gt 0 ]] || print_warning "libp3eft + OpenCV but no libopenblas*.so — FlexiBLAS backend may be missing"
     fi
 fi
 
