@@ -86,20 +86,12 @@ pushd "$PROJECT_ROOT" >/dev/null
             die "Cannot detect Qt6 qmake; install qt6-base-devel (e.g. qmake6 or /usr/lib64/qt6/bin/qmake)"
         fi
 
-        QHELPGEN=""
-        if command -v qhelpgenerator-qt6 >/dev/null 2>&1; then
-            QHELPGEN="qhelpgenerator-qt6"
-        elif [[ -x /usr/lib64/qt6/bin/qhelpgenerator ]]; then
-            QHELPGEN="/usr/lib64/qt6/bin/qhelpgenerator"
-        elif [[ -x /usr/lib/qt6/bin/qhelpgenerator ]]; then
-            QHELPGEN="/usr/lib/qt6/bin/qhelpgenerator"
-        elif [[ -x /usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator ]]; then
-            QHELPGEN="/usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator"
-        elif command -v qhelpgenerator >/dev/null 2>&1; then
-            QHELPGEN="qhelpgenerator"
-            print_warning "Using first qhelpgenerator on PATH; prefer Qt6 (qhelpgenerator-qt6)"
-        else
-            die "qhelpgenerator not found; install Qt6 help tools"
+        if ! find_qhelpgenerator_path; then
+            die "qhelpgenerator not found; install Qt6 help tools (Fedora: qt6-doctools; Debian/Ubuntu: qt6-tools-dev-tools)"
+        fi
+        QHELPGEN="$QHELPGENERATOR_PATH"
+        if [[ "$QHELPGEN" != *qt6* ]] && [[ "$QHELPGEN" != *lib64/qt6* ]] && [[ "$QHELPGEN" != *lib/qt6* ]]; then
+            print_warning "Using qhelpgenerator: $QHELPGEN — ensure it matches Qt6 ($QT_VERSION)"
         fi
 
         print_success "Qt $QT_VERSION detected, using qhelpgenerator: $QHELPGEN"

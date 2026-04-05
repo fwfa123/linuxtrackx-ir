@@ -19,20 +19,37 @@ die() { print_error "$*"; exit 1; }
 
 require_cmd() { command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"; }
 
-# Qt6 qhelpgenerator is often not on PATH (e.g. /usr/lib64/qt6/bin/qhelpgenerator).
-require_qhelpgenerator() {
+# Qt6 qhelpgenerator: often not on default PATH. Fedora installs it under
+# /usr/lib64/qt6/libexec/qhelpgenerator (package qt6-doctools), not always in .../bin/.
+find_qhelpgenerator_path() {
+    QHELPGENERATOR_PATH=""
     if command -v qhelpgenerator-qt6 >/dev/null 2>&1; then
+        QHELPGENERATOR_PATH="$(command -v qhelpgenerator-qt6)"
         return 0
     fi
-    for _qhg in /usr/lib64/qt6/bin/qhelpgenerator /usr/lib/qt6/bin/qhelpgenerator /usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator; do
+    local _qhg
+    for _qhg in \
+        /usr/lib64/qt6/bin/qhelpgenerator \
+        /usr/lib/qt6/bin/qhelpgenerator \
+        /usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator \
+        /usr/lib64/qt6/libexec/qhelpgenerator \
+        /usr/lib/qt6/libexec/qhelpgenerator \
+        /usr/lib/x86_64-linux-gnu/qt6/libexec/qhelpgenerator
+    do
         if [[ -x "$_qhg" ]]; then
+            QHELPGENERATOR_PATH="$_qhg"
             return 0
         fi
     done
     if command -v qhelpgenerator >/dev/null 2>&1; then
+        QHELPGENERATOR_PATH="$(command -v qhelpgenerator)"
         return 0
     fi
-    die "Missing qhelpgenerator. Fedora: sudo dnf install qt6-qttools-help (qt6-qttools does not ship qhelpgenerator). Debian/Ubuntu: qt6-tools-dev-tools. Then ensure PATH includes Qt6 bin (e.g. export PATH=\"/usr/lib64/qt6/bin:\$PATH\")"
+    return 1
+}
+
+require_qhelpgenerator() {
+    find_qhelpgenerator_path || die "Missing qhelpgenerator. Fedora: sudo dnf install qt6-doctools (provides libexec/qhelpgenerator). Debian/Ubuntu: qt6-tools-dev-tools. Optionally add to PATH: /usr/lib64/qt6/bin:/usr/lib64/qt6/libexec"
 }
 ensure_dir() { mkdir -p "$1"; }
 copy_if_exists() { [[ -e "$1" ]] && cp -r "$1" "$2" || true; }
