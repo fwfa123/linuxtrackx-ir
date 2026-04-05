@@ -19,12 +19,12 @@ die() { print_error "$*"; exit 1; }
 
 require_cmd() { command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"; }
 
-# Qt5 qhelpgenerator is often not on PATH on Fedora/RHEL (installed as /usr/lib64/qt5/bin/qhelpgenerator).
+# Qt6 qhelpgenerator is often not on PATH (e.g. /usr/lib64/qt6/bin/qhelpgenerator).
 require_qhelpgenerator() {
-    if command -v qhelpgenerator-qt5 >/dev/null 2>&1; then
+    if command -v qhelpgenerator-qt6 >/dev/null 2>&1; then
         return 0
     fi
-    for _qhg in /usr/lib64/qt5/bin/qhelpgenerator /usr/lib/qt5/bin/qhelpgenerator; do
+    for _qhg in /usr/lib64/qt6/bin/qhelpgenerator /usr/lib/qt6/bin/qhelpgenerator /usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator; do
         if [[ -x "$_qhg" ]]; then
             return 0
         fi
@@ -32,7 +32,7 @@ require_qhelpgenerator() {
     if command -v qhelpgenerator >/dev/null 2>&1; then
         return 0
     fi
-    die "Missing qhelpgenerator; install Qt5 help tools (e.g. Fedora: dnf install qt5-doctools) or add Qt5 bin to PATH"
+    die "Missing qhelpgenerator; install Qt6 help tools (e.g. Fedora: dnf install qt6-qttools; Debian: qt6-tools-dev-tools) or add Qt6 bin to PATH"
 }
 ensure_dir() { mkdir -p "$1"; }
 copy_if_exists() { [[ -e "$1" ]] && cp -r "$1" "$2" || true; }
@@ -48,7 +48,7 @@ set_rpath_library() {
     require_cmd patchelf
     if [[ "$lib" == *"/usr/lib/linuxtrack/"* ]]; then
         patchelf --set-rpath '$ORIGIN:$ORIGIN/..' "$lib" 2>/dev/null || true
-    elif [[ "$lib" == *"/usr/lib/qt5/plugins/"* ]]; then
+    elif [[ "$lib" == *"/qt5/plugins/"* ]] || [[ "$lib" == *"/qt6/plugins/"* ]]; then
         patchelf --set-rpath '$ORIGIN/../../lib:$ORIGIN' "$lib" 2>/dev/null || true
     else
         patchelf --set-rpath '$ORIGIN' "$lib" 2>/dev/null || true

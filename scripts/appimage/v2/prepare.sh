@@ -55,108 +55,111 @@ pushd "$PROJECT_ROOT" >/dev/null
 
     have_repo_artifacts=true
     [[ -f src/qt_gui/help.qhc && -f src/qt_gui/help.qch ]] || have_repo_artifacts=false
-    [[ -f src/mickey/help.qhc && -f src/mickey/help.qch ]] || have_repo_artifacts=false
+    if [[ -f src/mickey/help.qhc && -f src/mickey/help.qch ]]; then
+        :
+    else
+        have_repo_artifacts=false
+    fi
 
     if [[ "$REGENERATE_HELP" != "1" && "$have_repo_artifacts" = true ]]; then
         print_status "REGENERATE_HELP=0 and artifacts exist → skipping help regeneration"
     else
-        print_status "Regenerating Qt Help artifacts"
+        print_status "Regenerating Qt Help artifacts (Qt6)"
 
-        # Verify Qt tools are available and compatible
         print_status "Verifying Qt tools availability and compatibility"
-        QT_VERSION=$(qmake -query QT_VERSION 2>/dev/null || echo "unknown")
+        QMAKE_BIN=""
+        if command -v qmake6 >/dev/null 2>&1; then
+            QMAKE_BIN="qmake6"
+        elif [[ -x /usr/lib64/qt6/bin/qmake ]]; then
+            QMAKE_BIN="/usr/lib64/qt6/bin/qmake"
+        elif [[ -x /usr/lib/qt6/bin/qmake ]]; then
+            QMAKE_BIN="/usr/lib/qt6/bin/qmake"
+        elif command -v qmake >/dev/null 2>&1; then
+            QMAKE_BIN="qmake"
+        fi
 
+        QT_VERSION="unknown"
+        if [[ -n "$QMAKE_BIN" ]]; then
+            QT_VERSION=$("$QMAKE_BIN" -query QT_VERSION 2>/dev/null || echo "unknown")
+        fi
         if [[ "$QT_VERSION" = "unknown" ]]; then
-            die "Cannot detect qmake Qt version; install Qt development tools"
+            die "Cannot detect Qt6 qmake; install qt6-base-devel (e.g. qmake6 or /usr/lib64/qt6/bin/qmake)"
         fi
 
-        # Extract major version from Qt version
-        QT_MAJOR=$(sed -n 's/^\([0-9]\)\..*/\1/p' <<<"$QT_VERSION" | head -1 || true)
-
-        if [[ -z "$QT_MAJOR" ]]; then
-            die "Failed to parse Qt major version from: '$QT_VERSION'"
-        fi
-
-        # Verify Qt5 qhelpgenerator is available (prefer Qt5-specific version)
-        QT5_QHELPGENERATOR=""
-        if command -v qhelpgenerator-qt5 >/dev/null 2>&1; then
-            QT5_QHELPGENERATOR="qhelpgenerator-qt5"
-        elif [[ -x "/usr/lib64/qt5/bin/qhelpgenerator" ]]; then
-            QT5_QHELPGENERATOR="/usr/lib64/qt5/bin/qhelpgenerator"
-        elif [[ -x "/usr/lib/qt5/bin/qhelpgenerator" ]]; then
-            QT5_QHELPGENERATOR="/usr/lib/qt5/bin/qhelpgenerator"
+        QHELPGEN=""
+        if command -v qhelpgenerator-qt6 >/dev/null 2>&1; then
+            QHELPGEN="qhelpgenerator-qt6"
+        elif [[ -x /usr/lib64/qt6/bin/qhelpgenerator ]]; then
+            QHELPGEN="/usr/lib64/qt6/bin/qhelpgenerator"
+        elif [[ -x /usr/lib/qt6/bin/qhelpgenerator ]]; then
+            QHELPGEN="/usr/lib/qt6/bin/qhelpgenerator"
+        elif [[ -x /usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator ]]; then
+            QHELPGEN="/usr/lib/x86_64-linux-gnu/qt6/bin/qhelpgenerator"
         elif command -v qhelpgenerator >/dev/null 2>&1; then
-            QT5_QHELPGENERATOR="qhelpgenerator"
-            print_warning "Using system qhelpgenerator - this may cause compatibility issues if it's not Qt5"
+            QHELPGEN="qhelpgenerator"
+            print_warning "Using first qhelpgenerator on PATH; prefer Qt6 (qhelpgenerator-qt6)"
         else
-            die "qhelpgenerator not found; install Qt5 help tools (qt5-tools-help or similar)"
+            die "qhelpgenerator not found; install Qt6 help tools"
         fi
 
-        print_success "Qt $QT_VERSION detected, using qhelpgenerator: $QT5_QHELPGENERATOR"
+        print_success "Qt $QT_VERSION detected, using qhelpgenerator: $QHELPGEN"
 
-        # Clean up before regeneration to avoid mixing outputs
         rm -f src/mickey/help.qhc src/mickey/help.qch
         rm -f src/qt_gui/help.qhc src/qt_gui/help.qch
 
-        # Generate help files with the verified toolchain
         if [[ -f src/mickey/mickey.qhp && -f src/mickey/mickey.qhcp ]]; then
             print_status "Generating mickey help files"
             cd src/mickey
-            $QT5_QHELPGENERATOR mickey.qhcp -o help.qhc
-            $QT5_QHELPGENERATOR mickey.qhp -o help.qch
+            $QHELPGEN mickey.qhcp -o help.qhc
+            $QHELPGEN mickey.qhp -o help.qch
             cd ../..
             print_success "Mickey help files generated"
         else
-            print_warning "Mickey help source files not found, skipping help generation"
+            print_status "Mickey Qt Help project not present; HTML help only (see src/mickey/help/)"
         fi
 
         if [[ -f src/qt_gui/ltr_gui.qhp && -f src/qt_gui/ltr_gui.qhcp ]]; then
-            print_status "Generating qt_gui help files"
+            print_status "Generating qt_gui help files (project + collection)"
             cd src/qt_gui
-            $QT5_QHELPGENERATOR ltr_gui.qhcp -o help.qhc
-            $QT5_QHELPGENERATOR ltr_gui.qhp -o help.qch
+            $QHELPGEN ltr_gui.qhcp -o help.qhc
+            $QHELPGEN ltr_gui.qhp -o help.qch
             cd ../..
             print_success "Qt GUI help files generated"
+        elif [[ -f src/qt_gui/ltr_gui.qhp ]]; then
+            print_status "Generating qt_gui help.qch from ltr_gui.qhp only"
+            cd src/qt_gui
+            $QHELPGEN ltr_gui.qhp -o help.qch
+            cd ../..
+            print_success "Qt GUI help.qch generated (no .qhcp — collection optional)"
         else
-            print_warning "Qt GUI help source files not found, skipping help generation"
+            print_warning "ltr_gui.qhp not found; skipping Qt Help binary generation"
         fi
     fi
 
-    # Fail early if required help source files are missing
-    if [[ ! -f src/mickey/mickey.qhp || ! -f src/mickey/mickey.qhcp || ! -f src/qt_gui/ltr_gui.qhp || ! -f src/qt_gui/ltr_gui.qhcp ]]; then
-        die "Required help source files missing. Cannot proceed with AppImage build."
+    if [[ ! -d src/qt_gui/help ]]; then
+        die "Required HTML help missing: src/qt_gui/help/"
     fi
 
-    # Preflight: verify Qt Help outputs exist and validate format compatibility
     print_status "Preflight: verifying Qt Help outputs and format compatibility"
     MISSING=0
     INCOMPATIBLE=0
-    
-    # Function to validate help file format
+
     validate_help_file() {
         local help_file="$1"
-        local component="$2"
-        
         if [[ ! -f "$help_file" ]]; then
             print_error "Missing help artifact: $help_file"
             return 1
         fi
-        
-        # Basic help file validation using sqlite3 if available
         if command -v sqlite3 >/dev/null 2>&1; then
             print_status "Validating help file format: $help_file"
-            
-            # Check if it's a valid SQLite database
             if sqlite3 "$help_file" ".tables" >/dev/null 2>&1; then
                 print_success "Help file $help_file is a valid SQLite database"
-                
-                # Check for required tables (basic compatibility check)
-                local tables=$(sqlite3 "$help_file" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable ]]; then
-                    print_success "Help file $help_file has required tables - format appears compatible"
+                local tables
+                tables=$(sqlite3 "$help_file" ".tables" 2>/dev/null)
+                if [[ "$tables" =~ ContentsTable|FileDataTable|NamespaceTable ]]; then
+                    print_success "Help file $help_file has expected tables"
                 else
-                    print_error "Help file $help_file missing required tables - format incompatible"
-                    die "Help file format validation failed. Cannot proceed with AppImage build."
+                    print_warning "Help file $help_file unexpected schema: $tables"
                 fi
             else
                 print_error "Help file $help_file is not a valid SQLite database"
@@ -165,41 +168,23 @@ pushd "$PROJECT_ROOT" >/dev/null
         else
             die "sqlite3 not available - help file validation required for AppImage build"
         fi
-        
         return 0
     }
-    
-    # Validate all help files
+
     for component in "mickey" "qt_gui"; do
         if [[ -f "src/$component/help.qhc" ]]; then
-            validate_help_file "src/$component/help.qhc" "$component"
-            if [[ $? -ne 0 ]]; then
-                die "Help file validation failed for $component. Cannot proceed with AppImage build."
-            fi
-        else
-            die "Missing help collection file: src/$component/help.qhc. Cannot proceed with AppImage build."
+            validate_help_file "src/$component/help.qhc" || die "help.qhc validation failed: $component"
         fi
-        
         if [[ -f "src/$component/help.qch" ]]; then
-            validate_help_file "src/$component/help.qch" "$component"
-            if [[ $? -ne 0 ]]; then
-                die "Help file validation failed for $component. Cannot proceed with AppImage build."
-            fi
-        else
-            die "Missing help database file: src/$component/help.qch. Cannot proceed with AppImage build."
+            validate_help_file "src/$component/help.qch" || die "help.qch validation failed: $component"
         fi
     done
-    
-    # Report overall status
-    if [[ $MISSING -ne 0 ]]; then
-        die "Qt Help generation failed; install qhelpgenerator and ensure .qhp/.qhcp are valid"
-    fi
-    
+
     if [[ $INCOMPATIBLE -ne 0 ]]; then
-        print_warning "Some help files may have compatibility issues - consider regenerating with compatible Qt version"
+        print_warning "Some help files may have compatibility issues - regenerate with Qt6 qhelpgenerator"
     fi
-    
-    print_success "All Qt Help files generated and validated"
+
+    print_success "Qt Help preflight complete (HTML under src/*/help/ required; .qhc/.qch optional)"
 
     print_status "Installing to AppDir"
     cd build
