@@ -37,11 +37,9 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 - **`FINAL_INTEGRATION_SUMMARY.md`** - Integration completion summary
 - **`MX_LINUX_FIX_SUMMARY.md`** - MX Linux specific fixes
 
-### 🧪 Testing Documentation (`testing/`) - 6 files
+### 🧪 Testing Documentation (`testing/`) - 4 files
 **Purpose**: Testing and validation procedures
 - **`README.md`** - Testing guide overview and quick reference
-- **`TESTING_INSTRUCTIONS.md`** - Comprehensive testing procedures (200KB)
-- **`KUBUNTU_25_TESTING.md`** - Detailed Kubuntu testing log (328KB)
 - **`KUBUNTU_25_QT5_TESTING.md`** - Qt5-specific Kubuntu testing (29KB)
 - **`TESTING_GUIDE.md`** - General testing guidelines (13KB)
 - **`KUBUNTU_FIXES.md`** - Kubuntu-specific fixes (5KB)

@@ -56,9 +56,7 @@ This directory contains comprehensive testing documentation for LinuxTrack Qt5 m
 
 ### Current Testing Documentation
 - **`ARCH_PHASE1_RUNBOOK.md`** - Arch Linux full install test (Phase 1): AppImage, Levels 1–6, scripts. Use with **`ARCH_INSTALL_PROBLEM_LOG.md`** to record results for doc updates.
-- **`TESTING_INSTRUCTIONS.md`** - Comprehensive testing procedures (200KB)
-- **Gaming Tab UX Checklist** – See the end of `TESTING_INSTRUCTIONS.md` for step-by-step verification of the new Gaming tab behavior
-- **`KUBUNTU_25_TESTING.md`** - Detailed Kubuntu testing log (328KB)
+- **Gaming tab** – In `ltr_gui`, exercise the Gaming tab (profiles, Wine/Proton-related paths) and confirm behavior matches your distribution; use **`TESTING_GUIDE.md`** for general checks.
 - **`KUBUNTU_25_QT5_TESTING.md`** - Qt5-specific Kubuntu testing (29KB)
 - **`TESTING_GUIDE.md`** - General testing guidelines (13KB)
 - **`KUBUNTU_FIXES.md`** - Kubuntu-specific fixes (5KB)

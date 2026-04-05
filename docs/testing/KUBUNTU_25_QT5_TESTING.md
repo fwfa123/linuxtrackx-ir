@@ -692,7 +692,7 @@ Ztranslation-inverted = No
 
 ### **Step 10: Compare with Previous Results**
 
-**Previous Issues (from KUBUNTU_25_TESTING.md):**
+**Previous issues (older Kubuntu test runs):**
 - ❌ `qmake-qt5: command not found`
 - ❌ `qt5-qmake: command not found` (even when package installed)
 - ❌ `qhelpgenerator-qt5: command not found`
