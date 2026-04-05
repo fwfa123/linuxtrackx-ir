@@ -215,9 +215,11 @@ class ImageHandler:
 
 # Example usage
 if __name__ == '__main__':
-    source_dir = Path('/media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/help')
-    target_dir = Path('/media/mario/Local_Git/git-repos/linuxtrackx-ir/docs/wiki')
-    
+    from wiki_paths import default_help_dir, default_wiki_root
+
+    source_dir = default_help_dir()
+    target_dir = default_wiki_root()
+
     handler = ImageHandler(source_dir, target_dir)
     
     # Find all HTML files

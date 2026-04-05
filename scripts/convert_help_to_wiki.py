@@ -4,20 +4,22 @@ Complete Help to Wiki Conversion Script
 
 This script performs a complete conversion of HTML help files to Markdown wiki format:
 1. Converts all HTML files in src/qt_gui/help/ to Markdown
-2. Copies and maps all images to docs/wiki/images/
-3. Integrates existing wiki content from linuxtrackx-ir.wiki/
+2. Copies and maps all images to <wiki-root>/images/ (a local wiki checkout, not docs/wiki/)
+3. Integrates existing wiki content from the same wiki checkout (or a separate path)
 4. Updates all image references and internal links
 5. Provides comprehensive reporting
 
+Default wiki root: sibling directory ../linuxtrackx-ir.wiki, or LINUXTRACK_WIKI_ROOT.
+
 Usage:
-    python convert_help_to_wiki.py [--dry-run] [--verbose]
+    python convert_help_to_wiki.py [--dry-run] [--verbose] [--wiki-root PATH]
 """
 
-import os
 import sys
 import argparse
+import shutil
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 # Add the scripts directory to the path so we can import our modules
 script_dir = Path(__file__).parent
@@ -26,19 +28,24 @@ sys.path.insert(0, str(script_dir))
 from html_to_markdown_converter import HTMLToMarkdownConverter
 from image_handler import ImageHandler
 from table_converter import TableConverter
+from wiki_paths import default_help_dir, default_wiki_root
 
 class HelpToWikiConverter:
     """Main converter class that orchestrates the entire conversion process."""
     
-    def __init__(self, dry_run: bool = False, verbose: bool = False):
+    def __init__(
+        self,
+        dry_run: bool = False,
+        verbose: bool = False,
+        wiki_root: Optional[Path] = None,
+    ):
         self.dry_run = dry_run
         self.verbose = verbose
         
-        # Define paths
-        self.project_root = Path('/media/mario/Local_Git/git-repos/linuxtrackx-ir')
-        self.help_dir = self.project_root / 'src' / 'qt_gui' / 'help'
-        self.wiki_dir = self.project_root / 'linuxtrackx-ir.wiki'
-        self.target_dir = self.project_root / 'docs' / 'wiki'
+        # Output goes to a local wiki clone, not docs/wiki/
+        self.help_dir = default_help_dir()
+        self.wiki_dir = Path(wiki_root) if wiki_root is not None else default_wiki_root()
+        self.target_dir = self.wiki_dir
         
         # Initialize components
         self.image_handler = ImageHandler(self.help_dir, self.target_dir)
@@ -109,7 +116,7 @@ class HelpToWikiConverter:
         return converted_files
     
     def copy_wiki_files(self) -> None:
-        """Copy existing wiki files to the target directory."""
+        """Refresh wiki files in the target directory (same as wiki_dir when exporting to a clone)."""
         wiki_files = self.discover_wiki_files()
         
         for wiki_file in wiki_files:
@@ -117,14 +124,15 @@ class HelpToWikiConverter:
                 target_file = self.target_dir / wiki_file.name
                 
                 if not self.dry_run:
-                    import shutil
-                    shutil.copy2(wiki_file, target_file)
-                    self.log(f"Copied wiki file: {wiki_file.name}")
-                    
-                    # Update image references
-                    self.image_handler.update_image_references(target_file)
+                    if wiki_file.resolve() == target_file.resolve():
+                        self.image_handler.update_image_references(wiki_file)
+                        self.log(f"Updated image refs in wiki file: {wiki_file.name}")
+                    else:
+                        shutil.copy2(wiki_file, target_file)
+                        self.log(f"Copied wiki file: {wiki_file.name}")
+                        self.image_handler.update_image_references(target_file)
                 else:
-                    self.log(f"DRY RUN: Would copy {wiki_file.name}")
+                    self.log(f"DRY RUN: Would sync wiki file: {wiki_file.name}")
                 
                 self.conversion_stats['wiki_files_copied'] += 1
                 
@@ -194,7 +202,7 @@ class HelpToWikiConverter:
         report.append("Target Directory Structure:")
         if self.target_dir.exists():
             for item in sorted(self.target_dir.rglob('*')):
-                if item.is_file():
+                if item.is_file() and '.git' not in item.parts:
                     rel_path = item.relative_to(self.target_dir)
                     report.append(f"  {rel_path}")
         else:
@@ -245,11 +253,16 @@ def main():
                        help='Show what would be done without making changes')
     parser.add_argument('--verbose', action='store_true',
                        help='Show detailed output')
+    parser.add_argument('--wiki-root', type=Path, default=None,
+                       help='Wiki repo checkout (default: LINUXTRACK_WIKI_ROOT or ../linuxtrackx-ir.wiki)')
     
     args = parser.parse_args()
     
-    # Create and run converter
-    converter = HelpToWikiConverter(dry_run=args.dry_run, verbose=args.verbose)
+    converter = HelpToWikiConverter(
+        dry_run=args.dry_run,
+        verbose=args.verbose,
+        wiki_root=args.wiki_root,
+    )
     converter.run_conversion()
 
 if __name__ == '__main__':

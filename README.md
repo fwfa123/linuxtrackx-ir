@@ -241,7 +241,8 @@ This project builds upon the incredible work of the original LinuxTrack develope
 ## 🌐 Links
 
 - **GitLab Repository**: [fwfa123/linuxtrackx-ir](https://gitlab.com/fwfa123/linuxtrackx-ir)
-- **Wiki**: [GitLab Wiki](https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/home)
+- **Wiki (GitLab)**: [Project wiki](https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/home)
+- **Wiki (GitHub)**: [linuxtrackx-ir wiki](https://github.com/fwfa123/linuxtrackx-ir/wiki) — clone the wiki repo with `git clone https://github.com/fwfa123/linuxtrackx-ir.wiki.git` for local edits (see `docs/wiki/README.md`)
 - **Original Project**: [uglyDwarf/linuxtrack](https://github.com/uglyDwarf/linuxtrack)
 - **Companion Application**: [LinuxTrack Mapper](https://gitlab.com/open-source4661535/linuxtrack-mapper) - Map head tracking to keyboard inputs
 

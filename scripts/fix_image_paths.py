@@ -26,8 +26,15 @@ def fix_image_paths_in_file(file_path: Path) -> None:
         print(f"Error fixing {file_path}: {e}")
 
 def main():
-    wiki_dir = Path('/media/mario/Local_Git/git-repos/linuxtrackx-ir/docs/wiki')
-    
+    import argparse
+    from wiki_paths import default_wiki_root
+
+    parser = argparse.ArgumentParser(description='Fix double images/ paths in wiki Markdown')
+    parser.add_argument('--wiki-dir', type=Path, default=default_wiki_root(),
+                       help='Wiki repo checkout root')
+    args = parser.parse_args()
+    wiki_dir = args.wiki_dir
+
     # Fix all markdown files
     for md_file in wiki_dir.glob('*.md'):
         fix_image_paths_in_file(md_file)
