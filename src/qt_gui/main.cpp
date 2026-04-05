@@ -1,6 +1,5 @@
 #include <QApplication>
 #include <QTranslator>
-#include <QLibraryInfo>
 
 #include "ltr_gui.h"
 #include <utils.h>

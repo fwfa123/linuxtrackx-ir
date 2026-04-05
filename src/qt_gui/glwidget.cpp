@@ -62,14 +62,25 @@ void ReaderThread::run()
 
 void GLWidget::objectsRead()
 {
+  if (!isValid()) {
+    contextUsable_ = false;
+    emit ready();
+    return;
+  }
   makeCurrent();
+  if (!isValid()) {
+    contextUsable_ = false;
+    emit ready();
+    return;
+  }
   makeObjects();
   update();  // QOpenGLWidget uses update() instead of updateGL()
+  contextUsable_ = true;
   emit ready();
 }
 
 GLWidget::GLWidget(QWidget *parent)
-     : QOpenGLWidget(parent), rt(new ReaderThread())
+     : QOpenGLWidget(parent), rt(new ReaderThread()), contextUsable_(false)
  {
      xRot = 0;
      yRot = 0;
@@ -89,10 +100,12 @@ GLWidget::GLWidget(QWidget *parent)
      if(rt->isRunning()){
        rt->wait();
      }
-     makeCurrent();
-     std::vector<GLuint>::iterator i;
-     for(i = objects.begin(); i != objects.end(); ++i){
-       glDeleteLists(*i, 1);
+     if (isValid()) {
+       makeCurrent();
+       std::vector<GLuint>::iterator i;
+       for(i = objects.begin(); i != objects.end(); ++i){
+         glDeleteLists(*i, 1);
+       }
      }
      // Clean up textures - use set to avoid deleting same texture multiple times
      // Multiple display lists from same object share the same texture
@@ -156,6 +169,9 @@ GLWidget::GLWidget(QWidget *parent)
 
  void GLWidget::initializeGL()
  {
+     if (!isValid()) {
+       return;
+     }
      QColor bgColor = trolltechPurple.darker();
      glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), bgColor.alphaF());
      makeObjects();
@@ -167,6 +183,9 @@ GLWidget::GLWidget(QWidget *parent)
 
 void GLWidget::paintGL()
 {
+     if (!isValid()) {
+       return;
+     }
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      glLoadIdentity();
      
@@ -197,6 +216,9 @@ void GLWidget::paintGL()
 
  void GLWidget::resizeGL(int width, int height)
  {
+     if (!isValid()) {
+       return;
+     }
      glViewport(0, 0, width, height);
 
      glMatrixMode(GL_PROJECTION);

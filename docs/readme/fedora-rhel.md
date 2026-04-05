@@ -9,11 +9,11 @@ sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
 sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
-sudo dnf install qt5-qtx11extras-devel
-sudo dnf install mxml-devel
-sudo dnf install mesa-libGLU-devel.x86_64
+sudo dnf install sqlite  # Required for Qt help system
 ```
 **Note (mxml):** On Fedora the package is typically **mxml-devel**. If `libmxml-devel` is not found, run `sudo dnf install mxml-devel`.
+
+**Fedora package names:** There is no `qt5-qmake` package—`qmake-qt5` is included in `qt5-qtbase-devel`. Mini-XML development files are in **`mxml-devel`** (Debian/Ubuntu equivalent: `libmxml-dev`; Fedora does not ship `libmxml-devel`).
 
 ### Wine Support (Level 2+)
 ```bash
@@ -80,7 +80,13 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid
 
 ## Qt6 and in-app help
 
-In-app help is built from HTML in the repo; no qhelpgenerator or Qt Help tools are required. If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
+In-app help is built from HTML in the repo; AppImage builds may run `qhelpgenerator`. If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
+
+**Verify Qt6 tools are accessible (optional):**
+```bash
+which qmake6 qhelpgenerator moc
+# Typically under /usr/lib64/qt6/bin/
+```
 
 ## Build Commands
 
@@ -169,8 +175,9 @@ ls /opt/lib/linuxtrack/wine_bridge/
 
 | Problem | Solution |
 |---------|----------|
-| `qmake: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
+| `qmake` / `qmake6: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
 | `Could not find a package configuration file provided by "Qt6"` | Install Qt6 development packages: `sudo dnf install qt6-qtbase-devel qt6-qttools-devel` |
+| `qhelpgenerator: command not found` | Add Qt6 tools to PATH or install `qt6-qttools`; tools live under `/usr/lib64/qt6/bin/` |
 | `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development: `sudo dnf install gcc-c++.i686` |
 
 ### 32-bit Library Issues
