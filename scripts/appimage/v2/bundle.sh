@@ -115,6 +115,52 @@ QTEOF
         print_success "usr/bin/qt.conf: Prefix=.. (relative to usr/bin → usr/), plugins = usr/plugins and usr/lib/qt6/plugins"
     fi
 
+    # Synchronize full Qt6 shared libraries from the build host (same Qt as the CMake build).
+    # linuxdeploy-plugin-qt can leave gaps; the dynamic linker may then resolve libQt6*.so from
+    # host /lib64 (older Qt), causing Qt_6.10 / Qt_*_PRIVATE_API symbol errors at runtime.
+    if [[ -f usr/bin/ltr_gui ]]; then
+        print_status "Ensuring full Qt6 library set from build host (QT_INSTALL_LIBS → usr/lib)"
+        _qmake_for_libs=""
+        for _c in qmake6 /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake qmake; do
+            if command -v "$_c" >/dev/null 2>&1; then
+                _qmake_for_libs=$(command -v "$_c")
+                break
+            fi
+            if [[ -x "$_c" ]]; then
+                _qmake_for_libs="$_c"
+                break
+            fi
+        done
+        _qt6_libdir=""
+        if [[ -n "$_qmake_for_libs" ]]; then
+            _qt6_libdir=$("$_qmake_for_libs" -query QT_INSTALL_LIBS 2>/dev/null || true)
+        fi
+        if [[ -z "$_qt6_libdir" || ! -d "$_qt6_libdir" ]]; then
+            for _d in /usr/lib64/qt6/lib /usr/lib/qt6/lib; do
+                if [[ -d "$_d" && ( -f "$_d/libQt6Core.so.6" || -f "$_d/libQt6Core.so" ) ]]; then
+                    _qt6_libdir="$_d"
+                    break
+                fi
+            done
+        fi
+        if [[ -n "$_qt6_libdir" && -d "$_qt6_libdir" ]]; then
+            _qt6_n=0
+            shopt -s nullglob
+            for _qf in "$_qt6_libdir"/libQt6*.so*; do
+                [[ -e "$_qf" ]] || continue
+                _qbase=$(basename "$_qf")
+                [[ "$_qbase" == *.prl ]] && continue
+                cp -L -f "$_qf" "usr/lib/$_qbase" 2>/dev/null || cp -f "$_qf" "usr/lib/"
+                _qt6_n=$((_qt6_n + 1))
+            done
+            shopt -u nullglob
+            print_success "Synced $_qt6_n Qt6 libraries from $_qt6_libdir into usr/lib (avoids host /lib64 Qt mix)"
+        else
+            print_warning "Could not locate QT_INSTALL_LIBS — verify usr/lib contains a full libQt6* set"
+        fi
+        unset _qmake_for_libs _qt6_libdir _qf _qbase _qt6_n _c _d
+    fi
+
     # Inject help runtime handling into the linuxdeploy Qt hook so AppRun sets QT_HELP_PATH to a writable dir
     if [[ -f apprun-hooks/linuxdeploy-plugin-qt-hook.sh ]]; then
         print_status "Patching linuxdeploy Qt hook to set writable QT_HELP_PATH and copy help files"
