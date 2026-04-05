@@ -144,6 +144,7 @@ squashfs-root/
 appimagetool-*
 linuxdeploy-*
 linuxdeploy-plugin-*
+scripts/appimage/v2/logs/
 
 # Wine bridge build artifacts
 wine_bridge/build/
