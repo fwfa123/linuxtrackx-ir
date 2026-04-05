@@ -39,13 +39,13 @@ Choose the level that matches your needs. Each level includes all features from 
 |-------|----------|----------|
 | **1: TrackIR Only** | Linux native games only | TrackIR hardware, LinuxTrack server |
 | **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires 32-bit Wine + NSIS**) |
-
-> **⚠️ Important**: Level 2 requires 32-bit Wine support for MFC42 library installation and NSIS for Wine bridge installer generation. See your distribution's guide for specific installation commands.
-| **3: + Webcam** | Webcam / optical tracking (V4L) | Level 2 + webcam drivers |
-| **4: + OSC** | External applications/MIDI | Level 3 + Open Sound Control |
-| **5: + X-Plane** | Flight simulator | Level 4 + X-Plane plugin |
+| **3: + X-Plane** | Flight simulator | Level 2 + X-Plane plugin |
+| **4: + Webcam** | Webcam / optical tracking (V4L) | Level 3 + webcam drivers |
+| **5: + OSC** | External applications/MIDI | Level 4 + Open Sound Control |
 | **6: + Face tracking** | OpenCV-based face tracking (`libwc` facetrack, `libp3eft`) | Level 5 + face tracking (OpenCV) |
 | **7: + Wiimote** | Nintendo Wii Remote | Level 6 + Wiimote support |
+
+> **⚠️ Important**: Level 2 requires 32-bit Wine support for MFC42 library installation and NSIS for Wine bridge installer generation. See your distribution's guide for specific installation commands.
 
 ## 🛠️ Build Overview
 
@@ -82,11 +82,11 @@ sudo cmake --build . --target uninstall
 |-------|---------------|-------------|
 | 1 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | TrackIR only (default prefix is `/opt`) |
 | 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON` | + Wine support (**requires 32-bit Wine installed**) |
-| 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON` | + Webcam |
-| 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
-| 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
-| 6 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + Face tracking |
-| 7 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + Wiimote |
+| 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
+| 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON` | + Webcam |
+| 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
+| 6 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON` | + Face tracking |
+| 7 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON` | + Wiimote |
 
 > **Note**: `/opt` is the default install prefix and is recommended for Steam Proton compatibility. Symlinks are automatically created in `/usr/local/bin` for PATH compatibility.
 
@@ -213,7 +213,7 @@ For advanced users who want to create AppImages:
 ./scripts/appimage/build_appimage_phase4.sh --clean
 ```
 
-Build the AppImage on a machine that has the same **development** packages as a full source build (see your distro guide). The v2 packaging script enables webcam support (`ENABLE_WEBCAM=ON`) and opts in to face tracking (`ENABLE_FACE_TRACKER=ON`) so OpenCV facetrack can be built when **Level 3+** and **Level 6+** packages are installed. **End users** who only run the published AppImage do **not** need OpenCV installed system-wide; OpenCV should be bundled inside the AppImage when the release was built with it. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time.
+Build the AppImage on a machine that has the same **development** packages as a full source build (see your distro guide). The v2 `scripts/appimage/v2/prepare.sh` script matches roughly **Level 5** in the table above: it enables `ENABLE_WEBCAM=ON`, `ENABLE_OSC=ON`, `ENABLE_XPLANE=ON`, and leaves **`ENABLE_FACE_TRACKER=OFF`** (the CMake default—OpenCV facetrack is opt-in). Install **Level 4+** (webcam/V4L) packages on the build host so `libwc` and PS3 Eye (`libp3e`) can build. To bundle OpenCV-based facetrack (`libp3eft`, etc.), you must add `-DENABLE_FACE_TRACKER=ON` and install **Level 6+** OpenCV development packages on the builder; the default script does not. **End users** who only run the published AppImage do **not** need OpenCV on the system. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time.
 
 **[Full advanced documentation](docs/technical/)** - CMake options, packaging, and development guides.
 
