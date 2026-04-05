@@ -9,6 +9,8 @@ source "$SCRIPT_DIR/config.sh"
 # Enforce defaults: always clean and include wine bridge
 export CLEAN=1
 export WITH_WINE_BRIDGE=1
+# Set REQUIRE_WIIMOTE=1 before CI if the AppImage must bundle wii_server (needs libcwiid on the build host).
+# export REQUIRE_WIIMOTE=1
 
 echo "[INFO] CI build starting for $APP_NAME $VERSION"
 
@@ -50,6 +52,11 @@ OUT_FILE="$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage"
 if [[ -f "$OUT_FILE" ]]; then
   echo "[SUCCESS] AppImage ready: $OUT_FILE"
   stat "$OUT_FILE" | sed -n 's/^\(Modify:\|Change:\|Birth:\)/[INFO] \1/p'
+  if [[ "${SMOKE_APPIMAGE:-1}" == "1" && -x "$SCRIPT_DIR/smoke_appimage.sh" ]]; then
+    echo "[STEP] smoke_appimage"
+    "$SCRIPT_DIR/smoke_appimage.sh" "$OUT_FILE"
+    echo "[STEP DONE] smoke_appimage"
+  fi
 else
   echo "[ERROR] Expected AppImage not found: $OUT_FILE" >&2
   echo "[INFO] Listing AppImage candidates in project root:" >&2
