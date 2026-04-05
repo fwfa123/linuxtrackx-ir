@@ -8,12 +8,10 @@ sudo dnf group install development-tools
 sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
-sudo dnf install libmxml-devel mesa-libGL-devel mesa-libGLU-devel
-sudo dnf install sqlite  # Required for Qt help system
+sudo dnf install mxml-devel mesa-libGL-devel mesa-libGLU-devel
+sudo dnf install sqlite  # Qt SQL (QSQLITE driver): Lutris game-database integration
 ```
-**Note (mxml):** On Fedora the package is typically **mxml-devel**. If `libmxml-devel` is not found, run `sudo dnf install mxml-devel`.
-
-**Fedora package names:** There is no `qt5-qmake` package—`qmake-qt5` is included in `qt5-qtbase-devel`. Mini-XML development files are in **`mxml-devel`** (Debian/Ubuntu equivalent: `libmxml-dev`; Fedora does not ship `libmxml-devel`).
+**Fedora package names:** There is no `qt5-qmake` package—`qmake-qt5` is included in `qt5-qtbase-devel`. On Debian/Ubuntu, Mini-XML is **`libmxml-dev`**.
 
 ### Wine Support (Level 2+)
 ```bash
