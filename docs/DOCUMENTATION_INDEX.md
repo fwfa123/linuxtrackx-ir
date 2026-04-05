@@ -64,13 +64,6 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
 - **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - Qt5 Help System AppImage bundling fix plan (12KB)
 
-### 📈 Development Progress (`progress/`)
-**For development history and project tracking**
-- **[progress/README.md](progress/README.md)** - Development progress overview
-- **[progress/INSTALLATION_PROGRESS_TRACKER.md](progress/INSTALLATION_PROGRESS_TRACKER.md)** - Installation progress (22KB)
-- **[progress/PROJECT_STATUS_UPDATE.md](progress/PROJECT_STATUS_UPDATE.md)** - Project status updates (6KB)
-- **[progress/BRANCH_MERGE_PLAN.md](progress/BRANCH_MERGE_PLAN.md)** - Git branch merge planning (5KB)
-
 ### 🍷 Wine Legacy (`wine-legacy/`)
 **⚠️ OBSOLETE - Historical reference only**
 - **[wine-legacy/README.md](wine-legacy/README.md)** - Wine legacy documentation overview
@@ -102,7 +95,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 ### Development Resources
 - **Qt5 Migration** → [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)
 - **Build System** → [technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)
-- **Project Status** → [progress/PROJECT_STATUS_UPDATE.md](progress/PROJECT_STATUS_UPDATE.md)
+- **Project status / releases** → [../CHANGELOG.md](../CHANGELOG.md), [../README.md](../README.md)
 
 ---
 
@@ -143,7 +136,6 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Technical architecture
 - **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Implementation details
 - **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help system fix
-- **[progress/README.md](progress/README.md)** - Development progress
 
 ### Testers
 - **[testing/README.md](testing/README.md)** - Testing procedures
