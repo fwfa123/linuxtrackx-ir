@@ -124,6 +124,14 @@ else
     failures=$((failures+1))
 fi
 
+# libxml2 — Qt6 / platform stack may link it; not always pulled by linuxdeploy (seen on Arch/EndeavourOS live)
+if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libxml2.so*' -print -quit 2>/dev/null)" ]]; then
+    print_status "Found libxml2 in usr/lib (Qt/XML dependency)"
+else
+    print_error "Missing libxml2.so* in usr/lib — ltr_gui may fail on minimal systems (bundle.sh common libs)"
+    failures=$((failures+1))
+fi
+
 # Verify rpath settings on critical libraries
 print_status "Verifying rpath settings on TrackIR libraries"
 if command -v patchelf >/dev/null 2>&1; then
