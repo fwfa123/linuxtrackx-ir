@@ -295,12 +295,14 @@ class HTMLToMarkdownConverter:
             print(f"Error updating image references in {md_file}: {e}")
 
 def main():
+    from wiki_paths import default_help_dir, default_wiki_root
+
     parser = argparse.ArgumentParser(description='Convert HTML help files to Markdown')
-    parser.add_argument('--source-dir', default='/media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/help',
+    parser.add_argument('--source-dir', type=str, default=str(default_help_dir()),
                        help='Source directory containing HTML files')
-    parser.add_argument('--target-dir', default='/media/mario/Local_Git/git-repos/linuxtrackx-ir/docs/wiki',
-                       help='Target directory for Markdown files')
-    parser.add_argument('--wiki-dir', default='/media/mario/Local_Git/git-repos/linuxtrackx-ir.wiki',
+    parser.add_argument('--target-dir', type=str, default=str(default_wiki_root()),
+                       help='Target directory for Markdown files (wiki checkout)')
+    parser.add_argument('--wiki-dir', type=str, default=str(default_wiki_root()),
                        help='Directory containing existing wiki files')
     parser.add_argument('--copy-images', action='store_true', default=True,
                        help='Copy images to target directory')

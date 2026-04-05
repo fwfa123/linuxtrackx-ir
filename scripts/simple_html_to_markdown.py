@@ -311,10 +311,11 @@ class SimpleHTMLToMarkdownConverter:
             print(f"Error updating image references in {md_file}: {e}")
 
 def main():
-    # Define paths
-    source_dir = '/media/mario/Local_Git/git-repos/linuxtrackx-ir/src/qt_gui/help'
-    target_dir = '/media/mario/Local_Git/git-repos/linuxtrackx-ir/docs/wiki'
-    wiki_dir = '/media/mario/Local_Git/git-repos/linuxtrackx-ir.wiki'
+    from wiki_paths import default_help_dir, default_wiki_root
+
+    source_dir = str(default_help_dir())
+    target_dir = str(default_wiki_root())
+    wiki_dir = str(default_wiki_root())
     
     print(f"Converting HTML files from {source_dir} to {target_dir}")
     

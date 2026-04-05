@@ -41,8 +41,15 @@ def fix_htm_links_in_file(file_path: Path) -> int:
         return 0
 
 def main():
-    wiki_dir = Path('/media/mario/Local_Git/git-repos/linuxtrackx-ir/docs/wiki')
-    
+    import argparse
+    from wiki_paths import default_wiki_root
+
+    parser = argparse.ArgumentParser(description='Fix .htm links to .md in wiki Markdown')
+    parser.add_argument('--wiki-dir', type=Path, default=default_wiki_root(),
+                       help='Wiki repo checkout root')
+    args = parser.parse_args()
+    wiki_dir = args.wiki_dir
+
     if not wiki_dir.exists():
         print(f"Error: Wiki directory not found: {wiki_dir}")
         return
