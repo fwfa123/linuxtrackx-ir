@@ -165,6 +165,14 @@ else
     failures=$((failures+1))
 fi
 
+# Qt6 Core must be bundled — otherwise the dynamic linker may use host /lib64/libQt6*.so (wrong Qt_6.x symbols)
+if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libQt6Core.so*' -print -quit 2>/dev/null)" ]]; then
+    print_status "Qt6 Core present under usr/lib (avoids host /lib64 Qt mix)"
+else
+    print_error "libQt6Core.so* missing from usr/lib — bundle.sh Qt sync may have failed on the build host"
+    failures=$((failures+1))
+fi
+
 # STRICT_BUNDLE: Qt6OpenGLWidgets needs libxcb-glx for GLX / 3D preview on typical X11 stacks
 if [[ "${STRICT_BUNDLE:-0}" == "1" ]]; then
     _glw=""
