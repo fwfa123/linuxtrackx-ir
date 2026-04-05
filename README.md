@@ -24,15 +24,11 @@ Choose your installation level below, then see the detailed guides for your dist
 ### **Issues to be aware of as you proceed**
 Have you installed Steam or Lutris from Flatpak? There are issues that you will have to correct with the sandbox design of Flatpak
 
-There are two branches.  
-main = QT5
-qt6_migration = QT6 
+**Build requirements:** the GUI and tools use **Qt6** (CMake `find_package(Qt6 …)`). Use your distribution’s Qt6 development packages; see the distribution guides below. On **KDE Plasma** (Wayland or X11), build from the `main` branch as usual—no separate Qt branch is needed.
 
-If you are running KDE use the qt6_migration branch to build from..
 ```bash
-    # Clone the repository
-    git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
-    git checkout qt6-migration
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+cd linuxtrackx-ir
 ```
 
 ## 🎯 Installation Levels

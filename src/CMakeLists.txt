@@ -421,10 +421,10 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
 endif()
 
 # ============================================================================
-# Qt5 Applications (subdirectories)
+# Qt6 Applications (subdirectories)
 # ============================================================================
 
-# Add Qt5 GUI subdirectory
+# Add Qt6 GUI subdirectory
 add_subdirectory(qt_gui)
 
 # Add Mickey subdirectory
