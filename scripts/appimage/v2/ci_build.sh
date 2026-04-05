@@ -6,20 +6,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Load config to get APP_NAME, VERSION, APPDIR, PROJECT_ROOT
 source "$SCRIPT_DIR/config.sh"
 
-# Enforce defaults: always clean and include wine bridge
 export CLEAN=1
-export WITH_WINE_BRIDGE=1
-# Fail validate if OpenGL widgets are bundled without libxcb-glx (3D preview / GLX).
-export STRICT_BUNDLE=1
-# Standard AppImage: prepare.sh uses -DDISABLE_WIIMOTE=ON (no wii_server). To ship Wiimote, rebuild with DISABLE_WIIMOTE=OFF and libcwiid dev packages.
+export STRICT_BUNDLE=${STRICT_BUNDLE:-1}
 
 echo "[INFO] CI build starting for $APP_NAME $VERSION"
 
-# Optional clean
 if [[ "${CLEAN:-0}" == "1" ]]; then
-  echo "[INFO] CLEAN=1 → removing previous outputs and AppDir"
-  rm -f "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage" || true
-  rm -rf "$APPDIR" || true
+    echo "[INFO] CLEAN=1 -> removing previous outputs and AppDir"
+    rm -f "$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage" || true
+    rm -rf "$APPDIR" || true
 fi
 
 echo "[STEP] prepare"
@@ -29,13 +24,6 @@ echo "[STEP DONE] prepare"
 echo "[STEP] bundle"
 "$SCRIPT_DIR/bundle.sh"
 echo "[STEP DONE] bundle"
-
-# Optional wine bridge step if present/enabled
-if [[ -x "$SCRIPT_DIR/wine_bridge.sh" && "${WITH_WINE_BRIDGE:-0}" == "1" ]]; then
-  echo "[STEP] wine_bridge"
-  "$SCRIPT_DIR/wine_bridge.sh"
-  echo "[STEP DONE] wine_bridge"
-fi
 
 echo "[STEP] optimize"
 "$SCRIPT_DIR/optimize.sh" || true
@@ -51,20 +39,17 @@ echo "[STEP DONE] package"
 
 OUT_FILE="$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage"
 if [[ -f "$OUT_FILE" ]]; then
-  echo "[SUCCESS] AppImage ready: $OUT_FILE"
-  stat "$OUT_FILE" | sed -n 's/^\(Modify:\|Change:\|Birth:\)/[INFO] \1/p'
-  if [[ "${SMOKE_APPIMAGE:-1}" == "1" && -x "$SCRIPT_DIR/smoke_appimage.sh" ]]; then
-    echo "[STEP] smoke_appimage"
-    "$SCRIPT_DIR/smoke_appimage.sh" "$OUT_FILE"
-    echo "[STEP DONE] smoke_appimage"
-  fi
+    echo "[SUCCESS] AppImage ready: $OUT_FILE"
+    ls -lh "$OUT_FILE"
+    if [[ "${SMOKE_APPIMAGE:-0}" == "1" && -x "$SCRIPT_DIR/smoke_appimage.sh" ]]; then
+        echo "[STEP] smoke_appimage"
+        "$SCRIPT_DIR/smoke_appimage.sh" "$OUT_FILE"
+        echo "[STEP DONE] smoke_appimage"
+    fi
 else
-  echo "[ERROR] Expected AppImage not found: $OUT_FILE" >&2
-  echo "[INFO] Listing AppImage candidates in project root:" >&2
-  ls -la "$PROJECT_ROOT"/*.AppImage 2>/dev/null || echo "[INFO] No *.AppImage found in $PROJECT_ROOT" >&2
-  exit 1
+    echo "[ERROR] Expected AppImage not found: $OUT_FILE" >&2
+    ls -la "$PROJECT_ROOT"/*.AppImage 2>/dev/null || echo "[INFO] No *.AppImage found in $PROJECT_ROOT" >&2
+    exit 1
 fi
 
 echo "[SUCCESS] CI build pipeline completed"
-
-

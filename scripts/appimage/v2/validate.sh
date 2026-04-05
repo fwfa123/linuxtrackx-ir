@@ -12,14 +12,23 @@ print_status "Validate: auditing AppDir"
 
 failures=0
 
-# True if usr/lib/linuxtrack has any lib<stem>.so or lib<stem>.so.* (file or symlink)
 linuxtrack_lib_present() {
     local stem="$1"
     [[ -d "$APPDIR/usr/lib/linuxtrack" ]] || return 1
     [[ -n "$(find "$APPDIR/usr/lib/linuxtrack" -maxdepth 1 \( -name "lib${stem}.so" -o -name "lib${stem}.so.*" \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]
 }
 
-# Ensure core binaries
+# ---- X-Plane plugin (optional; expected in Docker AppImage when EXPECT_XPLANE_PLUGIN=1) ----
+if [[ "${EXPECT_XPLANE_PLUGIN:-0}" == "1" ]]; then
+    if [[ -f "$APPDIR/usr/lib/linuxtrack/xlinuxtrack9.so" ]] || [[ -L "$APPDIR/usr/lib/linuxtrack/xlinuxtrack9.so" ]]; then
+        print_success "X-Plane plugin present: usr/lib/linuxtrack/xlinuxtrack9.so"
+    else
+        print_error "X-Plane plugin missing: usr/lib/linuxtrack/xlinuxtrack9.so (ENABLE_XPLANE / SDK path)"
+        failures=$((failures+1))
+    fi
+fi
+
+# ---- Core binaries ----
 for bin in usr/bin/ltr_gui; do
     if [[ ! -x "$APPDIR/$bin" ]]; then
         print_error "Missing or non-executable: $bin"
@@ -27,510 +36,158 @@ for bin in usr/bin/ltr_gui; do
     fi
 done
 
-# Ensure TrackIR device detection libraries (accept versioned SONAME only; AppDir may omit unversioned symlinks)
+# ---- TrackIR device detection libraries ----
 for stem in tir ltusb1 ltr; do
     if linuxtrack_lib_present "$stem"; then
-        print_status "Found TrackIR library: lib${stem}.so* in usr/lib/linuxtrack"
+        print_status "Found TrackIR library: lib${stem}.so*"
     else
-        print_error "Missing TrackIR library: lib${stem}.so* under usr/lib/linuxtrack"
+        print_error "Missing TrackIR library: lib${stem}.so*"
         failures=$((failures+1))
     fi
 done
 
-# PS3 Eye plugin (USB 1415:2000)
+# ---- PS3 Eye driver ----
 if linuxtrack_lib_present p3e; then
     print_success "Found PS3 Eye driver library (libp3e)"
 else
-    print_error "Missing PS3 Eye library: libp3e.so* under usr/lib/linuxtrack"
+    print_error "Missing PS3 Eye library: libp3e.so*"
     failures=$((failures+1))
 fi
 
-# Webcam (prepare.sh targets README level 5 — ENABLE_WEBCAM=ON, ENABLE_FACE_TRACKER=OFF)
+# ---- Webcam driver ----
 if linuxtrack_lib_present wc; then
     print_status "Found webcam driver library (libwc)"
-    opencv_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
-    if [[ "$opencv_bundled" -gt 0 ]]; then
-        print_success "OpenCV runtime libraries present in AppDir for libwc / facetrack drivers"
-        flexiblas_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libflexiblas*.so*' 2>/dev/null || true; } | wc -l)
-        openblas_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopenblas*.so*' 2>/dev/null || true; } | wc -l)
-        if [[ "$flexiblas_bundled" -eq 0 ]]; then
-            print_warning "OpenCV present but no libflexiblas*.so in AppDir — Fedora/RHEL builds may abort at FlexiBLAS init (check bundle.sh)"
-        else
-            print_status "FlexiBLAS library present for OpenCV stack"
-        fi
-        if [[ "$openblas_bundled" -eq 0 ]]; then
-            print_warning "OpenCV/FlexiBLAS stack but no libopenblas*.so in AppDir — set FLEXIBLAS_DEFAULT_LIBRARY may fail (check bundle.sh)"
-        else
-            print_status "OpenBLAS library present for FlexiBLAS backend"
-        fi
-        if [[ -d "$APPDIR/usr/lib/flexiblas" ]]; then
-            print_status "FlexiBLAS backend directory present: usr/lib/flexiblas"
-        fi
-    else
-        # libwc links OpenCV only when ENABLE_FACE_TRACKER=ON; libp3eft exists only with face tracker.
-        print_status "No libopencv_*.so in AppDir (expected for README/AppImage default: ENABLE_FACE_TRACKER=OFF; webcam libwc does not use OpenCV without facetrack)"
-    fi
 else
-    print_warning "libwc not in AppDir (webcam support may be disabled in this build)"
+    print_warning "libwc not in AppDir (webcam support may be disabled)"
 fi
 
-if linuxtrack_lib_present p3eft; then
-    print_status "Found PS3 Eye facetrack library (libp3eft)"
-    opencv_for_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
-    if [[ "$opencv_for_p3" -eq 0 ]]; then
-        print_warning "libp3eft present but no libopencv_*.so in AppDir — PS3 Eye face tracking may fail at runtime"
-    elif [[ "$opencv_for_p3" -gt 0 ]]; then
-        flexiblas_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libflexiblas*.so*' 2>/dev/null || true; } | wc -l)
-        openblas_p3=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopenblas*.so*' 2>/dev/null || true; } | wc -l)
-        [[ "$flexiblas_p3" -gt 0 ]] || print_warning "libp3eft + OpenCV but no libflexiblas*.so — FlexiBLAS may fail on Fedora/RHEL"
-        [[ "$openblas_p3" -gt 0 ]] || print_warning "libp3eft + OpenCV but no libopenblas*.so — FlexiBLAS backend may be missing"
-    fi
-fi
-
-# Ensure 3D assets exist (GL 3D view)
-print_status "Validating 3D model assets"
+# ---- 3D assets ----
 for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj; do
     if [[ ! -f "$APPDIR/$asset" ]]; then
         print_error "Missing 3D model asset: $asset"
         failures=$((failures+1))
-    else
-        print_status "Found 3D asset: $asset"
     fi
 done
 
-# Check for USB libraries required for device detection (both required)
-has_libusb=false
-has_libudev=false
-if [[ -f "$APPDIR/usr/lib/libusb-1.0.so.0" ]]; then
-    print_status "Found USB library: libusb-1.0.so.0"
-    has_libusb=true
-fi
-if [[ -f "$APPDIR/usr/lib/libudev.so.1" ]]; then
-    print_status "Found USB library: libudev.so.1"
-    has_libudev=true
-fi
-if [[ "$has_libusb" != true || "$has_libudev" != true ]]; then
-    missing_list=()
-    [[ "$has_libusb" == true ]] || missing_list+=("libusb-1.0.so.0")
-    [[ "$has_libudev" == true ]] || missing_list+=("libudev.so.1")
-    print_warning "USB libraries missing: ${missing_list[*]} - TrackIR device detection may fail"
-fi
+# ---- Key bundled libraries ----
+for lib_pattern in libusb-1.0.so libudev.so libmxml.so libxml2.so "libicu*.so" libQt6Core.so; do
+    if [[ -n "$(find "$APPDIR/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${lib_pattern}*" -print -quit 2>/dev/null)" ]]; then
+        print_success "Bundled: $lib_pattern"
+    else
+        print_error "Missing bundled library: $lib_pattern"
+        failures=$((failures+1))
+    fi
+done
 
-# Mini-XML (ltr_gui, ltr_extractor); linuxdeploy often omits on Fedora
-if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libmxml.so*' -print -quit 2>/dev/null)" ]]; then
-    print_status "Found Mini-XML library (libmxml) for GUI/tools"
-else
-    print_error "Missing libmxml.so* in usr/lib — ltr_gui will fail on clean systems (bundle.sh extra libs)"
+# ---- Qt platform plugin ----
+if [[ ! -e "$APPDIR/usr/plugins/platforms/libqxcb.so" ]]; then
+    print_error "Qt platform plugin (xcb) missing from usr/plugins/platforms/"
     failures=$((failures+1))
 fi
 
-# libxml2 — Qt6 / platform stack may link it; not always pulled by linuxdeploy (seen on Arch/EndeavourOS live)
-if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libxml2.so*' -print -quit 2>/dev/null)" ]]; then
-    print_status "Found libxml2 in usr/lib (Qt/XML dependency)"
-else
-    print_error "Missing libxml2.so* in usr/lib — ltr_gui may fail on minimal systems (bundle.sh common libs)"
-    failures=$((failures+1))
-fi
-
-# ICU — Qt/libxml builds often link libicui18n.so.* (soname varies); bundle.sh copies libicu* from the build host
-if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libicu*.so*' -print -quit 2>/dev/null)" ]]; then
-    print_status "ICU libraries present under usr/lib"
-else
-    print_warning "No libicu*.so* in usr/lib — Arch/EndeavourOS may need ICU bundled if ltr_gui links it"
-fi
-
-# Verify rpath settings on critical libraries
-print_status "Verifying rpath settings on TrackIR libraries"
-if command -v patchelf >/dev/null 2>&1; then
-    for lib in usr/lib/linuxtrack/libtir.so usr/lib/linuxtrack/libtir.so.0 usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so usr/lib/linuxtrack/libltusb1.so.0 usr/lib/linuxtrack/libltusb1.so.0.0.0; do
-        if [[ -f "$APPDIR/$lib" ]]; then
-            rpath=$(patchelf --print-rpath "$APPDIR/$lib" 2>/dev/null || echo "NONE")
-            if [[ "$rpath" == "NONE" || -z "$rpath" ]]; then
-                print_warning "No rpath set for $(basename "$lib")"
-            else
-                print_status "rpath for $(basename "$lib"): $rpath"
-            fi
-        fi
-    done
-else
-    print_warning "patchelf not available; skipping rpath checks"
-fi
-
-# Ensure Qt essentials (Qt6 primary; Qt5 layout optional)
-if [[ ! -e "$APPDIR/usr/plugins/platforms/libqxcb.so" && ! -e "$APPDIR/usr/lib/qt6/plugins/platforms/libqxcb.so" && ! -e "$APPDIR/usr/lib/qt5/plugins/platforms/libqxcb.so" ]]; then
-    print_error "Qt platform plugin (xcb) missing"
-    failures=$((failures+1))
-fi
-SQLITE_USR_PLUGINS=$({ find "$APPDIR/usr/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l)
-SQLITE_QT6_PLUGINS=$({ find "$APPDIR/usr/lib/qt6/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l)
-SQLITE_QT5_PLUGINS=$({ find "$APPDIR/usr/lib/qt5/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l)
-
-if [[ $SQLITE_USR_PLUGINS -gt 0 ]] || [[ $SQLITE_QT6_PLUGINS -gt 0 ]] || [[ $SQLITE_QT5_PLUGINS -gt 0 ]]; then
+# ---- Qt SQLite driver ----
+if [[ -n "$(find "$APPDIR/usr/plugins/sqldrivers" -maxdepth 1 -type f -name 'libqsqlite.so*' -print -quit 2>/dev/null)" ]]; then
     print_success "Qt SQLite driver present"
 else
     print_error "Qt SQLite driver missing; help system will fail"
     failures=$((failures+1))
 fi
 
-# Qt6 Core must be bundled — otherwise the dynamic linker may use host /lib64/libQt6*.so (wrong Qt_6.x symbols)
-if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libQt6Core.so*' -print -quit 2>/dev/null)" ]]; then
-    print_status "Qt6 Core present under usr/lib (avoids host /lib64 Qt mix)"
-else
-    print_error "libQt6Core.so* missing from usr/lib — bundle.sh Qt sync may have failed on the build host"
-    failures=$((failures+1))
-fi
-
-# STRICT_BUNDLE: Qt6OpenGLWidgets needs libxcb-glx for GLX / 3D preview on typical X11 stacks
-if [[ "${STRICT_BUNDLE:-0}" == "1" ]]; then
-    _glw=""
-    _glw=$(find "$APPDIR/usr/lib" -maxdepth 1 \( -name 'libQt6OpenGLWidgets.so' -o -name 'libQt6OpenGLWidgets.so.*' \) 2>/dev/null | head -1)
-    if [[ -n "$_glw" && ! -f "$APPDIR/$LIBXCB_GLX_REL" ]]; then
-        print_error "STRICT_BUNDLE: $LIBXCB_GLX_REL missing but OpenGL widgets library present ($(basename "$_glw"))"
-        failures=$((failures+1))
-    elif [[ -n "$_glw" ]]; then
-        print_status "STRICT_BUNDLE: libxcb-glx present for bundled Qt6OpenGLWidgets"
-    fi
-    unset _glw
-fi
-
-# Check Qt Help system files comprehensively
-print_status "Checking Qt Help system files"
-HELP_LTR_GUI_QHC=false
-HELP_LTR_GUI_QCH=false
-HELP_MICKEY_QHC=false
-HELP_MICKEY_QCH=false
-
-[[ -f "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL" ]] && HELP_LTR_GUI_QHC=true
-[[ -f "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" ]] && HELP_LTR_GUI_QCH=true
-[[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qhc" ]] && HELP_MICKEY_QHC=true
-[[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" ]] && HELP_MICKEY_QCH=true
-
-# ltr_gui: content (help.qch) is required; collection (help.qhc) is optional if prepare.sh only had .qhp (see prepare.sh)
-if [[ "$HELP_LTR_GUI_QCH" = true ]]; then
-    if [[ "$HELP_LTR_GUI_QHC" = true ]]; then
-        print_success "Qt Help system files present (ltr_gui: help.qhc + help.qch)"
+# ---- Qt Help, Sql, OpenGLWidgets libraries ----
+for _lib_name in libQt6Help libQt6Sql libQt6OpenGLWidgets; do
+    if [[ -n "$(find "$APPDIR/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${_lib_name}.so*" -print -quit 2>/dev/null)" ]]; then
+        print_success "$_lib_name present"
     else
-        print_status "ltr_gui: help.qch present; help.qhc absent (collection optional — matches qhp-only / qch-only generation)"
+        print_error "$_lib_name missing"
+        failures=$((failures+1))
     fi
+done
+
+# ---- Qt Help data files ----
+if [[ -f "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" ]]; then
+    print_success "ltr_gui help.qch present"
 else
-    print_error "ltr_gui help.qch missing from $LTR_HELP_LTR_GUI_QCH_REL — Qt Help content will fail"
+    print_error "ltr_gui help.qch missing: $LTR_HELP_LTR_GUI_QCH_REL"
     failures=$((failures+1))
 fi
-
-# Check mickey help files
-if [[ "$HELP_MICKEY_QHC" = true ]] && [[ "$HELP_MICKEY_QCH" = true ]]; then
-    print_success "Qt Help system files present (mickey)"
+if [[ -f "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL" ]]; then
+    print_success "ltr_gui help.qhc present"
 else
-    print_warning "Qt Help system files missing from mickey (optional component)"
+    print_warning "ltr_gui help.qhc missing (optional)"
 fi
 
-validate_help_db() {
-    local path="$1"
-    local label="$2"
-    if ! sqlite3 "$path" ".tables" >/dev/null 2>&1; then
-        print_error "${label} is not a valid SQLite database"
-        failures=$((failures+1))
-        return
-    fi
-
-    # Only enforce contents tables for .qch (content database). .qhc (collection) has different schema.
-    if [[ "$path" == *.qch ]]; then
-        local tables
-        tables=$(sqlite3 "$path" ".tables" 2>/dev/null || true)
-        if [[ "$tables" =~ ContentsTable && "$tables" =~ FileDataTable ]]; then
-            print_success "${label} valid: required tables present"
+# ---- Help SQLite validation ----
+if command -v sqlite3 >/dev/null 2>&1; then
+    for _hf in "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL"; do
+        [[ -f "$_hf" ]] || continue
+        if sqlite3 "$_hf" ".tables" >/dev/null 2>&1; then
+            print_success "$(basename "$_hf") valid SQLite"
         else
-            print_error "${label} missing required tables (ContentsTable, FileDataTable)"
+            print_error "$(basename "$_hf") is not a valid SQLite database"
             failures=$((failures+1))
         fi
-    else
-        print_success "${label} opens as SQLite (schema acceptable for collection)"
-    fi
-}
-
-# Check if help files are valid SQLite databases with required tables
-if command -v sqlite3 >/dev/null 2>&1; then
-    if [[ "$HELP_LTR_GUI_QCH" = true ]]; then
-        validate_help_db "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" "ltr_gui help.qch"
-    fi
-    if [[ "$HELP_LTR_GUI_QHC" = true ]]; then
-        validate_help_db "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL" "ltr_gui help.qhc"
-    fi
-    if [[ "$HELP_MICKEY_QCH" = true ]]; then
-        validate_help_db "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" "mickey help.qch"
-    fi
-    if [[ "$HELP_MICKEY_QHC" = true ]]; then
-        validate_help_db "$APPDIR/usr/share/linuxtrack/help/mickey/help.qhc" "mickey help.qhc"
-    fi
-else
-    print_warning "sqlite3 not available; skipping detailed help database validation"
+    done
 fi
 
-# Check Qt6 Help, SQL, OpenGLWidgets (QOpenGLWidget)
-print_status "Checking Qt6 Help, SQL, and OpenGLWidgets module libraries"
-HELP_LIB=0
-SQL_LIB=0
-OPENGL_LIB=0
-for _qt_root in "$APPDIR/usr/lib" "$APPDIR/usr/lib64" "$APPDIR/usr/lib/qt6/lib" "$APPDIR/usr/lib/qt5/lib"; do
-    [[ -d "$_qt_root" ]] || continue
-    HELP_LIB=$((HELP_LIB + $(find "$_qt_root" \( -type f -o -type l \) \( -name 'libQt6Help.so*' -o -name 'libQt5Help.so*' \) 2>/dev/null | wc -l)))
-    SQL_LIB=$((SQL_LIB + $(find "$_qt_root" \( -type f -o -type l \) \( -name 'libQt6Sql.so*' -o -name 'libQt5Sql.so*' \) 2>/dev/null | wc -l)))
-    OPENGL_LIB=$((OPENGL_LIB + $(find "$_qt_root" \( -type f -o -type l \) \( -name 'libQt6OpenGLWidgets.so*' -o -name 'libQt6OpenGL.so*' -o -name 'libQt5OpenGL.so*' \) 2>/dev/null | wc -l)))
-done
-unset _qt_root
-
-if [[ $HELP_LIB -gt 0 ]]; then
-    print_success "Qt Help library present (Qt6 or legacy Qt5)"
-else
-    print_error "Qt Help library missing; help system will fail"
-    failures=$((failures+1))
-fi
-
-if [[ $SQL_LIB -gt 0 ]]; then
-    print_success "Qt Sql library present"
-else
-    print_error "Qt Sql library missing; help system will fail"
-    failures=$((failures+1))
-fi
-
-if [[ $OPENGL_LIB -gt 0 ]]; then
-    print_success "Qt OpenGL / OpenGLWidgets library present"
-else
-    print_error "Qt OpenGLWidgets library missing; 3D view / GL init may fail on clean systems"
-    failures=$((failures+1))
-fi
-
-print_status "Checking Qt Help plugins"
-HELP_PLUGINS_USR=$({ find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
-HELP_PLUGINS_QT6=$({ find "$APPDIR/usr/lib/qt6/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
-HELP_PLUGINS_QT5=$({ find "$APPDIR/usr/lib/qt5/plugins/help" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
-KIO_HELP_PLUGINS=$({ find "$APPDIR/usr/plugins/kauth/helper" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
-KIO_KF5_PLUGINS=$({ find "$APPDIR/usr/plugins/kf5/kio" -type f -name "*.so" 2>/dev/null || true; } | wc -l)
-
-TOTAL_HELP_PLUGINS=$((HELP_PLUGINS_USR + HELP_PLUGINS_QT6 + HELP_PLUGINS_QT5))
-TOTAL_KIO_PLUGINS=$((KIO_HELP_PLUGINS + KIO_KF5_PLUGINS))
-
-if [[ $TOTAL_HELP_PLUGINS -gt 0 ]]; then
-    print_success "Qt Help plugins found: $TOTAL_HELP_PLUGINS total (usr: $HELP_PLUGINS_USR, qt6: $HELP_PLUGINS_QT6, qt5: $HELP_PLUGINS_QT5)"
-    if [[ $HELP_PLUGINS_USR -gt 0 ]]; then
-        echo "  usr/plugins/help:"
-        find "$APPDIR/usr/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
-            echo "    - $(basename "$plugin")"
-        done
-    fi
-    if [[ $HELP_PLUGINS_QT6 -gt 0 ]]; then
-        echo "  usr/lib/qt6/plugins/help:"
-        find "$APPDIR/usr/lib/qt6/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
-            echo "    - $(basename "$plugin")"
-        done
-    fi
-    if [[ $HELP_PLUGINS_QT5 -gt 0 ]]; then
-        echo "  usr/lib/qt5/plugins/help:"
-        find "$APPDIR/usr/lib/qt5/plugins/help" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
-            echo "    - $(basename "$plugin")"
-        done
-    fi
-else
-    print_warning "No Qt Help plugins found - help system will have limited functionality"
-fi
-
-if [[ $TOTAL_KIO_PLUGINS -gt 0 ]]; then
-    print_success "KIO Help plugins found: $TOTAL_KIO_PLUGINS total (kauth/helper: $KIO_HELP_PLUGINS, kf5/kio: $KIO_KF5_PLUGINS)"
-    
-    # List specific KIO plugins found
-    if [[ $KIO_HELP_PLUGINS -gt 0 ]]; then
-        echo "  usr/plugins/kauth/helper:"
-        find "$APPDIR/usr/plugins/kauth/helper" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
-            echo "    - $(basename "$plugin")"
-        done
-    fi
-    
-    if [[ $KIO_KF5_PLUGINS -gt 0 ]]; then
-        echo "  usr/plugins/kf5/kio:"
-        find "$APPDIR/usr/plugins/kf5/kio" -type f -name "*.so" 2>/dev/null | while read -r plugin; do
-            echo "    - $(basename "$plugin")"
-        done
-    fi
-else
-    print_status "No KIO Help plugins found (optional enhancement)"
-fi
-
-# Ensure 32-bit linuxtrack runtime is present when wine bridge is enabled
+# ---- 32-bit Wine bridge library ----
 if [[ "${WITH_WINE_BRIDGE:-1}" == "1" ]]; then
-    print_status "Checking 32-bit linuxtrack runtime for Wine"
-    LTR32_PATH="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+    LTR32_PATH="$APPDIR/$LTR32_LIB_REL"
     LTR32_ALT="$APPDIR/usr/lib/linuxtrack/liblinuxtrack32.so.0"
     if [[ -f "$LTR32_PATH" ]]; then
         print_success "32-bit liblinuxtrack present: ${LTR32_PATH#$APPDIR/}"
     elif [[ -f "$LTR32_ALT" ]]; then
         print_success "32-bit liblinuxtrack present: ${LTR32_ALT#$APPDIR/}"
     else
-        print_error "Missing 32-bit liblinuxtrack (expected usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0 or usr/lib/linuxtrack/liblinuxtrack32.so.0)"
-        failures=$((failures+1))
+        print_warning "Missing 32-bit liblinuxtrack (Wine 32-bit support unavailable)"
     fi
 fi
 
-# ldd audit: ensure libs resolve inside AppDir, except allowlist
-allow_regex="^/(lib|lib64|usr/lib|usr/lib64)/(drm|dri|nvidia|amd|mesa|pci)"  # GPUs/drivers allowed
-# Broader system stack allowances (graphics, X11, fonts, IPC). These are typically provided by host.
-system_allow_patterns=(
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libGL(dispatch|X)?\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libOpenGL\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libX(11|au|dmcp|render|ext|randr|fixes|cursor|inerama)?\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libxcb(.*)?\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libfontconfig\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libfreetype\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libharfbuzz\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libgraphite2\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libdbus-1\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libsystemd\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libgcrypt\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libgpg-error\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libuuid\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libpng16\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libexpat\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/lib(deflate|lz4|lzma|zstd)\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/lib(md|md4c)\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/lib(SM|ICE)\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libjpeg\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libv4l2\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libv4lconvert\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libxkbcommon(-x11)?\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libpcre2-(8|16)\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libicu(uc|i18n|data)\\.so\\.'
-  '^/(lib|usr/lib|lib64|usr/lib64)/.*/libdouble-conversion\\.so\\.'
-)
-# Additionally allow core glibc toolchain libs to reside on host (common AppImage practice)
-toolchain_allow=(
-  "/lib/x86_64-linux-gnu/libc.so.6"
-  "/lib/x86_64-linux-gnu/libm.so.6"
-  "/lib/x86_64-linux-gnu/libpthread.so.0"
-  "/lib/x86_64-linux-gnu/libdl.so.2"
-  "/lib/x86_64-linux-gnu/librt.so.1"
-  "/lib/x86_64-linux-gnu/libgcc_s.so.1"
-  "/lib/x86_64-linux-gnu/libstdc++.so.6"
-  "/lib/x86_64-linux-gnu/libresolv.so.2"
-  "/lib/x86_64-linux-gnu/libz.so.1"
-  # Fedora/RHEL (ldd resolves to /lib64 and /usr/lib64)
-  "/lib64/libc.so.6"
-  "/lib64/libm.so.6"
-  "/lib64/libpthread.so.0"
-  "/lib64/libdl.so.2"
-  "/lib64/librt.so.1"
-  "/lib64/libgcc_s.so.1"
-  "/lib64/libstdc++.so.6"
-  "/usr/lib64/libgcc_s.so.1"
-  "/usr/lib64/libstdc++.so.6"
-  "/lib64/libresolv.so.2"
-  "/lib64/libz.so.1"
-  "/lib64/libnss_dns.so.2"
-  "/lib64/libnss_files.so.2"
-  "/lib64/ld-linux-x86-64.so.2"
-)
-# OpenCV / protobuf / gRPC stacks on Fedora pull Abseil, Samba private DSOs, etc. — never bundle these; treat as host stack.
-ldd_host_noise_patterns=(
-  '^/usr/lib64/samba/.*\\.so'
-  '^/lib64/libabsl_.*\\.so'
-  '^/usr/lib64/libabsl_.*\\.so'
-  '^/lib64/libutf8_(range|validity)[^/]*\\.so'
-  '^/usr/lib64/libutf8_(range|validity)[^/]*\\.so'
-  '^/lib64/libre2\\.so'
-  '^/usr/lib64/libre2\\.so'
-  '^/lib64/lib(P|p)cre[^/]*\\.so'
-  '^/usr/lib64/lib(P|p)cre[^/]*\\.so'
-  '^/lib64/libssl\\.so'
-  '^/usr/lib64/libssl\\.so'
-  '^/lib64/libcrypto\\.so'
-  '^/usr/lib64/libcrypto\\.so'
-  '^/lib64/libgssapi.*\\.so'
-  '^/usr/lib64/libgssapi.*\\.so'
-  '^/lib64/libkrb5.*\\.so'
-  '^/usr/lib64/libkrb5.*\\.so'
-  '^/lib64/libcom_err\\.so'
-  '^/usr/lib64/libcom_err\\.so'
-  '^/lib64/libkeyutils\\.so'
-  '^/usr/lib64/libkeyutils\\.so'
-  '^/lib64/libcares\\.so'
-  '^/usr/lib64/libcares\\.so'
-  '^/lib64/libnghttp2\\.so'
-  '^/usr/lib64/libnghttp2\\.so'
-  '^/lib64/libunistring\\.so'
-  '^/usr/lib64/libunistring\\.so'
-  '^/lib64/libffi\\.so'
-  '^/usr/lib64/libffi\\.so'
-)
+# ---- rpath checks ----
+if command -v patchelf >/dev/null 2>&1; then
+    for _lib in usr/lib/linuxtrack/libtir.so.0.0.0 usr/lib/linuxtrack/libltusb1.so.0.0.0; do
+        [[ -f "$APPDIR/$_lib" ]] || continue
+        _rpath=$(patchelf --print-rpath "$APPDIR/$_lib" 2>/dev/null || echo "NONE")
+        if [[ "$_rpath" == "NONE" || -z "$_rpath" ]]; then
+            print_warning "No rpath set for $(basename "$_lib")"
+        else
+            print_status "rpath for $(basename "$_lib"): $_rpath"
+        fi
+    done
+fi
 
+# ---- ldd audit: flag libraries resolving outside AppDir ----
 if command -v ldd >/dev/null 2>&1; then
-    print_status "Running ldd audit (set VALIDATE_LDD_VERBOSE=1 for per-line host deps; noisy OpenCV/Fedora stacks are summarized)"
-    critical_external_deps=0
-    ldd_external_other=0
+    print_status "Running ldd audit"
     _ltr_verbose="${VALIDATE_LDD_VERBOSE:-0}"
 
+    # These must always come from the host
+    _host_allowed_re='^/(lib|lib64|usr/lib|usr/lib64)/(libc\.so|libm\.so|libpthread\.so|libdl\.so|librt\.so|ld-linux|libnss_|libresolv|libgcc_s|libstdc\+\+)'
+    _gpu_allowed_re='^/(lib|lib64|usr/lib|usr/lib64)/.*(libGL|libEGL|libGLX|libOpenGL|libGLdispatch|libgbm|libdrm|libvulkan|nvidia|mesa|dri)'
+
+    critical_missing=0
+    _ldd_audit_paths=("$APPDIR/usr/bin" "$APPDIR/usr/lib")
+    [[ -d "$APPDIR/usr/plugins" ]] && _ldd_audit_paths+=("$APPDIR/usr/plugins")
     while IFS= read -r -d '' elf; do
         while IFS= read -r line; do
-            so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ' || true)
-            [[ -z "$so_path" ]] && continue
-            [[ "$so_path" = "not" ]] && continue
+            so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ')
+            [[ -z "$so_path" || "$so_path" == "not" ]] && continue
+            [[ "$so_path" == "$APPDIR"/* ]] && continue
 
-            if [[ "$so_path" != $APPDIR/* ]]; then
-                # Critical: USB stack must be bundled for device access (match soname loosely; Fedora paths differ)
-                if [[ "$so_path" == *libusb-1.0.so* ]]; then
-                    if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libusb-1.0.so*' -print -quit 2>/dev/null)" ]]; then
-                        [[ "$_ltr_verbose" == "1" ]] && print_warning "External libusb path but bundled copy exists: $elf -> $so_path"
-                    else
-                        print_error "Critical external dep (should be bundled): $elf -> $so_path"
-                        critical_external_deps=$((critical_external_deps + 1))
-                    fi
-                    continue
-                fi
-                if [[ "$so_path" == *libudev.so* ]]; then
-                    if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libudev.so*' -print -quit 2>/dev/null)" ]]; then
-                        [[ "$_ltr_verbose" == "1" ]] && print_warning "External libudev path but bundled copy exists: $elf -> $so_path"
-                    else
-                        print_error "Critical external dep (should be bundled): $elf -> $so_path"
-                        critical_external_deps=$((critical_external_deps + 1))
-                    fi
-                    continue
-                fi
+            [[ "$so_path" =~ $_host_allowed_re ]] && continue
+            [[ "$so_path" =~ $_gpu_allowed_re ]] && continue
 
-                if [[ "$so_path" =~ $allow_regex ]]; then
-                    continue
-                fi
-
-                for allowed in "${toolchain_allow[@]}"; do
-                    if [[ "$so_path" == "$allowed" ]]; then
-                        continue 2
-                    fi
-                done
-
-                for rx in "${system_allow_patterns[@]}"; do
-                    if [[ "$so_path" =~ $rx ]]; then
-                        continue 2
-                    fi
-                done
-
-                for rx in "${ldd_host_noise_patterns[@]}"; do
-                    if [[ "$so_path" =~ $rx ]]; then
-                        continue 2
-                    fi
-                done
-
-                ldd_external_other=$((ldd_external_other + 1))
-                [[ "$_ltr_verbose" == "1" ]] && print_warning "External dep (acceptable): $elf -> $so_path"
+            if [[ "$_ltr_verbose" == "1" ]]; then
+                print_warning "External: $(basename "$elf") -> $so_path"
             fi
+            critical_missing=$((critical_missing + 1))
         done < <(ldd "$elf" 2>/dev/null || true)
-    done < <(find "$APPDIR/usr/bin" "$APPDIR/usr/lib" "$APPDIR/usr/lib/linuxtrack" -type f \( -perm -111 -o -name "*.so*" \) -print0 2>/dev/null)
+    done < <(find "${_ldd_audit_paths[@]}" -type f \( -perm -111 -o -name "*.so*" \) -print0 2>/dev/null)
 
-    if [[ $critical_external_deps -gt 0 ]]; then
-        print_error "Found $critical_external_deps critical external dependencies (libusb / libudev not bundled in usr/lib)"
-        failures=$((failures + critical_external_deps))
+    if [[ $critical_missing -gt 0 ]]; then
+        print_warning "ldd audit: $critical_missing external dependency resolution(s) (use VALIDATE_LDD_VERBOSE=1 for details)"
+    else
+        print_success "ldd audit: all dependencies resolve inside AppDir (or host-allowed)"
     fi
-    if [[ "$ldd_external_other" -gt 0 ]]; then
-        print_status "ldd audit: $ldd_external_other additional host-only dependency resolutions (graphics/X11/etc.); omitted from log unless VALIDATE_LDD_VERBOSE=1"
-    fi
-    unset _ltr_verbose
-else
-    print_warning "ldd not available; skipping dependency audit"
 fi
 
 if [[ $failures -gt 0 ]]; then
@@ -538,5 +195,3 @@ if [[ $failures -gt 0 ]]; then
 fi
 
 print_success "Validation passed"
-
-

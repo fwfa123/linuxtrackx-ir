@@ -11,7 +11,7 @@ print_status "Optimize: size and content pruning (conservative)"
 pushd "$APPDIR" >/dev/null
     # Strip executables only; skip most shared libs (RELR/.relr.dyn needs recent binutils — avoid corrupting bundled deps)
     if command -v strip >/dev/null 2>&1; then
-        print_status "Stripping usr/bin executables only (skipping .so — RELR / linuxdeploy compatibility)"
+        print_status "Stripping usr/bin executables only (skipping .so — RELR compatibility)"
         find usr/bin -type f -executable -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
         if [[ "${APPDIR_STRIP_SHARED:-0}" == "1" ]]; then
             print_status "APPDIR_STRIP_SHARED=1: stripping shared libraries (best-effort)"
@@ -37,8 +37,8 @@ pushd "$APPDIR" >/dev/null
         popd >/dev/null
     fi
 
-    # Qt plugins: keep essential subsets (Qt6 and legacy Qt5 layouts)
-    for _qtpl in usr/lib/qt6/plugins usr/lib/qt5/plugins; do
+    # Qt plugins: keep essential subsets (AppDir usr/plugins and legacy usr/lib/qt* layouts)
+    for _qtpl in usr/plugins usr/lib/qt6/plugins usr/lib/qt5/plugins; do
         if [[ -d "$_qtpl/platforms" ]]; then
             pushd "$_qtpl/platforms" >/dev/null
                 for p in *.so; do

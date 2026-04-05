@@ -29,11 +29,11 @@ pushd "$PROJECT_ROOT" >/dev/null
 
     print_success "AppImage created: $OUT_PATH"
 
-    # Post-processing: Fix rpath for critical TrackIR libraries after linuxdeploy-plugin-qt
-    print_status "Post-processing: Fixing rpath for TrackIR libraries after Qt deployment"
+    # Safety net: re-apply rpath for critical TrackIR libraries
+    print_status "Post-processing: verifying rpath for TrackIR libraries"
     if command -v patchelf >/dev/null 2>&1; then
         # Find and fix rpath for critical TrackIR libraries
-        find "$APPDIR/usr/lib/linuxtrack" -name "libtir.so*" -o -name "libltusb1.so*" | while read -r lib; do
+        find "$APPDIR/usr/lib/linuxtrack" \( -name "libtir.so*" -o -name "libltusb1.so*" \) | while read -r lib; do
             if [[ -f "$lib" ]]; then
                 # Set rpath to look in parent directory where bundled libs are located
                 print_status "Setting rpath for $lib"

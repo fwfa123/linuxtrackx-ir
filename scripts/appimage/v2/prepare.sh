@@ -18,24 +18,31 @@ pushd "$PROJECT_ROOT" >/dev/null
     require_cmd make
     require_qhelpgenerator
 
-    # Standard AppImage does not ship Wiimote (wii_server). CMake DISABLE_WIIMOTE=ON overrides libcwiid on the build host.
-
     print_status "Preparing CMake build"
     rm -rf build
     mkdir -p build
 
-    # README installation level 5 (cumulative): Wine + X-Plane + webcam + OSC — same flags as docs (no OpenCV facetrack)
     : "${XPLANE_SDK_PATH:=/opt/xplane-sdk/CHeaders}"
-    print_status "Configuring with CMake (README level 5: LTR32 + X-Plane + webcam + OSC; ENABLE_FACE_TRACKER=OFF; no Wiimote)"
+    if [[ "${REQUIRE_XPLANE_SDK:-0}" == "1" && ! -d "$XPLANE_SDK_PATH" ]]; then
+        die "X-Plane SDK required but not found at $XPLANE_SDK_PATH (install headers under CHeaders/XPLM or rebuild the Docker image with WITH_XPLANE_SDK=1)"
+    fi
+    _xplane_flag="-DENABLE_XPLANE=ON"
+    if [[ ! -d "$XPLANE_SDK_PATH" ]]; then
+        print_warning "X-Plane SDK not found at $XPLANE_SDK_PATH; disabling X-Plane plugin"
+        _xplane_flag="-DENABLE_XPLANE=OFF"
+    fi
+
+    print_status "Configuring with CMake (LTR32 + webcam + OSC; ENABLE_FACE_TRACKER=OFF; no Wiimote)"
     cd build
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DENABLE_LDCONFIG=OFF \
         -DENABLE_LTR_32LIB_ON_X64=ON \
+        -DLIB32DIR=i386-linux-gnu \
         -DENABLE_WEBCAM=ON \
         -DENABLE_OSC=ON \
         -DENABLE_FACE_TRACKER=OFF \
-        -DENABLE_XPLANE=ON \
+        "$_xplane_flag" \
         -DDISABLE_WIIMOTE=ON \
         "-DXPLANE_SDK_PATH=${XPLANE_SDK_PATH}"
 
@@ -45,7 +52,6 @@ pushd "$PROJECT_ROOT" >/dev/null
 
     print_status "Qt Help artifacts: decide whether to regenerate"
 
-    # Allow callers to control help regeneration explicitly
     REGENERATE_HELP=${REGENERATE_HELP:-1}
 
     have_repo_artifacts=true
@@ -57,7 +63,7 @@ pushd "$PROJECT_ROOT" >/dev/null
     fi
 
     if [[ "$REGENERATE_HELP" != "1" && "$have_repo_artifacts" = true ]]; then
-        print_status "REGENERATE_HELP=0 and artifacts exist → skipping help regeneration"
+        print_status "REGENERATE_HELP=0 and artifacts exist -> skipping help regeneration"
     else
         print_status "Regenerating Qt Help artifacts (Qt6)"
 
@@ -97,7 +103,6 @@ pushd "$PROJECT_ROOT" >/dev/null
         if [[ -f src/mickey/mickey.qhp && -f src/mickey/mickey.qhcp ]]; then
             print_status "Generating mickey help files"
             cd src/mickey
-            # help.qch must exist before the collection (.qhc) registers it
             $QHELPGEN mickey.qhp -o help.qch
             $QHELPGEN mickey.qhcp -o help.qhc
             cd ../..
@@ -109,7 +114,6 @@ pushd "$PROJECT_ROOT" >/dev/null
         if [[ -f src/qt_gui/ltr_gui.qhp && -f src/qt_gui/ltr_gui.qhcp ]]; then
             print_status "Generating qt_gui help files (project + collection)"
             cd src/qt_gui
-            # Collection (.qhc) registers help.qch — generate content first
             $QHELPGEN ltr_gui.qhp -o help.qch
             $QHELPGEN ltr_gui.qhcp -o help.qhc
             cd ../..
@@ -130,7 +134,6 @@ pushd "$PROJECT_ROOT" >/dev/null
     fi
 
     print_status "Preflight: verifying Qt Help outputs and format compatibility"
-    MISSING=0
     INCOMPATIBLE=0
 
     validate_help_file() {
@@ -140,16 +143,8 @@ pushd "$PROJECT_ROOT" >/dev/null
             return 1
         fi
         if command -v sqlite3 >/dev/null 2>&1; then
-            print_status "Validating help file format: $help_file"
             if sqlite3 "$help_file" ".tables" >/dev/null 2>&1; then
-                print_success "Help file $help_file is a valid SQLite database"
-                local tables
-                tables=$(sqlite3 "$help_file" ".tables" 2>/dev/null)
-                if [[ "$tables" =~ ContentsTable|FileDataTable|NamespaceTable ]]; then
-                    print_success "Help file $help_file has expected tables"
-                else
-                    print_warning "Help file $help_file unexpected schema: $tables"
-                fi
+                print_success "Help file valid: $help_file"
             else
                 print_error "Help file $help_file is not a valid SQLite database"
                 INCOMPATIBLE=1
@@ -173,7 +168,7 @@ pushd "$PROJECT_ROOT" >/dev/null
         print_warning "Some help files may have compatibility issues - regenerate with Qt6 qhelpgenerator"
     fi
 
-    print_success "Qt Help preflight complete (HTML under src/*/help/ required; .qhc/.qch optional)"
+    print_success "Qt Help preflight complete"
 
     print_status "Installing to AppDir"
     cd build
@@ -185,45 +180,4 @@ write_minimal_apprun
 ensure_desktop_and_icons
 copy_udev_rules_if_present
 
-# Best-effort: bundle 32-bit liblinuxtrack for Wine 32-bit prefixes
-print_status "Attempting to bundle 32-bit linuxtrack runtime (best-effort)"
-if command -v gcc >/dev/null 2>&1; then
-    if echo 'int main(){}' | gcc -m32 -x c - -o /tmp/.ltr32check 2>/dev/null; then
-        rm -f /tmp/.ltr32check
-        TMP_BUILD32=$(mktemp -d)
-        print_status "Building 32-bit liblinuxtrack in $TMP_BUILD32"
-        pushd "$PROJECT_ROOT" >/dev/null
-            export CFLAGS="-m32"
-            export CXXFLAGS="-m32"
-            export LDFLAGS="-m32"
-            # Common Debian/Ubuntu multiarch pkg-config path
-            export PKG_CONFIG_PATH="/usr/lib/i386-linux-gnu/pkgconfig"
-            ./configure --prefix=/usr >/dev/null 2>&1 || true
-            # Build only the core library if possible; if full build runs, that's fine too
-            if make -j"$JOBS" -C src liblinuxtrack.la >/dev/null 2>&1 || make -j"$JOBS" >/dev/null 2>&1; then
-                LIB32_PATH="$(pwd)/src/.libs/liblinuxtrack.so.0.0.0"
-                if [[ -f "$LIB32_PATH" ]]; then
-                    DEST32_DIR="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
-                    print_status "Bundling 32-bit lib to $DEST32_DIR"
-                    mkdir -p "$DEST32_DIR"
-                    cp "$LIB32_PATH" "$DEST32_DIR/"
-                    ( cd "$DEST32_DIR" && ln -sf liblinuxtrack.so.0.0.0 liblinuxtrack.so.0 )
-                    print_success "Bundled 32-bit liblinuxtrack"
-                else
-                    die "32-bit liblinuxtrack build succeeded but library not found at $LIB32_PATH"
-                fi
-            else
-                die "Failed to build 32-bit liblinuxtrack (toolchain or deps missing)"
-            fi
-        popd >/dev/null
-        rm -rf "$TMP_BUILD32"
-    else
-        die "gcc -m32 not available; 32-bit runtime required for Wine compatibility"
-    fi
-else
-    die "gcc not found; 32-bit runtime required for Wine compatibility"
-fi
-
 print_success "Prepare complete"
-
-
