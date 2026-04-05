@@ -7,7 +7,7 @@
 sudo dnf group install development-tools
 sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
-sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
+sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel qt6-qttools-help
 sudo dnf install mxml-devel mesa-libGL-devel mesa-libGLU-devel
 sudo dnf install sqlite  # Qt SQL (QSQLITE driver): Lutris game-database integration
 ```
@@ -41,6 +41,8 @@ sudo dnf install libv4l-devel v4l-utils
 
 ### AppImage / packaging build (maintainers)
 The v2 `prepare.sh` enables `-DENABLE_WEBCAM=ON`, `-DENABLE_OSC=ON`, `-DENABLE_XPLANE=ON`, and `-DENABLE_FACE_TRACKER=OFF` (CMake default; matches README **Level 5**). Install **Webcam Support (Level 4+)** on the build host so webcam and PS3 Eye (`libp3e`) build. To include OpenCV-based facetrack plugins, add `-DENABLE_FACE_TRACKER=ON` and install **Face tracking (Level 6+)** packages on the builder. Users who only run the AppImage are not required to install `opencv-devel` on their system.
+
+**Qt Help / `qhelpgenerator`:** On Fedora, `qhelpgenerator` is in **`qt6-qttools-help`**, not in `qt6-qttools` alone. Install it (already listed in core deps above) before running `ci_build.sh` / `prepare.sh`.
 
 ### OSC Support (Level 5+)
 ```bash
@@ -78,12 +80,13 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid
 
 ## Qt6 and in-app help
 
-In-app help is built from HTML in the repo; AppImage builds may run `qhelpgenerator`. If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
+In-app help is built from HTML in the repo; AppImage builds may run `qhelpgenerator`. Install **`qt6-qttools-help`** so `/usr/lib64/qt6/bin/qhelpgenerator` exists. If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
 
 **Verify Qt6 tools are accessible (optional):**
 ```bash
-which qmake6 qhelpgenerator moc
-# Typically under /usr/lib64/qt6/bin/
+test -x /usr/lib64/qt6/bin/qhelpgenerator && echo OK || echo "Install: sudo dnf install qt6-qttools-help"
+which qmake6 moc
+# qhelpgenerator is usually only under /usr/lib64/qt6/bin/, not on default PATH
 ```
 
 ## Build Commands
@@ -175,7 +178,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 |---------|----------|
 | `qmake` / `qmake6: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
 | `Could not find a package configuration file provided by "Qt6"` | Install Qt6 development packages: `sudo dnf install qt6-qtbase-devel qt6-qttools-devel` |
-| `qhelpgenerator: command not found` | Add Qt6 tools to PATH or install `qt6-qttools`; tools live under `/usr/lib64/qt6/bin/` |
+| `qhelpgenerator: command not found` | Install **`qt6-qttools-help`** (not only `qt6-qttools`), then `export PATH="/usr/lib64/qt6/bin:$PATH"` |
 | `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development: `sudo dnf install gcc-c++.i686` |
 
 ### 32-bit Library Issues

@@ -32,7 +32,7 @@ require_qhelpgenerator() {
     if command -v qhelpgenerator >/dev/null 2>&1; then
         return 0
     fi
-    die "Missing qhelpgenerator; install Qt6 help tools (e.g. Fedora: dnf install qt6-qttools; Debian: qt6-tools-dev-tools) or add Qt6 bin to PATH"
+    die "Missing qhelpgenerator. Fedora: sudo dnf install qt6-qttools-help (qt6-qttools does not ship qhelpgenerator). Debian/Ubuntu: qt6-tools-dev-tools. Then ensure PATH includes Qt6 bin (e.g. export PATH=\"/usr/lib64/qt6/bin:\$PATH\")"
 }
 ensure_dir() { mkdir -p "$1"; }
 copy_if_exists() { [[ -e "$1" ]] && cp -r "$1" "$2" || true; }

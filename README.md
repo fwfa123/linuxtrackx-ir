@@ -97,7 +97,7 @@ sudo cmake --build . --target uninstall
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
 - **[Flatpak (Lutris and games)](docs/readme/flatpak.md)** - Using LinuxTrack when Lutris or games run from Flatpak (Flatseal, library path).
 
-Each guide includes package installation commands and level-specific build examples. Fedora users: ensure mxml-devel (or libmxml-devel) and development-tools are installed; see [Fedora/RHEL](docs/readme/fedora-rhel.md). In-app help uses built-in HTML (no Qt Help tools or qhelpgenerator required).
+Each guide includes package installation commands and level-specific build examples. Fedora users: ensure mxml-devel (or libmxml-devel) and development-tools are installed; see [Fedora/RHEL](docs/readme/fedora-rhel.md). In-app help uses built-in HTML for typical installs; **AppImage v2** builds invoke `qhelpgenerator`—on Fedora install **`qt6-qttools-help`** (not only `qt6-qttools`); see the Fedora guide.
 
 ### Migrating from /usr/local to /opt
 
