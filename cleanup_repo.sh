@@ -1,6 +1,7 @@
 #!/bin/bash
 # Repository cleanup script for LinuxTrack X-IR
 # This script removes build artifacts and prepares the repo for archiving
+# Documentation sprawl and long-term doc policy: see docs/features/ in this repo.
 
 echo "=== LinuxTrack X-IR Repository Cleanup for Archiving ==="
 echo ""
