@@ -229,7 +229,7 @@ After implementation, the AppImage will:
 - `ROBUST_HELP_SYSTEM.md`: General help system architecture
 - `APPIMAGE_IMPLEMENTATION_PLAN.md`: Overall AppImage implementation
 - `QT5_MODERNIZATION_STATUS.md`: Qt5 migration status
-- `BUILD_INTEGRITY_AND_CI_PLAN.md`: Build system validation
+- [`../archive/technical/BUILD_INTEGRITY_AND_CI_PLAN.md`](../archive/technical/BUILD_INTEGRITY_AND_CI_PLAN.md): Build system validation (archived)
 
 ---
 

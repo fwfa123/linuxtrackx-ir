@@ -7,16 +7,20 @@ This directory contains technical documentation for LinuxTrack Qt5 modernization
 ## Technical Files
 
 ### Current Technical Documentation
-- **`TECHNICAL_IMPLEMENTATION_GUIDE.md`** - Comprehensive implementation details (13KB)
-- **`GAME_DATA_SYSTEM.md`** - Game data system architecture (15KB)
-- **`QT4_TO_QT5_MIGRATION.md`** - Qt4 to Qt5 migration guide (7KB)
-- **`QT5_MODERNIZATION_STATUS.md`** - Qt5 modernization status (3KB)
-- **`MODERNIZATION_PLAN.md`** - Original modernization plan (7KB)
-- **`OPENTRACK_PLUGIN_PLAN.md`** - OpenTrack plugin integration (9KB)
-- **`INSTALLATION_ANALYSIS_COMPREHENSIVE.md`** - Installation analysis (13KB)
-- **`AI_CONTINUATION_PROMPT.md`** - AI development assistance (8KB)
-- **`DESKTOP_INTEGRATION_FIX_PLAN.md`** - Desktop integration fixes (8KB)
-- **`ISSUE_206_TRACKIR_ARCH_FIXES.md`** - TrackIR Arch Linux fixes (4KB)
+- **`TECHNICAL_IMPLEMENTATION_GUIDE.md`** — Implementation details
+- **`GAME_DATA_SYSTEM.md`** — Game data system architecture
+- **`QT4_TO_QT5_MIGRATION.md`** / **`QT5_TO_QT6_MIGRATION.md`** — Framework migration notes
+- **`QT5_MODERNIZATION_STATUS.md`** — Qt5 status
+- **`MODERNIZATION_PLAN.md`** — Modernization plan
+- **`OPENTRACK_PLUGIN_PLAN.md`** — OpenTrack plugin integration
+- **`INSTALLATION_ANALYSIS_COMPREHENSIVE.md`** — Installation analysis
+- **`ISSUE_206_TRACKIR_ARCH_FIXES.md`** — TrackIR on Arch Linux
+- **`APPIMAGE_IMPLEMENTATION_PLAN.md`**, **`QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md`** — AppImage and help bundling
+- **`WINE_BRIDGE_PACKAGING_PLAN.md`**, **`ARCH_LINUX_WINE_BRIDGE_ISSUES_AND_SOLUTIONS.md`** — Wine bridge
+- **`ROBUST_HELP_SYSTEM.md`**, **`QT_HELP_SYSTEM_FIX.md`** — Help / Qt help engine
+- MFC42 / TrackIR DLL analysis: **`MFC42_*.md`**, **`TRACKIR_*.md`**, **`TrackIR_MFC42_*.md`**
+
+Older planning snapshots live under **[`../archive/technical/`](../archive/technical/)** (including former desktop/help CI plans).
 
 ## Key Technical Areas
 
@@ -81,7 +85,7 @@ This directory contains technical documentation for LinuxTrack Qt5 modernization
 - Game registration and lookup
 
 ### Display Server Compatibility
-**Primary File**: `DESKTOP_INTEGRATION_FIX_PLAN.md`
+**Primary references**: [`../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md`](../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md), archived [`../archive/technical/DESKTOP_INTEGRATION_FIX_PLAN.md`](../archive/technical/DESKTOP_INTEGRATION_FIX_PLAN.md)
 
 **X11 Support:**
 - Native X11 integration
@@ -107,11 +111,10 @@ src/
 └── [other modules]   # Additional components
 ```
 
-### Build Process
-1. **Configure**: `./configure --prefix=/opt`
-2. **Build**: `make -j$(nproc)`
-3. **Install**: `sudo make install`
-4. **Setup**: `sudo ./setup.sh`
+### Build Process (CMake)
+1. **Configure**: `mkdir build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt`
+2. **Build**: `cmake --build . -j$(nproc)`
+3. **Install**: `sudo cmake --install .`
 
 ### Development Tools
 - **Qt5 Development**: qtbase5-dev, qttools5-dev-tools
@@ -182,15 +185,11 @@ src/
 
 ### Development Setup
 ```bash
-# Clone repository
-git clone <repository-url>
-cd linuxtrack-clean-june14
-
-# Development build
-./configure --prefix=/opt --enable-debug
-make -j$(nproc)
-
-# Run tests
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+cd linuxtrackx-ir
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_DEBUG=ON
+cmake --build . -j$(nproc)
 ./linuxtrack_health_check.sh
 ```
 

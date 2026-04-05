@@ -10,8 +10,8 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 ### New Users
 1. **[README.md](../README.md)** - Main project overview and quick start guide
-2. **[guides/SETUP_GUIDE_QT5_SUCCESS.md](guides/SETUP_GUIDE_QT5_SUCCESS.md)** - Detailed setup instructions with proven success steps
-3. **[testing/README.md](testing/README.md)** - Comprehensive testing procedures
+2. **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)** / **[readme/fedora-rhel.md](readme/fedora-rhel.md)** / **[readme/arch-linux.md](readme/arch-linux.md)** - Distribution-specific install (Qt6 / CMake)
+3. **[testing/README.md](testing/README.md)** - Testing overview
 
 ### Existing Users (After System Changes)
 1. **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - ⚠️ **CRITICAL** - System upgrade resolution
@@ -22,13 +22,13 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 ## 📁 Documentation Organization
 
-### 🛠️ User Guides (`guides/`)
+### 🛠️ User Guides (`guides/` + `readme/`)
 **For end users and system administrators**
-- **[guides/README.md](guides/README.md)** - User guides overview
-- **[guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)** - MX Linux specific build guide
-- **[guides/SETUP_GUIDE_QT5_SUCCESS.md](guides/SETUP_GUIDE_QT5_SUCCESS.md)** - Proven setup instructions
-- **[guides/SYSTEM_MAINTENANCE_GUIDE.md](guides/SYSTEM_MAINTENANCE_GUIDE.md)** - System maintenance procedures
-- **[guides/SUCCESS_SUMMARY.md](guides/SUCCESS_SUMMARY.md)** - Project success status
+- **[guides/README.md](guides/README.md)** - Guide index and cross-links
+- **[guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)** - MX Linux build guide
+- **[guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md)** - Arch install notes
+- **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)**, **[readme/fedora-rhel.md](readme/fedora-rhel.md)**, **[readme/arch-linux.md](readme/arch-linux.md)** - Primary per-distro docs
+- **[archive/guides/](archive/guides/)** - Historical `LEGACY_*` snapshots only
 
 ### 🧪 Testing Documentation (`testing/`)
 **For testing and validation procedures**
@@ -44,11 +44,12 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)** - TrackIR firmware extraction issues (8KB)
 - **[troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)** - ApplicationID parsing bug causing ((null)) in gamedata.txt (12KB)
 
-### 🍷 Wine Support (`wine-support/`)
+### 🍷 Wine Support
 **For Wine compatibility and modern installation methods**
-- **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)** - Modern Wine support installation guide (4KB)
-- **[guides/WINE_BRIDGE_INSTALLATION_GUIDE.md](guides/WINE_BRIDGE_INSTALLATION_GUIDE.md)** - Complete Wine bridge installation guide (15KB)
-- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Wine support troubleshooting section
+- **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)** - Modern Wine support installation guide
+- **[AppImage_WineBridge.md](AppImage_WineBridge.md)** - AppImage + Wine bridge
+- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Packaging notes
+- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Wine troubleshooting section
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)** - Wine compatibility checker script
 
 ### 💻 Technical Documentation (`technical/`)
@@ -61,11 +62,6 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB)
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
 - **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - Qt5 Help System AppImage bundling fix plan (12KB)
-
-### 🍷 Wine Legacy (`wine-legacy/`)
-**⚠️ OBSOLETE - Historical reference only**
-- **[wine-legacy/README.md](wine-legacy/README.md)** - Wine legacy documentation overview
-- **All wine-related files**: Obsolete wine-based Windows compatibility approach
 
 ---
 
@@ -86,9 +82,9 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 ### Distribution-Specific Guides
 - **MX Linux** → [guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)
-- **Ubuntu/Debian** → [testing/README.md](testing/README.md) (Ubuntu section)
-- **Fedora/RHEL** → [guides/README.md](guides/README.md) (Fedora section)
-- **Arch Linux** → [technical/ISSUE_206_TRACKIR_ARCH_FIXES.md](technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
+- **Ubuntu/Debian** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md)
+- **Fedora/RHEL** → [readme/fedora-rhel.md](readme/fedora-rhel.md)
+- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md), [guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md), [technical/ISSUE_206_TRACKIR_ARCH_FIXES.md](technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
 
 ### Development Resources
 - **Qt5 Migration** → [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)
@@ -125,7 +121,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[linuxtrack_health_check.sh](../linuxtrack_health_check.sh)** - Health check
 
 ### System Administrators
-- **[guides/SYSTEM_MAINTENANCE_GUIDE.md](guides/SYSTEM_MAINTENANCE_GUIDE.md)** - Maintenance procedures
+- **[readme/troubleshooting.md](readme/troubleshooting.md)** - Common issues and maintenance hints
 - **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - Upgrade management
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Permission management
 
@@ -139,7 +135,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[testing/README.md](testing/README.md)** - Testing procedures
 - **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - Testing guidelines
 - **[linuxtrack_health_check.sh](../linuxtrack_health_check.sh)** - Automated testing
-- **[guides/SUCCESS_SUMMARY.md](guides/SUCCESS_SUMMARY.md)** - Expected results
+- **[README.md](../README.md)** - Expected install levels and behavior
 
 ---
 
@@ -154,17 +150,17 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 #### "TrackIR" or "Hardware"
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)**
-- **[guides/SUCCESS_SUMMARY.md](guides/SUCCESS_SUMMARY.md)**
-- **[guides/SETUP_GUIDE_QT5_SUCCESS.md](guides/SETUP_GUIDE_QT5_SUCCESS.md)**
+- **[README.md](../README.md)**
+- **[guides/README.md](guides/README.md)**
 
 #### "System Upgrade" or "Broken"
 - **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
 - **[linuxtrack_quick_recovery.sh](../linuxtrack_quick_recovery.sh)**
-- **[guides/SYSTEM_MAINTENANCE_GUIDE.md](guides/SYSTEM_MAINTENANCE_GUIDE.md)**
+- **[readme/troubleshooting.md](readme/troubleshooting.md)**
 
 #### "Permission" or "Access Denied"
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)**
-- **[guides/SETUP_GUIDE_QT5_SUCCESS.md](guides/SETUP_GUIDE_QT5_SUCCESS.md)**
+- **[readme/troubleshooting.md](readme/troubleshooting.md)**
 
 #### "Library" or "Loading"
 - **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)**
@@ -172,11 +168,11 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 #### "Wayland" or "Display"
 - **[troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**
-- **[run_qt5_gui_x11.sh](../run_qt5_gui_x11.sh)**
+- **[run_qt5_gui_x11.sh](../scripts/test/run_qt5_gui_x11.sh)**
 
 #### "Wine" or "Windows"
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)**
-- **[guides/WINE_BRIDGE_INSTALLATION_GUIDE.md](guides/WINE_BRIDGE_INSTALLATION_GUIDE.md)**
+- **[AppImage_WineBridge.md](AppImage_WineBridge.md)**
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** (Wine section)
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)**
@@ -210,8 +206,8 @@ cd src/qt_gui && qmake-qt5 ltr_gui.pro && make -j$(nproc)
 # Check TrackIR hardware
 lsusb | grep 131d
 
-# Launch application
-./run_qt5_gui.sh
+# Launch application (example helper; from repo root)
+./scripts/test/run_qt5_gui.sh
 ```
 
 ### Key File Locations
@@ -219,7 +215,7 @@ lsusb | grep 131d
 - **Libraries**: `src/.libs/lib*.so*`
 - **Configuration**: `~/.config/linuxtrack/linuxtrack1.conf`
 - **udev Rules**: `/lib/udev/rules.d/99-TIR.rules`
-- **Launch Script**: `./run_qt5_gui.sh`
+- **Launch Script**: `scripts/test/run_qt5_gui.sh` (or `ltr_gui` after install)
 
 ---
 
@@ -242,10 +238,7 @@ lsusb | grep 131d
 
 ---
 
-**Documentation Status**: COMPREHENSIVE ✅  
-**Organization**: CATEGORY-BASED STRUCTURE ✅  
-**Coverage**: ALL MAJOR ISSUES DOCUMENTED ✅  
-**Automation**: HEALTH CHECK AND RECOVERY SCRIPTS ✅  
-**Maintenance**: SYSTEM MAINTENANCE GUIDE ✅
+**Documentation Status**: Actively maintained (see `readme/` and `guides/` for current install paths).  
+**Automation**: `linuxtrack_health_check.sh`, `linuxtrack_quick_recovery.sh`
 
 This documentation index provides complete navigation for all LinuxTrack resources, organized by category for easy access and maintenance. 
