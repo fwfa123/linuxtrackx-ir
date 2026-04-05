@@ -509,7 +509,7 @@ EOHLP
         libxcb-render-util.so.0 libxcb-render.so.0 libxcb-shape.so.0 libxcb-sync.so.1 libxcb-xfixes.so.0 libxcb-xinerama.so.0 libxcb-xkb.so.1 libxcb-xinput.so.0 \
         libfreetype.so.6 libfontconfig.so.1 libharfbuzz.so.0 libgraphite2.so.3 \
         libdbus-1.so.3 libsystemd.so.0 libgcrypt.so.20 libgpg-error.so.0 \
-        libuuid.so.1 libexpat.so.1 libpng16.so.16 libdeflate.so.0 liblz4.so.1 liblzma.so.5 libzstd.so.1 libmd.so.0 libmd4c.so.0 \
+        libuuid.so.1 libexpat.so.1 libxml2.so.2 libpng16.so.16 libdeflate.so.0 liblz4.so.1 liblzma.so.5 libzstd.so.1 libmd.so.0 libmd4c.so.0 \
         libSM.so.6 libICE.so.6; do
         # Do NOT bundle OpenGL driver libraries; they must come from the host
         if [[ "$so" == libGL.so.1 || "$so" == libOpenGL.so.0 || "$so" == libGLX.so.0 || "$so" == libGLdispatch.so.0 || "$so" == libGLU.so.1 ]]; then
