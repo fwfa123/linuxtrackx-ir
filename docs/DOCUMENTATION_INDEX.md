@@ -33,8 +33,6 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 ### 🧪 Testing Documentation (`testing/`)
 **For testing and validation procedures**
 - **[testing/README.md](testing/README.md)** - Testing guide overview
-- **[testing/TESTING_INSTRUCTIONS.md](testing/TESTING_INSTRUCTIONS.md)** - Comprehensive testing procedures (200KB)
-- **[testing/KUBUNTU_25_TESTING.md](testing/KUBUNTU_25_TESTING.md)** - Detailed Kubuntu testing log (328KB)
 - **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - General testing guidelines (13KB)
 
 ### 🔧 Troubleshooting (`troubleshooting/`)
@@ -139,7 +137,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 ### Testers
 - **[testing/README.md](testing/README.md)** - Testing procedures
-- **[testing/TESTING_INSTRUCTIONS.md](testing/TESTING_INSTRUCTIONS.md)** - Comprehensive testing
+- **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - Testing guidelines
 - **[linuxtrack_health_check.sh](../linuxtrack_health_check.sh)** - Automated testing
 - **[guides/SUCCESS_SUMMARY.md](guides/SUCCESS_SUMMARY.md)** - Expected results
 
