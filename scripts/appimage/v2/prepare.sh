@@ -18,13 +18,7 @@ pushd "$PROJECT_ROOT" >/dev/null
     require_cmd make
     require_qhelpgenerator
 
-    # Wiimote (wii_server): CMake enables WIIMOTE_SUPPORT automatically when pkg-config finds libcwiid.
-    # To fail fast when a release must include Wiimote, set REQUIRE_WIIMOTE=1 (install libcwiid-devel / libcwiid-dev first).
-    if [[ "${REQUIRE_WIIMOTE:-0}" == "1" ]]; then
-        require_cmd pkg-config
-        pkg-config --exists cwiid || die "REQUIRE_WIIMOTE=1 but libcwiid not found (e.g. Fedora: dnf install libcwiid-devel; Debian: apt install libcwiid-dev)"
-        print_status "REQUIRE_WIIMOTE=1: pkg-config cwiid OK"
-    fi
+    # Standard AppImage does not ship Wiimote (wii_server). CMake DISABLE_WIIMOTE=ON overrides libcwiid on the build host.
 
     print_status "Preparing CMake build"
     rm -rf build
@@ -32,7 +26,7 @@ pushd "$PROJECT_ROOT" >/dev/null
 
     # README installation level 5 (cumulative): Wine + X-Plane + webcam + OSC — same flags as docs (no OpenCV facetrack)
     : "${XPLANE_SDK_PATH:=/opt/xplane-sdk/CHeaders}"
-    print_status "Configuring with CMake (README level 5: LTR32 + X-Plane + webcam + OSC; ENABLE_FACE_TRACKER=OFF)"
+    print_status "Configuring with CMake (README level 5: LTR32 + X-Plane + webcam + OSC; ENABLE_FACE_TRACKER=OFF; no Wiimote)"
     cd build
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=/usr \
@@ -42,6 +36,7 @@ pushd "$PROJECT_ROOT" >/dev/null
         -DENABLE_OSC=ON \
         -DENABLE_FACE_TRACKER=OFF \
         -DENABLE_XPLANE=ON \
+        -DDISABLE_WIIMOTE=ON \
         "-DXPLANE_SDK_PATH=${XPLANE_SDK_PATH}"
 
     print_status "Building"
@@ -102,8 +97,9 @@ pushd "$PROJECT_ROOT" >/dev/null
         if [[ -f src/mickey/mickey.qhp && -f src/mickey/mickey.qhcp ]]; then
             print_status "Generating mickey help files"
             cd src/mickey
-            $QHELPGEN mickey.qhcp -o help.qhc
+            # help.qch must exist before the collection (.qhc) registers it
             $QHELPGEN mickey.qhp -o help.qch
+            $QHELPGEN mickey.qhcp -o help.qhc
             cd ../..
             print_success "Mickey help files generated"
         else
@@ -113,8 +109,9 @@ pushd "$PROJECT_ROOT" >/dev/null
         if [[ -f src/qt_gui/ltr_gui.qhp && -f src/qt_gui/ltr_gui.qhcp ]]; then
             print_status "Generating qt_gui help files (project + collection)"
             cd src/qt_gui
-            $QHELPGEN ltr_gui.qhcp -o help.qhc
+            # Collection (.qhc) registers help.qch — generate content first
             $QHELPGEN ltr_gui.qhp -o help.qch
+            $QHELPGEN ltr_gui.qhcp -o help.qhc
             cd ../..
             print_success "Qt GUI help files generated"
         elif [[ -f src/qt_gui/ltr_gui.qhp ]]; then

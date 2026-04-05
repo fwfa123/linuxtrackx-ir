@@ -50,7 +50,48 @@ pushd "$APPDIR" >/dev/null
     if [[ -x "$LINUXDEPLOY_QT" && -f usr/bin/ltr_gui ]]; then
         print_status "Running linuxdeploy-plugin-qt"
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
-        
+
+        # Qt framework .qm files (standard dialogs, Qt Help) — app-specific strings remain in ltr_gui resources
+        print_status "Bundling Qt translation catalogs from host Qt"
+        mkdir -p usr/share/qt6/translations
+        _qmake=""
+        for _cand in qmake6 /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake qmake; do
+            if command -v "$_cand" >/dev/null 2>&1; then
+                _qmake=$(command -v "$_cand")
+                break
+            fi
+            if [[ -x "$_cand" ]]; then
+                _qmake="$_cand"
+                break
+            fi
+        done
+        _trans=""
+        if [[ -n "$_qmake" ]]; then
+            _trans=$("$_qmake" -query QT_INSTALL_TRANSLATIONS 2>/dev/null || true)
+        fi
+        if [[ -z "$_trans" || ! -d "$_trans" ]]; then
+            for _d in /usr/lib64/qt6/translations /usr/lib/qt6/translations /usr/lib/x86_64-linux-gnu/qt6/translations; do
+                if [[ -d "$_d" ]]; then
+                    _trans="$_d"
+                    break
+                fi
+            done
+        fi
+        if [[ -n "$_trans" && -d "$_trans" ]]; then
+            _n=0
+            shopt -s nullglob
+            for _f in "$_trans"/qtbase_*.qm "$_trans"/qt_help_*.qm "$_trans"/qtdeclarative_*.qm; do
+                [[ -f "$_f" ]] || continue
+                cp -f "$_f" usr/share/qt6/translations/
+                _n=$((_n + 1))
+            done
+            shopt -u nullglob
+            print_status "Copied $_n Qt .qm files from $_trans"
+        else
+            print_warning "Could not locate host Qt translations (qtbase/qt_help); Qt standard dialogs may stay English-only"
+        fi
+        unset _qmake _trans _f _n _cand _d
+
         # Replace qt.conf so QLibraryInfo uses AppDir usr/ prefix (not host Qt paths).
         # setLibraryPaths() before QApplication caused segfaults on Fedora; qt.conf is the supported fix.
         if [[ -f usr/bin/qt.conf ]]; then

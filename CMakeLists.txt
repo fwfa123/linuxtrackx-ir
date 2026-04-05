@@ -29,6 +29,8 @@ option(ENABLE_ASAN "Enable AddressSanitizer for debugging Qt6 crashes" OFF)
 # Optional feature options
 option(ENABLE_OSC "Enable OSC support" OFF)
 option(ENABLE_WIIMOTE "Enable Wiimote support" OFF)
+# When ON, never build wii_server even if pkg-config finds libcwiid (standard AppImage / slim bundles).
+option(DISABLE_WIIMOTE "Force-disable Wiimote even if libcwiid is found" OFF)
 option(ENABLE_XPLANE "Enable X-Plane plugin" OFF)
 option(ENABLE_FACE_TRACKER "Enable face tracker (requires OpenCV and webcam support)" OFF)
 
@@ -120,7 +122,13 @@ pkg_check_modules(USB REQUIRED libusb-1.0)
 
 # Optional libraries
 pkg_check_modules(CWIID cwiid)
-if(CWIID_FOUND)
+if(DISABLE_WIIMOTE)
+    set(WIIMOTE_SUPPORT FALSE)
+    message(STATUS "Wiimote support: disabled (DISABLE_WIIMOTE=ON)")
+    if(ENABLE_WIIMOTE)
+        message(WARNING "ENABLE_WIIMOTE is ON but DISABLE_WIIMOTE=ON — Wiimote remains disabled")
+    endif()
+elseif(CWIID_FOUND)
     # Auto-enable if dependency found (matching Autotools behavior)
     set(WIIMOTE_SUPPORT TRUE)
     message(STATUS "Wiimote support: enabled (libcwiid found)")
