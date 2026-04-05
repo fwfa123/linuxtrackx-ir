@@ -8,9 +8,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPSCRIPTS_DIR="$(dirname "$SCRIPT_DIR")"              # scripts/appimage
 PROJECT_ROOT="$(dirname "$(dirname "$APPSCRIPTS_DIR")")"  # repo root
 
-# Ensure PROJECT_ROOT points to the correct linuxtrackx-ir directory
-if [[ "$(basename "$PROJECT_ROOT")" != "linuxtrackx-ir" ]]; then
-    PROJECT_ROOT="$PROJECT_ROOT/linuxtrackx-ir"
+# Validate PROJECT_ROOT — it must contain CMakeLists.txt
+if [[ ! -f "$PROJECT_ROOT/CMakeLists.txt" ]]; then
+    if [[ -f "$PROJECT_ROOT/linuxtrackx-ir/CMakeLists.txt" ]]; then
+        PROJECT_ROOT="$PROJECT_ROOT/linuxtrackx-ir"
+    else
+        echo "Error: Cannot locate CMakeLists.txt from derived PROJECT_ROOT=$PROJECT_ROOT" >&2
+        exit 1
+    fi
 fi
 
 # AppDir (v2)
@@ -47,10 +52,8 @@ extract_version() {
 # Extract version
 extract_version
 
-# Tools (expected under scripts/appimage)
-APPIMAGETOOL="$APPSCRIPTS_DIR/appimagetool-x86_64.AppImage"
-LINUXDEPLOY="$APPSCRIPTS_DIR/linuxdeploy-x86_64.AppImage"
-LINUXDEPLOY_QT="$APPSCRIPTS_DIR/linuxdeploy-plugin-qt-x86_64.AppImage"
+# Tools — prefer PATH (Docker container), fall back to local copies
+APPIMAGETOOL="${APPIMAGETOOL:-$(command -v appimagetool 2>/dev/null || echo "$APPSCRIPTS_DIR/appimagetool-x86_64.AppImage")}"
 
 # Feature toggles
 FORCE_XCB="1"              # default to xcb; can be overridden
