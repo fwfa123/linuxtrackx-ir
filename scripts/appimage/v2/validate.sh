@@ -65,7 +65,8 @@ if linuxtrack_lib_present wc; then
             print_status "FlexiBLAS backend directory present: usr/lib/flexiblas"
         fi
     else
-        print_warning "No libopencv_*.so in AppDir — face tracking may fail if libwc or libp3eft link to OpenCV"
+        # libwc links OpenCV only when ENABLE_FACE_TRACKER=ON; libp3eft exists only with face tracker.
+        print_status "No libopencv_*.so in AppDir (expected for README/AppImage default: ENABLE_FACE_TRACKER=OFF; webcam libwc does not use OpenCV without facetrack)"
     fi
 else
     print_warning "libwc not in AppDir (webcam support may be disabled in this build)"
@@ -166,11 +167,15 @@ HELP_MICKEY_QCH=false
 [[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qhc" ]] && HELP_MICKEY_QHC=true
 [[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" ]] && HELP_MICKEY_QCH=true
 
-# Check ltr_gui help files
-if [[ "$HELP_LTR_GUI_QHC" = true ]] && [[ "$HELP_LTR_GUI_QCH" = true ]]; then
-    print_success "Qt Help system files present (ltr_gui)"
+# ltr_gui: content (help.qch) is required; collection (help.qhc) is optional if prepare.sh only had .qhp (see prepare.sh)
+if [[ "$HELP_LTR_GUI_QCH" = true ]]; then
+    if [[ "$HELP_LTR_GUI_QHC" = true ]]; then
+        print_success "Qt Help system files present (ltr_gui: help.qhc + help.qch)"
+    else
+        print_status "ltr_gui: help.qch present; help.qhc absent (collection optional — matches qhp-only / qch-only generation)"
+    fi
 else
-    print_error "Qt Help system files missing from ltr_gui; help system will fail"
+    print_error "ltr_gui help.qch missing from usr/share/linuxtrack/help/ltr_gui/ — Qt Help content will fail"
     failures=$((failures+1))
 fi
 
