@@ -26,20 +26,7 @@ sudo dnf install cabextract wget  # REQUIRED: For alternative installation metho
 
 **IMPORTANT**: The full `wine` and `wine.i686` packages are required for 32-bit Wine prefix creation. The error "WINEARCH is set to 'win32' but this is not supported in wow64 mode" indicates missing 32-bit Wine support. Wine mono and gecko components are downloaded automatically when needed.
 
-### Webcam Support (Level 3+)
-```bash
-sudo dnf install libv4l-devel v4l-utils
-```
-
-### AppImage / packaging build (maintainers)
-The v2 `prepare.sh` uses `-DENABLE_WEBCAM=ON` and `-DENABLE_FACE_TRACKER=ON`. Install **Webcam Support (Level 3+)** and **Face tracking (Level 6+)** packages on the machine that builds the AppImage so webcam, PS3 Eye (`libp3e`), and OpenCV-based facetrack plugins are included. Users who only run the AppImage are not required to install `opencv-devel` on their system.
-
-### OSC Support (Level 4+)
-```bash
-sudo dnf install liblo-devel
-```
-
-### X-Plane Support (Level 5+)
+### X-Plane Support (Level 3+)
 ```bash
 # Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
 # Extract to: /opt/xplane-sdk/
@@ -47,8 +34,21 @@ sudo mkdir -p /opt/xplane-sdk
 sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
 ```
 
+### Webcam Support (Level 4+)
+```bash
+sudo dnf install libv4l-devel v4l-utils
+```
+
+### AppImage / packaging build (maintainers)
+The v2 `prepare.sh` enables `-DENABLE_WEBCAM=ON`, `-DENABLE_OSC=ON`, `-DENABLE_XPLANE=ON`, and `-DENABLE_FACE_TRACKER=OFF` (CMake default; matches README **Level 5**). Install **Webcam Support (Level 4+)** on the build host so webcam and PS3 Eye (`libp3e`) build. To include OpenCV-based facetrack plugins, add `-DENABLE_FACE_TRACKER=ON` and install **Face tracking (Level 6+)** packages on the builder. Users who only run the AppImage are not required to install `opencv-devel` on their system.
+
+### OSC Support (Level 5+)
+```bash
+sudo dnf install liblo-devel
+```
+
 ### Face tracking (Level 6+)
-Requires Level 3 (webcam). Pass `-DENABLE_FACE_TRACKER=ON` to enable OpenCV-based face tracking when CMake finds OpenCV (default is **OFF**).
+Requires Level 4 (webcam). Pass `-DENABLE_FACE_TRACKER=ON` to enable OpenCV-based face tracking when CMake finds OpenCV (default is **OFF**).
 ```bash
 sudo dnf install opencv-devel
 ```
@@ -106,29 +106,29 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 3: TrackIR + Wine + Webcam
+### Level 3: TrackIR + Wine + X-Plane
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 4: TrackIR + Wine + Webcam + OSC
+### Level 4: TrackIR + Wine + X-Plane + Webcam
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-### Level 5: TrackIR + Wine + Webcam + OSC + X-Plane
+### Level 5: TrackIR + Wine + X-Plane + Webcam + OSC
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -137,7 +137,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -147,7 +147,7 @@ sudo cmake --install .
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 export PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```

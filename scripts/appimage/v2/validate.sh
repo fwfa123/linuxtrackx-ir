@@ -43,7 +43,7 @@ else
     failures=$((failures+1))
 fi
 
-# Webcam (prepare.sh: README level 5 — ENABLE_WEBCAM=ON, ENABLE_FACE_TRACKER=OFF)
+# Webcam (prepare.sh targets README level 5 — ENABLE_WEBCAM=ON, ENABLE_FACE_TRACKER=OFF)
 if linuxtrack_lib_present wc; then
     print_status "Found webcam driver library (libwc)"
     opencv_bundled=$({ find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libopencv_*.so*' 2>/dev/null || true; } | wc -l)
