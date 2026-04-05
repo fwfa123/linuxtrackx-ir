@@ -586,6 +586,28 @@ EOHLP
     done
     unset _ltr_host_lib_dirs
 
+    # ICU (libicui18n, libicuuc, libicudata) — Qt / libxml2 may link it; soname varies (e.g. .77 on Arch).
+    # linuxdeploy often omits it; runtime then fails on hosts without matching system ICU.
+    print_status "Bundling ICU libraries from host (libicu*.so*)"
+    _icu_n=0
+    for _icudir in /usr/lib64 /lib64 /usr/lib /lib/x86_64-linux-gnu; do
+        [[ -d "$_icudir" ]] || continue
+        shopt -s nullglob
+        for _icu in "$_icudir"/libicu*.so*; do
+            [[ -e "$_icu" ]] || continue
+            _ib=$(basename "$_icu")
+            cp -L -f "$_icu" "usr/lib/$_ib" 2>/dev/null || cp -f "$_icu" "usr/lib/"
+            _icu_n=$((_icu_n + 1))
+        done
+        shopt -u nullglob
+    done
+    if [[ "$_icu_n" -gt 0 ]]; then
+        print_success "Bundled $_icu_n ICU shared libraries into usr/lib"
+    else
+        print_warning "No libicu*.so* found on build host — if ltr_gui links ICU, install libicu on the builder and rebuild"
+    fi
+    unset _icu_n _icudir _icu _ib
+
     # libwc / libp3eft are dlopen'd (not linked from ltr_gui); linuxdeploy does not pull OpenCV deps.
     # Fedora OpenCV pulls dozens of libopencv_* modules (direct + transitive). Single-pass ldd on the
     # plugin misses deps that only appear once intermediate OpenCV DSOs are in usr/lib — iterate to closure.

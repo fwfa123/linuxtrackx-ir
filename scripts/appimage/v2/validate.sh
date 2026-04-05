@@ -132,6 +132,13 @@ else
     failures=$((failures+1))
 fi
 
+# ICU — Qt/libxml builds often link libicui18n.so.* (soname varies); bundle.sh copies libicu* from the build host
+if [[ -n "$(find "$APPDIR/usr/lib" \( -type f -o -type l \) -name 'libicu*.so*' -print -quit 2>/dev/null)" ]]; then
+    print_status "ICU libraries present under usr/lib"
+else
+    print_warning "No libicu*.so* in usr/lib — Arch/EndeavourOS may need ICU bundled if ltr_gui links it"
+fi
+
 # Verify rpath settings on critical libraries
 print_status "Verifying rpath settings on TrackIR libraries"
 if command -v patchelf >/dev/null 2>&1; then
