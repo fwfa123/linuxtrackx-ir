@@ -27,15 +27,12 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 ### 📁 Main Documentation Index
 - **`DOCUMENTATION_INDEX.md`** - Updated navigation with category-based links
 
-### 🛠️ User Guides (`guides/`) - 7 files
+### 🛠️ User Guides (`guides/` + `readme/`)
 **Purpose**: End user and system administrator documentation
-- **`README.md`** - User guides overview and quick reference
-- **`MX_LINUX_BUILD_GUIDE.md`** - MX Linux specific build guide
-- **`SETUP_GUIDE_QT5_SUCCESS.md`** - Proven setup instructions
-- **`SYSTEM_MAINTENANCE_GUIDE.md`** - System maintenance procedures
-- **`SUCCESS_SUMMARY.md`** - Project success status
-- **`FINAL_INTEGRATION_SUMMARY.md`** - Integration completion summary
-- **`MX_LINUX_FIX_SUMMARY.md`** - MX Linux specific fixes
+- **`guides/README.md`** — Index; points to per-distro docs under **`readme/`**
+- **`guides/MX_LINUX_BUILD_GUIDE.md`**, **`guides/ARCH_LINUX_INSTALL_GUIDE.md`** — Short distribution-specific notes
+- **`readme/debian-ubuntu.md`**, **`readme/fedora-rhel.md`**, **`readme/arch-linux.md`** — Primary install paths (Qt6 / CMake)
+- **`archive/guides/`** — Historical `LEGACY_*` snapshots moved out of `guides/`
 
 ### 🧪 Testing Documentation (`testing/`) - 4 files
 **Purpose**: Testing and validation procedures
@@ -53,30 +50,12 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 - **`QUICK_TROUBLESHOOTING_QT5.md`** - Quick fixes for common issues (3KB)
 - **`WAYLAND_COMPATIBILITY_ISSUE.md`** - Display server compatibility (2KB)
 
-### 💻 Technical Documentation (`technical/`) - 11 files
-**Purpose**: Developers and technical implementation
-- **`README.md`** - Technical documentation overview and quick reference
-- **`TECHNICAL_IMPLEMENTATION_GUIDE.md`** - Implementation details (13KB)
-- **`QT4_TO_QT5_MIGRATION.md`** - Qt4 to Qt5 migration guide (7KB)
-- **`QT5_MODERNIZATION_STATUS.md`** - Qt5 modernization status (3KB)
-- **`MODERNIZATION_PLAN.md`** - Original modernization plan (7KB)
-- **`OPENTRACK_PLUGIN_PLAN.md`** - OpenTrack plugin integration (9KB)
-- **`INSTALLATION_ANALYSIS_COMPREHENSIVE.md`** - Installation analysis (13KB)
-- **`AI_CONTINUATION_PROMPT.md`** - AI development assistance (8KB)
-- **`DESKTOP_INTEGRATION_FIX_PLAN.md`** - Desktop integration fixes (8KB)
-- **`ISSUE_206_TRACKIR_ARCH_FIXES.md`** - TrackIR Arch Linux fixes (4KB)
-- **`QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md`** - Qt5 Help System AppImage fix plan (12KB)
+### 💻 Technical Documentation (`technical/`) + **`archive/technical/`**
+**Purpose**: Developers and technical implementation  
+Active docs remain under **`technical/`** (implementation, AppImage, Wine bridge, MFC42/TrackIR analysis, help system, etc.). One-off plans and progress notes were moved to **`archive/technical/`** during 2026 cleanup.
 
-### 🍷 Wine Legacy (`wine-legacy/`) - 8 files
-**Purpose**: Historical reference (obsolete wine-based approach)
-- **`README.md`** - Wine legacy documentation overview
-- **`WINE_BRIDGE_BUILD_GUIDE.md`** - Old wine bridge build guide (12KB)
-- **`WINE_BRIDGE_ALTERNATIVE_BUILD_PLAN.md`** - Alternative wine build plan (10KB)
-- **`WINE_BUILD_PROGRESS.md`** - Wine build progress tracking (10KB)
-- **`WINE_BUILD_FIX.md`** - Wine build fixes (7KB)
-- **`WINE_DEPENDENCIES.md`** - Wine dependency requirements (7KB)
-- **`WINE_INTEGRATION_ANALYSIS.md`** - Wine integration analysis (10KB)
-- **`WINE_MODERNIZATION_PLAN.md`** - Wine modernization planning (10KB)
+### 🍷 Wine
+**Purpose**: Current Wine bridge and packaging notes live under **`WINE_SUPPORT_MODERN.md`**, **`AppImage_WineBridge.md`**, **`technical/WINE_BRIDGE_PACKAGING_PLAN.md`**, and troubleshooting guides — not in a separate `wine-legacy/` tree in this repo.
 
 ## Key Improvements
 
