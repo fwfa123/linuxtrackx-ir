@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QHelpCollectionProject version="1.0">
+    <assistant>
+        <title>LinuxTrack X-IR</title>
+        <homePage>qthelp://uglyDwarf.com.linuxtrack.1.0/doc/help/welcome.htm</homePage>
+    </assistant>
+    <docFiles>
+        <register>
+            <file>help.qch</file>
+        </register>
+    </docFiles>
+</QHelpCollectionProject>

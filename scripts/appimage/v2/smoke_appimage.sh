@@ -11,6 +11,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/config.sh"
 # shellcheck source=common.sh
 source "$SCRIPT_DIR/common.sh"
+# shellcheck source=bundle_policy.sh
+source "$SCRIPT_DIR/bundle_policy.sh"
 
 APPIMAGE="${1:-$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage}"
 
@@ -31,15 +33,15 @@ fi
 
 qm_count=$(unsquashfs -l -o "$OFF" "$APPIMAGE" 2>/dev/null | grep -c '\.qm$' || true)
 if [[ "$qm_count" -eq 0 ]]; then
-    print_warning "No bundled Qt .qm files in AppImage (ltr_gui may still load translations from embedded resources)"
+    print_status "No Qt framework .qm files in squashfs listing (ltr_gui still loads app translations from embedded resources)"
 else
     print_status "Bundled Qt .qm files: $qm_count"
 fi
 
 if unsquashfs -l -o "$OFF" "$APPIMAGE" 2>/dev/null | grep -q 'usr/bin/wii_server'; then
-    print_status "Wiimote: wii_server is bundled"
+    print_status "Wiimote: wii_server is present (non-standard build; standard AppImage uses -DDISABLE_WIIMOTE=ON)"
 else
-    print_warning "Wiimote: wii_server not in AppImage (build host had no libcwiid — see prepare.sh REQUIRE_WIIMOTE)"
+    print_status "Standard AppImage: Wiimote / wii_server not bundled (expected)"
 fi
 
 # --- Extract to a temp dir for file and sqlite checks ---
@@ -72,14 +74,21 @@ require_help_sqlite() {
     return 0
 }
 
-for pair in \
-    "$ROOT/usr/share/linuxtrack/help/ltr_gui/help.qhc:ltr_gui help.qhc" \
-    "$ROOT/usr/share/linuxtrack/help/ltr_gui/help.qch:ltr_gui help.qch" \
-    "$ROOT/usr/share/linuxtrack/help/mickey/help.qhc:mickey help.qhc" \
-    "$ROOT/usr/share/linuxtrack/help/mickey/help.qch:mickey help.qch"; do
-    f="${pair%%:*}"
-    lab="${pair##*:}"
-    require_help_sqlite "$f" "$lab" || failures=$((failures + 1))
+# ltr_gui: require help.qch; help.qhc optional (qhp-only prepare has no collection)
+LTR_QCH="$ROOT/$LTR_HELP_LTR_GUI_QCH_REL"
+LTR_QHC="$ROOT/$LTR_HELP_LTR_GUI_QHC_REL"
+require_help_sqlite "$LTR_QCH" "ltr_gui help.qch" || failures=$((failures + 1))
+if [[ -f "$LTR_QHC" ]]; then
+    require_help_sqlite "$LTR_QHC" "ltr_gui help.qhc" || failures=$((failures + 1))
+else
+    print_warning "Optional missing: $LTR_HELP_LTR_GUI_QHC_REL"
+fi
+# mickey: Qt Help only if mickey.qhp/qhcp exist in the repo (otherwise HTML-only)
+for _m in help.qch help.qhc; do
+    _mf="$ROOT/usr/share/linuxtrack/help/mickey/$_m"
+    if [[ -f "$_mf" ]]; then
+        require_help_sqlite "$_mf" "mickey $_m" || failures=$((failures + 1))
+    fi
 done
 
 for icon in \
@@ -100,10 +109,10 @@ fi
 [[ -x "$ROOT/usr/bin/ltr_gui" ]] || { print_error "ltr_gui not executable"; failures=$((failures + 1)); }
 
 # 32-bit Wine bridge runtime (package.sh checks this too)
-if [[ -f "$ROOT/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0" ]]; then
+if [[ -f "$ROOT/$LTR32_LIB_REL" ]]; then
     print_success "32-bit liblinuxtrack for Wine bridge present"
 else
-    print_error "Missing usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+    print_error "Missing $LTR32_LIB_REL"
     failures=$((failures + 1))
 fi
 

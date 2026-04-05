@@ -9,8 +9,9 @@ source "$SCRIPT_DIR/config.sh"
 # Enforce defaults: always clean and include wine bridge
 export CLEAN=1
 export WITH_WINE_BRIDGE=1
-# Set REQUIRE_WIIMOTE=1 before CI if the AppImage must bundle wii_server (needs libcwiid on the build host).
-# export REQUIRE_WIIMOTE=1
+# Fail validate if OpenGL widgets are bundled without libxcb-glx (3D preview / GLX).
+export STRICT_BUNDLE=1
+# Standard AppImage: prepare.sh uses -DDISABLE_WIIMOTE=ON (no wii_server). To ship Wiimote, rebuild with DISABLE_WIIMOTE=OFF and libcwiid dev packages.
 
 echo "[INFO] CI build starting for $APP_NAME $VERSION"
 

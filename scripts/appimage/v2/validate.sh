@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
+# shellcheck source=bundle_policy.sh
+source "$SCRIPT_DIR/bundle_policy.sh"
 
 print_status "Validate: auditing AppDir"
 
@@ -155,6 +157,19 @@ else
     failures=$((failures+1))
 fi
 
+# STRICT_BUNDLE: Qt6OpenGLWidgets needs libxcb-glx for GLX / 3D preview on typical X11 stacks
+if [[ "${STRICT_BUNDLE:-0}" == "1" ]]; then
+    _glw=""
+    _glw=$(find "$APPDIR/usr/lib" -maxdepth 1 \( -name 'libQt6OpenGLWidgets.so' -o -name 'libQt6OpenGLWidgets.so.*' \) 2>/dev/null | head -1)
+    if [[ -n "$_glw" && ! -f "$APPDIR/$LIBXCB_GLX_REL" ]]; then
+        print_error "STRICT_BUNDLE: $LIBXCB_GLX_REL missing but OpenGL widgets library present ($(basename "$_glw"))"
+        failures=$((failures+1))
+    elif [[ -n "$_glw" ]]; then
+        print_status "STRICT_BUNDLE: libxcb-glx present for bundled Qt6OpenGLWidgets"
+    fi
+    unset _glw
+fi
+
 # Check Qt Help system files comprehensively
 print_status "Checking Qt Help system files"
 HELP_LTR_GUI_QHC=false
@@ -162,8 +177,8 @@ HELP_LTR_GUI_QCH=false
 HELP_MICKEY_QHC=false
 HELP_MICKEY_QCH=false
 
-[[ -f "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qhc" ]] && HELP_LTR_GUI_QHC=true
-[[ -f "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qch" ]] && HELP_LTR_GUI_QCH=true
+[[ -f "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL" ]] && HELP_LTR_GUI_QHC=true
+[[ -f "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" ]] && HELP_LTR_GUI_QCH=true
 [[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qhc" ]] && HELP_MICKEY_QHC=true
 [[ -f "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" ]] && HELP_MICKEY_QCH=true
 
@@ -175,7 +190,7 @@ if [[ "$HELP_LTR_GUI_QCH" = true ]]; then
         print_status "ltr_gui: help.qch present; help.qhc absent (collection optional — matches qhp-only / qch-only generation)"
     fi
 else
-    print_error "ltr_gui help.qch missing from usr/share/linuxtrack/help/ltr_gui/ — Qt Help content will fail"
+    print_error "ltr_gui help.qch missing from $LTR_HELP_LTR_GUI_QCH_REL — Qt Help content will fail"
     failures=$((failures+1))
 fi
 
@@ -213,10 +228,10 @@ validate_help_db() {
 # Check if help files are valid SQLite databases with required tables
 if command -v sqlite3 >/dev/null 2>&1; then
     if [[ "$HELP_LTR_GUI_QCH" = true ]]; then
-        validate_help_db "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qch" "ltr_gui help.qch"
+        validate_help_db "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" "ltr_gui help.qch"
     fi
     if [[ "$HELP_LTR_GUI_QHC" = true ]]; then
-        validate_help_db "$APPDIR/usr/share/linuxtrack/help/ltr_gui/help.qhc" "ltr_gui help.qhc"
+        validate_help_db "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL" "ltr_gui help.qhc"
     fi
     if [[ "$HELP_MICKEY_QCH" = true ]]; then
         validate_help_db "$APPDIR/usr/share/linuxtrack/help/mickey/help.qch" "mickey help.qch"

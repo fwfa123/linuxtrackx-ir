@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
+# shellcheck source=bundle_policy.sh
+source "$SCRIPT_DIR/bundle_policy.sh"
 
 print_status "Package: creating AppImage"
 
@@ -71,21 +73,22 @@ pushd "$PROJECT_ROOT" >/dev/null
         pushd "$TMP_EXTRACT_DIR" >/dev/null
             APPIMAGE_EXTRACT_AND_RUN=1 "$OUT_PATH" --appimage-extract >/dev/null 2>&1 || true
             ROOT_DIR="squashfs-root"
-            # Help files for ltr_gui and mickey
+            # Qt Help: ltr_gui must ship help.qch (content). help.qhc (collection) is
+            # produced when ltr_gui.qhcp exists in the tree (see prepare.sh). Mickey has
+            # no .qhp in-repo — HTML under src/mickey/help/ only; do not require mickey .qhc/.qch.
             HELP_OK=1
-            for f in \
-                "$ROOT_DIR/usr/share/linuxtrack/help/ltr_gui/help.qhc" \
-                "$ROOT_DIR/usr/share/linuxtrack/help/ltr_gui/help.qch" \
-                "$ROOT_DIR/usr/share/linuxtrack/help/mickey/help.qhc" \
-                "$ROOT_DIR/usr/share/linuxtrack/help/mickey/help.qch"; do
-                if [[ ! -f "$f" ]]; then
-                    print_error "Missing help artifact in AppImage: ${f#${ROOT_DIR}/}"
-                    HELP_OK=0
-                fi
-            done
+            LTR_QCH="$ROOT_DIR/$LTR_HELP_LTR_GUI_QCH_REL"
+            LTR_QHC="$ROOT_DIR/$LTR_HELP_LTR_GUI_QHC_REL"
+            if [[ ! -f "$LTR_QCH" ]]; then
+                print_error "Missing help artifact in AppImage: ${LTR_QCH#${ROOT_DIR}/}"
+                HELP_OK=0
+            fi
+            if [[ ! -f "$LTR_QHC" ]]; then
+                print_warning "Optional help artifact missing in AppImage: ${LTR_QHC#${ROOT_DIR}/} (add src/qt_gui/ltr_gui.qhcp and regenerate)"
+            fi
 
             # 32-bit runtime library for Wine bridge
-            LTR32_PATH="$ROOT_DIR/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
+            LTR32_PATH="$ROOT_DIR/$LTR32_LIB_REL"
             if [[ ! -f "$LTR32_PATH" ]]; then
                 print_error "Missing 32-bit liblinuxtrack in AppImage: usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
                 HELP_OK=0
