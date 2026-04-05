@@ -1,8 +1,8 @@
 #!/bin/bash
-# LinuxTrack Qt5 GUI Launcher
-# This script sets the correct library path and launches the modernized Qt5 GUI
+# LinuxTrack GUI launcher (legacy script name: run_qt5_gui.sh).
+# Current main-branch builds use Qt6; this script sets library paths and runs ltr_gui.
 
-echo "🚀 Starting LinuxTrack Qt5 GUI (Modernized from Qt4)"
+echo "🚀 Starting LinuxTrack GUI (Qt6 build; legacy script name)"
 echo "📍 Working directory: $(pwd)"
 
 # Detect display server and handle Wayland
@@ -10,7 +10,7 @@ DISPLAY_SERVER=""
 if [ "$XDG_SESSION_TYPE" = "wayland" ] || [ -n "$WAYLAND_DISPLAY" ]; then
     DISPLAY_SERVER="Wayland"
     echo "🔍 Detected: $DISPLAY_SERVER session"
-    echo "⚠️  Qt5 GUI works better with X11. Use --force-x11 to run with XWayland"
+    echo "⚠️  GUI may work better with X11. Use --force-x11 to run with XWayland"
     
     # Check for force X11 flag
     if [ "$1" = "--force-x11" ]; then
@@ -40,8 +40,8 @@ ls -la "$LIB_PATH"/libltr.so*
 # Change to GUI directory and launch
 cd src/qt_gui
 echo "📂 GUI directory: $(pwd)"
-echo "✨ Launching Qt5 GUI..."
+echo "✨ Launching ltr_gui..."
 
 LD_LIBRARY_PATH="$LIB_PATH:/usr/local/lib:$LD_LIBRARY_PATH" ./ltr_gui
 
-echo "🎯 Qt5 GUI closed." 
+echo "🎯 ltr_gui closed." 

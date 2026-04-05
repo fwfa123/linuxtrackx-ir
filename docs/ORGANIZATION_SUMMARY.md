@@ -37,7 +37,7 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 ### 🧪 Testing Documentation (`testing/`) - 4 files
 **Purpose**: Testing and validation procedures
 - **`README.md`** - Testing guide overview and quick reference
-- **`KUBUNTU_25_QT5_TESTING.md`** - Qt5-specific Kubuntu testing (29KB)
+- **`KUBUNTU_25_QT5_TESTING.md`** - Historical Kubuntu Qt5 validation log (29KB); current builds use Qt6—see `readme/debian-ubuntu.md`
 - **`TESTING_GUIDE.md`** - General testing guidelines (13KB)
 - **`KUBUNTU_FIXES.md`** - Kubuntu-specific fixes (5KB)
 

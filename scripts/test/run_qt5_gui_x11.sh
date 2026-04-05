@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# LinuxTrack Qt5 GUI Launch Script (X11 Mode)
-# This script automatically forces X11 mode for full blob tracking functionality
-# Use this on Wayland systems to avoid blob tracking display issues
+# LinuxTrack GUI launch (X11 mode). Legacy filename; Qt6 build.
+# Forces X11 for compatibility on Wayland sessions.
 
-echo "🚀 LinuxTrack Qt5 GUI - Launching in X11 mode for full compatibility"
+echo "🚀 LinuxTrack GUI - X11 mode (Qt6 build; legacy script names)"
 echo "💡 This ensures real-time blob tracking display works correctly"
 echo ""
 

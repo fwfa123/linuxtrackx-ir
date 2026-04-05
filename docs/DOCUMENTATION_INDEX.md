@@ -2,7 +2,7 @@
 
 ## 📚 Complete Documentation Guide
 
-This index provides comprehensive navigation for all LinuxTrack Qt5 modernization documentation, organized by category for easy access.
+This index organizes LinuxTrack documentation. **The supported GUI/toolchain for new releases is Qt6 with CMake** (see [README.md](../README.md) and [readme/](readme/)). Files that refer to Qt5, qmake, or autotools are mostly **historical** migration or troubleshooting material.
 
 ---
 
@@ -57,11 +57,11 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **[technical/README.md](technical/README.md)** - Technical documentation overview
 - **[technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)** - Implementation details (13KB)
 - **[technical/GAME_DATA_SYSTEM.md](technical/GAME_DATA_SYSTEM.md)** - Game data system architecture (15KB)
-- **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Qt4 to Qt5 migration guide (7KB)
+- **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Historical Qt4→Qt5 migration (superseded by Qt6 stack; see [QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md))
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Original modernization plan (7KB)
 - **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB)
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
-- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - Qt5 Help System AppImage bundling fix plan (12KB)
+- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help bundling notes (filename legacy; verify against current Qt6 AppImage build)
 
 ---
 
@@ -87,7 +87,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 - **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md), [guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md), [technical/ISSUE_206_TRACKIR_ARCH_FIXES.md](technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
 
 ### Development Resources
-- **Qt5 Migration** → [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)
+- **Qt / framework migration** → [technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md), [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md) (older)
 - **Build System** → [technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)
 - **Project status / releases** → [../CHANGELOG.md](../CHANGELOG.md), [../README.md](../README.md)
 
@@ -127,8 +127,9 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 ### Developers
 - **[technical/README.md](technical/README.md)** - Technical documentation
-- **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Technical architecture
-- **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Implementation details
+- **[technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md)** - Qt6 migration notes (current stack)
+- **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Technical architecture (partially historical)
+- **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Older Qt4→Qt5 details
 - **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help system fix
 
 ### Testers
@@ -143,10 +144,11 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 ### By Keywords
 
-#### "Qt5" or "Qt6"
+#### "Qt" framework (versions, upgrades)
+- **[technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md)** — Qt5→Qt6 (current direction for `main`)
 - **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
-- **[technical/QT5_MODERNIZATION_STATUS.md](technical/QT5_MODERNIZATION_STATUS.md)**
-- **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)**
+- **[technical/QT5_MODERNIZATION_STATUS.md](technical/QT5_MODERNIZATION_STATUS.md)** (historical context)
+- **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)** (filename legacy; many items apply to Qt6 builds)
 
 #### "TrackIR" or "Hardware"
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)**
@@ -168,7 +170,7 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 
 #### "Wayland" or "Display"
 - **[troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**
-- **[run_qt5_gui_x11.sh](../scripts/test/run_qt5_gui_x11.sh)**
+- **[run_qt5_gui_x11.sh](../scripts/test/run_qt5_gui_x11.sh)** (legacy script name; Qt6 build)
 
 #### "Wine" or "Windows"
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)**
@@ -200,13 +202,13 @@ This index provides comprehensive navigation for all LinuxTrack Qt5 modernizatio
 # Automatic recovery
 ./linuxtrack_quick_recovery.sh
 
-# Manual Qt5 rebuild
-cd src/qt_gui && qmake-qt5 ltr_gui.pro && make -j$(nproc)
+# Rebuild GUI after CMake changes (from repo root)
+mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt && cmake --build . -j$(nproc)
 
 # Check TrackIR hardware
 lsusb | grep 131d
 
-# Launch application (example helper; from repo root)
+# Launch application (example helper; from repo root; legacy script name)
 ./scripts/test/run_qt5_gui.sh
 ```
 
@@ -215,7 +217,7 @@ lsusb | grep 131d
 - **Libraries**: `src/.libs/lib*.so*`
 - **Configuration**: `~/.config/linuxtrack/linuxtrack1.conf`
 - **udev Rules**: `/lib/udev/rules.d/99-TIR.rules`
-- **Launch Script**: `scripts/test/run_qt5_gui.sh` (or `ltr_gui` after install)
+- **Launch helpers**: `scripts/test/run_qt5_gui.sh` (legacy name; Qt6-built `ltr_gui`) or `ltr_gui` after install
 
 ---
 
@@ -229,7 +231,7 @@ lsusb | grep 131d
 ### Documentation History
 - **Created**: June 2025 during Qt5 modernization
 - **Reorganized**: July 2025 with category-based structure
-- **Status**: Comprehensive and actively maintained
+- **2026**: Qt6 + CMake documented as current release stack; legacy Qt5/qmake references retained only where historically useful
 
 ### Contributing to Documentation
 - **Location**: All .md files in organized subdirectories

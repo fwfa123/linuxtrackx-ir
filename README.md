@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 
-Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility.
+Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility. **Current releases on `main` use Qt6** (CMake); older docs may still mention Qt5 for migration history.
 
 ### Why 'X-IR'?
 This fork focuses on TrackIR hardware support and modern Linux distributions, while attempting to maintaining compatibility with the original codebase.

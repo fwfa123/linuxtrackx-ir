@@ -2,14 +2,17 @@
 
 ## Overview
 
-This directory contains technical documentation for LinuxTrack Qt5 modernization, including implementation details, migration guides, and development notes.
+This directory contains technical documentation for LinuxTrack, including implementation details, migration guides, and development notes.
+
+**Current release stack (branch `main`):** **Qt6** GUI and tools via **CMake** (`find_package(Qt6 …)`). Treat sections below that describe autotools, `qmake`, or “Qt5 modernization” as **historical** unless cross-checked against the current tree.
 
 ## Technical Files
 
 ### Current Technical Documentation
 - **`TECHNICAL_IMPLEMENTATION_GUIDE.md`** — Implementation details
 - **`GAME_DATA_SYSTEM.md`** — Game data system architecture
-- **`QT4_TO_QT5_MIGRATION.md`** / **`QT5_TO_QT6_MIGRATION.md`** — Framework migration notes
+- **`QT5_TO_QT6_MIGRATION.md`** — Qt5→Qt6 (relevant to current releases)
+- **`QT4_TO_QT5_MIGRATION.md`** — Older Qt4→Qt5 history
 - **`QT5_MODERNIZATION_STATUS.md`** — Qt5 status
 - **`MODERNIZATION_PLAN.md`** — Modernization plan
 - **`OPENTRACK_PLUGIN_PLAN.md`** — OpenTrack plugin integration
@@ -24,8 +27,8 @@ Older planning snapshots live under **[`../archive/technical/`](../archive/techn
 
 ## Key Technical Areas
 
-### Qt4 to Qt5 Migration
-**Primary File**: `QT4_TO_QT5_MIGRATION.md`
+### Qt4 to Qt5 migration (historical)
+**Primary File**: `QT4_TO_QT5_MIGRATION.md` — historical; current work is Qt6 (`QT5_TO_QT6_MIGRATION.md`).
 
 **Major Changes:**
 - **Build System**: Updated autotools configuration

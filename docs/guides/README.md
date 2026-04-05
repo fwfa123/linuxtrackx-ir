@@ -1,6 +1,6 @@
 # LinuxTrack user guides
 
-This directory holds a few distribution-focused guides. **Per-distro install and troubleshooting** live primarily under [`docs/readme/`](../readme/) (Debian/Ubuntu, Fedora/RHEL, Arch, Flatpak, migration notes).
+This directory holds a few distribution-focused guides. **Current releases use Qt6 and CMake** (see the main [README.md](../../README.md)). **Per-distro install and troubleshooting** live primarily under [`docs/readme/`](../readme/) (Debian/Ubuntu, Fedora/RHEL, Arch, Flatpak, migration notes).
 
 ## Guides in this folder
 
@@ -32,4 +32,4 @@ sudo cmake --install .
 ./linuxtrack_health_check.sh
 ```
 
-Use your install’s `ltr_gui` launcher or helper scripts under **`scripts/test/`** (e.g. `run_qt5_gui.sh`) to start the GUI. For Wayland/X11 issues, see **[`../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md`](../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**.
+Use your install’s `ltr_gui` launcher or helper scripts under **`scripts/test/`** (e.g. `run_qt5_gui.sh` — **legacy filename**, built against Qt6) to start the GUI. For Wayland/X11 issues, see **[`../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md`](../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**.
