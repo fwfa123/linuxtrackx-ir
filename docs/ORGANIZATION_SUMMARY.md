@@ -4,6 +4,8 @@
 
 The LinuxTrack documentation has been successfully reorganized from a flat structure with 39 files into a well-organized category-based system with 6 subdirectories and 45 total files.
 
+**Update (2026):** The former `docs/progress/` tree was removed from the repository during aggressive cleanup; current status is tracked in [CHANGELOG.md](../CHANGELOG.md) and the project issue tracker instead.
+
 ## Reorganization Results
 
 ### Before Reorganization
@@ -67,16 +69,6 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 - **`ISSUE_206_TRACKIR_ARCH_FIXES.md`** - TrackIR Arch Linux fixes (4KB)
 - **`QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md`** - Qt5 Help System AppImage fix plan (12KB)
 
-### 📈 Development Progress (`progress/`) - 7 files
-**Purpose**: Development history and project tracking
-- **`README.md`** - Development progress overview and quick reference
-- **`INSTALLATION_PROGRESS_TRACKER.md`** - Installation progress (22KB)
-- **`INSTALLATION_COMPLETION_PLAN.md`** - Installation completion planning (10KB)
-- **`PROJECT_STATUS_UPDATE.md`** - Project status updates (6KB)
-- **`BRANCH_MERGE_PLAN.md`** - Git branch merge planning (5KB)
-- **`PHASE_2_3_4_PLAN.md`** - Development phase planning (5KB)
-- **`SESSION_SUMMARY_2025-06-29.md`** - Development session summary (5KB)
-
 ### 🍷 Wine Legacy (`wine-legacy/`) - 8 files
 **Purpose**: Historical reference (obsolete wine-based approach)
 - **`README.md`** - Wine legacy documentation overview
@@ -109,7 +101,7 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 ### 4. **Maintained Historical Context**
 - All original files preserved for historical reference
 - Wine legacy documentation clearly marked as obsolete
-- Development progress tracked for future reference
+- Historical planning artifacts were later retired from `docs/progress/` (see update note above)
 
 ### 5. **Enhanced Maintainability**
 - Clear structure makes it easier to add new documentation
