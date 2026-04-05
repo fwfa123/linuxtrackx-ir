@@ -20,7 +20,7 @@ If you also use a GitLab wiki checkout, clone it separately (for example a `linu
 
 ## Help → wiki export
 
-HTML help under `src/qt_gui/help/` can be converted into Markdown in your **wiki working copy** (not into this directory). From the main repo:
+HTML help under `src/qt_gui/help/` can be converted into Markdown in your **wiki working copy** (not into this directory). The GUI is built with **Qt6** on current `main`; from the main repo:
 
 ```bash
 export LINUXTRACK_WIKI_ROOT=/path/to/linuxtrackx-ir.wiki   # optional; default: ../linuxtrackx-ir.wiki

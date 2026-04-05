@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains comprehensive testing documentation for LinuxTrack Qt5 modernization. The testing process validates build system compatibility, hardware detection, and functionality across different Linux distributions.
+This directory contains testing documentation for LinuxTrack. **New releases target Qt6 + CMake**; some files (e.g. `KUBUNTU_25_QT5_TESTING.md`) are **historical** Qt5-era validation logs—use them for context, not as the authoritative build recipe.
 
 ## Quick Testing Reference
 
@@ -14,11 +14,11 @@ This directory contains comprehensive testing documentation for LinuxTrack Qt5 m
 # Build test
 ./build.sh --deps --clean --install
 
-# Launch application
-./run_qt5_gui.sh
+# Launch application (from repo root; script names are legacy)
+./scripts/test/run_qt5_gui.sh
 
 # Force X11 mode (for Wayland)
-./run_qt5_gui.sh --force-x11
+./scripts/test/run_qt5_gui.sh --force-x11
 ```
 
 ### Success Criteria
@@ -33,7 +33,7 @@ This directory contains comprehensive testing documentation for LinuxTrack Qt5 m
 **Key Requirements:**
 - Install 32-bit development libraries: `sudo apt install gcc-multilib libc6-dev-i386`
 - Wine installation for wine bridge support
-- Qt5 development packages
+- **Qt6** development packages (see [readme/debian-ubuntu.md](../readme/debian-ubuntu.md))
 
 **Common Issues:**
 - Missing `bits/wordsize.h` or `bits/libc-header-start.h` → Install multilib packages
@@ -42,7 +42,7 @@ This directory contains comprehensive testing documentation for LinuxTrack Qt5 m
 
 ### Kubuntu 25.10 Testing
 **Specific Notes:**
-- Qt5 packages may have different names (`qt5-qmake` vs `qmake-qt5`)
+- Prefer **Qt6** packages from [readme/debian-ubuntu.md](../readme/debian-ubuntu.md); older Qt5 package-name notes are obsolete for current `main`
 - 32-bit support requires explicit package installation
 - Wayland compatibility requires X11 mode for optimal tracking
 
