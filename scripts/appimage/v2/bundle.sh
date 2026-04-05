@@ -17,6 +17,9 @@ print_status "Bundle: dependencies into AppDir (linuxdeploy-first)"
 [[ -x "$LINUXDEPLOY_QT" ]] || print_warning "linuxdeploy-plugin-qt not found or not executable; will try without"
 
 pushd "$APPDIR" >/dev/null
+    # linuxdeploy / plugin use an embedded strip that breaks modern ELF (.relr.dyn); CLI --dont-strip + NO_STRIP for plugin
+    export NO_STRIP=1
+
     # CRITICAL: Set LD_LIBRARY_PATH so linuxdeploy can find liblinuxtrack.so.0
     # The linuxtrack libraries are installed in usr/lib/linuxtrack (subdirectory)
     # Without this, linuxdeploy fails with "Could not find dependency: liblinuxtrack.so.0"
@@ -25,11 +28,12 @@ pushd "$APPDIR" >/dev/null
     print_status "Set LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 
     # linuxdeploy to discover and copy runtime deps
-    print_status "Running linuxdeploy"
+    # --dont-strip: bundled strip in linuxdeploy AppImage is too old for modern ELF (.relr.dyn); fails on Fedora/glibc toolchains
+    print_status "Running linuxdeploy (with --dont-strip for RELR-safe binaries)"
     DESKTOP_FILE="usr/share/applications/linuxtrack.desktop"
     ICON_FILE="linuxtrack.png"
     [ -f "$ICON_FILE" ] || ICON_FILE="usr/share/icons/hicolor/48x48/apps/linuxtrack.png"
-    "$LINUXDEPLOY" --appdir . \
+    "$LINUXDEPLOY" --appdir . --dont-strip \
         -e usr/bin/ltr_gui \
         -d "$DESKTOP_FILE" \
         -i "$ICON_FILE" \
@@ -47,32 +51,24 @@ pushd "$APPDIR" >/dev/null
         print_status "Running linuxdeploy-plugin-qt"
         "$LINUXDEPLOY_QT" --appdir . || print_warning "linuxdeploy-plugin-qt failed; continuing"
         
-        # Verify Qt6 libraries were bundled (not Qt5)
-        print_status "Verifying Qt6 libraries were bundled"
-        if command -v ldd >/dev/null 2>&1; then
-            if ldd usr/bin/ltr_gui 2>/dev/null | grep -q "libQt5"; then
-                print_error "Qt5 libraries detected in binary, expected Qt6"
-                print_error "linuxdeploy-plugin-qt may have bundled Qt5 instead of Qt6"
-                print_error "This may cause runtime issues. Verify Qt6 is properly installed."
-                # Don't fail here - allow build to continue but warn user
-            elif ldd usr/bin/ltr_gui 2>/dev/null | grep -q "libQt6"; then
-                print_success "Qt6 libraries confirmed in binary"
-            else
-                print_warning "Could not detect Qt version in binary (may be statically linked)"
-            fi
-        fi
-        
-        # Modify qt.conf to include both plugin paths for maximum compatibility
+        # Replace qt.conf so QLibraryInfo uses AppDir usr/ prefix (not host /usr/lib64/qt5/plugins).
+        # setLibraryPaths() before QApplication caused segfaults on Fedora; qt.conf is the supported fix.
         if [[ -f usr/bin/qt.conf ]]; then
-            print_status "Modifying qt.conf to include both plugin paths"
-            # Backup original
-            cp usr/bin/qt.conf usr/bin/qt.conf.backup
-            # Update to include both plugin paths (Qt6)
-            sed -i 's|Plugins = plugins|Plugins = plugins:lib/qt6/plugins|' usr/bin/qt.conf
-            print_success "Updated qt.conf to include both plugin paths"
-        else
-            print_warning "qt.conf not found after Qt deployment"
+            cp -f usr/bin/qt.conf usr/bin/qt.conf.from_linuxdeploy
         fi
+        print_status "Writing usr/bin/qt.conf for AppDir-only Qt paths (fixes Qt version mix on Fedora)"
+        cat > usr/bin/qt.conf << 'QTEOF'
+[Paths]
+Prefix = ..
+Plugins = plugins:lib/qt5/plugins
+Libraries = lib
+Binaries = bin
+QTEOF
+        if [[ -d usr/share/qt5/translations ]]; then
+            echo "Translations = share/qt5/translations" >> usr/bin/qt.conf
+            print_status "qt.conf: Translations = share/qt5/translations"
+        fi
+        print_success "usr/bin/qt.conf: Prefix=.. (relative to usr/bin → usr/), plugins = usr/plugins and usr/lib/qt5/plugins"
     fi
 
     # Inject help runtime handling into the linuxdeploy Qt hook so AppRun sets QT_HELP_PATH to a writable dir
@@ -109,41 +105,94 @@ EOHLP
         print_warning "AppRun.wrapped not found; Qt hook should handle help path"
     fi
 
-    # Ensure Qt Help module is properly bundled
+    # Ensure Qt Help module is properly bundled (Fedora: /usr/lib64; debian: multiarch or qt5/lib; may be symlinks only)
     print_status "Verifying Qt Help module bundling"
-    if [[ ! -f usr/lib/libQt6Help.so.6 && ! -f usr/lib/libQt6Help.so ]]; then
-        print_warning "Qt6Help library not found in bundled libraries"
-        # Try to find and copy Qt6Help from system
-        for qt6help in /usr/lib/x86_64-linux-gnu/libQt6Help.so.6* /usr/lib/libQt6Help.so.6* /usr/lib/qt6/lib/libQt6Help.so.6*; do
-            if [[ -f "$qt6help" ]]; then
-                cp -f "$qt6help" usr/lib/
-                print_success "Copied Qt6Help library: $(basename "$qt6help")"
+    if [[ -z "$(find usr/lib \( -name 'libQt5Help.so' -o -name 'libQt5Help.so.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]; then
+        print_warning "Qt5Help library not found under usr/lib; copying from host"
+        for qt5help in /usr/lib64/libQt5Help.so.5* /usr/lib64/qt5/lib/libQt5Help.so.5* \
+            /usr/lib/x86_64-linux-gnu/libQt5Help.so.5* /usr/lib/libQt5Help.so.5* /usr/lib/qt5/lib/libQt5Help.so.5*; do
+            if [[ -e "$qt5help" ]]; then
+                cp -L -f "$qt5help" usr/lib/ 2>/dev/null || cp -f "$qt5help" usr/lib/
+                print_success "Copied Qt5Help library: $(basename "$qt5help")"
                 break
             fi
         done
     else
-        print_success "Qt6Help library found in bundled libraries"
+        print_success "Qt5Help library found in bundled libraries"
     fi
 
     # Ensure Qt SQL module is properly bundled (required for help system)
     print_status "Verifying Qt SQL module bundling"
-    if [[ ! -f usr/lib/libQt6Sql.so.6 && ! -f usr/lib/libQt6Sql.so ]]; then
-        print_warning "Qt6Sql library not found in bundled libraries"
-        # Try to find and copy Qt6Sql from system
-        for qt6sql in /usr/lib/x86_64-linux-gnu/libQt6Sql.so.6* /usr/lib/libQt6Sql.so.6* /usr/lib/qt6/lib/libQt6Sql.so.6*; do
-            if [[ -f "$qt6sql" ]]; then
-                cp -f "$qt6sql" usr/lib/
-                print_success "Copied Qt6Sql library: $(basename "$qt6sql")"
+    if [[ -z "$(find usr/lib \( -name 'libQt5Sql.so' -o -name 'libQt5Sql.so.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]; then
+        print_warning "Qt5Sql library not found under usr/lib; copying from host"
+        for qt5sql in /usr/lib64/libQt5Sql.so.5* /usr/lib64/qt5/lib/libQt5Sql.so.5* \
+            /usr/lib/x86_64-linux-gnu/libQt5Sql.so.5* /usr/lib/libQt5Sql.so.5* /usr/lib/qt5/lib/libQt5Sql.so.5*; do
+            if [[ -e "$qt5sql" ]]; then
+                cp -L -f "$qt5sql" usr/lib/ 2>/dev/null || cp -f "$qt5sql" usr/lib/
+                print_success "Copied Qt5Sql library: $(basename "$qt5sql")"
                 break
             fi
         done
     else
-        print_success "Qt6Sql library found in bundled libraries"
+        print_success "Qt5Sql library found in bundled libraries"
     fi
 
+    # Qt OpenGL module (3D view); linuxdeploy often omits on Ubuntu
+    print_status "Verifying Qt5OpenGL module bundling"
+    if [[ -z "$(find usr/lib \( -name 'libQt5OpenGL.so' -o -name 'libQt5OpenGL.so.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]; then
+        print_warning "Qt5OpenGL not under usr/lib; copying from host"
+        for qt5ogl in /usr/lib64/libQt5OpenGL.so.5* /usr/lib64/qt5/lib/libQt5OpenGL.so.5* \
+            /usr/lib/x86_64-linux-gnu/libQt5OpenGL.so.5* /usr/lib/libQt5OpenGL.so.5* /usr/lib/qt5/lib/libQt5OpenGL.so.5*; do
+            if [[ -e "$qt5ogl" ]]; then
+                cp -L -f "$qt5ogl" usr/lib/ 2>/dev/null || cp -f "$qt5ogl" usr/lib/
+                print_success "Copied Qt5OpenGL library: $(basename "$qt5ogl")"
+                break
+            fi
+        done
+    else
+        print_success "Qt5OpenGL library found in bundled libraries"
+    fi
+
+    # Network bearer plugins — if missing, Qt loads host /usr/lib64/qt5/plugins/bearer (patch mismatch vs bundled Qt)
+    print_status "Ensuring Qt bearer plugins from build host"
+    ensure_dir usr/lib/qt5/plugins/bearer
+    bearer_n=$({ find usr/lib/qt5/plugins/bearer -maxdepth 1 -name '*.so' \( -type f -o -type l \) 2>/dev/null || true; } | wc -l)
+    if [[ "$bearer_n" -lt 1 ]]; then
+        for bdir in /usr/lib64/qt5/plugins/bearer /usr/lib/x86_64-linux-gnu/qt5/plugins/bearer /usr/lib/qt5/plugins/bearer; do
+            if [[ -d "$bdir" ]]; then
+                shopt -s nullglob
+                for bso in "$bdir"/*.so; do
+                    [[ -e "$bso" ]] || continue
+                    cp -f "$bso" usr/lib/qt5/plugins/bearer/ 2>/dev/null || true
+                done
+                shopt -u nullglob
+                print_status "Copied bearer plugins from $bdir"
+                break
+            fi
+        done
+    fi
+
+    # XCB GLX/EGL integration plugins — must match bundled Qt; missing/mismatched plugins => "neither GLX nor EGL are enabled"
+    print_status "Ensuring Qt xcbglintegrations plugins from build host (libqxcb-glx-integration / libqxcb-egl-integration)"
+    for gintdir in /usr/lib64/qt5/plugins/xcbglintegrations /usr/lib/x86_64-linux-gnu/qt5/plugins/xcbglintegrations /usr/lib/qt5/plugins/xcbglintegrations; do
+        if [[ -d "$gintdir" ]]; then
+            ensure_dir usr/lib/qt5/plugins/xcbglintegrations
+            ensure_dir usr/plugins/xcbglintegrations
+            shopt -s nullglob
+            for gso in "$gintdir"/*.so; do
+                [[ -e "$gso" ]] || continue
+                cp -f "$gso" usr/lib/qt5/plugins/xcbglintegrations/ 2>/dev/null || true
+                cp -f "$gso" usr/plugins/xcbglintegrations/ 2>/dev/null || true
+            done
+            shopt -u nullglob
+            print_status "Copied xcbglintegrations from $gintdir"
+            break
+        fi
+    done
+
     # Ensure Qt plugin directories exist
-    ensure_dir usr/lib/qt6/plugins/platforms
-    ensure_dir usr/lib/qt6/plugins/sqldrivers
+    ensure_dir usr/lib/qt5/plugins/platforms
+    ensure_dir usr/lib/qt5/plugins/sqldrivers
     ensure_dir usr/plugins/platforms
     ensure_dir usr/plugins/sqldrivers
 
@@ -286,13 +335,8 @@ EOHLP
     KIO_PLUGINS_FOUND=0
     
     # Copy KIO Help plugins (these provide enhanced help functionality)
-    # Note: KIO plugins are primarily Qt5-based, but Qt6 help system can use them
     print_status "Searching for KIO Help plugins..."
     KIO_HELP_PLUGIN_LOCATIONS=(
-        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kf5/kio/kio_help.so"
-        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kf5/kio/kio_ghelp.so"
-        "/usr/lib/qt6/plugins/kf5/kio/kio_help.so"
-        "/usr/lib/qt6/plugins/kf5/kio/kio_ghelp.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/kio_help.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio/kio_ghelp.so"
         "/usr/lib/qt5/plugins/kf5/kio/kio_help.so"
@@ -308,13 +352,8 @@ EOHLP
     done
     
     # Copy other KIO plugins for enhanced functionality
-    # Note: KIO plugins are primarily Qt5-based, but Qt6 help system can use them
     print_status "Searching for additional KIO plugins..."
     KIO_PLUGIN_LOCATIONS=(
-        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kf5/kio"
-        "/usr/lib/qt6/plugins/kf5/kio"
-        "/usr/lib/x86_64-linux-gnu/qt6/plugins/kauth/helper"
-        "/usr/lib/qt6/plugins/kauth/helper"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kf5/kio"
         "/usr/lib/qt5/plugins/kf5/kio"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/kauth/helper"
@@ -346,7 +385,7 @@ EOHLP
     
     # Report Qt Help system bundling status
     print_status "Qt Help system bundling complete:"
-    print_success "  - Core libraries: Qt6Help and Qt6Sql (already bundled)"
+    print_success "  - Core libraries: Qt5Help and Qt5Sql (already bundled)"
     print_success "  - SQLite driver: libqsqlite.so (already bundled)"
     
     if [[ $KIO_HELP_PLUGINS_FOUND -gt 0 ]]; then
@@ -364,18 +403,17 @@ EOHLP
     print_success "Qt Help system components bundled successfully"
 
     # Ensure platform plugin (xcb) fallback if plugin didn't bundle
-    if [[ ! -f usr/plugins/platforms/libqxcb.so && ! -f usr/lib/qt6/plugins/platforms/libqxcb.so ]]; then
+    if [[ ! -f usr/plugins/platforms/libqxcb.so && ! -f usr/lib/qt5/plugins/platforms/libqxcb.so ]]; then
         print_status "Ensuring Qt xcb platform plugin is present"
         while read -r p; do
             [[ -z "$p" ]] && continue
             if [[ -f "$p" ]]; then
-                cp "$p" usr/plugins/platforms/ 2>/dev/null || cp "$p" usr/lib/qt6/plugins/platforms/
+                cp "$p" usr/plugins/platforms/ 2>/dev/null || cp "$p" usr/lib/qt5/plugins/platforms/
                 print_success "Copied Qt platform plugin: $(basename "$p")"
                 break
             fi
         done < <(printf "%s\n" \
-            /usr/lib/x86_64-linux-gnu/qt6/plugins/platforms/libqxcb.so \
-            /usr/lib/qt6/plugins/platforms/libqxcb.so \
+            /usr/lib64/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/x86_64-linux-gnu/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/qt5/plugins/platforms/libqxcb.so \
             /usr/lib/qt/plugins/platforms/libqxcb.so)
@@ -385,17 +423,17 @@ EOHLP
     print_status "Ensuring Qt SQLite driver is present"
     SQLITE_FOUND=false
 
-    # Search multiple locations for SQLite driver (Qt6 first, then Qt5 fallback)
+    # Search multiple locations for SQLite driver (Debian: lib/x86_64-linux-gnu; Fedora/RHEL: lib64)
     SQLITE_LOCATIONS=(
-        "/usr/lib/x86_64-linux-gnu/qt6/plugins/sqldrivers/libqsqlite.so"
-        "/usr/lib/qt6/plugins/sqldrivers/libqsqlite.so"
-        "/usr/lib/x86_64-linux-gnu/qt6/plugins/sqldrivers/libqsqlite.so.6"
-        "/usr/lib/qt6/plugins/sqldrivers/libqsqlite.so.6"
-        "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib64/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib64/qt5/plugins/sqldrivers/libqsqlite.so.5"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so"
+        "/usr/lib/qt/plugins/sqldrivers/libqsqlite.so"
         "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5"
         "/usr/lib/qt5/plugins/sqldrivers/libqsqlite.so.5"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15"
+        "/usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers/libqsqlite.so.5.15.2"
     )
 
     print_status "Searching for SQLite driver in: ${SQLITE_LOCATIONS[*]}"
@@ -406,14 +444,14 @@ EOHLP
             # Ensure both directories exist
             print_status "Creating plugin directories..."
             ensure_dir usr/plugins/sqldrivers
-            ensure_dir usr/lib/qt6/plugins/sqldrivers
+            ensure_dir usr/lib/qt5/plugins/sqldrivers
             
             print_status "Verifying directories were created..."
             if [[ ! -d "usr/plugins/sqldrivers" ]]; then
                 die "Failed to create usr/plugins/sqldrivers directory - cannot proceed with AppImage build"
             fi
-            if [[ ! -d "usr/lib/qt6/plugins/sqldrivers" ]]; then
-                die "Failed to create usr/lib/qt6/plugins/sqldrivers directory - cannot proceed with AppImage build"
+            if [[ ! -d "usr/lib/qt5/plugins/sqldrivers" ]]; then
+                die "Failed to create usr/lib/qt5/plugins/sqldrivers directory - cannot proceed with AppImage build"
             fi
             print_success "Plugin directories created successfully"
 
@@ -422,8 +460,8 @@ EOHLP
             if ! cp "$candidate" usr/plugins/sqldrivers/; then
                 die "Failed to copy SQLite driver to usr/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
-            if ! cp "$candidate" usr/lib/qt6/plugins/sqldrivers/; then
-                die "Failed to copy SQLite driver to usr/lib/qt6/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            if ! cp "$candidate" usr/lib/qt5/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver to usr/lib/qt5/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
             print_success "Copied SQLite driver: $(basename "$candidate")"
             SQLITE_FOUND=true
@@ -433,21 +471,30 @@ EOHLP
         fi
     done
 
-    # Also search using find for any SQLite drivers
+    # Also search using find (scoped to Qt plugin trees — avoids slow full /usr scans on Fedora etc.)
     if [[ "$SQLITE_FOUND" = false ]]; then
-        print_status "SQLite driver not found in standard locations, searching with find..."
-        SQLITE_FIND=$(find /usr -name "libqsqlite.so*" -type f 2>/dev/null | head -1)
+        print_status "SQLite driver not found in standard locations, searching Qt sqldrivers dirs..."
+        SQLITE_FIND=""
+        for search_root in /usr/lib64/qt5/plugins/sqldrivers /usr/lib/qt5/plugins/sqldrivers /usr/lib/x86_64-linux-gnu/qt5/plugins/sqldrivers /usr/lib/qt/plugins/sqldrivers; do
+            if [[ -d "$search_root" ]]; then
+                SQLITE_FIND=$(find "$search_root" -maxdepth 1 -name "libqsqlite.so*" -type f 2>/dev/null | head -1)
+                [[ -n "$SQLITE_FIND" ]] && break
+            fi
+        done
+        if [[ -z "$SQLITE_FIND" ]]; then
+            SQLITE_FIND=$(find /usr/lib64/qt5 /usr/lib/qt5 /usr/lib/x86_64-linux-gnu/qt5 -path "*/sqldrivers/libqsqlite.so*" -type f 2>/dev/null | head -1)
+        fi
         if [[ -n "$SQLITE_FIND" && -f "$SQLITE_FIND" ]]; then
             print_status "Found SQLite driver with find at: $SQLITE_FIND"
             # Ensure both directories exist
             ensure_dir usr/plugins/sqldrivers
-            ensure_dir usr/lib/qt6/plugins/sqldrivers
+            ensure_dir usr/lib/qt5/plugins/sqldrivers
 
             if ! cp "$SQLITE_FIND" usr/plugins/sqldrivers/; then
                 die "Failed to copy SQLite driver from find to usr/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
-            if ! cp "$SQLITE_FIND" usr/lib/qt6/plugins/sqldrivers/; then
-                die "Failed to copy SQLite driver from find to usr/lib/qt6/plugins/sqldrivers/ - cannot proceed with AppImage build"
+            if ! cp "$SQLITE_FIND" usr/lib/qt5/plugins/sqldrivers/; then
+                die "Failed to copy SQLite driver from find to usr/lib/qt5/plugins/sqldrivers/ - cannot proceed with AppImage build"
             fi
             print_success "Found and copied SQLite driver from find: $(basename "$SQLITE_FIND")"
             SQLITE_FOUND=true
@@ -466,7 +513,7 @@ EOHLP
     print_status "Bundling common system libraries for self-contained runtime"
     for so in \
         libX11.so.6 libX11-xcb.so.1 libXrender.so.1 libXau.so.6 libXdmcp.so.6 \
-        libxcb.so.1 libxcb-icccm.so.4 libxcb-image.so.0 libxcb-shm.so.0 libxcb-keysyms.so.1 libxcb-randr.so.0 \
+        libxcb.so.1 libxcb-glx.so.0 libxcb-icccm.so.4 libxcb-image.so.0 libxcb-shm.so.0 libxcb-keysyms.so.1 libxcb-randr.so.0 \
         libxcb-render-util.so.0 libxcb-render.so.0 libxcb-shape.so.0 libxcb-sync.so.1 libxcb-xfixes.so.0 libxcb-xinerama.so.0 libxcb-xkb.so.1 libxcb-xinput.so.0 \
         libfreetype.so.6 libfontconfig.so.1 libharfbuzz.so.0 libgraphite2.so.3 \
         libdbus-1.so.3 libsystemd.so.0 libgcrypt.so.20 libgpg-error.so.0 \
@@ -476,48 +523,120 @@ EOHLP
         if [[ "$so" == libGL.so.1 || "$so" == libOpenGL.so.0 || "$so" == libGLX.so.0 || "$so" == libGLdispatch.so.0 || "$so" == libGLU.so.1 ]]; then
             continue
         fi
-        for dir in /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
+        # Fedora/RHEL use /usr/lib64; Debian/Ubuntu use multiarch paths — search 64-bit dirs first
+        for dir in /usr/lib64 /lib64 /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
             if [[ -f "$dir/$so" ]]; then
                 cp -n "$dir/$so" usr/lib/ 2>/dev/null || true
                 break
             fi
         done
     done
+    if [[ ! -e usr/lib/libxcb-glx.so.0 ]]; then
+        print_warning "libxcb-glx.so.0 missing from AppDir — Qt needs it for GLX (3D view). On Fedora/RHEL install package libxcb (no separate libxcb-glx RPM; the .so is in libxcb). Debian/Ubuntu: libxcb-glx0. Then rebuild."
+    fi
 
-    # Extra libs frequently not bundled by linuxdeploy but required
-    for so in libcom_err.so.2 libusb-1.0.so.0 libudev.so.1 libv4l2.so.0 libv4lconvert.so.0 libjpeg.so.62; do
-        for dir in /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /lib /usr/lib; do
+    # Extra libs frequently not bundled by linuxdeploy but required (Fedora: /usr/lib64 /lib64 first)
+    _ltr_host_lib_dirs=(/usr/lib64 /lib64 /lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu /usr/lib /lib)
+    for so in libcom_err.so.2 libusb-1.0.so.0 libudev.so.1 libv4l2.so.0 libv4lconvert.so.0 libjpeg.so.62 libmxml.so.1; do
+        for dir in "${_ltr_host_lib_dirs[@]}"; do
             if [[ -f "$dir/$so" ]]; then
-                cp -n "$dir/$so" usr/lib/ 2>/dev/null || true
+                cp -n "$dir/$so" usr/lib/ 2>/dev/null || cp -f "$dir/$so" usr/lib/ 2>/dev/null || true
                 print_status "Bundled critical library: $so"
                 break
             fi
         done
     done
+    unset _ltr_host_lib_dirs
 
-    # libwc / libp3eft are dlopen'd (not linked from ltr_gui); linuxdeploy does not pull OpenCV deps — copy from ldd
-    for plugin_base in libwc libp3eft; do
-        plug_so=""
-        for candidate in usr/lib/linuxtrack/${plugin_base}.so.0.0.0 usr/lib/linuxtrack/${plugin_base}.so.0 usr/lib/linuxtrack/${plugin_base}.so; do
-            if [[ -f "$candidate" ]]; then
-                plug_so="$candidate"
-                break
+    # libwc / libp3eft are dlopen'd (not linked from ltr_gui); linuxdeploy does not pull OpenCV deps.
+    # Fedora OpenCV pulls dozens of libopencv_* modules (direct + transitive). Single-pass ldd on the
+    # plugin misses deps that only appear once intermediate OpenCV DSOs are in usr/lib — iterate to closure.
+    _ltr_appdir_abs="$(pwd -P)"
+    ltr_dep_bundlable() {
+        case "$1" in
+            # Intentionally omit libgomp: bundling it shadows the host and can load two OpenMP runtimes
+            # (OpenCV vs Qt/Mesa), breaking GLX/EGL context creation on Fedora bare metal.
+            libopencv*.so*|libopencv_*.so*|libtbb*.so*|libflexiblas*.so*|libopenblas*.so*|libblas.so*|liblapack.so*|libgfortran*.so*|libquadmath.so*|libprotobuf*.so*)
+                return 0
+                ;;
+        esac
+        return 1
+    }
+    ltr_copy_ldd_host_deps() {
+        local elf="$1"
+        local tag="$2"
+        local did_copy=0
+        [[ -f "$elf" ]] || return 1
+        while IFS= read -r line; do
+            local so_path base dest
+            so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ')
+            [[ -z "$so_path" || "$so_path" == "not" || ! -f "$so_path" ]] && continue
+            [[ "$so_path" == "$_ltr_appdir_abs"/* ]] && continue
+            base=$(basename "$so_path")
+            # Never vendor GL/EGL/GBM stacks; must match host GPU drivers (same rule as libGL*.so below).
+            case "$base" in
+                libEGL.so*|libGLES*.so*|libgbm.so*|libGL.so*|libGLX.so*|libOpenGL.so*|libGLdispatch.so*|libGLU.so*)
+                    continue
+                    ;;
+            esac
+            ltr_dep_bundlable "$base" || continue
+            dest="usr/lib/$base"
+            if [[ ! -f "$dest" ]]; then
+                if cp -f "$so_path" usr/lib/ 2>/dev/null; then
+                    print_status "Bundled ${tag} dependency: $base"
+                    did_copy=1
+                fi
+            fi
+        done < <(ldd "$elf" 2>/dev/null || true)
+        [[ "$did_copy" -eq 1 ]] && return 0
+        return 1
+    }
+    print_status "Bundling libwc/libp3eft OpenCV+ stack (iterative ldd closure)"
+    _ltr_round=0
+    _ltr_any=1
+    while [[ "$_ltr_any" -eq 1 && "$_ltr_round" -lt 40 ]]; do
+        _ltr_any=0
+        _ltr_round=$((_ltr_round + 1))
+        for plugin_base in libwc libp3eft; do
+            plug_so=""
+            for candidate in usr/lib/linuxtrack/${plugin_base}.so.0.0.0 usr/lib/linuxtrack/${plugin_base}.so.0 usr/lib/linuxtrack/${plugin_base}.so; do
+                if [[ -f "$candidate" ]]; then
+                    plug_so="$candidate"
+                    break
+                fi
+            done
+            [[ -n "$plug_so" ]] || continue
+            if ltr_copy_ldd_host_deps "$plug_so" "$plugin_base"; then
+                _ltr_any=1
             fi
         done
-        if [[ -n "$plug_so" ]]; then
-            print_status "Bundling ${plugin_base} transitive deps (OpenCV / TBB / GOMP) for dlopen'd driver"
-            while IFS= read -r line; do
-                so_path=$(awk '/=>/{print $3}' <<<"$line" | tr -d ' ')
-                [[ -z "$so_path" || "$so_path" == "not" || ! -f "$so_path" ]] && continue
-                base=$(basename "$so_path")
-                case "$base" in
-                    libopencv*.so*|libtbb*.so*|libgomp*.so*)
-                        cp -n "$so_path" usr/lib/ 2>/dev/null || cp -f "$so_path" usr/lib/ 2>/dev/null || true
-                        print_status "Bundled ${plugin_base} dependency: $base"
-                        ;;
-                esac
-            done < <(ldd "$plug_so" 2>/dev/null || true)
-        fi
+        shopt -s nullglob
+        for elf in usr/lib/libopencv*.so* usr/lib/libtbb*.so* usr/lib/libflexiblas*.so* usr/lib/libprotobuf*.so*; do
+            [[ -f "$elf" ]] || continue
+            if ltr_copy_ldd_host_deps "$elf" "$(basename "$elf")"; then
+                _ltr_any=1
+            fi
+        done
+        shopt -u nullglob
+    done
+    if [[ "$_ltr_round" -ge 40 ]]; then
+        print_warning "OpenCV bundle iteration hit safety cap (40); check ldd for missing deps"
+    fi
+    unset -f ltr_dep_bundlable ltr_copy_ldd_host_deps
+    unset _ltr_appdir_abs _ltr_round _ltr_any
+
+    # FlexiBLAS backend wrappers (Fedora/RHEL); dlopen'd and not always listed on libwc ldd
+    for flexdir in /usr/lib64/flexiblas /usr/lib/flexiblas; do
+        [[ -d "$flexdir" ]] || continue
+        ensure_dir usr/lib/flexiblas
+        shopt -s nullglob
+        for so in "$flexdir"/*.so*; do
+            [[ -f "$so" ]] || continue
+            cp -n "$so" usr/lib/flexiblas/ 2>/dev/null || cp -f "$so" usr/lib/flexiblas/ 2>/dev/null || true
+        done
+        shopt -u nullglob
+        print_status "Bundled FlexiBLAS backends from $flexdir"
+        break
     done
 
     # CRITICAL: Ensure all linuxtrack libraries use bundled dependencies
@@ -532,11 +651,11 @@ EOHLP
 
     # Keep both plugin layouts for maximum compatibility
     # usr/plugins for standard Qt plugin path
-    # usr/lib/qt6/plugins for Qt6-specific applications that hardcode the path
-    if [[ -d usr/lib/qt6/plugins ]]; then
+    # usr/lib/qt5/plugins for Qt5-specific applications that hardcode the path
+    if [[ -d usr/lib/qt5/plugins ]]; then
         print_status "Keeping both plugin layouts for maximum compatibility"
         print_status "usr/plugins for standard Qt plugin path"
-        print_status "usr/lib/qt6/plugins for Qt6-specific applications"
+        print_status "usr/lib/qt5/plugins for Qt5-specific applications"
     fi
 
     # RPATH: binaries and libraries
@@ -554,9 +673,12 @@ EOHLP
         print_warning "patchelf not available; skipping rpath adjustments"
     fi
     
-    # Ensure no OpenGL driver libraries are bundled (can break GL context)
-    print_status "Removing bundled OpenGL driver libraries (use host drivers)"
-    rm -f usr/lib/libGL.so.* usr/lib/libOpenGL.so.* usr/lib/libGLX.so.* usr/lib/libGLdispatch.so.* usr/lib/libGLU.so.* 2>/dev/null || true
+    # Ensure no OpenGL / EGL / GBM stacks are bundled (must match host GPU drivers; OpenCV ldd can pull these on some hosts)
+    print_status "Removing bundled GL/EGL/GBM libraries (use host drivers)"
+    rm -f usr/lib/libGL.so.* usr/lib/libOpenGL.so.* usr/lib/libGLX.so.* usr/lib/libGLdispatch.so.* usr/lib/libGLU.so.* \
+        usr/lib/libEGL.so.* usr/lib/libGLESv2.so.* usr/lib/libGLESv1_CM.so.* usr/lib/libgbm.so.* 2>/dev/null || true
+    # Strip bundled libgomp if present (e.g. older bundle or linuxdeploy); prefer host OpenMP for one runtime in-process
+    rm -f usr/lib/libgomp.so* 2>/dev/null || true
     
     # Create wrapper scripts for CLI tools to ensure AppImage environment is set
     print_status "Creating wrapper scripts for CLI tools (ltr_pipe, ltr_extractor, ltr_recenter, ltr_server1)"
@@ -657,7 +779,7 @@ EOF
 
     # Verify SQLite driver is in both locations
     SQLITE_USR_PLUGINS=$({ find usr/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
-    SQLITE_QT6_PLUGINS=$({ find usr/lib/qt6/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
+    SQLITE_QT5_PLUGINS=$({ find usr/lib/qt5/plugins/sqldrivers -maxdepth 1 -type f -name 'libqsqlite.so*' 2>/dev/null || true; } | wc -l || true)
 
     if [[ $SQLITE_USR_PLUGINS -gt 0 ]]; then
         print_success "SQLite driver found in usr/plugins/sqldrivers/"
@@ -665,14 +787,14 @@ EOF
         print_warning "SQLite driver missing from usr/plugins/sqldrivers/"
     fi
 
-    if [[ $SQLITE_QT6_PLUGINS -gt 0 ]]; then
-        print_success "SQLite driver found in usr/lib/qt6/plugins/sqldrivers/"
+    if [[ $SQLITE_QT5_PLUGINS -gt 0 ]]; then
+        print_success "SQLite driver found in usr/lib/qt5/plugins/sqldrivers/"
     else
-        print_warning "SQLite driver missing from usr/lib/qt6/plugins/sqldrivers/"
+        print_warning "SQLite driver missing from usr/lib/qt5/plugins/sqldrivers/"
     fi
 
     print_success "Bundle complete"
-    
+
     # Ensure 32-bit linuxtrack runtime is bundled if available on system
     print_status "Ensuring 32-bit liblinuxtrack is bundled if available"
     DEST32_DIR="$(pwd)/usr/lib/i386-linux-gnu/linuxtrack"

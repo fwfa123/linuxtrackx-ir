@@ -9,12 +9,15 @@ print_status "Optimize: size and content pruning (conservative)"
 [[ -d "$APPDIR" ]] || die "AppDir not found: $APPDIR. Run prepare.sh first."
 
 pushd "$APPDIR" >/dev/null
-    # Strip binaries and libraries where safe
+    # Strip executables only; skip most shared libs (RELR/.relr.dyn needs recent binutils — avoid corrupting bundled deps)
     if command -v strip >/dev/null 2>&1; then
-        print_status "Stripping binaries and libraries"
+        print_status "Stripping usr/bin executables only (skipping .so — RELR / linuxdeploy compatibility)"
         find usr/bin -type f -executable -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
-        find usr/lib -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
-        find usr/lib/linuxtrack -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
+        if [[ "${APPDIR_STRIP_SHARED:-0}" == "1" ]]; then
+            print_status "APPDIR_STRIP_SHARED=1: stripping shared libraries (best-effort)"
+            find usr/lib -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
+            find usr/lib/linuxtrack -name "*.so*" -type f -print0 2>/dev/null | xargs -0r strip --strip-unneeded 2>/dev/null || true
+        fi
     else
         print_warning "strip not available; skipping stripping"
     fi
@@ -34,44 +37,42 @@ pushd "$APPDIR" >/dev/null
         popd >/dev/null
     fi
 
-    # Qt plugins: keep essential subsets (Qt6 primary, Qt5 fallback)
-    for qt_version in qt6 qt5; do
-        if [[ -d usr/lib/$qt_version/plugins/platforms ]]; then
-            pushd usr/lib/$qt_version/plugins/platforms >/dev/null
-                for p in *.so; do
-                    [[ -f "$p" ]] || continue
-                    case "$p" in
-                        libqxcb.so|libqminimal.so|libqminimalegl.so) : ;; # keep
-                        *) rm -f "$p" ;;
-                    esac
-                done
-            popd >/dev/null
-        fi
+    # Qt plugins: keep essential subsets
+    if [[ -d usr/lib/qt5/plugins/platforms ]]; then
+        pushd usr/lib/qt5/plugins/platforms >/dev/null
+            for p in *.so; do
+                [[ -f "$p" ]] || continue
+                case "$p" in
+                    libqxcb.so|libqminimal.so|libqminimalegl.so) : ;; # keep
+                    *) rm -f "$p" ;;
+                esac
+            done
+        popd >/dev/null
+    fi
 
-        if [[ -d usr/lib/$qt_version/plugins/imageformats ]]; then
-            pushd usr/lib/$qt_version/plugins/imageformats >/dev/null
-                for p in *.so; do
-                    [[ -f "$p" ]] || continue
-                    case "$p" in
-                        libqjpeg.so|libqpng.so|libqsvg.so|libqgif.so) : ;; # keep
-                        *) rm -f "$p" ;;
-                    esac
-                done
-            popd >/dev/null
-        fi
+    if [[ -d usr/lib/qt5/plugins/imageformats ]]; then
+        pushd usr/lib/qt5/plugins/imageformats >/dev/null
+            for p in *.so; do
+                [[ -f "$p" ]] || continue
+                case "$p" in
+                    libqjpeg.so|libqpng.so|libqsvg.so|libqgif.so) : ;; # keep
+                    *) rm -f "$p" ;;
+                esac
+            done
+        popd >/dev/null
+    fi
 
-        if [[ -d usr/lib/$qt_version/plugins/iconengines ]]; then
-            pushd usr/lib/$qt_version/plugins/iconengines >/dev/null
-                for p in *.so; do
-                    [[ -f "$p" ]] || continue
-                    case "$p" in
-                        libqsvgicon.so) : ;; # keep
-                        *) rm -f "$p" ;;
-                    esac
-                done
-            popd >/dev/null
-        fi
-    done
+    if [[ -d usr/lib/qt5/plugins/iconengines ]]; then
+        pushd usr/lib/qt5/plugins/iconengines >/dev/null
+            for p in *.so; do
+                [[ -f "$p" ]] || continue
+                case "$p" in
+                    libqsvgicon.so) : ;; # keep
+                    *) rm -f "$p" ;;
+                esac
+            done
+        popd >/dev/null
+    fi
 
 popd >/dev/null
 
