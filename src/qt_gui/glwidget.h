@@ -26,6 +26,8 @@ class ReaderThread : public QThread
 
      QSize minimumSizeHint() const;
      QSize sizeHint() const;
+     /** False when the platform has no working GL (e.g. no GLX/EGL); avoids crashes in makeCurrent/updateGL. */
+     bool hasUsableGlContext() const { return contextUsable_; }
  signals:
      void ready();
  public slots:
@@ -57,6 +59,7 @@ class ReaderThread : public QThread
      QColor trolltechPurple;
      
      ReaderThread *rt;
+     bool contextUsable_;
  };
 
  #endif

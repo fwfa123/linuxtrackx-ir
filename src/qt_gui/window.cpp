@@ -72,7 +72,7 @@ void Window::start_widget()
   inConstruction = false;
   constructed = true;
   control->setEnabled(true);
-  if (timer) {
+  if (timer && glWidget && glWidget->hasUsableGlContext()) {
     // Ensure the 3D view refresh timer is started
     timer->start(20);
   }
@@ -94,7 +94,9 @@ void Window::newPose(linuxtrack_full_pose_t *raw, linuxtrack_pose_t *unfiltered,
 
 void Window::update_pic()
 {
-  glWidget->update();  // QOpenGLWidget uses update() instead of updateGL()
+  if (glWidget && glWidget->hasUsableGlContext()) {
+    glWidget->update();  // QOpenGLWidget uses update() instead of updateGL()
+  }
 }
 
 void Window::stopUpdates()
