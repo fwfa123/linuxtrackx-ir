@@ -43,7 +43,7 @@ pushd "$PROJECT_ROOT" >/dev/null
         -DENABLE_OSC=ON \
         -DENABLE_FACE_TRACKER=OFF \
         "$_xplane_flag" \
-        -DDISABLE_WIIMOTE=ON \
+        -DDISABLE_WIIMOTE=OFF \
         "-DXPLANE_SDK_PATH=${XPLANE_SDK_PATH}"
 
     print_status "Building"
@@ -174,6 +174,22 @@ pushd "$PROJECT_ROOT" >/dev/null
     cd build
     cmake --install . --prefix "$APPDIR/usr"
     cd ..
+
+    # Normalize 32-bit linuxtrack soname expected by package validation.
+    # Some installs produce liblinuxtrack32.so.* in multiarch path; ensure
+    # compatibility names liblinuxtrack.so* are present as aliases.
+    _ltr32_dir="$APPDIR/usr/lib/i386-linux-gnu/linuxtrack"
+    if [[ -d "$_ltr32_dir" ]]; then
+        if [[ -e "$_ltr32_dir/liblinuxtrack32.so.0.0.0" && ! -e "$_ltr32_dir/liblinuxtrack.so.0.0.0" ]]; then
+            ln -sf liblinuxtrack32.so.0.0.0 "$_ltr32_dir/liblinuxtrack.so.0.0.0"
+        fi
+        if [[ -e "$_ltr32_dir/liblinuxtrack.so.0.0.0" && ! -e "$_ltr32_dir/liblinuxtrack.so.0" ]]; then
+            ln -sf liblinuxtrack.so.0.0.0 "$_ltr32_dir/liblinuxtrack.so.0"
+        fi
+        if [[ -e "$_ltr32_dir/liblinuxtrack.so.0" && ! -e "$_ltr32_dir/liblinuxtrack.so" ]]; then
+            ln -sf liblinuxtrack.so.0 "$_ltr32_dir/liblinuxtrack.so"
+        fi
+    fi
 popd >/dev/null
 
 write_minimal_apprun
