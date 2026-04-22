@@ -16,7 +16,7 @@ if(NOT DEFINED WINE_LIBS)
     message(WARNING "WINE_LIBS not set, using default: ${WINE_LIBS}")
 endif()
 if(NOT DEFINED WINE64_LIBS)
-    set(WINE64_LIBS "-L/usr/lib/x86_64-linux-gnu/wine" CACHE STRING "Wine 64-bit library path")
+    set(WINE64_LIBS "-L/usr/lib/x86_64-linux-gnu/wine/x86_64-unix" CACHE STRING "Wine 64-bit library path")
     message(WARNING "WINE64_LIBS not set, using default: ${WINE64_LIBS}")
 endif()
 
@@ -50,6 +50,7 @@ function(wine_compile_source src obj is_64bit)
             add_custom_command(
                 OUTPUT ${obj}
                 COMMAND ${WINEGPP_EXECUTABLE} -c ${src_path}
+                    -m64
                     -fPIC
                     -g
                     -DHAVE_CONFIG_H
@@ -87,6 +88,7 @@ function(wine_compile_source src obj is_64bit)
             add_custom_command(
                 OUTPUT ${obj}
                 COMMAND ${WINEGCC_EXECUTABLE} -c ${src_path}
+                    -m64
                     -fPIC
                     -g
                     -DHAVE_CONFIG_H
@@ -244,7 +246,7 @@ function(add_wine64_library target)
     # winegcc needs the spec file to be explicitly passed in the command (like 32-bit does)
     # Use the spec file path from SPEC_DEPS (which points to the source spec file)
     add_custom_target(${target}64 ALL
-        COMMAND ${WINEGCC_EXECUTABLE} ${WINE64_LIBS} -Wall -Wextra -g
+        COMMAND ${WINEGCC_EXECUTABLE} ${WINE64_LIBS} -m64 -Wall -Wextra -g
             -shared
             -o ${CMAKE_CURRENT_BINARY_DIR}/${target}64.dll.so
             ${OBJECTS} ${SPEC_DEPS}

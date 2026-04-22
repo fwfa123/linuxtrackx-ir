@@ -15,6 +15,7 @@ if(WINE64)
     add_custom_command(
         OUTPUT ${main64_obj}
         COMMAND ${WINEGPP_EXECUTABLE} -c ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+            -m64
             -g -DHAVE_CONFIG_H
             -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/src
             -I${CMAKE_BINARY_DIR} -I${CMAKE_BINARY_DIR}/src
@@ -30,6 +31,7 @@ if(WINE64)
     add_custom_command(
         OUTPUT ${rest64_obj}
         COMMAND ${WINEGCC_EXECUTABLE} -c ${CMAKE_CURRENT_SOURCE_DIR}/rest.c
+            -m64
             -g -DHAVE_CONFIG_H
             -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/src
             -I${CMAKE_BINARY_DIR} -I${CMAKE_BINARY_DIR}/src
@@ -45,6 +47,7 @@ if(WINE64)
     add_custom_command(
         OUTPUT ${npifc64_obj}
         COMMAND ${WINEGCC_EXECUTABLE} -c ${CMAKE_CURRENT_SOURCE_DIR}/npifc.c
+            -m64
             -DFOR_WIN64=1 -g -DHAVE_CONFIG_H
             -I${CMAKE_SOURCE_DIR} -I${CMAKE_SOURCE_DIR}/src
             -I${CMAKE_BINARY_DIR} -I${CMAKE_BINARY_DIR}/src
@@ -67,7 +70,7 @@ if(WINE64)
     
     # Link Tester64 executable - matches Makefile.am: winegcc -g -o Tester64.exe.so -L. $(WINE64_LIBS) $(LDFLAGS) -Wall -Wextra $^
     add_custom_target(Tester64 ALL
-        COMMAND ${WINEGCC_EXECUTABLE} -g -o ${CMAKE_CURRENT_BINARY_DIR}/Tester64.exe.so -L. ${WINE64_LIBS} -Wall -Wextra ${TESTER64_OBJECTS}
+        COMMAND ${WINEGCC_EXECUTABLE} -m64 -g -o ${CMAKE_CURRENT_BINARY_DIR}/Tester64.exe.so -L. ${WINE64_LIBS} -Wall -Wextra ${TESTER64_OBJECTS}
         DEPENDS ${TESTER64_OBJECTS}
         COMMENT "Linking Tester64 with winegcc (64-bit)"
     )
