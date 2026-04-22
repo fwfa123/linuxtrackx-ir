@@ -15,6 +15,8 @@ sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-me
 ### Wine Support (Level 2+)
 ```bash
 sudo apt install wine wine-staging wine64 wine64-tools libwine-dev wine32-tools
+sudo apt-get install g++-14-multilib libstdc++-14-dev:amd64
+
 sudo apt install gcc-multilib libc6-dev-i386  # REQUIRED: 32-bit development headers
 sudo apt install winetricks  # REQUIRED: For MFC42 library installation
 sudo apt install cabextract wget  # REQUIRED: For alternative installation methods
@@ -140,6 +142,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | Install full 32-bit Wine: `sudo apt install wine wine32 wine32-tools` |
 | `bits/libc-header-start.h: No such file or directory` | **REQUIRED**: Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` |
 | `Wine plugin: disabled (winegcc/wineg++/makensis not found)` | Install NSIS: `sudo apt install nsis` |
+| `relocatable linking ... elf32-i386 ... to format elf64-x86-64` | Clear your build dir and reconfigure so 64-bit Wine bridge links against the 64-bit unix libs: `cmake .. -DWINE64_LIBS_PATH=/usr/lib/x86_64-linux-gnu/wine/x86_64-unix` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
