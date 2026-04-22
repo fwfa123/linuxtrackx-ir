@@ -68,6 +68,7 @@ public:
     ~SudoPasswordDialog();
 
     bool shouldInstallAutomatically() const { return installAutomatically; }
+    QString sudoPassword() const;
 
 private slots:
     void onOkClicked();
@@ -78,6 +79,7 @@ private:
 
     QTextEdit *instructionsText;
     QCheckBox *installCheckBox;
+    QLineEdit *passwordEdit;
     QPushButton *okButton;
     QPushButton *cancelButton;
 

@@ -270,6 +270,12 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         return false;
     }
 
+    const QString sudoPassword = dialog.sudoPassword();
+    if (sudoPassword.isEmpty()) {
+        showInstallationResult(false, tr("No sudo password was provided. Please retry automatic installation or use manual setup."));
+        return false;
+    }
+
     // Get current user
     QString currentUser = QString::fromUtf8(qgetenv("USER"));
     if (currentUser.isEmpty()) {
@@ -371,34 +377,50 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
     // Make script executable
     QFile::setPermissions(tempScriptFile, QFile::permissions(tempScriptFile) | QFile::ExeOwner);
 
-    // Run the script with sudo using the provided password
+    // Run the script with sudo and password on stdin.
+    // This avoids interactive TTY issues and still prompts the user in-app.
     QProcess process;
-    QStringList arguments;
-    arguments << tempScriptFile;
+    QStringList sudoArgs;
+    sudoArgs << QString::fromUtf8("-S")
+             << QString::fromUtf8("-k")
+             << tempScriptFile;
 
-    qDebug() << "Running installation script with pkexec:" << tempScriptFile;
-    process.start(QString::fromUtf8("pkexec"), arguments);
+    qDebug() << "Running installation script with sudo -S:" << tempScriptFile;
+    process.start(QString::fromUtf8("sudo"), sudoArgs);
+    if (!process.waitForStarted(10000)) {
+        QFile::remove(tempScriptFile);
+        showInstallationResult(false, tr("Failed to start sudo. Please verify sudo is installed and try manual installation."));
+        return false;
+    }
+
+    process.write((sudoPassword + QString::fromUtf8("\n")).toUtf8());
+    process.closeWriteChannel();
+
     if (!process.waitForFinished(60000)) { // 60 second timeout
-        qDebug() << "pkexec failed, trying sudo...";
-        process.start(QString::fromUtf8("sudo"), arguments);
-        if (!process.waitForFinished(60000)) {
-            qDebug() << "sudo also failed";
-            QFile::remove(tempScriptFile);
-            showInstallationResult(false, tr("Both pkexec and sudo failed. Please try manual installation."));
-            return false;
+        qDebug() << "sudo timed out while running installation script";
+        QFile::remove(tempScriptFile);
+        showInstallationResult(false, tr("Sudo timed out while applying permissions. Please try manual installation."));
+        return false;
+    }
+
+    if (process.exitCode() != 0) {
+        const QString stdOut = QString::fromUtf8(process.readAllStandardOutput()).trimmed();
+        const QString stdErr = QString::fromUtf8(process.readAllStandardError()).trimmed();
+        QString detail = stdErr.isEmpty() ? stdOut : stdErr;
+        if (detail.isEmpty()) {
+            detail = tr("Unknown sudo error.");
         }
+
+        qDebug() << "Failed to install rules and add user to groups:" << process.errorString();
+        qDebug() << "Process output:" << stdOut;
+        qDebug() << "Process error:" << stdErr;
+        QFile::remove(tempScriptFile);
+        showInstallationResult(false, tr("Installation failed: %1").arg(detail));
+        return false;
     }
 
     // Clean up temp script
     QFile::remove(tempScriptFile);
-
-    if (process.exitCode() != 0) {
-        qDebug() << "Failed to install rules and add user to groups:" << process.errorString();
-        qDebug() << "Process output:" << QString::fromUtf8(process.readAllStandardOutput());
-        qDebug() << "Process error:" << QString::fromUtf8(process.readAllStandardError());
-        showInstallationResult(false, tr("Installation failed. Please try manual installation."));
-        return false;
-    }
 
     return true;
 }
@@ -539,6 +561,7 @@ SudoPasswordDialog::SudoPasswordDialog(const QString &title, const QString &inst
     : QDialog(parent)
     , instructionsText(nullptr)
     , installCheckBox(nullptr)
+    , passwordEdit(nullptr)
     , okButton(nullptr)
     , cancelButton(nullptr)
     , installAutomatically(false)
@@ -575,6 +598,14 @@ void SudoPasswordDialog::setupUI(const QString &title, const QString &instructio
     installCheckBox->setChecked(false);
     mainLayout->addWidget(installCheckBox);
 
+    // Password entry used for sudo -S fallback/primary path (works without polkit agent)
+    QLabel *passwordLabel = new QLabel(tr("Sudo password:"));
+    mainLayout->addWidget(passwordLabel);
+    passwordEdit = new QLineEdit();
+    passwordEdit->setEchoMode(QLineEdit::Password);
+    passwordEdit->setPlaceholderText(tr("Enter your password to authorize installation"));
+    mainLayout->addWidget(passwordEdit);
+
     // Buttons
     QHBoxLayout *buttonLayout = new QHBoxLayout();
 
@@ -593,21 +624,26 @@ void SudoPasswordDialog::setupUI(const QString &title, const QString &instructio
     // Connect checkbox to enable/disable OK button. Qt 6.7+: checkStateChanged(Qt::CheckState); older Qt: stateChanged(int) with deprecation suppressed.
 #if QT_VERSION >= QT_VERSION_CHECK(6, 7, 0)
     connect(installCheckBox, &QCheckBox::checkStateChanged, this, [this](Qt::CheckState state) {
-        okButton->setEnabled(state == Qt::Checked);
+        okButton->setEnabled(state == Qt::Checked && !passwordEdit->text().isEmpty());
     });
 #else
     QT_WARNING_PUSH
     QT_WARNING_DISABLE_DEPRECATED
     connect(installCheckBox, &QCheckBox::stateChanged, this, [this](int state) {
-        okButton->setEnabled(state == static_cast<int>(Qt::Checked));
+        okButton->setEnabled(state == static_cast<int>(Qt::Checked) && !passwordEdit->text().isEmpty());
     });
     QT_WARNING_POP
 #endif
+
+    connect(passwordEdit, &QLineEdit::textChanged, this, [this](const QString &text) {
+        Q_UNUSED(text);
+        okButton->setEnabled(installCheckBox->isChecked() && !passwordEdit->text().isEmpty());
+    });
 }
 
 void SudoPasswordDialog::onOkClicked()
 {
-    installAutomatically = installCheckBox->isChecked();
+    installAutomatically = installCheckBox->isChecked() && !passwordEdit->text().isEmpty();
     accept();
 }
 
@@ -615,5 +651,10 @@ void SudoPasswordDialog::onCancelClicked()
 {
     installAutomatically = false;
     reject();
+}
+
+QString SudoPasswordDialog::sudoPassword() const
+{
+    return passwordEdit ? passwordEdit->text() : QString();
 }
 
