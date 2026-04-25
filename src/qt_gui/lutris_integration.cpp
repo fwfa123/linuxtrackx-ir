@@ -240,6 +240,93 @@ QString LutrisIntegration::resolveWineBinaryPath(const QString &wineVersion)
         return QString();
     }
 
+    auto resolveFromCompatToolsBase = [&](const QString &basePath) -> QString {
+        const QStringList suffixes = {
+            QStringLiteral("/files/bin/wine"),
+            QStringLiteral("/bin/wine"),
+            QStringLiteral("/") + trimmed + QStringLiteral("/files/bin/wine"),
+            QStringLiteral("/") + trimmed + QStringLiteral("/bin/wine")
+        };
+
+        for (const QString &suffix : suffixes) {
+            const QString candidate = basePath + QStringLiteral("/") + trimmed + suffix;
+            ltr_int_log_message("resolveWineBinaryPath: trying (steam compat): %s\n", candidate.toUtf8().constData());
+            QFileInfo fi(candidate);
+            if (fi.exists() && fi.isExecutable())
+                return candidate;
+        }
+
+        QDir compatDir(basePath);
+        if (!compatDir.exists())
+            return QString();
+
+        const QStringList entries = compatDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString &dirName : entries) {
+            if (dirName.compare(trimmed, Qt::CaseInsensitive) != 0)
+                continue;
+
+            for (const QString &suffix : suffixes) {
+                const QString candidate = compatDir.absoluteFilePath(dirName) + suffix;
+                ltr_int_log_message("resolveWineBinaryPath: trying (steam compat scan): %s\n", candidate.toUtf8().constData());
+                QFileInfo fi(candidate);
+                if (fi.exists() && fi.isExecutable())
+                    return candidate;
+            }
+        }
+
+        // Lutris can pass "ge-proton" as an alias for "use latest GE-Proton".
+        if (trimmed.compare(QStringLiteral("ge-proton"), Qt::CaseInsensitive) == 0) {
+            const QRegularExpression gePattern(QStringLiteral("^GE-Proton(\\d+)(?:-(\\d+))?$"),
+                                              QRegularExpression::CaseInsensitiveOption);
+            QString bestDirName;
+            int bestMajor = -1;
+            int bestMinor = -1;
+
+            for (const QString &dirName : entries) {
+                const QRegularExpressionMatch match = gePattern.match(dirName);
+                if (!match.hasMatch())
+                    continue;
+
+                const int major = match.captured(1).toInt();
+                const int minor = match.captured(2).isEmpty() ? -1 : match.captured(2).toInt();
+                if (major > bestMajor || (major == bestMajor && minor > bestMinor)) {
+                    bestMajor = major;
+                    bestMinor = minor;
+                    bestDirName = dirName;
+                }
+            }
+
+            if (!bestDirName.isEmpty()) {
+                for (const QString &suffix : suffixes) {
+                    const QString candidate = compatDir.absoluteFilePath(bestDirName) + suffix;
+                    ltr_int_log_message("resolveWineBinaryPath: trying (steam compat latest GE-Proton): %s\n",
+                                        candidate.toUtf8().constData());
+                    QFileInfo fi(candidate);
+                    if (fi.exists() && fi.isExecutable())
+                        return candidate;
+                }
+            }
+        }
+
+        return QString();
+    };
+
+    auto resolveFromSteamCompatTools = [&]() -> QString {
+        const QStringList steamCompatBases = {
+            homeDir + QStringLiteral("/.local/share/Steam/compatibilitytools.d"),
+            homeDir + QStringLiteral("/.steam/root/compatibilitytools.d"),
+            homeDir + QStringLiteral("/.steam/steam/compatibilitytools.d")
+        };
+
+        for (const QString &basePath : steamCompatBases) {
+            const QString resolvedPath = resolveFromCompatToolsBase(basePath);
+            if (!resolvedPath.isEmpty())
+                return resolvedPath;
+        }
+
+        return QString();
+    };
+
     // Version slug (e.g. GE-Proton9-27): try runners/wine then runners/proton when Flatpak
     if (!QDir::isAbsolutePath(trimmed)) {
         ltr_int_log_message("resolveWineBinaryPath: resolving slug '%s', lutrisRunnersBasePath empty=%s\n",
@@ -303,6 +390,9 @@ QString LutrisIntegration::resolveWineBinaryPath(const QString &wineVersion)
             } else {
                 ltr_int_log_message("resolveWineBinaryPath: runners dir does not exist at %s\n", runnersDir.absolutePath().toUtf8().constData());
             }
+            const QString steamCompatPath = resolveFromSteamCompatTools();
+            if (!steamCompatPath.isEmpty())
+                return steamCompatPath;
             ltr_int_log_message("resolveWineBinaryPath: no Flatpak Lutris path found for version: %s\n", trimmed.toUtf8().constData());
             return QString();
         }
@@ -344,6 +434,9 @@ QString LutrisIntegration::resolveWineBinaryPath(const QString &wineVersion)
                     return protonPath;
             }
         }
+        const QString steamCompatPath = resolveFromSteamCompatTools();
+        if (!steamCompatPath.isEmpty())
+            return steamCompatPath;
         ltr_int_log_message("resolveWineBinaryPath: no path found for version: %s (lutrisRunnersBasePath empty=%s)\n",
                            trimmed.toUtf8().constData(), lutrisRunnersBasePath.isEmpty() ? "yes" : "no");
         return QString();
