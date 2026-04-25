@@ -1124,6 +1124,22 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
     // Prepare environment
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     env.insert(QStringLiteral("WINEPREFIX"), prefixPath);
+    QFileInfo wineExeInfo(winePath);
+    const QString wineDir = wineExeInfo.absolutePath();
+    if (!wineDir.isEmpty()) {
+        const QString wineserverPath = QDir(wineDir).filePath(QStringLiteral("wineserver"));
+        const QString wineloaderPath = QDir(wineDir).filePath(QStringLiteral("wine"));
+        QFileInfo wineserverInfo(wineserverPath);
+        QFileInfo wineloaderInfo(wineloaderPath);
+        if (wineserverInfo.exists() && wineserverInfo.isExecutable()) {
+            env.insert(QStringLiteral("WINESERVER"), wineserverPath);
+            ltr_int_log_message("  WINESERVER: %s\n", wineserverPath.toUtf8().constData());
+        }
+        if (wineloaderInfo.exists() && wineloaderInfo.isExecutable()) {
+            env.insert(QStringLiteral("WINELOADER"), wineloaderPath);
+            ltr_int_log_message("  WINELOADER: %s\n", wineloaderPath.toUtf8().constData());
+        }
+    }
 
     // Log what we're about to do
     debugInfo += QString::fromUtf8("Starting Wine installer with:\n");
@@ -1142,10 +1158,47 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
     process.setProcessEnvironment(env);
     process.setWorkingDirectory(prefixPath);
 
+    QString executable = winePath;
     QStringList arguments;
-    arguments << installerPath;
 
-    process.start(winePath, arguments);
+    // GE-Proton from Steam compatibilitytools.d is more reliable when invoked via "proton run".
+    if (winePath.contains(QStringLiteral("/compatibilitytools.d/"))) {
+        QString protonRoot = winePath;
+        if (protonRoot.endsWith(QStringLiteral("/files/bin/wine"))) {
+            protonRoot.chop(QStringLiteral("/files/bin/wine").size());
+        } else if (protonRoot.endsWith(QStringLiteral("/bin/wine"))) {
+            protonRoot.chop(QStringLiteral("/bin/wine").size());
+        }
+        const QString protonBinaryPath = QDir(protonRoot).filePath(QStringLiteral("proton"));
+        QFileInfo protonBinaryInfo(protonBinaryPath);
+        if (protonBinaryInfo.exists() && protonBinaryInfo.isExecutable()) {
+            executable = protonBinaryPath;
+            arguments << QStringLiteral("run") << installerPath;
+
+            QString compatDataPath = prefixPath;
+            if (compatDataPath.endsWith(QStringLiteral("/pfx"))) {
+                compatDataPath.chop(4);
+            }
+            env.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), compatDataPath);
+
+            const QString steamClientPath = getHomeDirectory() + QStringLiteral("/.local/share/Steam");
+            if (QDir(steamClientPath).exists()) {
+                env.insert(QStringLiteral("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamClientPath);
+            }
+            process.setProcessEnvironment(env);
+
+            ltr_int_log_message("runWineBridgeInstaller: compatibilitytools.d detected, using Proton launcher: %s\n",
+                                protonBinaryPath.toUtf8().constData());
+            ltr_int_log_message("runWineBridgeInstaller: STEAM_COMPAT_DATA_PATH: %s\n",
+                                compatDataPath.toUtf8().constData());
+        } else {
+            arguments << installerPath;
+        }
+    } else {
+        arguments << installerPath;
+    }
+
+    process.start(executable, arguments);
     if (!process.waitForStarted()) {
         QString errorMsg = QString::fromUtf8("Failed to start Wine process: ") + process.errorString();
         ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - %s\n", errorMsg.toUtf8().constData());
