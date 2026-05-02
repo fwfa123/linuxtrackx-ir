@@ -124,7 +124,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 ### Alternative Tracking Methods
 - **AntiMicro joystick detection** - Convert head tracking to joystick input
 - **Server approach** - Use LinuxTrack server for Wine games
-- **OSC network** - External application integration
+- **OSC network** - External application integration via liblo. Original upstream feature request and format discussion: [uglyDwarf/linuxtrack#80 — OSC output implementation](https://github.com/uglyDwarf/linuxtrack/issues/80). This project ships the optional **`osc_server`** binary when **liblo** is present (CMake `osc_server` target; build with `-DENABLE_OSC=ON` per README Level 5). User-facing guide: **[docs/osc.md](docs/osc.md)** (wiki-ready); implementation: `src/osc_server.c` (`/linuxtrack/pose`, `/linuxtrack/point`).
 
 ### Companion Applications
 - **[LinuxTrack Mapper](https://gitlab.com/open-source4661535/linuxtrack-mapper)** - Map head tracking zones to keyboard inputs for games that support keyboard look controls. Perfect for flight simulators and racing games that don't have native TrackIR support but support keyboard view controls.

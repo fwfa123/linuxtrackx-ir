@@ -383,6 +383,28 @@ target_link_libraries(ltr_recenter
 # Set RPATH so ltr_recenter can find liblinuxtrack.so.0 at runtime
 set_linuxtrack_rpath(ltr_recenter)
 
+# OSC sender (liblo) — upstream discussion: https://github.com/uglyDwarf/linuxtrack/issues/80
+if(LIBLO_FOUND)
+    add_executable(osc_server
+        osc_server.c
+        linuxtrack.c
+        linuxtrack.h
+    )
+    target_include_directories(osc_server PRIVATE
+        ${CMAKE_BINARY_DIR}
+        ${CMAKE_BINARY_DIR}/src
+        ${LIBLO_INCLUDE_DIRS}
+    )
+    target_link_libraries(osc_server PRIVATE
+        linuxtrack
+        ltr
+        dl
+        ${LIBLO_LIBRARIES}
+        ${PTHREAD_LIBRARY}
+    )
+    set_linuxtrack_rpath(osc_server)
+endif()
+
 # ============================================================================
 # X-Plane Plugin (conditional)
 # ============================================================================
@@ -456,6 +478,12 @@ install(TARGETS
     LIBRARY DESTINATION lib/linuxtrack
     ARCHIVE DESTINATION lib/linuxtrack
 )
+
+if(LIBLO_FOUND)
+    install(TARGETS osc_server
+        RUNTIME DESTINATION bin
+    )
+endif()
 
 if(WEBCAM_SUPPORT)
     install(TARGETS wc
@@ -706,10 +734,13 @@ if(CMAKE_INSTALL_PREFIX STREQUAL "/opt")
             endif()
         endif()
         
-        # List of binaries to symlink
+        # List of binaries to symlink (/usr/local/bin is on typical PATH; /opt/bin often is not)
         set(BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter)
         if(EXISTS \"\${BIN_DIR}/mickey\")
             list(APPEND BINARIES mickey)
+        endif()
+        if(EXISTS \"\${BIN_DIR}/osc_server\")
+            list(APPEND BINARIES osc_server)
         endif()
         
         foreach(BINARY \${BINARIES})
