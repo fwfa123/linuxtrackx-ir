@@ -13,6 +13,7 @@
 #include <QApplication>
 #include <QMessageBox>
 #include <QTimer>
+#include <QDateTime>
 
 Tracker *Tracker::trr = NULL;
 char *com_fname = NULL;
@@ -83,9 +84,9 @@ buffering *Tracker::getBuffers()
   return &buf;
 }
 
-
 Tracker::Tracker() : axes(LTR_AXES_T_INITIALIZER), axes_valid(false),
-  currentProfile(QString::fromUtf8("Default")), common_ff(0.0)
+  currentProfile(QString::fromUtf8("Default")), common_ff(0.0), trackingRateFps(120),
+  trackingRateLastEmitUs_(0), trackingEmitThisCycle_(false)
 {
   if(!ltr_int_gui_lock(true)){
     QMessageBox::warning(NULL, QObject::tr("Linuxtrack"),
@@ -121,18 +122,41 @@ void Tracker::signalStateChange(linuxtrack_state_type current_state)
   emit stateChanged(current_state);
 }
 
+bool Tracker::trackingRateGateOpen()
+{
+  if(trackingRateFps >= 120){
+    return true;
+  }
+  const qint64 min_interval_us = 1000000LL / trackingRateFps;
+  const qint64 t = QDateTime::currentMSecsSinceEpoch() * 1000;
+  if(t - trackingRateLastEmitUs_ < min_interval_us){
+    return false;
+  }
+  trackingRateLastEmitUs_ = t;
+  return true;
+}
+
 void Tracker::signalNewFrame(struct frame_type *frame)
 {
+  // Same gate as pose: camera FPS counter and preview follow profile rate (see signalNewPose).
+  trackingEmitThisCycle_ = trackingRateGateOpen();
+  if(!trackingEmitThisCycle_){
+    return;
+  }
   emit newFrame(frame);
 }
 
 void Tracker::signalNewPose(linuxtrack_full_pose_t *full_pose)
 {
+  if(!trackingEmitThisCycle_){
+    return;
+  }
+  trackingEmitThisCycle_ = false;
+
   static linuxtrack_pose_t processed;
   static linuxtrack_pose_t unfiltered;
   processed = full_pose->pose;
   ltr_int_postprocess_axes(axes, &processed, &unfiltered);
-  //std::cout<<"TRACKER: "<<pose->pitch<<" "<<unfiltered.pitch<<" "<<processed.pitch<<"\n";
   emit newPose(full_pose, &unfiltered, &processed);
 }
 
@@ -179,10 +203,24 @@ void Tracker::setProfile(QString p)
     if(common_ff > ffs[i]){
       common_ff = ffs[i];
     }
+
   }
   for(i = PITCH; i <= TZ; ++i){
     ffs[i] -= common_ff;
   }
+
+  // Load tracking rate from profile prefs (default 120)
+  {
+    int tr = 120;
+    if(ltr_int_get_key_int(profileSection.toUtf8().constData(), "TrackingRateFps", &tr)){
+      trackingRateFps = tr;
+    }else{
+      trackingRateFps = 120;
+    }
+    if(trackingRateFps < 30) trackingRateFps = 30;
+    if(trackingRateFps > 120) trackingRateFps = 120;
+  }
+  
   axes_valid = true;
   emit initAxes();
 }
@@ -318,4 +356,18 @@ float Tracker::getCommonFilterFactor()
   return common_ff;
 }
 
+int Tracker::getTrackingRateFps()
+{
+  return trackingRateFps;
+}
+
+void Tracker::setTrackingRateFps(int fps)
+{
+  if(fps < 30) fps = 30;
+  if(fps > 120) fps = 120;
+  trackingRateFps = fps;
+  ltr_int_change_key_int(profileSection.toUtf8().constData(), "TrackingRateFps", fps);
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
+}
 

@@ -38,9 +38,12 @@ class Tracker : public QObject{
   bool axisIsSymetrical(axis_t axis);
   bool setCommonFilterFactor(float c_f);
   float getCommonFilterFactor();
+  int getTrackingRateFps();
+  void setTrackingRateFps(int fps);
   void fromDefault();
   static buffering *getBuffers();
  private:
+  bool trackingRateGateOpen();
   Tracker();
   ~Tracker();
   static Tracker *trr;
@@ -52,6 +55,9 @@ class Tracker : public QObject{
   QString profileSection;
   float common_ff;
   float ffs[6];
+  int trackingRateFps;
+  qint64 trackingRateLastEmitUs_;
+  bool trackingEmitThisCycle_;
  public slots:
   void start(QString &section);
   void pause();
@@ -70,4 +76,6 @@ class Tracker : public QObject{
 };
 
 #endif
+
+
 

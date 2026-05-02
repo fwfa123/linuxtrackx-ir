@@ -1,6 +1,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QSignalBlocker>
 #include "profile_setup.h"
 #include "scp_form.h"
 #include "tracker.cpp"
@@ -65,6 +66,9 @@ void ProfileSetup::connect()
   // Smoothing slider
   QObject::connect(ui.Smoothing, SIGNAL(valueChanged(int)), this, SLOT(on_Smoothing_valueChanged(int)));
   
+  // Tracking Rate slider
+  QObject::connect(ui.TrackingRate, SIGNAL(valueChanged(int)), this, SLOT(on_TrackingRate_valueChanged(int)));
+  
   // Detailed Axis Setup button
   QObject::connect(ui.DetailedAxisSetup, SIGNAL(pressed()), this, SLOT(on_DetailedAxisSetup_pressed()));
 }
@@ -111,6 +115,13 @@ void ProfileSetup::initAxes()
   ui.TySens->setValue(TRACKER.axisGet(TY, AXIS_MULT) * 12.0);
   ui.TzSens->setValue(TRACKER.axisGet(TZ, AXIS_MULT) * 12.0);
   ui.Smoothing->setValue(TRACKER.getCommonFilterFactor() * ui.Smoothing->maximum());
+
+  int fps = TRACKER.getTrackingRateFps();
+  {
+    QSignalBlocker block(ui.TrackingRate);
+    ui.TrackingRate->setValue(fps);
+    ui.TrackingRateValue->setText(QString::number(fps));
+  }
 }
 
 
@@ -143,8 +154,15 @@ void ProfileSetup::axisChanged(int axis, int elem)
 
 void ProfileSetup::setCommonFF(float val)
 {
-  //std::cout<<"Setting common ff "<<val<<"\n";
   ui.Smoothing->setValue(val * ui.Smoothing->maximum());
+}
+
+void ProfileSetup::on_TrackingRate_valueChanged(int val)
+{
+  if(!initializing){
+    TRACKER.setTrackingRateFps(val);
+    ui.TrackingRateValue->setText(QString::number(val));
+  }
 }
 
 void ProfileSetup::on_PitchEnable_stateChanged(int state)
@@ -269,12 +287,17 @@ void ProfileSetup::importProfile(QTextStream &tf)
       TRACKER.axisChange((axis_t)i, (axis_param_t)j, fval);
     }
   }
+  if (!tf.atEnd()) {
+    int trackingRate = 120;
+    tf >> trackingRate;
+    TRACKER.setTrackingRateFps(trackingRate);
+  }
 }
 
 void ProfileSetup::exportProfile(QTextStream &tf)
 {
   tf<<profileName<<"\n";
-  tf<<"1"<<"\n"; //Version of the profile format
+  tf<<"2"<<"\n";
   tf<<TRACKER.getCommonFilterFactor()<<"\n";
   for(int i = PITCH; i <= TZ; ++i){
     tf<<(TRACKER.axisGetBool((axis_t)i, AXIS_ENABLED) ? QString::fromUtf8("1") : QString::fromUtf8("0"))<<
@@ -286,6 +309,6 @@ void ProfileSetup::exportProfile(QTextStream &tf)
     }
     tf<<TRACKER.axisGet((axis_t)i, AXIS_FILTER)<<"\n";
   }
+  tf<<TRACKER.getTrackingRateFps()<<"\n";
 }
-
 

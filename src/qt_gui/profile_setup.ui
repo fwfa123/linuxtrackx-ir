@@ -402,6 +402,82 @@
     </layout>
    </item>
    <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_tracking_rate">
+     <item>
+      <widget class="QLabel" name="label_tracking_rate">
+       <property name="text">
+        <string>Tracking Rate (FPS):</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_tracking">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Maximum</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>10</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_tracking_rate_low">
+       <property name="text">
+        <string>30</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSlider" name="TrackingRate">
+       <property name="minimum">
+        <number>30</number>
+       </property>
+       <property name="maximum">
+        <number>120</number>
+       </property>
+       <property name="value">
+        <number>120</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksBelow</enum>
+       </property>
+       <property name="tickInterval">
+        <number>15</number>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_tracking_rate_high">
+       <property name="text">
+        <string>120</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="TrackingRateValue">
+       <property name="minimumSize">
+        <size>
+         <width>36</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>120</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_8">
      <item>
       <spacer name="horizontalSpacer_2">
@@ -441,6 +517,7 @@
   <tabstop>TzEnable</tabstop>
   <tabstop>TzSens</tabstop>
   <tabstop>Smoothing</tabstop>
+  <tabstop>TrackingRate</tabstop>
   <tabstop>DetailedAxisSetup</tabstop>
  </tabstops>
  <resources/>

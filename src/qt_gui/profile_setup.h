@@ -47,9 +47,11 @@ class ProfileSetup : public QWidget
    void on_TySens_valueChanged(int val);
    void on_TzSens_valueChanged(int val);
    void on_Smoothing_valueChanged(int val);
+   void on_TrackingRate_valueChanged(int val);
    void axisChanged(int axis, int elem);
    void setCommonFF(float val);
    void initAxes();
 };
 
 #endif
+
