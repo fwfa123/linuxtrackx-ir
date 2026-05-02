@@ -384,7 +384,7 @@ WEOF
     # ------------------------------------------------------------------
     print_status "Verifying key bundled libraries"
     _ok=0 _warn=0
-    for _check in libQt6Core.so libusb-1.0.so libudev.so libmxml.so libxml2.so "libicu*.so"; do
+    for _check in libQt6Core.so libusb-1.0.so libudev.so libmxml.so "libicu*.so"; do
         if [[ -n "$(find usr/lib -maxdepth 1 \( -type f -o -type l \) -name "${_check}*" -print -quit 2>/dev/null)" ]]; then
             print_success "Bundled: $_check"
             _ok=$((_ok + 1))

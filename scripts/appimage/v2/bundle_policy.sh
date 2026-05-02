@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # AppImage v2 — standard bundle expectations and path constants (single source of truth).
-# Standard pipeline uses CMake -DDISABLE_WIIMOTE=ON; images do not ship wii_server.
+# prepare.sh uses README Level 7: ENABLE_FACE_TRACKER=ON, DISABLE_WIIMOTE=OFF (needs OpenCV + libcwiid on the builder).
 # shellcheck disable=SC2034
 # Paths are relative to AppDir root or to squashfs-root when validating a packaged AppImage.
 

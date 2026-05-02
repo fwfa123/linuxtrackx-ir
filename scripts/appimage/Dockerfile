@@ -37,6 +37,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon-dev libxkbcommon-x11-dev \
     libfontconfig1-dev libfreetype-dev \
     libusb-1.0-0-dev libmxml-dev libv4l-dev liblo-dev zlib1g-dev \
+    libopencv-dev libcwiid-dev \
     libudev-dev libdbus-1-dev \
     gcc-multilib g++-multilib libc6-dev-i386 \
     && rm -rf /var/lib/apt/lists/*

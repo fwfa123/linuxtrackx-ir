@@ -208,12 +208,23 @@ cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=O
 ```
 
 ### AppImage Build
-For advanced users who want to create AppImages:
+The maintained pipeline lives under **`scripts/appimage/v2/`**. Typical entry points:
+
 ```bash
-./scripts/appimage/build_appimage_phase4.sh --clean
+# Full sequence (clean AppDir, build, bundle, validate, package)
+./scripts/appimage/v2/ci_build.sh
+
+# Or use the Docker image (recommended; pins Ubuntu 22.04 + deps)
+./scripts/appimage/docker_build.sh
 ```
 
-Build the AppImage on a machine that has the same **development** packages as a full source build (see your distro guide). The v2 `scripts/appimage/v2/prepare.sh` script matches roughly **Level 5** in the table above: it enables `ENABLE_WEBCAM=ON`, `ENABLE_OSC=ON`, `ENABLE_XPLANE=ON`, and leaves **`ENABLE_FACE_TRACKER=OFF`** (the CMake default—OpenCV facetrack is opt-in). It sets **`DISABLE_WIIMOTE=ON`**, so the standard AppImage does **not** include Wiimote (`wii_server`) even if the build host has libcwiid. Install **Level 4+** (webcam/V4L) packages on the build host so `libwc` and PS3 Eye (`libp3e`) can build. Set **`XPLANE_SDK_PATH`** if the SDK is not under `/opt/xplane-sdk/CHeaders`. The CI helper `scripts/appimage/v2/ci_build.sh` exports **`STRICT_BUNDLE=1`** so validation fails if Qt6 OpenGL widgets are present without bundled `libxcb-glx`. To bundle OpenCV-based facetrack (`libp3eft`, etc.), you must add `-DENABLE_FACE_TRACKER=ON` and install **Level 6+** OpenCV development packages on the builder; the default script does not. **End users** who only run the published AppImage do **not** need OpenCV on the system. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time.
+The v2 **`prepare.sh`** configure line targets README **Level 7** in the table above: `ENABLE_WEBCAM=ON`, `ENABLE_OSC=ON`, **`ENABLE_FACE_TRACKER=ON`**, **`DISABLE_WIIMOTE=OFF`** (Wiimote builds when **libcwiid** is available), and **`ENABLE_XPLANE=ON`** when the X-Plane SDK is present (otherwise X-Plane is turned off for that run). Install the same **development** packages as a Level 4–7 source build on the host (webcam/V4L, **liblo**, **OpenCV**, **libcwiid**); see your [distribution guide](#distribution-specific-instructions). The **`scripts/appimage/Dockerfile`** includes OpenCV and libcwiid dev packages so official container builds can produce **`libp3eft`** and **`wii_server`**. Set **`XPLANE_SDK_PATH`** if headers are not under `/opt/xplane-sdk/CHeaders`.
+
+Validation (**`validate.sh`**) defaults to **`EXPECT_LEVEL7=1`** (see **`config.sh`**): the AppDir must include OpenCV face-track support (**`libp3eft`**) and **`usr/bin/wii_server`**. Export **`EXPECT_LEVEL7=0`** if you are checking a slim or partial tree. **`ci_build.sh`** runs the full v2 sequence with **`CLEAN=1`** (prepare, bundle, optimize, validate, package).
+
+**End users** who only run the published AppImage still do **not** need OpenCV or libcwiid on the system; those are build-time dependencies for the packager. PS3 Eye LED/blob mode (`libp3e`) does not require OpenCV at build time; face-track mode does.
+
+**Legacy:** `./scripts/appimage/build_appimage_phase4.sh --clean` may still exist for older workflows; prefer v2 for current behavior.
 
 **Runtime (not bundled in the AppImage):** GPU/OpenGL drivers are always from the host. The Wine bridge installer still expects **Wine** on the system when you run its script. Udev rules for hardware may need to be installed manually from the files shipped under the AppImage’s `udev/` folder.
 

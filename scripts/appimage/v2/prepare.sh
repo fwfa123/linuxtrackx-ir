@@ -32,7 +32,7 @@ pushd "$PROJECT_ROOT" >/dev/null
         _xplane_flag="-DENABLE_XPLANE=OFF"
     fi
 
-    print_status "Configuring with CMake (LTR32 + webcam + OSC; ENABLE_FACE_TRACKER=OFF; no Wiimote)"
+    print_status "Configuring with CMake (README Level 7: LTR32 + webcam + OSC + face tracker + Wiimote + X-Plane when SDK present)"
     cd build
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=/usr \
@@ -41,7 +41,7 @@ pushd "$PROJECT_ROOT" >/dev/null
         -DLIB32DIR=i386-linux-gnu \
         -DENABLE_WEBCAM=ON \
         -DENABLE_OSC=ON \
-        -DENABLE_FACE_TRACKER=OFF \
+        -DENABLE_FACE_TRACKER=ON \
         "$_xplane_flag" \
         -DDISABLE_WIIMOTE=OFF \
         "-DXPLANE_SDK_PATH=${XPLANE_SDK_PATH}"
@@ -149,8 +149,15 @@ pushd "$PROJECT_ROOT" >/dev/null
                 print_error "Help file $help_file is not a valid SQLite database"
                 INCOMPATIBLE=1
             fi
+        elif command -v python3 >/dev/null 2>&1; then
+            if python3 -c "import sqlite3, sys; sqlite3.connect(sys.argv[1]).execute('select 1').fetchone()" "$help_file" >/dev/null 2>&1; then
+                print_success "Help file valid: $help_file (checked with python3)"
+            else
+                print_error "Help file $help_file is not a valid SQLite database"
+                INCOMPATIBLE=1
+            fi
         else
-            die "sqlite3 not available - help file validation required for AppImage build"
+            die "sqlite3 or python3 required - help file validation required for AppImage build"
         fi
         return 0
     }

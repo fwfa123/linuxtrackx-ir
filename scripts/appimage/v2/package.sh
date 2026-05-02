@@ -89,7 +89,7 @@ pushd "$PROJECT_ROOT" >/dev/null
 
             # 32-bit runtime library for Wine bridge
             LTR32_PATH="$ROOT_DIR/$LTR32_LIB_REL"
-            if [[ ! -f "$LTR32_PATH" ]]; then
+            if [[ ! -e "$LTR32_PATH" ]]; then
                 print_error "Missing 32-bit liblinuxtrack in AppImage: usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
                 HELP_OK=0
             fi

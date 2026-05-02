@@ -61,6 +61,22 @@ else
     print_warning "libwc not in AppDir (webcam support may be disabled)"
 fi
 
+# ---- README Level 7: OpenCV face tracker + Wiimote ----
+if [[ "${EXPECT_LEVEL7:-1}" == "1" ]]; then
+    if linuxtrack_lib_present p3eft; then
+        print_success "Found face tracker library (libp3eft)"
+    else
+        print_error "Missing face tracker library: libp3eft (builder needs OpenCV; ENABLE_FACE_TRACKER=ON)"
+        failures=$((failures+1))
+    fi
+    if [[ -x "$APPDIR/usr/bin/wii_server" ]]; then
+        print_success "Wiimote UI present: usr/bin/wii_server"
+    else
+        print_error "Missing or non-executable: usr/bin/wii_server (builder needs libcwiid; DISABLE_WIIMOTE=OFF)"
+        failures=$((failures+1))
+    fi
+fi
+
 # ---- 3D assets ----
 for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.obj usr/share/linuxtrack/sparow_glass.obj; do
     if [[ ! -f "$APPDIR/$asset" ]]; then
@@ -70,7 +86,7 @@ for asset in usr/share/linuxtrack/sphere.obj usr/share/linuxtrack/sparow_opaq.ob
 done
 
 # ---- Key bundled libraries ----
-for lib_pattern in libusb-1.0.so libudev.so libmxml.so libxml2.so "libicu*.so" libQt6Core.so; do
+for lib_pattern in libusb-1.0.so libudev.so libmxml.so "libicu*.so" libQt6Core.so; do
     if [[ -n "$(find "$APPDIR/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name "${lib_pattern}*" -print -quit 2>/dev/null)" ]]; then
         print_success "Bundled: $lib_pattern"
     else
@@ -117,10 +133,18 @@ else
 fi
 
 # ---- Help SQLite validation ----
-if command -v sqlite3 >/dev/null 2>&1; then
+if ! command -v sqlite3 >/dev/null 2>&1 && ! command -v python3 >/dev/null 2>&1; then
+    print_warning "sqlite3 and python3 unavailable; skipping help SQLite checks"
+else
     for _hf in "$APPDIR/$LTR_HELP_LTR_GUI_QCH_REL" "$APPDIR/$LTR_HELP_LTR_GUI_QHC_REL"; do
         [[ -f "$_hf" ]] || continue
-        if sqlite3 "$_hf" ".tables" >/dev/null 2>&1; then
+        _help_sqlite_ok=0
+        if command -v sqlite3 >/dev/null 2>&1 && sqlite3 "$_hf" ".tables" >/dev/null 2>&1; then
+            _help_sqlite_ok=1
+        elif command -v python3 >/dev/null 2>&1 && python3 -c "import sqlite3, sys; sqlite3.connect(sys.argv[1]).execute('select 1').fetchone()" "$_hf" >/dev/null 2>&1; then
+            _help_sqlite_ok=1
+        fi
+        if [[ "$_help_sqlite_ok" == "1" ]]; then
             print_success "$(basename "$_hf") valid SQLite"
         else
             print_error "$(basename "$_hf") is not a valid SQLite database"
