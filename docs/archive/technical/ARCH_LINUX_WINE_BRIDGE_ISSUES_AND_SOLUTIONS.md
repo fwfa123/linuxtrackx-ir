@@ -212,7 +212,7 @@ winegcc -m32 -o test.exe.so test.c
 
 ### Documentation
 - `docs/guides/ARCH_LINUX_INSTALL_GUIDE.md` - Installation guide
-- `docs/troubleshooting/ARCH_LINUX_WINE_BRIDGE_FIX.md` - Troubleshooting guide
+- `docs/archive/technical/ARCH_LINUX_WINE_BRIDGE_FIX.md` - Troubleshooting guide (archived; see `docs/readme/arch-linux.md`)
 
 ## References
 

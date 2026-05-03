@@ -99,10 +99,7 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
   - **Features**: Environment setup, configuration management, initialization
 
 ### **Documentation**
-- **[ARCH_LINUX_INSTALL_GUIDE.md](ARCH_LINUX_INSTALL_GUIDE.md)** - Arch Linux installation guide
-  - **Purpose**: Comprehensive Arch Linux installation documentation
-  - **Status**: Production Ready
-  - **Content**: Step-by-step instructions, troubleshooting, verification
+- **[ARCH_LINUX_INSTALL_GUIDE.md](ARCH_LINUX_INSTALL_GUIDE.md)** - Redirect to **[`docs/readme/arch-linux.md`](../../docs/readme/arch-linux.md)** (maintained Arch / CachyOS / WOW64 guide)
 
 ---
 

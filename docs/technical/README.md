@@ -17,9 +17,9 @@ This directory contains technical documentation for LinuxTrack, including implem
 - **`MODERNIZATION_PLAN.md`** — Modernization plan
 - **`OPENTRACK_PLUGIN_PLAN.md`** — OpenTrack plugin integration
 - **`INSTALLATION_ANALYSIS_COMPREHENSIVE.md`** — Installation analysis
-- **`ISSUE_206_TRACKIR_ARCH_FIXES.md`** — TrackIR on Arch Linux
+- **Arch + Wine history** — see [`../readme/arch-linux.md`](../readme/arch-linux.md); old notes in [`../archive/technical/ISSUE_206_TRACKIR_ARCH_FIXES.md`](../archive/technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
 - **`APPIMAGE_IMPLEMENTATION_PLAN.md`**, **`QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md`** — AppImage and help bundling
-- **`WINE_BRIDGE_PACKAGING_PLAN.md`**, **`ARCH_LINUX_WINE_BRIDGE_ISSUES_AND_SOLUTIONS.md`** — Wine bridge
+- **`WINE_BRIDGE_PACKAGING_PLAN.md`** — Wine bridge packaging; archived Arch-specific investigation: [`../archive/technical/ARCH_LINUX_WINE_BRIDGE_ISSUES_AND_SOLUTIONS.md`](../archive/technical/ARCH_LINUX_WINE_BRIDGE_ISSUES_AND_SOLUTIONS.md)
 - **`ROBUST_HELP_SYSTEM.md`**, **`QT_HELP_SYSTEM_FIX.md`** — Help / Qt help engine
 - MFC42 / TrackIR DLL analysis: **`MFC42_*.md`**, **`TRACKIR_*.md`**, **`TrackIR_MFC42_*.md`**
 
@@ -58,7 +58,7 @@ Older planning snapshots live under **[`../archive/technical/`](../archive/techn
 - Distribution-specific optimizations
 
 ### Hardware Integration
-**Primary File**: `ISSUE_206_TRACKIR_ARCH_FIXES.md`
+**Arch / TrackIR install (current):** [`../readme/arch-linux.md`](../readme/arch-linux.md). **Historical thread dump:** [`../archive/technical/ISSUE_206_TRACKIR_ARCH_FIXES.md`](../archive/technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
 
 **TrackIR Support:**
 - USB device detection (131d:0159)

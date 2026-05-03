@@ -26,7 +26,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 **For end users and system administrators**
 - **[guides/README.md](guides/README.md)** - Guide index and cross-links
 - **[guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)** - MX Linux build guide
-- **[guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md)** - Arch install notes
+- **[guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md)** - Redirect to [readme/arch-linux.md](readme/arch-linux.md)
 - **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)**, **[readme/fedora-rhel.md](readme/fedora-rhel.md)**, **[readme/arch-linux.md](readme/arch-linux.md)** - Primary per-distro docs
 - **[archive/guides/](archive/guides/)** - Historical `LEGACY_*` snapshots only
 
@@ -84,7 +84,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 - **MX Linux** → [guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)
 - **Ubuntu/Debian** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md)
 - **Fedora/RHEL** → [readme/fedora-rhel.md](readme/fedora-rhel.md)
-- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md), [guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md), [technical/ISSUE_206_TRACKIR_ARCH_FIXES.md](technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
+- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md) (WOW64 / CachyOS); historical Arch–Wine notes → [archive/technical/](archive/technical/) (`ISSUE_206_*`, `ARCH_LINUX_WINE_BRIDGE_*`)
 
 ### Development Resources
 - **Qt / framework migration** → [technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md), [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md) (older)

@@ -93,7 +93,7 @@ sudo cmake --build . --target uninstall
 ### Distribution-Specific Instructions
 
 - **[Debian/Ubuntu/MX Linux](docs/readme/debian-ubuntu.md)**
-- **[Arch Linux](docs/readme/arch-linux.md)**
+- **[Arch Linux](docs/readme/arch-linux.md)** (Arch / CachyOS: read **AppImage vs source** and **Wine WOW64** first)
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
 - **[Flatpak (Lutris and games)](docs/readme/flatpak.md)** - Using LinuxTrack when Lutris or games run from Flatpak (Flatseal, library path).
 

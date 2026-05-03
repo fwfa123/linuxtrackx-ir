@@ -7,7 +7,7 @@ This directory holds a few distribution-focused guides. **Current releases use Q
 | File | Purpose |
 |------|---------|
 | [`MX_LINUX_BUILD_GUIDE.md`](MX_LINUX_BUILD_GUIDE.md) | MX Linux build and dependencies |
-| [`ARCH_LINUX_INSTALL_GUIDE.md`](ARCH_LINUX_INSTALL_GUIDE.md) | Arch install notes |
+| [`ARCH_LINUX_INSTALL_GUIDE.md`](ARCH_LINUX_INSTALL_GUIDE.md) | Redirect → [`readme/arch-linux.md`](../readme/arch-linux.md) |
 
 ## Cross-references
 

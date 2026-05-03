@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # LinuxTrack X-IR Arch Linux Build Script (Qt6)
-# This script provides seamless Arch Linux support with proper 32-bit wine bridge functionality
-# Designed for Arch Linux with Qt6 (default on modern Arch Linux systems)
+# - Installs broad deps (opencv, v4l-utils, liblo, ...) but configure_build() uses CMake defaults
+#   except ENABLE_LTR_32LIB_ON_X64 and WINE_* paths — effectively ~README Level 2 (Wine bridge).
+# - Wiimote: only with --with-wiimote (GitLab #8). May bootstrap yay from AUR if no helper exists.
 
 set -e
 
@@ -53,7 +54,8 @@ install_aur_helper() {
     local aur_helper=$(detect_aur_helper)
     
     if [ "$aur_helper" = "none" ]; then
-        print_status "No AUR helper found. Installing yay..."
+        print_warning "No yay/paru found — cloning and building yay from AUR (network + sudo required; review AUR trust if needed)."
+        print_status "Installing yay..."
         sudo pacman -S --needed git base-devel
         git clone https://aur.archlinux.org/yay.git
         cd yay
@@ -91,45 +93,38 @@ install_dependencies() {
     print_success "Build dependencies installed"
 }
 
-# Function to install Wiimote support
+# Optional Wiimote (libcwiid): AUR cwiid is unmaintained and often pulls python2/openssl-1.1 (GitLab #8).
+# Only invoked when user passes --with-wiimote.
 install_wiimote_support() {
-    print_status "Installing Wiimote support..."
+    print_status "Installing Wiimote support (optional AUR cwiid)..."
     
     local aur_helper=$(detect_aur_helper)
     
     if [ "$aur_helper" = "none" ]; then
-        print_error "No AUR helper found. Please install yay or paru first."
-        print_status "You can install yay manually:"
-        echo "sudo pacman -S --needed git base-devel"
-        echo "git clone https://aur.archlinux.org/yay.git"
-        echo "cd yay && makepkg -si"
-        return 1
+        print_warning "No AUR helper (yay/paru). Install one and re-run with --with-wiimote, or install libcwiid manually."
+        echo "  sudo pacman -S --needed git base-devel && git clone https://aur.archlinux.org/yay.git && cd yay && makepkg -si"
+        return 0
     fi
     
-    print_status "Installing cwiid from AUR using $aur_helper..."
-    $aur_helper -S cwiid --noconfirm
-    
-    if [ $? -eq 0 ]; then
+    print_status "Installing cwiid from AUR using $aur_helper (may fail on modern Arch)..."
+    if $aur_helper -S cwiid --noconfirm; then
         print_success "cwiid installed successfully"
-        
-        # Test cwiid installation
         if command -v wminput >/dev/null 2>&1; then
             print_success "Wiimote utilities found"
         else
             print_warning "Wiimote utilities not found in PATH"
         fi
-    else
-        print_error "Failed to install cwiid"
-        print_status "Trying alternative package cwiid-git..."
-        $aur_helper -S cwiid-git --noconfirm
-        
-        if [ $? -eq 0 ]; then
-            print_success "cwiid-git installed successfully"
-        else
-            print_error "Failed to install Wiimote support"
-            return 1
-        fi
+        return 0
     fi
+    
+    print_warning "cwiid failed; trying cwiid-git..."
+    if $aur_helper -S cwiid-git --noconfirm; then
+        print_success "cwiid-git installed successfully"
+        return 0
+    fi
+    
+    print_warning "Wiimote (cwiid) not installed — AUR packages are outdated (python2 chain). Build continues without Wiimote. See: https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8"
+    return 0
 }
 
 # Function to install OSC support (liblo is in official [extra])
@@ -170,7 +165,25 @@ install_xplane_sdk() {
 install_wine32() {
     print_status "Installing Wine (multilib)..."
     
-    if pacman -Q wine >/dev/null 2>&1 && [ -d /usr/lib32/wine ] || [ -d /usr/lib32/wine/i386-unix ]; then
+    # AUR wine32 conflicts with repo "wine"; do not try to install both.
+    if pacman -Q wine32 >/dev/null 2>&1; then
+        print_status "AUR wine32 is installed — skipping repo wine (packages conflict)."
+        sudo pacman -S --needed lib32-glibc lib32-gcc-libs
+        print_status "Installing wine-mono and wine-gecko (~400 MiB installed; download may take a minute)..."
+        if sudo pacman -S --needed --noconfirm wine-mono wine-gecko; then
+            :
+        else
+            print_warning "wine-mono/wine-gecko install failed or skipped (optional; install manually if Wine installers need them)."
+        fi
+        if command -v winegcc >/dev/null 2>&1 || command -v wine >/dev/null 2>&1; then
+            print_success "Wine stack (wine32) present"
+        else
+            print_warning "wine/winegcc not in PATH — check wine32 package."
+        fi
+        return 0
+    fi
+    
+    if pacman -Q wine >/dev/null 2>&1 && { [ -d /usr/lib32/wine ] || [ -d /usr/lib32/wine/i386-unix ]; }; then
         print_success "Wine and 32-bit libs appear present"
         return 0
     fi
@@ -221,8 +234,11 @@ verify_wine32() {
         return 1
     fi
     
-    if [ ! -d "/usr/lib32/wine" ] && [ ! -d "/usr/lib32/wine/i386-unix" ]; then
-        print_warning "32-bit wine libs not found at /usr/lib32/wine. Enable multilib and install lib32-wine (or AUR wine32 as fallback)."
+    # Repo multilib layout vs AUR wine32 layout differ; winegcc test below is the real check.
+    if [ ! -d "/usr/lib32/wine" ] && [ ! -d "/usr/lib32/wine/i386-unix" ] && [ ! -d "/usr/lib/wine/i386-unix" ]; then
+        if ! pacman -Q wine32 >/dev/null 2>&1; then
+            print_warning "32-bit wine Unix libs not found under /usr/lib32/wine or /usr/lib/wine/i386-unix. Enable multilib and lib32-wine, or install AUR wine32."
+        fi
     fi
     
     # Test winegcc
@@ -231,30 +247,29 @@ verify_wine32() {
         return 1
     fi
     
-    # Test winegcc compilation
-    print_status "Testing winegcc compilation..."
-    # Create a minimal test C file
+    # Test winegcc: some WOW64 setups report success but emit a 0-byte .o (GitLab #37).
+    print_status "Testing winegcc -m32..."
+    rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o /tmp/ltrx_wgg_smoke.exe.so
     cat > /tmp/test_winegcc.c << 'EOF'
 int main(void) { return 0; }
 EOF
-    
-    # Test winegcc compilation (compile only, no linking to avoid library dependency issues)
-    if winegcc -m32 -c -o /tmp/test_winegcc.o /tmp/test_winegcc.c 2>/dev/null; then
-        # Verify the output file exists and is not empty
-        if [ -s /tmp/test_winegcc.o ]; then
-            print_success "winegcc compilation test passed"
-            rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o
-        else
-            print_error "winegcc produced empty output file"
-            rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o
-            return 1
-        fi
-    else
-        print_error "winegcc compilation test failed"
-        rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o
-        return 1
+    local wgcc_ok=0
+    if winegcc -m32 -c -o /tmp/test_winegcc.o /tmp/test_winegcc.c 2>/dev/null && [ -s /tmp/test_winegcc.o ]; then
+        wgcc_ok=1
+    elif command -v readelf >/dev/null 2>&1 && winegcc -m32 -c -o /tmp/test_winegcc.o /tmp/test_winegcc.c 2>/dev/null \
+        && readelf -h /tmp/test_winegcc.o 2>/dev/null | grep -q 'Class:.*ELF32'; then
+        wgcc_ok=1
+    elif winegcc -m32 -o /tmp/ltrx_wgg_smoke.exe.so /tmp/test_winegcc.c 2>/dev/null && [ -s /tmp/ltrx_wgg_smoke.exe.so ]; then
+        wgcc_ok=1
     fi
-    
+    rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o /tmp/ltrx_wgg_smoke.exe.so
+
+    if [ "$wgcc_ok" = 1 ]; then
+        print_success "winegcc -m32 smoke test passed"
+    else
+        print_warning "winegcc -m32 smoke test failed or produced no usable output (common on stock WOW64 Wine). Continuing — if CMake fails on Wine, install AUR wine32 or wine-stable/wine-stable-mono, or run $0 --deps-only / --wine32-only then $0 --configure-only (see docs/readme/arch-linux.md)."
+    fi
+
     print_success "Wine installation verified"
 }
 
@@ -325,11 +340,13 @@ verify_installation() {
         return 1
     fi
     
-    # Check wine bridge components
-    if [ -f "/opt/share/linuxtrack/linuxtrack-wine.exe" ]; then
-        print_success "Wine bridge components installed"
+    # Wine bridge: NSIS installer under share/linuxtrack/wine/ (see src/wine_bridge/CMakeLists.txt)
+    if [ -f "/opt/share/linuxtrack/wine/linuxtrack-wine.exe" ]; then
+        print_success "Wine bridge installer present: /opt/share/linuxtrack/wine/linuxtrack-wine.exe"
+    elif [ -d "/opt/lib/linuxtrack/wine_bridge" ] && compgen -G '/opt/lib/linuxtrack/wine_bridge/*' >/dev/null; then
+        print_success "Wine bridge built files present under /opt/lib/linuxtrack/wine_bridge (installer may be missing if NSIS was unavailable at install time)"
     else
-        print_warning "Wine bridge components not found"
+        print_warning "Wine bridge not found (no installer at /opt/share/linuxtrack/wine/linuxtrack-wine.exe and no /opt/lib/linuxtrack/wine_bridge). Build with Wine plugin + makensis, or use AppImage bridge."
     fi
     
     print_success "Installation verification completed"
@@ -348,12 +365,14 @@ show_usage() {
     echo "  --build-only     Build only (assumes dependencies installed)"
     echo "  --install-only   Install only (assumes build completed)"
     echo "  --verify-only    Verify installation only"
-echo "  --test-wiimote   Test Wiimote support"
-echo "  --test-osc       Test OSC support"
-echo "  --test-xplane    Test X-Plane SDK support"
-echo "  --help           Show this help message"
+    echo "  --with-wiimote   Try to install AUR cwiid (optional; often broken; see GitLab #8)"
+    echo "  --test-wiimote   Test Wiimote support (pkg-config cwiid)"
+    echo "  --test-osc       Test OSC support"
+    echo "  --test-xplane    Test X-Plane SDK support"
+    echo "  --help           Show this help message"
     echo ""
-    echo "Default behavior: Full installation (deps + Wine + build + install)"
+    echo "Default: deps + Wine + OSC + X-Plane SDK check + NSIS + configure/build/install."
+    echo "Wiimote is NOT installed unless you pass --with-wiimote."
 }
 
 # Main function
@@ -370,6 +389,7 @@ main() {
     local test_wiimote=false
     local test_osc=false
     local test_xplane=false
+    local with_wiimote=false
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -395,6 +415,10 @@ main() {
                 ;;
             --verify-only)
                 verify_only=true
+                shift
+                ;;
+            --with-wiimote)
+                with_wiimote=true
                 shift
                 ;;
             --test-wiimote)
@@ -433,6 +457,9 @@ main() {
     # Install dependencies
     if [ "$deps_only" = true ]; then
         install_dependencies
+        if [ "$with_wiimote" = true ]; then
+            install_wiimote_support
+        fi
         exit 0
     elif [ "$wine32_only" = true ]; then
         install_wine32
@@ -442,7 +469,7 @@ main() {
         verify_installation
         exit 0
     elif [ "$test_wiimote" = true ]; then
-        if pkg-config --exists cwiid 2>/dev/null; then print_success "cwiid: found"; else print_warning "cwiid: not found (yay -S cwiid)"; fi
+        if pkg-config --exists cwiid 2>/dev/null; then print_success "cwiid: found"; else print_warning "cwiid: not found (optional; use --with-wiimote to try AUR, often fails — GitLab #8)"; fi
         exit 0
     elif [ "$test_osc" = true ]; then
         if pkg-config --exists liblo 2>/dev/null; then print_success "liblo: found"; else print_warning "liblo: not found (pacman -S liblo)"; fi
@@ -457,25 +484,21 @@ main() {
         install_dependencies
     fi
     
-    # Install wine32
-    if [ "$wine32_only" = true ]; then
-        install_wine32
-        verify_wine32
-        exit 0
-    elif [ "$build_only" = true ] || [ "$install_only" = true ] || [ "$configure_only" = true ]; then
-        # Skip wine32 installation for these modes
+    # Install Wine (multilib) — wine32_only already exited above
+    if [ "$build_only" = true ] || [ "$install_only" = true ] || [ "$configure_only" = true ]; then
         :
     else
         install_wine32
         verify_wine32
     fi
     
-    # Install Wiimote support
+    # Wiimote (cwiid): optional only — see GitLab #8
     if [ "$build_only" = true ] || [ "$install_only" = true ] || [ "$configure_only" = true ]; then
-        # Skip Wiimote installation for these modes
         :
-    else
+    elif [ "$with_wiimote" = true ]; then
         install_wiimote_support
+    else
+        print_status "Skipping Wiimote (cwiid): optional; AUR packages are unmaintained. Pass --with-wiimote to try, or build without Wiimote (default)."
     fi
     
     # Install OSC support
@@ -504,6 +527,12 @@ main() {
     
     # Configure build
     if [ "$configure_only" = true ]; then
+        # Main flow skips NSIS/Wine/OSC when using split flags — CMake needs makensis + winegcc + wineg++ for WINE_PLUGIN and liblo.pc for OSC.
+        print_status "configure-only: ensuring NSIS, liblo, and Wine (same as full run before cmake)..."
+        install_nsis
+        install_osc_support
+        install_wine32
+        verify_wine32
         configure_build
         exit 0
     elif [ "$build_only" = true ] || [ "$install_only" = true ]; then

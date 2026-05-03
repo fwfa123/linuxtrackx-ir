@@ -30,7 +30,7 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 ### 🛠️ User Guides (`guides/` + `readme/`)
 **Purpose**: End user and system administrator documentation
 - **`guides/README.md`** — Index; points to per-distro docs under **`readme/`**
-- **`guides/MX_LINUX_BUILD_GUIDE.md`**, **`guides/ARCH_LINUX_INSTALL_GUIDE.md`** — Short distribution-specific notes
+- **`guides/MX_LINUX_BUILD_GUIDE.md`**, **`guides/ARCH_LINUX_INSTALL_GUIDE.md`** (redirect) — MX notes; Arch content lives in **`readme/arch-linux.md`**
 - **`readme/debian-ubuntu.md`**, **`readme/fedora-rhel.md`**, **`readme/arch-linux.md`** — Primary install paths (Qt6 / CMake)
 - **`archive/guides/`** — Historical `LEGACY_*` snapshots moved out of `guides/`
 
