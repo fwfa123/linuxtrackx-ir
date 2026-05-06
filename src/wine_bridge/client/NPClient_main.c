@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #ifndef __MINGW32__
 #include <unistd.h>
 #endif
@@ -62,6 +63,7 @@ static bool data_transmission_started = false;
 static DWORD transmission_start_time = 0;  // Track when transmission started
 static bool sockets_ready = false;
 static int ensure_socket_runtime_ready(void);
+static void dbg_report(const char *msg,...);
 
 #ifdef __MINGW32__
 typedef struct {
@@ -101,6 +103,7 @@ static mingw_pose_runtime_t mingw_pose_runtime = {
 static void mingw_pose_disconnect(void)
 {
   if(mingw_pose_runtime.pose_socket != INVALID_SOCKET){
+    dbg_report("MinGW pose disconnect: closing socket\n");
     CLOSE_SOCKET(mingw_pose_runtime.pose_socket);
     mingw_pose_runtime.pose_socket = INVALID_SOCKET;
   }
@@ -124,11 +127,13 @@ static int mingw_pose_connect(void)
   mingw_pose_runtime.last_connect_attempt_ms = now;
 
   if(ensure_socket_runtime_ready() != 0){
+    dbg_report("MinGW pose connect: socket runtime init failed\n");
     return -1;
   }
 
   SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
   if(sock == INVALID_SOCKET){
+    dbg_report("MinGW pose connect: socket() failed (err=%d)\n", (int)WSAGetLastError());
     return -1;
   }
 
@@ -146,6 +151,7 @@ static int mingw_pose_connect(void)
   }
 
   if(connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1){
+    dbg_report("MinGW pose connect: connect() failed (err=%d)\n", (int)WSAGetLastError());
     CLOSE_SOCKET(sock);
     if(mingw_pose_runtime.reconnect_backoff_ms < 2000){
       mingw_pose_runtime.reconnect_backoff_ms *= 2;
@@ -159,6 +165,7 @@ static int mingw_pose_connect(void)
   snprintf(msg.str, sizeof(msg.str), "%s",
            (g_profile_name[0] != '\0') ? g_profile_name : "Default");
   if(send(sock, (const char*)&msg, sizeof(msg), 0) <= 0){
+    dbg_report("MinGW pose connect: CMD_NEW_SOCKET send failed (err=%d)\n", (int)WSAGetLastError());
     CLOSE_SOCKET(sock);
     if(mingw_pose_runtime.reconnect_backoff_ms < 2000){
       mingw_pose_runtime.reconnect_backoff_ms *= 2;
@@ -172,12 +179,15 @@ static int mingw_pose_connect(void)
   mingw_pose_runtime.pose_socket = sock;
   mingw_pose_runtime.connected = true;
   mingw_pose_runtime.reconnect_backoff_ms = 100;
+  dbg_report("MinGW pose connect: connected and registered profile='%s'\n",
+             (g_profile_name[0] != '\0') ? g_profile_name : "Default");
   return 0;
 }
 
 static int mingw_pose_pump(void)
 {
   if(!mingw_pose_runtime.connected && mingw_pose_connect() != 0){
+    dbg_report("MinGW pose pump: not connected\n");
     return -1;
   }
 
@@ -212,6 +222,7 @@ static int mingw_pose_pump(void)
     }
 
     if(recvd == 0){
+      dbg_report("MinGW pose pump: peer closed socket\n");
       mingw_pose_disconnect();
       break;
     }
@@ -221,6 +232,7 @@ static int mingw_pose_pump(void)
       if(err == WSAEWOULDBLOCK){
         break;
       }
+      dbg_report("MinGW pose pump: recv error=%d, disconnecting\n", err);
       mingw_pose_disconnect();
       break;
     }
@@ -327,6 +339,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
             DisableThreadLibraryCalls(hinstDLL);
             dbg_flag = getDebugFlag('w');
             dbg_report("Attach request\n");
+#ifdef __MINGW32__
+            dbg_report("BUILD_MARKER: MinGW socket pose path active\n");
+#endif
             break;
         case DLL_PROCESS_DETACH:
 #ifdef __MINGW32__
@@ -566,6 +581,7 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
 
 #ifdef __MINGW32__
   if(!mingw_pose_runtime.transmission_started){
+    dbg_report("MinGW GetData: transmission not started\n");
     memset((char *)data, 0, sizeof(tir_data_t));
     data->status = 1;
     return 1;
@@ -574,6 +590,7 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   if(mingw_pose_pump() != 0){
     Sleep(5);
     if(mingw_pose_pump() != 0){
+      dbg_report("MinGW GetData: no pose frame available\n");
       memset((char *)data, 0, sizeof(tir_data_t));
       data->status = 1;
       return 1;
@@ -581,16 +598,50 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   }
 
   const linuxtrack_pose_t *pose = &mingw_pose_runtime.last_pose.pose;
+  float pose_roll = pose->roll;
+  float pose_pitch = pose->pitch;
+  float pose_yaw = pose->yaw;
+  float pose_tx = pose->tx;
+  float pose_ty = pose->ty;
+  float pose_tz = pose->tz;
+
+  /*
+   * Some profiles can report zeroed filtered pose while raw pose is valid.
+   * Prefer raw values as a fallback only when all filtered channels are near zero.
+   */
+  if(fabsf(pose_roll) < 0.001f &&
+     fabsf(pose_pitch) < 0.001f &&
+     fabsf(pose_yaw) < 0.001f &&
+     fabsf(pose_tx) < 0.001f &&
+     fabsf(pose_ty) < 0.001f &&
+     fabsf(pose_tz) < 0.001f){
+    if(fabsf(pose->raw_roll) > 0.001f ||
+       fabsf(pose->raw_pitch) > 0.001f ||
+       fabsf(pose->raw_yaw) > 0.001f ||
+       fabsf(pose->raw_tx) > 0.001f ||
+       fabsf(pose->raw_ty) > 0.001f ||
+       fabsf(pose->raw_tz) > 0.001f){
+      pose_roll = pose->raw_roll;
+      pose_pitch = pose->raw_pitch;
+      pose_yaw = pose->raw_yaw;
+      pose_tx = pose->raw_tx;
+      pose_ty = pose->raw_ty;
+      pose_tz = pose->raw_tz;
+      dbg_report("MinGW GetData: using raw pose fallback (counter=%u)\n",
+                 (unsigned int)pose->counter);
+    }
+  }
+
   memset((char *)data, 0, sizeof(tir_data_t));
   data->status = (pose->status == RUNNING) ? 0 : 1;
   data->frame = pose->counter & 0xFFFF;
   data->cksum = 0;
-  data->roll = pose->roll / 180.0f * 16383.0f;
-  data->pitch = -pose->pitch / 180.0f * 16383.0f;
-  data->yaw = pose->yaw / 180.0f * 16383.0f;
-  data->tx = -limit_num(-16383.0f, 32.7f * pose->tx, 16383.0f);
-  data->ty = limit_num(-16383.0f, 32.7f * pose->ty, 16383.0f);
-  data->tz = limit_num(-16383.0f, 32.7f * pose->tz, 16383.0f);
+  data->roll = pose_roll / 180.0f * 16383.0f;
+  data->pitch = -pose_pitch / 180.0f * 16383.0f;
+  data->yaw = pose_yaw / 180.0f * 16383.0f;
+  data->tx = -limit_num(-16383.0f, 32.7f * pose_tx, 16383.0f);
+  data->ty = limit_num(-16383.0f, 32.7f * pose_ty, 16383.0f);
+  data->tz = limit_num(-16383.0f, 32.7f * pose_tz, 16383.0f);
   data->cksum = cksum((unsigned char*)data, sizeof(tir_data_t));
   if(crypted){
     enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
@@ -1201,6 +1252,8 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
   send_command_to_master(LTR_CMD_WAKEUP, 0);
   if(mingw_pose_connect() != 0){
     dbg_report("MinGW StartDataTransmission: pose socket not ready yet, will retry lazily.\n");
+  }else{
+    dbg_report("MinGW StartDataTransmission: pose socket connected.\n");
   }
   return 0;
 #endif
