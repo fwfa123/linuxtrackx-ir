@@ -171,6 +171,12 @@ bool __stdcall FREETRACKCLIENT_FTGetData(FreeTrackData * data)
 	return TRUE;
 }
 
+/* Export compatibility wrappers for MinGW PE builds. */
+char * __stdcall FTProvider(void) { return FREETRACKCLIENT_FTProvider(); }
+char * __stdcall FTGetDllVersion(void) { return FREETRACKCLIENT_FTGetDllVersion(); }
+void __stdcall FTReportName(char *name) { FREETRACKCLIENT_FTReportName(name); }
+bool __stdcall FTGetData(FreeTrackData *data) { return FREETRACKCLIENT_FTGetData(data); }
+
 /*
 yaw +to the left
 pitch + up

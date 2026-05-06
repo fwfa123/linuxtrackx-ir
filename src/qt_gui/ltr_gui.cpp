@@ -1413,9 +1413,9 @@ QString LinuxtrackGui::getLinuxTrackInfo()
 #endif
 
 #if defined(WINE_PLUGIN_SUPPORT) && WINE_PLUGIN_SUPPORT
-    info += QStringLiteral("Wine plugin: YES\n");
+    info += QStringLiteral("Wine bridge: YES\n");
 #else
-    info += QStringLiteral("Wine plugin: NO\n");
+    info += QStringLiteral("Wine bridge: NO\n");
 #endif
 
 #if defined(OSC_SUPPORT) && OSC_SUPPORT

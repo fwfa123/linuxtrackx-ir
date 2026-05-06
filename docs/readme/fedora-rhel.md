@@ -15,16 +15,16 @@ sudo dnf install sqlite  # Qt SQL (QSQLITE driver): Lutris game-database integra
 
 ### Wine Support (Level 2+)
 ```bash
-# Install full Wine with 32-bit support (CRITICAL for MFC42)
-sudo dnf install wine wine.i686
-sudo dnf install wine-devel wine-devel.i686  # Wine development tools (32-bit and 64-bit)
-sudo dnf install glibc-devel.i686 libstdc++-devel.i686  # REQUIRED: 32-bit development headers (C and C++)
+# Install Wine runtime + MinGW cross toolchains (required for PE bridge build)
+sudo dnf install wine
+sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils
+sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils
 sudo dnf install mingw32-nsis  # REQUIRED: NSIS installer (includes stub files for building Windows installers)
 sudo dnf install winetricks  # REQUIRED: For MFC42 library installation
 sudo dnf install cabextract wget  # REQUIRED: For alternative installation methods
 ```
 
-**IMPORTANT**: The full `wine` and `wine.i686` packages are required for 32-bit Wine prefix creation. The error "WINEARCH is set to 'win32' but this is not supported in wow64 mode" indicates missing 32-bit Wine support. Wine mono and gecko components are downloaded automatically when needed.
+**IMPORTANT**: This branch targets modern WOW64 and requires Wine 11.0+ with MinGW toolchains and NSIS.
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -104,7 +104,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -113,7 +113,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -122,7 +122,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -131,7 +131,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -140,7 +140,7 @@ sudo cmake --install .
 ```bash
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -150,7 +150,7 @@ sudo cmake --install .
 mkdir build && cd build
 export PATH="/usr/lib64/qt6/bin:$PATH"  # Optional: if CMake does not find moc/uic
 export PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -205,9 +205,9 @@ sudo ln -s /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake
 
 | Problem | Solution |
 |---------|----------|
-| `winegcc: command not found` | Install Wine development: `sudo dnf install wine-devel` |
-| 32-bit build fails | Install 32-bit headers: `sudo dnf install glibc-devel.i686 gcc.i686` |
-| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | **Install full 32-bit Wine**: `sudo dnf install wine wine.i686` |
+| `i686-w64-mingw32-gcc: command not found` | Install MinGW 32-bit tools: `sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils` |
+| `x86_64-w64-mingw32-gcc: command not found` | Install MinGW 64-bit tools: `sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils` |
+| Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton/Wine Staging) |
 | `Error: reading stub "/usr/share/nsis/Stubs/zlib-x86-unicode"` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
 | `Error initializing CEXEBuild: error setting default stub` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
 
@@ -240,7 +240,7 @@ cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/x
 
 # Example: Wine + OSC without Webcam
 export PATH="/usr/lib64/qt6/bin:$PATH"
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_OSC=ON
 ```
 
 See the main README for all available CMake options.

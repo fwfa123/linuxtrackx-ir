@@ -829,17 +829,28 @@ bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame 
             wineExecutablePath.replace(0, 1, getHomeDirectory());
         }
 
-        // If this is a full path to wine binary, extract the version name
+        // If this is a full path to wine binary under Lutris runners, extract the runner name.
+        // For system Wine paths (e.g. /usr/bin/wine), keep the absolute path intact.
         if (wineExecutablePath.contains(QString::fromUtf8("/bin/wine"))) {
-            // Extract version from path like: /home/user/.local/share/lutris/runners/wine/wine-ge-8-26-x86_64/bin/wine
-            QString pathWithoutBin = wineExecutablePath.left(wineExecutablePath.lastIndexOf(QString::fromUtf8("/bin/wine")));
-            QString versionFromPath = pathWithoutBin.mid(pathWithoutBin.lastIndexOf(QString::fromUtf8("/")) + 1);
-            if (!versionFromPath.isEmpty() && versionFromPath != QString::fromUtf8("wine")) {
-                game.wine_version = versionFromPath;
-                ltr_int_log_message("Extracted version from wine path: %s\n", game.wine_version.toUtf8().constData());
+            const bool looksLikeLutrisRunnerPath =
+                wineExecutablePath.contains(QStringLiteral("/lutris/runners/wine/")) ||
+                wineExecutablePath.contains(QStringLiteral("/lutris/runners/proton/")) ||
+                wineExecutablePath.contains(QStringLiteral("/lutris/runtime/wine/"));
+
+            if (looksLikeLutrisRunnerPath) {
+                // Extract version from path like: /home/user/.local/share/lutris/runners/wine/wine-ge-8-26-x86_64/bin/wine
+                QString pathWithoutBin = wineExecutablePath.left(wineExecutablePath.lastIndexOf(QString::fromUtf8("/bin/wine")));
+                QString versionFromPath = pathWithoutBin.mid(pathWithoutBin.lastIndexOf(QString::fromUtf8("/")) + 1);
+                if (!versionFromPath.isEmpty() && versionFromPath != QString::fromUtf8("wine")) {
+                    game.wine_version = versionFromPath;
+                    ltr_int_log_message("Extracted runner version from wine path: %s\n", game.wine_version.toUtf8().constData());
+                } else {
+                    game.wine_version = wineExecutablePath;
+                    ltr_int_log_message("Using Wine executable path (runner extraction failed): %s\n", game.wine_version.toUtf8().constData());
+                }
             } else {
                 game.wine_version = wineExecutablePath;
-                ltr_int_log_message("Using Wine executable path (couldn't extract version): %s\n", game.wine_version.toUtf8().constData());
+                ltr_int_log_message("Using Wine executable path (system/custom wine): %s\n", game.wine_version.toUtf8().constData());
             }
         } else {
             game.wine_version = wineExecutablePath;
@@ -1233,6 +1244,62 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
     }
 
     ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Wine Bridge installer completed successfully\n");
+
+    // Native-side firmware links for WOW64/MinGW bridge: keep filesystem mutation outside Wine code.
+    const QString firmwareBase = getHomeDirectory() + QStringLiteral("/.config/linuxtrack/tir_firmware/");
+    const QStringList linkNames = {
+        QStringLiteral("TIRViews.dll"),
+        QStringLiteral("mfc42u.dll"),
+        QStringLiteral("mfc42.dll")
+    };
+    const QStringList installDirCandidates = {
+        prefixPath + QStringLiteral("/drive_c/Program Files/Linuxtrack"),
+        prefixPath + QStringLiteral("/drive_c/Program Files (x86)/Linuxtrack")
+    };
+
+    QString installDir;
+    for (const QString &candidate : installDirCandidates) {
+        if (QDir(candidate).exists()) {
+            installDir = candidate;
+            break;
+        }
+    }
+
+    if (installDir.isEmpty()) {
+        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - No Linuxtrack install directory found under Program Files; skipping native firmware links\n");
+        return true;
+    }
+
+    for (const QString &name : linkNames) {
+        const QString sourcePath = firmwareBase + name;
+        const QString destPath = installDir + QStringLiteral("/") + name;
+
+        QFileInfo sourceInfo(sourcePath);
+        if (!sourceInfo.exists()) {
+            ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Firmware source missing, skipping link: %s\n",
+                                sourcePath.toUtf8().constData());
+            continue;
+        }
+
+        QFileInfo destInfo(destPath);
+        if (destInfo.exists() || destInfo.isSymLink()) {
+            if (!QFile::remove(destPath)) {
+                ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Could not remove existing target before relink: %s\n",
+                                    destPath.toUtf8().constData());
+                continue;
+            }
+        }
+
+        if (!QFile::link(sourcePath, destPath)) {
+            ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Failed to create firmware link %s -> %s\n",
+                                destPath.toUtf8().constData(), sourcePath.toUtf8().constData());
+            continue;
+        }
+
+        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Created firmware link %s -> %s\n",
+                            destPath.toUtf8().constData(), sourcePath.toUtf8().constData());
+    }
+
     return true;
 }
 

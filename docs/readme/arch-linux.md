@@ -39,14 +39,14 @@ For **CachyOS**, **Arch**, and similar after **`git clone`** when you want a **f
 
 1. **System prep:** Enable **`[multilib]`** in `/etc/pacman.conf` (uncomment the `Include` line under `[multilib]`). Run `sudo pacman -Syu`. Check libz with **`pacman -Q zlib zlib-ng-compat`** and **`pkg-config --exists zlib`** (not **`which`** — these are libraries, not shell commands; [package notes](#package-names-that-trip-people-up)). If **`pacman -S zlib`** conflicts with **`zlib-ng-compat`**, you already have the compat stack — answer **N** and skip `zlib`. If **neither** package is installed, add one: usually `sudo pacman -S zlib`, or `zlib-ng-compat` if your image standardizes on it.
 
-2. **Wine bridge (required for this from-source path):** This walkthrough and **`build_arch_linux.sh`** target **Level 2+** — the **Wine bridge is built on your machine** from this tree (not shipped prebuilt). The build still produces **both 32-bit and 64-bit** Wine-bridge pieces when `winegcc` / `wineg++`, NSIS, and the right Wine **Unix** libraries are available (see [Wine, WOW64, and the 32-bit bridge](#wine-wow64-and-the-32-bit-bridge)). *Only* a deliberate **Level 1** configure (no Wine flags) skips the bridge. On **CachyOS** / rolling Arch WOW64, install AUR **[wine32](https://aur.archlinux.org/packages/wine32)** *before* the first **`cmake`** so `/usr/lib32/wine/i386-unix` exists — otherwise the 32-bit side often fails. You need **yay**, **paru**, or similar (`./scripts/build_arch_linux.sh` can install **yay** on first run — [Automated build script](#automated-build-script)). Example: `yay -S wine32`. If you already configured without it and the bridge step failed, install **wine32** (or Tier C **wine-stable** + **wine-stable-mono**), **remove the `build/` directory**, and configure again.
+2. **Wine bridge (required for this from-source path):** This walkthrough and **`build_arch_linux.sh`** target **Level 2+** — the **Wine bridge is built on your machine** from this tree (not shipped prebuilt). The current path builds real PE `.dll/.exe` artifacts via MinGW-w64 and NSIS; *only* a deliberate **Level 1** configure skips the bridge.
 
 3. **Scripted build (default ≈ README Level 2):** From the repo root:
    ```bash
    ./scripts/build_arch_linux.sh --help
    ./scripts/build_arch_linux.sh
    ```
-   Use split steps if needed: `--deps-only`, `--wine32-only`, `--configure-only`, `--build-only`, `--install-only` ([Automated build script](#automated-build-script)). **`--configure-only`** runs **NSIS**, **liblo**, and **Wine** preflight so CMake can enable the **Wine plugin** and **OSC** (older script revisions skipped those on split runs — see [Troubleshooting](#wine-issues-common)).
+   Use split steps if needed: `--deps-only`, `--wine32-only`, `--configure-only`, `--build-only`, `--install-only` ([Automated build script](#automated-build-script)). **`--configure-only`** runs **NSIS**, **liblo**, and **Wine** preflight so CMake can enable the **Wine bridge** and **OSC** (older script revisions skipped those on split runs — see [Troubleshooting](#wine-issues-common)).
 
 4. **If the Wine bridge still fails:** Use explicit CMake paths (see [Level 2](#level-2-trackir--wine-most-common)) or the **AppImage bridge** while keeping a local `ltr_gui` ([Choose your path](#choose-your-path)).
 
@@ -71,7 +71,7 @@ Copy and fill when reporting problems:
 | `zlib` / `zlib-ng-compat` conflict | | What you chose |
 | `ls /usr/lib32/wine/i386-unix` exists before configure | | e.g. after AUR **wine32** |
 | `./scripts/build_arch_linux.sh` full run | | Where it stopped |
-| `winegcc` warning only vs build failure | | |
+| MinGW toolchain warning/error vs build failure | | |
 | `cmake` Wine paths auto vs `-DWINE_*` | | |
 | `sudo cmake --install .` | | |
 | `ltr_gui` (with/without `QT_QPA_PLATFORM=xcb`) | | |
@@ -110,7 +110,7 @@ CMake detects 32-bit Wine Unix libs via `cmake/FindWineLibs.cmake`, notably:
 
 **CachyOS / rolling Arch:** If you are building the **Wine bridge** from source, doing **Tier B** (`wine32`) **before** the first `cmake` run avoids a common first-time failure (stock WOW64 layout vs `FindWineLibs.cmake`). See [First-time build walkthrough](#first-time-build-walkthrough).
 
-**Runtime / prefixes / MFC42:** See [WINE_SUPPORT_MODERN.md](../WINE_SUPPORT_MODERN.md) and [src/wine_bridge/WINE_SETUP.md](../../src/wine_bridge/WINE_SETUP.md). In the GUI installer, if the default MFC42 path fails, try the **alternate option** in the dropdown (as noted in #38). **`winetricks`** is still commonly used for `mfc42` in game prefixes; Steam/Proton tips live in [CROSS_DISTRIBUTION_WINE_BRIDGE.md](../troubleshooting/CROSS_DISTRIBUTION_WINE_BRIDGE.md).
+**Runtime / prefixes / MFC42:** See [WINE_SUPPORT_MODERN.md](../WINE_SUPPORT_MODERN.md), [guides/WINE_BRIDGE_MODERN.md](../guides/WINE_BRIDGE_MODERN.md), and [src/wine_bridge/WINE_SETUP.md](../../src/wine_bridge/WINE_SETUP.md). In the GUI installer, if the default MFC42 path fails, try the **alternate option** in the dropdown (as noted in #38). **`winetricks`** is still commonly used for `mfc42` in game prefixes; Steam/Proton tips live in [archive/CROSS_DISTRIBUTION_WINE_BRIDGE.md](../archive/CROSS_DISTRIBUTION_WINE_BRIDGE.md).
 
 ---
 
@@ -223,7 +223,7 @@ sudo cmake --install .
 ### Level 2: TrackIR + Wine (Most Common)
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -241,7 +241,7 @@ Inspect candidates with `ls /usr/lib32/wine/i386-unix` and `ls /usr/lib/wine/x86
 ### Level 3: TrackIR + Wine + X-Plane
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -249,7 +249,7 @@ sudo cmake --install .
 ### Level 4: TrackIR + Wine + X-Plane + Webcam
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -257,7 +257,7 @@ sudo cmake --install .
 ### Level 5: TrackIR + Wine + X-Plane + Webcam + OSC
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -265,7 +265,7 @@ sudo cmake --install .
 ### Level 6: + Face tracking
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -273,7 +273,7 @@ sudo cmake --install .
 ### Level 7: + Wiimote
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -325,7 +325,7 @@ The NSIS step runs **`check_data.exe`** built against **Wine Unix libraries**. A
 | `zlib` and `zlib-ng-compat` in conflict (CachyOS etc.) | Answer **N** (do not remove zlib-ng-compat). Omit `zlib`; run `pkg-config --exists zlib` to confirm |
 | Qt6 CMake config not found | `sudo pacman -S qt6-base qt6-tools` |
 | CMake finds wrong Wine paths | Set `-DWINE_LIBS_PATH` and `-DWINE64_LIBS_PATH` to existing directories (see Level 2) |
-| **`Wine plugin: disabled (winegcc/wineg++/makensis not found)`** | CMake requires **all three** on `PATH`. Install **`makensis`** (`./scripts/install/install_nsis_arch.sh` or AUR **nsis**). Install **Wine** / **wine32** so **`winegcc`** and **`wineg++`** exist. If you used **`--configure-only`** without a prior full run, run **`./scripts/build_arch_linux.sh --configure-only` again** with an updated script (it preflights NSIS/Wine/liblo) or install those manually, **`rm -rf build`**, reconfigure. |
+| **`Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)`** | Install `mingw-w64-gcc` and NSIS (`./scripts/install/install_nsis_arch.sh` or AUR `nsis`), then reconfigure from a clean build dir. |
 | **`liblo` not found** / OSC disabled | `sudo pacman -S liblo` then `pkg-config --exists liblo`. Split **`--configure-only`** previously skipped this; current **`build_arch_linux.sh`** runs **`install_osc_support`** before configure. |
 | **Webcam disabled** but V4L found | Default **`ENABLE_WEBCAM=OFF`**. Add **`-DENABLE_WEBCAM=ON`** to **`cmake`** (see Level 4) if you need webcam support. |
 
@@ -340,7 +340,7 @@ The NSIS step runs **`check_data.exe`** built against **Wine Unix libraries**. A
 
 ### 32-bit libraries (advanced)
 
-For optional manual **lib32** dependency builds, see [ARCH_LINUX_32BIT_LIBRARIES.md](../ARCH_LINUX_32BIT_LIBRARIES.md).
+For optional historical **lib32** dependency notes, see [archive/ARCH_LINUX_32BIT_LIBRARIES.md](../archive/ARCH_LINUX_32BIT_LIBRARIES.md).
 
 ### Qt6 tools PATH (rare)
 ```bash
@@ -356,7 +356,7 @@ export PATH="/usr/lib/qt6/bin:$PATH"
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Example: Wine + OSC without Webcam
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_OSC=ON
 ```
 
 See the main README for all CMake options.

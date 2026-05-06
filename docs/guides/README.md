@@ -8,6 +8,7 @@ This directory holds a few distribution-focused guides. **Current releases use Q
 |------|---------|
 | [`MX_LINUX_BUILD_GUIDE.md`](MX_LINUX_BUILD_GUIDE.md) | MX Linux build and dependencies |
 | [`ARCH_LINUX_INSTALL_GUIDE.md`](ARCH_LINUX_INSTALL_GUIDE.md) | Redirect → [`readme/arch-linux.md`](../readme/arch-linux.md) |
+| [`WINE_BRIDGE_MODERN.md`](WINE_BRIDGE_MODERN.md) | Modern WOW64 + MinGW wine bridge requirements and verification |
 
 ## Cross-references
 

@@ -16,7 +16,7 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
 
 ### **Other Distributions**
 ```bash
-# Standard installation with Wine development tools
+# Standard installation (CMake + Qt6)
 ./scripts/install/linuxtrack_install.sh
 ```
 
@@ -32,7 +32,7 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
 
 #### **General Installation**
 - **[linuxtrack_install.sh](linuxtrack_install.sh)** - General LinuxTrack installation script
-  - **Purpose**: Standard installation with Wine development tools
+  - **Purpose**: Standard installation with CMake/Qt6 and modern Wine bridge workflow
   - **Status**: Production Ready
   - **Features**: Dependency detection, build automation
 
@@ -120,12 +120,11 @@ This directory contains all installation and setup scripts for LinuxTrack X-IR, 
 # Standard installation
 ./scripts/install/linuxtrack_install.sh
 
-# Or manual installation
-sudo apt install wine-devel
-autoreconf -fiv
-./configure --prefix=/opt
-make -j$(nproc)
-sudo make install
+# Or manual installation (modern CMake build)
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
+sudo cmake --install .
 ```
 
 ### **Fedora / RHEL / CentOS**
@@ -133,12 +132,11 @@ sudo make install
 # Standard installation
 ./scripts/install/linuxtrack_install.sh
 
-# Or manual installation
-sudo dnf install wine-devel
-autoreconf -fiv
-./configure --prefix=/opt
-make -j$(nproc)
-sudo make install
+# Or manual installation (modern CMake build)
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
+sudo cmake --install .
 ```
 
 ---
@@ -175,7 +173,7 @@ sudo make install
 - **[Arch Linux Guide](ARCH_LINUX_INSTALL_GUIDE.md)** - Arch Linux specific installation
 
 ### **Technical Documentation**
-- **[Wine Bridge Packaging Plan](../../docs/technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Technical implementation details
+- **[Wine Bridge Packaging Plan (archived)](../../docs/archive/WINE_BRIDGE_PACKAGING_PLAN.md)** - Historical prebuilt packaging plan
 - **[Troubleshooting Guide](../../docs/troubleshooting/TROUBLESHOOTING.md)** - Problem resolution
 - **[Testing Guide](../../docs/testing/README.md)** - Testing procedures
 

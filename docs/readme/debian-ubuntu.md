@@ -12,16 +12,16 @@ sudo apt install libqt6opengl6-dev  # Required for Qt6OpenGL CMake config
 sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
 ```
 
-### Wine Support (Level 2+)
+### WineBridge Support (Level 2+, WOW64 branch)
 ```bash
-sudo apt install wine wine-staging wine64 wine64-tools libwine-dev wine32-tools
-sudo apt-get install g++-14-multilib libstdc++-14-dev:amd64
-
-sudo apt install gcc-multilib libc6-dev-i386  # REQUIRED: 32-bit development headers
+sudo apt install wine wine-staging
+sudo apt install mingw-w64  # REQUIRED: builds real PE DLL/EXE artifacts
 sudo apt install winetricks  # REQUIRED: For MFC42 library installation
 sudo apt install cabextract wget  # REQUIRED: For alternative installation methods
 sudo apt install nsis  # REQUIRED: For Wine bridge installer generation
 ```
+
+WineBridge in this branch targets Wine WOW64 behavior and requires Wine 11.0+.
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -71,7 +71,7 @@ sudo cmake --install .
 ### Level 2: TrackIR + Wine (Most Common)
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -79,7 +79,7 @@ sudo cmake --install .
 ### Level 3: TrackIR + Wine + X-Plane
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -87,7 +87,7 @@ sudo cmake --install .
 ### Level 4: TrackIR + Wine + X-Plane + Webcam
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -95,7 +95,7 @@ sudo cmake --install .
 ### Level 5: TrackIR + Wine + X-Plane + Webcam + OSC
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -103,7 +103,7 @@ sudo cmake --install .
 ### Level 6: + Face tracking
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -111,7 +111,7 @@ sudo cmake --install .
 ### Level 7: + Wiimote
 ```bash
 mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON -DENABLE_FACE_TRACKER=ON -DENABLE_WIIMOTE=ON
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
@@ -138,10 +138,9 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | Problem | Solution |
 |---------|----------|
 | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install Qt6 development packages: `sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev` |
-| `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` |
-| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | Install full 32-bit Wine: `sudo apt install wine wine32 wine32-tools` |
-| `bits/libc-header-start.h: No such file or directory` | **REQUIRED**: Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` |
-| `Wine plugin: disabled (winegcc/wineg++/makensis not found)` | Install NSIS: `sudo apt install nsis` |
+| `x86_64-w64-mingw32-gcc: command not found` | Install MinGW toolchain: `sudo apt install mingw-w64` |
+| Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton / Wine Staging) |
+| `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install toolchain + NSIS: `sudo apt install mingw-w64 nsis` |
 | `relocatable linking ... elf32-i386 ... to format elf64-x86-64` | Clear your build dir and reconfigure so 64-bit Wine bridge links against the 64-bit unix libs: `cmake .. -DWINE64_LIBS_PATH=/usr/lib/x86_64-linux-gnu/wine/x86_64-unix` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
@@ -163,7 +162,7 @@ If you want features from different levels, combine the cmake flags:
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders
 
 # Example: Wine + OSC without Webcam
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON -DENABLE_OSC=ON
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_OSC=ON
 ```
 
 See the main README for all available CMake options.

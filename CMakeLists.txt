@@ -36,8 +36,6 @@ option(ENABLE_FACE_TRACKER "Enable face tracker (requires OpenCV and webcam supp
 
 # Path options
 set(XPLANE_SDK_PATH "/opt/xplane-sdk/CHeaders" CACHE PATH "Path to X-Plane SDK")
-set(WINE_LIBS_PATH "" CACHE PATH "Wine libraries path (auto-detect if empty)")
-set(WINE64_LIBS_PATH "" CACHE PATH "Wine64 libraries path (auto-detect if empty)")
 set(LIB32DIR "lib32" CACHE STRING "32-bit library directory (usually needed only on amd64 arch)")
 
 # Set C/C++ standards
@@ -254,78 +252,21 @@ else()
     message(WARNING "Qt6 version could not be determined")
 endif()
 
-# Wine detection
-find_program(WINEGCC_EXECUTABLE winegcc)
-find_program(WINEGPP_EXECUTABLE wineg++)
-find_program(WRC_EXECUTABLE wrc)
+# Wine bridge detection (MinGW + NSIS)
 find_program(MAKENSIS_EXECUTABLE makensis)
+include(cmake/FindMinGW.cmake)
+detect_mingw()
 
-if(WINEGCC_EXECUTABLE AND WINEGPP_EXECUTABLE AND MAKENSIS_EXECUTABLE)
+if(MINGW_FOUND AND MAKENSIS_EXECUTABLE)
     set(WINE_PLUGIN TRUE)
-    message(STATUS "Wine plugin: enabled")
-    
-    # 32-bit development headers are REQUIRED for Wine plugin
-    # Critical 32-bit components (check_data.exe.so, NPClient.dll.so 32-bit, etc.) must be built
-    set(HAS_32BIT_HEADERS FALSE)
-    foreach(header_path
-        "/usr/include/i386-linux-gnu/bits/libc-header-start.h"
-        "/usr/include/bits/libc-header-start.h"
-        "/usr/include/i386-linux-gnu/stdlib.h"
-        "/usr/include/stdlib.h"
-    )
-        if(EXISTS "${header_path}")
-            set(HAS_32BIT_HEADERS TRUE)
-            break()
-        endif()
-    endforeach()
-    
-    if(NOT HAS_32BIT_HEADERS)
-        message(FATAL_ERROR "\n"
-            "32-bit development headers are REQUIRED for Wine plugin support.\n"
-            "Critical 32-bit Wine bridge components cannot be built without them.\n\n"
-            "Install 32-bit development headers for your distribution:\n"
-            "  Debian/Ubuntu/MX Linux: sudo apt install gcc-multilib libc6-dev-i386\n"
-            "  Fedora/RHEL/CentOS:     sudo dnf install glibc-devel.i686 gcc.i686\n"
-            "  Arch Linux/Manjaro:     sudo pacman -S lib32-glibc lib32-gcc-libs\n"
-            "                          (Ensure multilib repository is enabled in /etc/pacman.conf)\n"
-            "  openSUSE:               sudo zypper install glibc-devel-32bit libstdc++6-devel-32bit\n"
-        )
-    endif()
-    
-    set(WINE32_BUILD_ENABLED TRUE)
-    message(STATUS "32-bit development headers: found (32-bit Wine components will be built)")
-    
-    # Wine library paths detection (must be done before setting WINE64/WINE32)
-    include(cmake/FindWineLibs.cmake)
-    detect_wine_libs()
-    
-    # 64-bit components are ALWAYS built when WINE_PLUGIN is enabled (if 64-bit libs found)
-    # 64-bit Wine is easier to install, so we prioritize it
-    if(WINE64_FOUND)
-        set(WINE64 TRUE)
-        message(STATUS "Wine64 plugin: enabled (64-bit components will be built)")
-    else()
-        set(WINE64 FALSE)
-        message(WARNING "Wine64 libraries not found - 64-bit components will not be built")
-        message(WARNING "Install wine64 package to enable 64-bit Wine bridge components")
-    endif()
-    
-    # Note: 32-bit Wine bridge components are built when WINE_PLUGIN is enabled (see above)
-    # WINE32 detection indicates if 32-bit Wine libraries are available (informational only)
-    # 32-bit components are ALREADY being built (required when WINE_PLUGIN is enabled)
-    if(WINE32_FOUND)
-        set(WINE32 TRUE)
-        message(STATUS "Wine32 libraries: found (32-bit Wine libraries detected)")
-    else()
-        set(WINE32 FALSE)
-        message(STATUS "Wine32 libraries: not found (32-bit components still built - libraries not required)")
-        message(STATUS "Note: 32-bit Wine bridge components are built regardless of Wine32 library detection")
-    endif()
+    set(WINE64 TRUE)
+    set(WINE32 TRUE)
+    message(STATUS "Wine bridge: enabled (MinGW toolchain + makensis found)")
 else()
     set(WINE_PLUGIN FALSE)
     set(WINE64 FALSE)
     set(WINE32 FALSE)
-    message(STATUS "Wine plugin: disabled (winegcc/wineg++/makensis not found)")
+    message(STATUS "Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)")
 endif()
 
 # X-Plane SDK detection
@@ -536,7 +477,7 @@ message(STATUS "TrackIR support: ${TRACKIR_SUPPORT}")
 message(STATUS "Facetracker support: ${FACE_TRACKER_SUPPORT}")
 message(STATUS "XPlane plugin: ${ENABLE_XPLANE}")
 message(STATUS "Mickey: ${MICKEY_SUPPORT}")
-message(STATUS "Wine plugin: ${WINE_PLUGIN}")
+message(STATUS "Wine bridge: ${WINE_PLUGIN}")
 message(STATUS "OSC support: ${OSC_SUPPORT}")
 message(STATUS "PIE support for native builds: ${ENABLE_PIE}")
 message(STATUS "===============================================================")

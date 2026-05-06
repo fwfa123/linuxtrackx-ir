@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # LinuxTrack X-IR Arch Linux Build Script (Qt6)
-# - Installs broad deps (opencv, v4l-utils, liblo, ...) but configure_build() uses CMake defaults
-#   except ENABLE_LTR_32LIB_ON_X64 and WINE_* paths — effectively ~README Level 2 (Wine bridge).
+# - Installs broad deps (opencv, v4l-utils, liblo, ...) and MinGW toolchains for Wine bridge PE builds.
 # - Wiimote: only with --with-wiimote (GitLab #8). May bootstrap yay from AUR if no helper exists.
 
 set -e
@@ -84,8 +83,8 @@ install_dependencies() {
     # Build tools
     sudo pacman -S --needed bison flex
     
-    # 32-bit support
-    sudo pacman -S --needed lib32-glibc lib32-gcc-libs
+    # MinGW-w64 toolchains for PE DLL/EXE outputs
+    sudo pacman -S --needed mingw-w64-gcc
     
     # Video4Linux
     sudo pacman -S --needed v4l-utils
@@ -161,42 +160,10 @@ install_xplane_sdk() {
     return 0
 }
 
-# Function to install Wine (multilib). AUR wine32 is fallback only.
+# Function to install Wine + MinGW toolchains
 install_wine32() {
-    print_status "Installing Wine (multilib)..."
-    
-    # AUR wine32 conflicts with repo "wine"; do not try to install both.
-    if pacman -Q wine32 >/dev/null 2>&1; then
-        print_status "AUR wine32 is installed — skipping repo wine (packages conflict)."
-        sudo pacman -S --needed lib32-glibc lib32-gcc-libs
-        print_status "Installing wine-mono and wine-gecko (~400 MiB installed; download may take a minute)..."
-        if sudo pacman -S --needed --noconfirm wine-mono wine-gecko; then
-            :
-        else
-            print_warning "wine-mono/wine-gecko install failed or skipped (optional; install manually if Wine installers need them)."
-        fi
-        if command -v winegcc >/dev/null 2>&1 || command -v wine >/dev/null 2>&1; then
-            print_success "Wine stack (wine32) present"
-        else
-            print_warning "wine/winegcc not in PATH — check wine32 package."
-        fi
-        return 0
-    fi
-    
-    if pacman -Q wine >/dev/null 2>&1 && { [ -d /usr/lib32/wine ] || [ -d /usr/lib32/wine/i386-unix ]; }; then
-        print_success "Wine and 32-bit libs appear present"
-        return 0
-    fi
-    
-    sudo pacman -S --needed wine wine-mono wine-gecko
-    sudo pacman -S --needed lib32-glibc lib32-gcc-libs
-    sudo pacman -S lib32-wine 2>/dev/null || true
-    
-    if command -v winegcc >/dev/null 2>&1; then
-        print_success "Wine (multilib) installed"
-    else
-        print_warning "winegcc not found. If build fails, enable multilib in /etc/pacman.conf and install lib32-wine, or try AUR wine32 as fallback."
-    fi
+    print_status "Installing Wine + MinGW toolchains..."
+    sudo pacman -S --needed wine wine-mono wine-gecko mingw-w64-gcc
 }
 
 # Function to install NSIS
@@ -225,52 +192,18 @@ install_nsis() {
     fi
 }
 
-# Function to verify Wine (multilib) installation
+# Function to verify Wine + MinGW installation
 verify_wine32() {
-    print_status "Verifying Wine (multilib)..."
-    
-    if ! command -v wine >/dev/null 2>&1; then
+    print_status "Verifying Wine + MinGW toolchains..."
+    if ! command_exists wine; then
         print_error "wine not found"
         return 1
     fi
-    
-    # Repo multilib layout vs AUR wine32 layout differ; winegcc test below is the real check.
-    if [ ! -d "/usr/lib32/wine" ] && [ ! -d "/usr/lib32/wine/i386-unix" ] && [ ! -d "/usr/lib/wine/i386-unix" ]; then
-        if ! pacman -Q wine32 >/dev/null 2>&1; then
-            print_warning "32-bit wine Unix libs not found under /usr/lib32/wine or /usr/lib/wine/i386-unix. Enable multilib and lib32-wine, or install AUR wine32."
-        fi
-    fi
-    
-    # Test winegcc
-    if ! command_exists winegcc; then
-        print_error "winegcc not found"
+    if ! command_exists i686-w64-mingw32-gcc || ! command_exists x86_64-w64-mingw32-gcc; then
+        print_error "mingw-w64 cross-compilers not found"
         return 1
     fi
-    
-    # Test winegcc: some WOW64 setups report success but emit a 0-byte .o (GitLab #37).
-    print_status "Testing winegcc -m32..."
-    rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o /tmp/ltrx_wgg_smoke.exe.so
-    cat > /tmp/test_winegcc.c << 'EOF'
-int main(void) { return 0; }
-EOF
-    local wgcc_ok=0
-    if winegcc -m32 -c -o /tmp/test_winegcc.o /tmp/test_winegcc.c 2>/dev/null && [ -s /tmp/test_winegcc.o ]; then
-        wgcc_ok=1
-    elif command -v readelf >/dev/null 2>&1 && winegcc -m32 -c -o /tmp/test_winegcc.o /tmp/test_winegcc.c 2>/dev/null \
-        && readelf -h /tmp/test_winegcc.o 2>/dev/null | grep -q 'Class:.*ELF32'; then
-        wgcc_ok=1
-    elif winegcc -m32 -o /tmp/ltrx_wgg_smoke.exe.so /tmp/test_winegcc.c 2>/dev/null && [ -s /tmp/ltrx_wgg_smoke.exe.so ]; then
-        wgcc_ok=1
-    fi
-    rm -f /tmp/test_winegcc.c /tmp/test_winegcc.o /tmp/ltrx_wgg_smoke.exe.so
-
-    if [ "$wgcc_ok" = 1 ]; then
-        print_success "winegcc -m32 smoke test passed"
-    else
-        print_warning "winegcc -m32 smoke test failed or produced no usable output (common on stock WOW64 Wine). Continuing — if CMake fails on Wine, install AUR wine32 or wine-stable/wine-stable-mono, or run $0 --deps-only / --wine32-only then $0 --configure-only (see docs/readme/arch-linux.md)."
-    fi
-
-    print_success "Wine installation verified"
+    print_success "Wine + MinGW toolchains verified"
 }
 
 # Function to configure build
@@ -283,10 +216,7 @@ configure_build() {
     
     # Configure with CMake
     cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt \
-        -DENABLE_LTR_32LIB_ON_X64=ON \
-        -DWINE_LIBS_PATH="/usr/lib32/wine/i386-unix" \
-        -DWINE64_LIBS_PATH="/usr/lib/wine/x86_64-unix"
+        -DCMAKE_INSTALL_PREFIX=/opt
     
     # Verify config.h was generated (required for wine bridge components)
     if [ ! -f "config.h" ]; then
@@ -346,7 +276,7 @@ verify_installation() {
     elif [ -d "/opt/lib/linuxtrack/wine_bridge" ] && compgen -G '/opt/lib/linuxtrack/wine_bridge/*' >/dev/null; then
         print_success "Wine bridge built files present under /opt/lib/linuxtrack/wine_bridge (installer may be missing if NSIS was unavailable at install time)"
     else
-        print_warning "Wine bridge not found (no installer at /opt/share/linuxtrack/wine/linuxtrack-wine.exe and no /opt/lib/linuxtrack/wine_bridge). Build with Wine plugin + makensis, or use AppImage bridge."
+        print_warning "Wine bridge not found (no installer at /opt/share/linuxtrack/wine/linuxtrack-wine.exe and no /opt/lib/linuxtrack/wine_bridge). Build with MinGW toolchains + makensis, or use AppImage bridge."
     fi
     
     print_success "Installation verification completed"
@@ -360,7 +290,7 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --deps-only      Install dependencies only"
-    echo "  --wine32-only    Install Wine (multilib) only"
+    echo "  --wine32-only    Install Wine + MinGW toolchains only (kept for compatibility)"
     echo "  --configure-only Configure build only"
     echo "  --build-only     Build only (assumes dependencies installed)"
     echo "  --install-only   Install only (assumes build completed)"
@@ -371,7 +301,7 @@ show_usage() {
     echo "  --test-xplane    Test X-Plane SDK support"
     echo "  --help           Show this help message"
     echo ""
-    echo "Default: deps + Wine + OSC + X-Plane SDK check + NSIS + configure/build/install."
+    echo "Default: deps + Wine + MinGW + OSC + X-Plane SDK check + NSIS + configure/build/install."
     echo "Wiimote is NOT installed unless you pass --with-wiimote."
 }
 
@@ -527,8 +457,8 @@ main() {
     
     # Configure build
     if [ "$configure_only" = true ]; then
-        # Main flow skips NSIS/Wine/OSC when using split flags — CMake needs makensis + winegcc + wineg++ for WINE_PLUGIN and liblo.pc for OSC.
-        print_status "configure-only: ensuring NSIS, liblo, and Wine (same as full run before cmake)..."
+        # Main flow skips NSIS/Wine/OSC when using split flags — CMake needs makensis + MinGW toolchains for WINE_PLUGIN and liblo.pc for OSC.
+        print_status "configure-only: ensuring NSIS, liblo, and Wine + MinGW (same as full run before cmake)..."
         install_nsis
         install_osc_support
         install_wine32

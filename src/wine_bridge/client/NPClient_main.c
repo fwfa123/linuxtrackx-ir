@@ -8,6 +8,7 @@
  */
 
 #include <linuxtrack.h>
+#include <ltlib.h>
 #include "rest.h"
 //#include "config.h"
 #define __WINESRC__
@@ -23,15 +24,26 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifndef __MINGW32__
 #include <unistd.h>
+#endif
 #include "windef.h"
 #include "winbase.h"
 #include "NPClient_dll.h"
 
-// Wine-specific socket communication includes (after Windows headers)
+// Socket communication includes (POSIX for winegcc, Winsock AF_UNIX for MinGW)
+#ifdef __MINGW32__
+#include <winsock2.h>
+#include <afunix.h>
+#include <ws2tcpip.h>
+#include <io.h>
+#define CLOSE_SOCKET closesocket
+#else
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <errno.h>
+#define CLOSE_SOCKET close
+#endif
 #ifndef __MINGW32__
 #include "wine/debug.h"
 #else
@@ -48,6 +60,190 @@ static HINSTANCE thisDll;
 static char g_profile_name[256] = {0};
 static bool data_transmission_started = false;
 static DWORD transmission_start_time = 0;  // Track when transmission started
+static bool sockets_ready = false;
+static int ensure_socket_runtime_ready(void);
+
+#ifdef __MINGW32__
+typedef struct {
+  uint32_t cmd;
+  uint32_t data;
+  union {
+    char str[500];
+    linuxtrack_full_pose_t pose;
+  };
+} ltr_message_t;
+
+enum {
+  LTR_CMD_NOP = 0,
+  LTR_CMD_NEW_SOCKET = 1,
+  LTR_CMD_PAUSE = 2,
+  LTR_CMD_WAKEUP = 3,
+  LTR_CMD_RECENTER = 4,
+  LTR_CMD_POSE = 5
+};
+
+typedef struct {
+  bool transmission_started;
+  bool connected;
+  SOCKET pose_socket;
+  DWORD last_connect_attempt_ms;
+  DWORD reconnect_backoff_ms;
+  bool has_pose;
+  linuxtrack_full_pose_t last_pose;
+  unsigned char rx_buf[sizeof(ltr_message_t)];
+  size_t rx_used;
+} mingw_pose_runtime_t;
+
+static mingw_pose_runtime_t mingw_pose_runtime = {
+  false, false, INVALID_SOCKET, 0, 100, false, {0}, {0}, 0
+};
+
+static void mingw_pose_disconnect(void)
+{
+  if(mingw_pose_runtime.pose_socket != INVALID_SOCKET){
+    CLOSE_SOCKET(mingw_pose_runtime.pose_socket);
+    mingw_pose_runtime.pose_socket = INVALID_SOCKET;
+  }
+  mingw_pose_runtime.connected = false;
+  mingw_pose_runtime.rx_used = 0;
+}
+
+static int mingw_pose_connect(void)
+{
+  DWORD now = GetTickCount();
+  if(mingw_pose_runtime.connected){
+    return 0;
+  }
+
+  if(mingw_pose_runtime.last_connect_attempt_ms != 0){
+    DWORD elapsed = now - mingw_pose_runtime.last_connect_attempt_ms;
+    if(elapsed < mingw_pose_runtime.reconnect_backoff_ms){
+      return -1;
+    }
+  }
+  mingw_pose_runtime.last_connect_attempt_ms = now;
+
+  if(ensure_socket_runtime_ready() != 0){
+    return -1;
+  }
+
+  SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if(sock == INVALID_SOCKET){
+    return -1;
+  }
+
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  {
+    const char *sock_path = "/tmp/ltr_m_sock";
+    size_t path_len = strlen(sock_path);
+    if(path_len >= sizeof(addr.sun_path)){
+      CLOSE_SOCKET(sock);
+      return -1;
+    }
+    memcpy(addr.sun_path, sock_path, path_len + 1);
+  }
+
+  if(connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1){
+    CLOSE_SOCKET(sock);
+    if(mingw_pose_runtime.reconnect_backoff_ms < 2000){
+      mingw_pose_runtime.reconnect_backoff_ms *= 2;
+    }
+    return -1;
+  }
+
+  ltr_message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = LTR_CMD_NEW_SOCKET;
+  snprintf(msg.str, sizeof(msg.str), "%s",
+           (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  if(send(sock, (const char*)&msg, sizeof(msg), 0) <= 0){
+    CLOSE_SOCKET(sock);
+    if(mingw_pose_runtime.reconnect_backoff_ms < 2000){
+      mingw_pose_runtime.reconnect_backoff_ms *= 2;
+    }
+    return -1;
+  }
+
+  u_long non_blocking = 1;
+  ioctlsocket(sock, FIONBIO, &non_blocking);
+
+  mingw_pose_runtime.pose_socket = sock;
+  mingw_pose_runtime.connected = true;
+  mingw_pose_runtime.reconnect_backoff_ms = 100;
+  return 0;
+}
+
+static int mingw_pose_pump(void)
+{
+  if(!mingw_pose_runtime.connected && mingw_pose_connect() != 0){
+    return -1;
+  }
+
+  bool got_pose = false;
+  for(;;){
+    int recvd = recv(
+      mingw_pose_runtime.pose_socket,
+      (char*)mingw_pose_runtime.rx_buf + mingw_pose_runtime.rx_used,
+      (int)(sizeof(mingw_pose_runtime.rx_buf) - mingw_pose_runtime.rx_used),
+      0
+    );
+    if(recvd > 0){
+      mingw_pose_runtime.rx_used += (size_t)recvd;
+      while(mingw_pose_runtime.rx_used >= sizeof(ltr_message_t)){
+        ltr_message_t msg;
+        memcpy(&msg, mingw_pose_runtime.rx_buf, sizeof(msg));
+        if(msg.cmd == LTR_CMD_POSE){
+          mingw_pose_runtime.last_pose = msg.pose;
+          mingw_pose_runtime.has_pose = true;
+          got_pose = true;
+        }
+        mingw_pose_runtime.rx_used -= sizeof(ltr_message_t);
+        if(mingw_pose_runtime.rx_used > 0){
+          memmove(
+            mingw_pose_runtime.rx_buf,
+            mingw_pose_runtime.rx_buf + sizeof(ltr_message_t),
+            mingw_pose_runtime.rx_used
+          );
+        }
+      }
+      continue;
+    }
+
+    if(recvd == 0){
+      mingw_pose_disconnect();
+      break;
+    }
+
+    if(recvd < 0){
+      int err = WSAGetLastError();
+      if(err == WSAEWOULDBLOCK){
+        break;
+      }
+      mingw_pose_disconnect();
+      break;
+    }
+
+    break;
+  }
+  return got_pose ? 0 : (mingw_pose_runtime.has_pose ? 0 : -1);
+}
+#endif
+
+static int ensure_socket_runtime_ready(void)
+{
+#ifdef __MINGW32__
+  if(!sockets_ready){
+    WSADATA wsaData;
+    if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0){
+      return -1;
+    }
+    sockets_ready = true;
+  }
+#endif
+  return 0;
+}
 
 static void dbg_report(const char *msg,...)
 {
@@ -67,8 +263,11 @@ static void dbg_report(const char *msg,...)
 // Wine-specific socket communication functions
 static int send_command_to_master(uint32_t cmd, uint32_t data)
 {
-  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (sock == -1) {
+  if(ensure_socket_runtime_ready() != 0){
+    return -1;
+  }
+  SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock == INVALID_SOCKET) {
     return -1;
   }
 
@@ -80,12 +279,12 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
   if(path_len < sizeof(addr.sun_path)) {
     memcpy(addr.sun_path, sock_path, path_len + 1);
   } else {
-    close(sock);
+    CLOSE_SOCKET(sock);
     return -1;
   }
 
   if (connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1) {
-    close(sock);
+    CLOSE_SOCKET(sock);
     return -1;
   }
 
@@ -105,14 +304,13 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
   msg.data = data;
   msg.str[0] = '\0'; // Initialize string part
 
-  // Try write() instead of send() to avoid Wine socket issues
-  ssize_t sent = write(sock, &msg, sizeof(msg));
+  int sent = send(sock, (const char*)&msg, sizeof(msg), 0);
   if (sent == -1) {
-    close(sock);
+    CLOSE_SOCKET(sock);
     return -1;
   }
 
-  close(sock);
+  CLOSE_SOCKET(sock);
   return 0;
 }
 
@@ -131,7 +329,16 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
             dbg_report("Attach request\n");
             break;
         case DLL_PROCESS_DETACH:
+#ifdef __MINGW32__
+            mingw_pose_disconnect();
+#endif
             linuxtrack_shutdown();
+#ifdef __MINGW32__
+            if(sockets_ready){
+              WSACleanup();
+              sockets_ready = false;
+            }
+#endif
             break;
     }
 
@@ -357,6 +564,40 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
     return 1;
   }
 
+#ifdef __MINGW32__
+  if(!mingw_pose_runtime.transmission_started){
+    memset((char *)data, 0, sizeof(tir_data_t));
+    data->status = 1;
+    return 1;
+  }
+
+  if(mingw_pose_pump() != 0){
+    Sleep(5);
+    if(mingw_pose_pump() != 0){
+      memset((char *)data, 0, sizeof(tir_data_t));
+      data->status = 1;
+      return 1;
+    }
+  }
+
+  const linuxtrack_pose_t *pose = &mingw_pose_runtime.last_pose.pose;
+  memset((char *)data, 0, sizeof(tir_data_t));
+  data->status = (pose->status == RUNNING) ? 0 : 1;
+  data->frame = pose->counter & 0xFFFF;
+  data->cksum = 0;
+  data->roll = pose->roll / 180.0f * 16383.0f;
+  data->pitch = -pose->pitch / 180.0f * 16383.0f;
+  data->yaw = pose->yaw / 180.0f * 16383.0f;
+  data->tx = -limit_num(-16383.0f, 32.7f * pose->tx, 16383.0f);
+  data->ty = limit_num(-16383.0f, 32.7f * pose->ty, 16383.0f);
+  data->tz = limit_num(-16383.0f, 32.7f * pose->tz, 16383.0f);
+  data->cksum = cksum((unsigned char*)data, sizeof(tir_data_t));
+  if(crypted){
+    enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
+  }
+  return 0;
+#endif
+
   // CRITICAL: Add a minimum delay after StartDataTransmission before allowing get_pose
   // The crash at offset 0xA0 suggests internal structures need more time to initialize
   // Timer remains set throughout the transmission session and is only reset in StopDataTransmission
@@ -369,13 +610,33 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
     // Timer is NOT reset here - it remains set until NP_StopDataTransmission is called
   }
 
-  // Check if LinuxTrack is properly initialized and in a valid state
+  // Check if LinuxTrack is properly initialized and in a valid state.
+  // In some Wine64 prefixes, StartDataTransmission can return nonzero transiently
+  // even though runtime tracking can recover moments later. Try lazy re-init once here.
   linuxtrack_state_type state = linuxtrack_get_tracking_state();
   if (state < LINUXTRACK_OK || state == INITIALIZING) {
-    dbg_report("WARNING: NP_GetData called but LinuxTrack not ready (state: %d)\n", state);
-    memset((char *)data, 0, sizeof(tir_data_t));
-    data->status = 1; // Not tracking
-    return 1;
+    const char *primary_profile = (g_profile_name[0] != '\0') ? g_profile_name : "Default";
+    linuxtrack_state_type init_try = linuxtrack_init(primary_profile);
+    if(init_try < LINUXTRACK_OK && strcmp(primary_profile, "ArmA") != 0){
+      init_try = linuxtrack_init("ArmA");
+    }
+    if(init_try < LINUXTRACK_OK && strcmp(primary_profile, "Default") != 0){
+      init_try = linuxtrack_init("Default");
+    }
+    if(init_try == INITIALIZING){
+      for(int i = 0; i < 30 && init_try == INITIALIZING; ++i){
+        Sleep(100);
+        init_try = linuxtrack_get_tracking_state();
+      }
+    }
+    state = linuxtrack_get_tracking_state();
+    dbg_report("NP_GetData lazy re-init attempted, state now: %d\n", state);
+    if (state < LINUXTRACK_OK || state == INITIALIZING) {
+      dbg_report("WARNING: NP_GetData called but LinuxTrack not ready (state: %d)\n", state);
+      memset((char *)data, 0, sizeof(tir_data_t));
+      data->status = 1; // Not tracking
+      return 1;
+    }
   }
 
   // Only call get_pose if we're in a state that can provide data
@@ -464,8 +725,12 @@ int __stdcall NPCLIENT_NP_GetSignature(tir_signature_t * sig)
     dbg_report("Signature result: OK\n");
     return 0;
   }else{
-    dbg_report("Signature result: NOT OK!\n");
-    return 1;
+    // Some Wine prefixes may not expose HOME in a way that allows reading poem files.
+    // Fall back to deterministic signatures so NP initialization can continue.
+    snprintf(sig->DllSignature, sizeof(sig->DllSignature), "%s", "precise head tracking");
+    snprintf(sig->AppSignature, sizeof(sig->AppSignature), "%s", "put your head into the game");
+    dbg_report("Signature result: fallback used\n");
+    return 0;
   }
 }
 /******************************************************************
@@ -504,11 +769,37 @@ int __stdcall NPCLIENT_NP_ReCenter(void)
 int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
 {
   dbg_report("RegisterProgramProfileID request: %d\n", id);
+#ifdef __MINGW32__
+  game_desc_t gd_mingw;
+  memset(&gd_mingw, 0, sizeof(gd_mingw));
+  if(game_data_get_desc(id, &gd_mingw)){
+    snprintf(g_profile_name, sizeof(g_profile_name), "%s", gd_mingw.name);
+    crypted = gd_mingw.encrypted;
+    if(gd_mingw.encrypted){
+      table[0] = (unsigned char)(gd_mingw.key1 & 0xff); gd_mingw.key1 >>= 8;
+      table[1] = (unsigned char)(gd_mingw.key1 & 0xff); gd_mingw.key1 >>= 8;
+      table[2] = (unsigned char)(gd_mingw.key1 & 0xff); gd_mingw.key1 >>= 8;
+      table[3] = (unsigned char)(gd_mingw.key1 & 0xff); gd_mingw.key1 >>= 8;
+      table[4] = (unsigned char)(gd_mingw.key2 & 0xff); gd_mingw.key2 >>= 8;
+      table[5] = (unsigned char)(gd_mingw.key2 & 0xff); gd_mingw.key2 >>= 8;
+      table[6] = (unsigned char)(gd_mingw.key2 & 0xff); gd_mingw.key2 >>= 8;
+      table[7] = (unsigned char)(gd_mingw.key2 & 0xff); gd_mingw.key2 >>= 8;
+    }
+  }else{
+    if(id == 10601 || id == 7502 || id == 7503){
+      snprintf(g_profile_name, sizeof(g_profile_name), "%s", "ArmA");
+    }else{
+      snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default");
+    }
+    crypted = false;
+  }
+  return 0;
+#endif
   game_desc_t gd;
   if(game_data_get_desc(id, &gd)){
     dbg_report("Application ID: %d - %s!!!\n", id, gd.name);
-    /* Remember profile name for later lazy init (disabled due to build issue) */
-    /* snprintf(g_profile_name, sizeof(g_profile_name), "%s", gd.name); */
+    // Remember profile name for later lazy init in StartDataTransmission.
+    snprintf(g_profile_name, sizeof(g_profile_name), "%s", gd.name);
     crypted = gd.encrypted;
     if(gd.encrypted){
       dbg_report("Table: %02X %02X %02X %02X %02X %02X %02X %02X\n", table[0],table[1],table[2],table[3],table[4],
@@ -669,9 +960,15 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
       }
     }
   }else{
+    // Keep a best-effort profile hint for IDs that may be absent from local gamedata.txt.
+    // This helps StartDataTransmission pick a usable profile when registration metadata is incomplete.
+    if(id == 10601 || id == 7502 || id == 7503){
+      snprintf(g_profile_name, sizeof(g_profile_name), "%s", "ArmA");
+    }else{
+      snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default");
+    }
     // Try to initialize with default profile
-    linuxtrack_state_type init_result = linuxtrack_init("Default");
-    /* snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default"); */
+    linuxtrack_state_type init_result = linuxtrack_init(g_profile_name);
     if(init_result < LINUXTRACK_OK){
       const char *explain = linuxtrack_explain(init_result);
       dbg_report("LinuxTrack initialization failed with default profile (%d): %s\n", 
@@ -896,21 +1193,34 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
   // If initialization fails, we'll reset it before returning
   data_transmission_started = true;
 
+#ifdef __MINGW32__
+  mingw_pose_runtime.transmission_started = true;
+  transmission_start_time = GetTickCount();
+
+  // Best-effort: request the master to run if reachable; pose socket path is independent.
+  send_command_to_master(LTR_CMD_WAKEUP, 0);
+  if(mingw_pose_connect() != 0){
+    dbg_report("MinGW StartDataTransmission: pose socket not ready yet, will retry lazily.\n");
+  }
+  return 0;
+#endif
+
   // Since LinuxTrack is already running, just verify it's accessible
   // and in a valid state before proceeding
   linuxtrack_state_type st = linuxtrack_get_tracking_state();
   
   // If not initialized, try to initialize (shouldn't happen if already running)
   if(st < LINUXTRACK_OK) {
-    const char *profile = (g_profile_name[0] != '\0') ? g_profile_name : "Default";
-    if(profile == NULL) {
-      profile = "Default";
+    const char *primary_profile = (g_profile_name[0] != '\0') ? g_profile_name : "Default";
+    st = linuxtrack_init(primary_profile);
+    if(st < LINUXTRACK_OK && strcmp(primary_profile, "ArmA") != 0){
+      st = linuxtrack_init("ArmA");
     }
-    st = linuxtrack_init(profile);
+    if(st < LINUXTRACK_OK && strcmp(primary_profile, "Default") != 0){
+      st = linuxtrack_init("Default");
+    }
     if(st < LINUXTRACK_OK) {
-      dbg_report("Failed to initialize LinuxTrack in StartDataTransmission\n");
-      data_transmission_started = false;  // Reset on error
-      return 1;
+      dbg_report("Failed to initialize LinuxTrack in StartDataTransmission; continuing in best-effort mode\n");
     }
     // Brief wait if initializing
     for(int i = 0; i < 10 && st == INITIALIZING; ++i){
@@ -933,16 +1243,12 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
       }
     }
     if(st == INITIALIZING) {
-      dbg_report("LinuxTrack initialization timed out in StartDataTransmission\n");
-      data_transmission_started = false;  // Reset on error
-      return 1;
+      dbg_report("LinuxTrack initialization timed out in StartDataTransmission; continuing in best-effort mode\n");
     }
   }
   
-  if(st != RUNNING && st != PAUSED) {
-    dbg_report("LinuxTrack not in valid state for data transmission (state: %d)\n", st);
-    data_transmission_started = false;  // Reset on error
-    return 1;
+  if(st != RUNNING && st != PAUSED && st != INITIALIZING) {
+    dbg_report("LinuxTrack not in ideal state for data transmission (state: %d); continuing in best-effort mode\n", st);
   }
 
   // Since LinuxTrack is already running, these calls should be safe
@@ -953,10 +1259,8 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
   
   // Verify we're still in a good state after these calls
   st = linuxtrack_get_tracking_state();
-  if(st != RUNNING && st != PAUSED) {
-    dbg_report("State changed after wakeup calls (state: %d)\n", st);
-    data_transmission_started = false;  // Reset on error
-    return 1;
+  if(st != RUNNING && st != PAUSED && st != INITIALIZING) {
+    dbg_report("State changed after wakeup calls (state: %d); continuing in best-effort mode\n", st);
   }
 
   // Additionally, ping master to wake in case API call path is unavailable
@@ -964,8 +1268,9 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
   const char *sock_path = "/tmp/ltr_m_sock";
   size_t path_len = strlen(sock_path);
   
-  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (sock != -1) {
+  if(ensure_socket_runtime_ready() == 0){
+  SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock != INVALID_SOCKET) {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
@@ -976,7 +1281,8 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
         send_command_to_master(3, 0);
       }
     }
-    close(sock);
+    CLOSE_SOCKET(sock);
+  }
   }
 
   // Since LinuxTrack is already running, we just need to ensure
@@ -998,16 +1304,15 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
   
   // Verify final state before completing
   st = linuxtrack_get_tracking_state();
+  // Record the time for minimum delay enforcement in NP_GetData even in transient states.
+  // NP_GetData contains its own state validation and lazy re-init path.
+  transmission_start_time = GetTickCount();
   if(st == RUNNING || st == PAUSED) {
-    // Record the time for minimum delay enforcement in NP_GetData
-    transmission_start_time = GetTickCount();
     dbg_report("StartDataTransmission completed - system ready (state: %d)\n", st);
-    dbg_report("Note: First pose call will be made by NP_GetData when ARMA 2 requests data\n");
   } else {
-    dbg_report("StartDataTransmission failed - invalid state: %d\n", st);
-    data_transmission_started = false;  // Reset on error
-    return 1;
+    dbg_report("StartDataTransmission completed in best-effort mode (state: %d)\n", st);
   }
+  dbg_report("Note: First pose call will be made by NP_GetData when ARMA 2 requests data\n");
   
   return 0;
 }
@@ -1034,6 +1339,14 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
   // Reset transmission flag and timer
   data_transmission_started = false;
   transmission_start_time = 0;  // Reset timer when transmission stops
+
+#ifdef __MINGW32__
+  mingw_pose_runtime.transmission_started = false;
+  mingw_pose_runtime.has_pose = false;
+  mingw_pose_disconnect();
+  send_command_to_master(LTR_CMD_PAUSE, 0);
+  return 0;
+#endif
   
   // Fully shutdown to avoid background reconnect attempts
   linuxtrack_state_type st = linuxtrack_shutdown();
@@ -1042,8 +1355,9 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
   // Also notify master (best-effort) with defensive socket operations
   const char *sock_path = "/tmp/ltr_m_sock";
   size_t path_len = strlen(sock_path);
-  int sock = socket(AF_UNIX, SOCK_STREAM, 0);
-  if (sock != -1) {
+  if(ensure_socket_runtime_ready() == 0){
+  SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (sock != INVALID_SOCKET) {
     struct sockaddr_un addr;
     memset(&addr, 0, sizeof(addr));
     addr.sun_family = AF_UNIX;
@@ -1053,7 +1367,8 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
         send_command_to_master(2, 0);
       }
     }
-    close(sock);
+    CLOSE_SOCKET(sock);
+  }
   }
   return 0;
 }
@@ -1068,4 +1383,20 @@ int __stdcall NPCLIENT_NP_UnregisterWindowHandle(void)
 	TRACE("(void): stub\n");
 	return (int) 0;
 }
+
+/* Export compatibility wrappers for MinGW PE builds. */
+int __stdcall NP_GetData(tir_data_t *data) { return NPCLIENT_NP_GetData(data); }
+int __stdcall NP_GetParameter(int a0, int a1) { return NPCLIENT_NP_GetParameter(a0, a1); }
+int __stdcall NP_GetSignature(tir_signature_t *sig) { return NPCLIENT_NP_GetSignature(sig); }
+int __stdcall NP_QueryVersion(unsigned short *version) { return NPCLIENT_NP_QueryVersion(version); }
+int __stdcall NP_ReCenter(void) { return NPCLIENT_NP_ReCenter(); }
+int __stdcall NP_RegisterProgramProfileID(unsigned short id) { return NPCLIENT_NP_RegisterProgramProfileID(id); }
+int __stdcall NP_RegisterWindowHandle(HWND hwnd) { return NPCLIENT_NP_RegisterWindowHandle(hwnd); }
+int __stdcall NP_RequestData(unsigned short req) { return NPCLIENT_NP_RequestData(req); }
+int __stdcall NP_SetParameter(int a0, int a1) { return NPCLIENT_NP_SetParameter(a0, a1); }
+int __stdcall NP_StartCursor(void) { return NPCLIENT_NP_StartCursor(); }
+int __stdcall NP_StartDataTransmission(void) { return NPCLIENT_NP_StartDataTransmission(); }
+int __stdcall NP_StopCursor(void) { return NPCLIENT_NP_StopCursor(); }
+int __stdcall NP_StopDataTransmission(void) { return NPCLIENT_NP_StopDataTransmission(); }
+int __stdcall NP_UnregisterWindowHandle(void) { return NPCLIENT_NP_UnregisterWindowHandle(); }
 

@@ -50,29 +50,29 @@ As a last resort, manually copy mfc42u.dll from a Windows system to the LinuxTra
 <p>
 The installation process will automatically try these methods in order, providing clear guidance if manual intervention is required.
 
-<h2>Winegcc Build System (Updated)</h2>
-LinuxTrack X-IR uses winegcc for generating Wine-compatible binaries. This approach provides several advantages:
+<h2>Modern MinGW Build System</h2>
+LinuxTrack X-IR uses MinGW-w64 cross-compilation for generating real Windows PE binaries for Wine/Proton compatibility.
 
-<h3>Benefits of Winegcc Approach</h3>
+<h3>Benefits of MinGW Approach</h3>
 <ul>
-<li><strong>Perfect Wine Integration:</strong> .exe.so and .dll.so files work seamlessly with Wine</li>
-<li><strong>Symlink Support:</strong> Native Unix symlinks work properly</li>
-<li><strong>Standard Dependencies:</strong> Uses standard wine-devel packages</li>
-<li><strong>Future-Proof:</strong> Wine-native approach for long-term compatibility</li>
-<li><strong>Simplified CI/CD:</strong> Standard Wine environment for automated builds</li>
+<li><strong>Real Windows Artifacts:</strong> outputs are <code>.exe</code> and <code>.dll</code> PE binaries</li>
+<li><strong>WOW64-friendly:</strong> aligned with modern Wine 11.0+ runtime model</li>
+<li><strong>Cleaner Host Dependencies:</strong> no winegcc-specific compile path required</li>
+<li><strong>Native Linux Symlink Handling:</strong> filesystem link creation stays on the Linux side</li>
+<li><strong>Simplified CI/CD:</strong> consistent MinGW toolchain behavior across distros</li>
 </ul>
 
 <h3>Built Components</h3>
 The build system generates the following Wine-compatible components:
 <ul>
-<li><strong>NPClient.dll.so</strong> - TrackIR API compatibility (32-bit)</li>
-<li><strong>NPClient64.dll.so</strong> - TrackIR API compatibility (64-bit)</li>
-<li><strong>FreeTrackClient.dll.so</strong> - FreeTrack API compatibility</li>
-<li><strong>Controller.exe.so</strong> - Hotkey control utility</li>
-<li><strong>Tester.exe.so</strong> - TrackIR testing utility</li>
-<li><strong>Tester64.exe.so</strong> - 64-bit TrackIR testing utility</li>
-<li><strong>ftc.exe.so</strong> - FreeTrack testing utility</li>
-<li><strong>TrackIR.exe.so</strong> - Fake TrackIR executable for games</li>
+<li><strong>NPClient.dll</strong> - TrackIR API compatibility (32-bit)</li>
+<li><strong>NPClient64.dll</strong> - TrackIR API compatibility (64-bit)</li>
+<li><strong>FreeTrackClient.dll</strong> - FreeTrack API compatibility</li>
+<li><strong>Controller.exe</strong> - Hotkey control utility</li>
+<li><strong>Tester.exe</strong> - TrackIR testing utility</li>
+<li><strong>Tester64.exe</strong> - 64-bit TrackIR testing utility</li>
+<li><strong>ftc.exe</strong> - FreeTrack testing utility</li>
+<li><strong>TrackIR.exe</strong> - Fake TrackIR executable for games</li>
 </ul>
 
 <h2>Linuxtrack-wine usage</h2>
@@ -134,17 +134,17 @@ If you encounter issues with the Wine installation:
 
 <h3>Common Issues</h3>
 <ul>
-<li><strong>Build Errors:</strong> Ensure wine-devel packages are installed</li>
-<li><strong>NSIS Errors:</strong> The build system now properly handles .exe.so/.dll.so file extensions</li>
-<li><strong>C++ Linking Errors:</strong> Fixed with -lstdc++ flags in winegcc commands</li>
+<li><strong>Build Errors:</strong> Ensure MinGW toolchains are installed and on PATH</li>
+<li><strong>NSIS Errors:</strong> Ensure <code>makensis</code> is installed</li>
+<li><strong>Artifact Mismatch:</strong> expected outputs are <code>.exe</code>/<code>.dll</code> (not <code>.exe.so</code>/<code>.dll.so</code>)</li>
 <li><strong>Missing Files:</strong> Verify all dependencies are installed (see README for details)</li>
 </ul>
 
 <h3>Verification Steps</h3>
-1. Check that winegcc and wineg++ are available: <code>which winegcc wineg++</code>
-2. Verify Wine development tools: <code>winegcc --version</code>
-3. Test the build process: <code>make distclean && ./configure --prefix=/opt && make</code>
-4. Check generated files: Look for .exe.so and .dll.so files in build directories
+1. Check that MinGW toolchains are available: <code>which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc</code>
+2. Verify NSIS: <code>which makensis</code>
+3. Test the build process: <code>cmake -S . -B build && cmake --build build -j$(nproc)</code>
+4. Check generated files: look for <code>.exe</code> and <code>.dll</code> files in wine bridge build directories
 
 </body>
 </html>

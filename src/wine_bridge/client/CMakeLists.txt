@@ -1,40 +1,31 @@
 # src/wine_bridge/client/CMakeLists.txt
 # TrackIR API compatibility DLLs
 
-include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
+include(${CMAKE_SOURCE_DIR}/cmake/MinGWCompiler.cmake)
 
-# 64-bit NPClient DLL (always built when WINE_PLUGIN is enabled, if 64-bit libs found)
-# 64-bit Wine is easier to install, so we prioritize it
-if(WINE64)
-    add_wine64_library(NPClient
+if(WINE_PLUGIN)
+    add_mingw_library(NPClient64
+        ARCH x64
         SOURCES
             NPClient_main.c
             ../../linuxtrack.c
-            ../../utils.c
             rest.c
-        SPEC NPClient.spec
+            linuxtrack_path_shim.c
+        LIBS -lws2_32
     )
-endif()
 
-# 32-bit NPClient DLL (built when WINE_PLUGIN is enabled, matching Autotools behavior)
-# NOTE: 32-bit development headers are REQUIRED when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
-# This is a critical component for Wine plugin functionality
-if(WINE_PLUGIN)
-    add_wine_library(NPClient
+    add_mingw_library(NPClient
+        ARCH x86
         SOURCES
             NPClient_main.c
             ../../linuxtrack.c
-            ../../utils.c
             rest.c
-        SPEC NPClient.spec
+            linuxtrack_path_shim.c
+        LIBS -lws2_32
     )
-endif()
 
-# check_data executable (32-bit only - no 64-bit version exists)
-# NOTE: This is a CRITICAL 32-bit only component. 32-bit development headers are REQUIRED
-# when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
-if(WINE_PLUGIN)
-    add_wine_executable(check_data
+    add_mingw_executable(check_data
+        ARCH x86
         SOURCES
             check_data.c
             rest.c
@@ -42,25 +33,15 @@ if(WINE_PLUGIN)
 endif()
 
 # Installation
-if(WINE64)
+if(WINE_PLUGIN)
     install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/NPClient64.dll.so
+        ${CMAKE_CURRENT_BINARY_DIR}/NPClient64.dll
+        ${CMAKE_CURRENT_BINARY_DIR}/NPClient.dll
         DESTINATION lib/linuxtrack/wine_bridge
         OPTIONAL
     )
-endif()
-
-if(WINE_PLUGIN)
     install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/NPClient.dll.so
-        DESTINATION lib/linuxtrack/wine_bridge
-        OPTIONAL
-    )
-endif()
-
-if(WINE_PLUGIN)
-    install(FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/check_data.exe.so
+        ${CMAKE_CURRENT_BINARY_DIR}/check_data.exe
         DESTINATION lib/linuxtrack/wine_bridge
         OPTIONAL
     )

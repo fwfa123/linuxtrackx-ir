@@ -109,6 +109,10 @@ static struct func_defs_t functions[] =
 };
 
 static const char *lib_locations[] = {
+"/opt/lib/linuxtrack/liblinuxtrack.so.0",
+"/opt/lib/linuxtrack/liblinuxtrack32.so.0",
+"/usr/local/lib/linuxtrack/liblinuxtrack.so.0",
+"/usr/local/lib/linuxtrack/liblinuxtrack32.so.0",
 "/Frameworks/liblinuxtrack.0.dylib",
 "/lib/linuxtrack/liblinuxtrack.so.0",
 "/lib32/linuxtrack/liblinuxtrack32.so.0",

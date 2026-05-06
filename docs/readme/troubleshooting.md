@@ -47,9 +47,9 @@ sudo usermod -a -G plugdev,input $USER
 | Problem | Symptom | Solution |
 |---------|---------|----------|
 | Qt6 CMake config not found | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install `qt6-base-dev` (provides `Qt6Config.cmake`). See distro guide for complete Qt6 package list |
-| Missing 32-bit headers | `bits/libc-header-start.h: No such file or directory` | **REQUIRED for Wine support**: Install 32-bit dev headers for your distro |
+| MinGW toolchains missing | `i686-w64-mingw32-gcc: command not found` | **REQUIRED for Wine bridge**: Install MinGW-w64 cross-compilers for your distro |
 | Qt6 tools not found | `qmake: command not found` | Add Qt6 bin directory to PATH (see distro guide) |
-| Wine dev tools missing | `winegcc: command not found` | Install Wine development packages |
+| Wine bridge toolchain missing | `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install MinGW-w64 toolchains + NSIS |
 | OpenCV detection failed | Build succeeds without facetrack / `libp3eft` | **Build-time only**: install OpenCV dev packages on the **builder** (see distro guide). AppImage **end users** should not need system OpenCV if the release bundles `libopencv_*`. |
 | ldconfig permission denied | Warning during install | Use `-DENABLE_LDCONFIG=OFF` for packaging |
 
@@ -74,15 +74,15 @@ sudo usermod -a -G plugdev,input $USER
 |---------|---------|----------|
 | MFC42 installation fails | TrackIR not working in Wine | Use GUI MFC42 installer or manual winetricks |
 | 32-bit Wine prefix issues | Wine errors | Ensure wine-stable (not staging) on Arch |
-| Wine bridge components missing | No NPClient.dll.so | Check 32-bit library build |
-| Wine version conflicts | Incompatible Wine version | Use Wine 6-7 series |
+| Wine bridge components missing | No `NPClient.dll`/`linuxtrack-wine.exe` | Verify MinGW + NSIS are installed, then reconfigure/rebuild |
+| Wine version conflicts | Incompatible Wine version | Use Wine 11.0+ (or current Proton/Wine Staging) |
 
 ### Distribution-Specific Quick Fixes
 
 #### Debian/Ubuntu
 ```bash
-# 32-bit headers (critical for Wine)
-sudo apt install gcc-multilib libc6-dev-i386
+# MinGW bridge toolchain + NSIS
+sudo apt install mingw-w64 nsis
 
 # Qt6 tools (rare)
 sudo apt install qt6-tools-dev-tools
@@ -90,11 +90,8 @@ sudo apt install qt6-tools-dev-tools
 
 #### Arch Linux
 ```bash
-# 32-bit headers (critical for Wine); multilib must be enabled in /etc/pacman.conf
-sudo pacman -S lib32-glibc lib32-gcc-libs
-
-# Wine (official 'wine'; if lib32-wine exists: sudo pacman -S lib32-wine)
-sudo pacman -S wine wine-mono wine-gecko
+# MinGW bridge toolchain + NSIS + Wine runtime
+sudo pacman -S mingw-w64-gcc nsis wine wine-mono wine-gecko
 
 # Wayland is default: if GUI does not show, use
 QT_QPA_PLATFORM=xcb ltr_gui
@@ -106,11 +103,10 @@ The `build_32bit_libs.sh` script has been removed. Lib32-mxml and lib32-liblo ar
 # Qt6 tools PATH (critical)
 export PATH="/usr/lib64/qt6/bin:$PATH"
 
-# 32-bit headers (critical for Wine)
-sudo dnf install glibc-devel.i686 gcc.i686
-
-# 32-bit libraries
-sudo dnf install gcc-c++.i686 zlib-ng-compat-devel.i686
+# MinGW bridge toolchain + NSIS + Wine runtime
+sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils
+sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils
+sudo dnf install mingw32-nsis wine
 ```
 
 ## Advanced Diagnostics
@@ -162,7 +158,7 @@ udevadm info -a -n /dev/bus/usb/XXX/YYY  # Replace with device numbers
 ## Known Limitations
 
 - **Wayland**: Some features work better with X11 (force with `QT_QPA_PLATFORM=xcb`)
-- **32-bit Wine**: Required for TrackIR compatibility, even on 64-bit systems
+- **Toolchain drift**: Wine bridge build requires MinGW-w64 cross-compilers and NSIS on the build host
 - **Qt6 themes**: Some desktop themes may affect GUI appearance
 - **Multiple TrackIR devices**: Only one device supported simultaneously
 

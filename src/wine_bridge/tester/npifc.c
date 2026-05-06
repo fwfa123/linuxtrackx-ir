@@ -6,6 +6,8 @@
 #include "npifc.h"
 #include "rest.h"
 #include <stdlib.h>
+#include <stdarg.h>
+#include <time.h>
 
 
 tir_signature_t ts;
@@ -47,6 +49,36 @@ bool crypted = false;
 
 unsigned char table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
+static void npifc_log(const char *fmt, ...)
+{
+  const char *home = getenv("HOME");
+  if(!home) home = getenv("USERPROFILE");
+  if(!home) home = ".";
+  char path[4096];
+  snprintf(path, sizeof(path), "%s/.config/linuxtrack/tester_autofill.log", home);
+  FILE *f = fopen(path, "a");
+  if(!f){
+    const char *prefix = getenv("WINEPREFIX");
+    if(prefix && *prefix){
+      snprintf(path, sizeof(path), "%s/drive_c/Program Files (x86)/Linuxtrack/tester_autofill.log", prefix);
+      f = fopen(path, "a");
+    }
+  }
+  if(!f){
+    return;
+  }
+  time_t t = time(NULL);
+  struct tm *tmv = localtime(&t);
+  char ts[64];
+  if(tmv){ strftime(ts, sizeof(ts), "%Y-%m-%dT%H:%M:%S", tmv); } else { snprintf(ts, sizeof(ts), "-"); }
+  fprintf(f, "%s [npifc] ", ts);
+  va_list ap; va_start(ap, fmt);
+  vfprintf(f, fmt, ap);
+  va_end(ap);
+  fputc('\n', f);
+  fclose(f);
+}
+
 char *client_path()
 {
   HKEY  hkey   = 0;
@@ -54,6 +86,7 @@ char *client_path()
     KEY_QUERY_VALUE, &hkey);
   if(open_rc != ERROR_SUCCESS){
     printf("Can't open registry key (rc=%d)\n", (int)open_rc);
+    npifc_log("RegOpenKeyEx failed for NPClient Location (rc=%d)", (int)open_rc);
     return NULL;
   }
 
@@ -71,8 +104,10 @@ char *client_path()
   }
   RegCloseKey(hkey);
   if(res > 0){
+    npifc_log("Resolved NPClient path: %s", full_path);
     return full_path;
   }else{
+    npifc_log("Failed to resolve NPClient path from registry");
     return NULL;
   }
 }
@@ -117,12 +152,15 @@ bool npifc_init(HWND wnd, int id)
   char *client = client_path();
   if(client == NULL){
     printf("Couldn't obtain client path!\n");
+    npifc_log("npifc_init: client_path() returned NULL");
     return false;
   }
   npclient = LoadLibrary(client);
+  npifc_log("npifc_init: LoadLibrary('%s') => %s", client, npclient ? "success" : "failed");
   free(client);
   if(!npclient){
     printf("Can't load NPClient library\n");
+    npifc_log("npifc_init: LoadLibrary failed (GetLastError=%ld)", (long)GetLastError());
     return false;
   }
 
@@ -146,25 +184,31 @@ bool npifc_init(HWND wnd, int id)
      || (NP_SetParameter == NULL) || (NP_StartCursor == NULL) || (NP_StopCursor == NULL)
      || (NP_ReCenter == NULL) || (NP_StartDataTransmission == NULL) || (NP_StopDataTransmission == NULL)){
     printf("Couldn't bind all necessary functions!\n");
+    npifc_log("npifc_init: required NPClient exports missing");
     return false;
   }
   tir_signature_t sig;
   int res;
   if((res = NP_GetSignature(&sig)) != 0){
     printf("Error retrieving signature! %d\n", res);
+    npifc_log("npifc_init: NP_GetSignature failed (%d)", res);
     return false;
   }
   printf("Dll Sig:%s\nApp Sig2:%s\n", sig.DllSignature, sig.AppSignature);
   res = NP_RegisterWindowHandle(wnd);
   if(res != 0){
     printf("Couldn't register window handle! %d\n", res);
+    npifc_log("npifc_init: NP_RegisterWindowHandle failed (%d)", res);
     return false;
   }
-  if(NP_RegisterProgramProfileID(id) != 0){
-    printf("Couldn't register profile id!\n");
-    return false;
+  int profile_res = NP_RegisterProgramProfileID(id);
+  if(profile_res != 0){
+    printf("Couldn't register profile id! Continuing with best-effort startup.\n");
+    npifc_log("npifc_init: NP_RegisterProgramProfileID failed for id=%d (res=%d); continuing", id, profile_res);
+  } else {
+    printf("Program profile registered!\n");
+    npifc_log("npifc_init: NP_RegisterProgramProfileID succeeded for id=%d", id);
   }
-  printf("Program profile registered!\n");
   res = NP_RequestData(65535);
   if(res != 0){
     printf("NP_RequestData failed: %d\n", res);
@@ -176,6 +220,9 @@ bool npifc_init(HWND wnd, int id)
   res = NP_StartDataTransmission();
   if(res != 0){
     printf("NP_StartDataTransmission failed: %d\n", res);
+    npifc_log("npifc_init: NP_StartDataTransmission failed (%d)", res);
+  }else{
+    npifc_log("npifc_init: initialization completed for id=%d", id);
   }
   initialized = true;
   return true;
@@ -340,8 +387,13 @@ int decode_frame(tir_data_t *td)
 
 int npifc_getdata(tir_data_t *data)
 {
+  static int logged_nonzero_getdata = 0;
   int res = NP_GetData(data);
   if(res != 0){
+    if(logged_nonzero_getdata < 20){
+      npifc_log("npifc_getdata: NP_GetData returned %d", res);
+      logged_nonzero_getdata++;
+    }
     return res;
   }
   if(crypted){

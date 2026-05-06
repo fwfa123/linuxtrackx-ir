@@ -64,12 +64,12 @@ Section "Linuxtrack / TrackIR Interface"
   # Backup existing files before installation
   Call BackupExistingFiles
   
-  File /oname=Controller.exe controller\Controller.exe.so
-  File /oname=Tester.exe tester\Tester.exe.so
-  File /oname=NPClient.dll client\NPClient.dll.so
-  File /oname=check_data.exe client\check_data.exe.so
+  File controller\Controller.exe
+  File tester\Tester.exe
+  File client\NPClient.dll
+  File client\check_data.exe
   File /oname=linuxtrack.ico controller\linuxtrack.ico
-  File /oname=TrackIR.exe views\TrackIR.exe.so
+  File views\TrackIR.exe
   
   # Remove backup files after successful installation
   Delete "$INSTDIR\NPClient.dll.backup"
@@ -82,13 +82,14 @@ Section "Linuxtrack / TrackIR Interface"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\Linuxtrack" "NoRepair" 1
   WriteUninstaller "uninstall.exe"
-  Exec '"$INSTDIR\check_data.exe"'
+  ; Firmware validation/linking is now handled natively by Linux integration after installer exit.
+  ; Running check_data.exe here can produce misleading HOME/USERPROFILE diagnostics under Wine.
 SectionEnd
 
 Section "Linuxtrack / Freetrack Interface"
   SetOutPath $INSTDIR
-  File /oname=FreeTrackTester.exe ft_tester\ftc.exe.so
-  File /oname=FreeTrackClient.dll ft_client\FreeTrackClient.dll.so
+  File /oname=FreeTrackTester.exe ft_tester\ftc.exe
+  File ft_client\FreeTrackClient.dll
   WriteRegStr HKCU "Software\Freetrack\FreetrackClient" "Path" "$INSTDIR\"
 SectionEnd
 

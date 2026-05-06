@@ -203,7 +203,7 @@ checking TrackIR support... yes
 checking Facetracker support... yes
 checking XPlane plugin... no
 checking Mickey... yes
-checking Wine plugin... no
+checking Wine bridge... no
 checking OSC support... yes
 
 ```

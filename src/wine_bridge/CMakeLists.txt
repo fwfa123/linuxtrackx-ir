@@ -2,7 +2,7 @@
 # Wine bridge components
 
 if(WINE_PLUGIN)
-    include(${CMAKE_SOURCE_DIR}/cmake/WineCompiler.cmake)
+    include(${CMAKE_SOURCE_DIR}/cmake/MinGWCompiler.cmake)
     
     # Add subdirectories
     add_subdirectory(client)
@@ -41,34 +41,19 @@ if(WINE_PLUGIN)
         set(INSTALLER_TARGET_DEPS)
         set(INSTALLER_FILE_DEPS ${NSIS_SCRIPT})
         
-        # 64-bit components (always built when WINE_PLUGIN is enabled, if 64-bit libs found)
-        # 64-bit Wine is easier to install, so we prioritize it
-        if(WINE64)
-            list(APPEND INSTALLER_TARGET_DEPS NPClient64)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/client/NPClient64.dll.so)
-            list(APPEND INSTALLER_TARGET_DEPS Tester64)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/tester/Tester64.exe.so)
-        endif()
-        
-        # 32-bit components (built when WINE_PLUGIN is enabled, matching Autotools behavior)
-        # NOTE: 32-bit development headers are REQUIRED when WINE_PLUGIN is enabled (checked in CMakeLists.txt)
-        # These are critical components for Wine plugin functionality
         if(WINE_PLUGIN)
-            list(APPEND INSTALLER_TARGET_DEPS NPClient check_data)
+            list(APPEND INSTALLER_TARGET_DEPS NPClient NPClient64 check_data Controller Tester Tester64 FreeTrackClient ftc TrackIR)
             list(APPEND INSTALLER_FILE_DEPS 
-                ${CMAKE_CURRENT_BINARY_DIR}/client/NPClient.dll.so
-                ${CMAKE_CURRENT_BINARY_DIR}/client/check_data.exe.so
+                ${CMAKE_CURRENT_BINARY_DIR}/client/NPClient.dll
+                ${CMAKE_CURRENT_BINARY_DIR}/client/NPClient64.dll
+                ${CMAKE_CURRENT_BINARY_DIR}/client/check_data.exe
+                ${CMAKE_CURRENT_BINARY_DIR}/controller/Controller.exe
+                ${CMAKE_CURRENT_BINARY_DIR}/tester/Tester.exe
+                ${CMAKE_CURRENT_BINARY_DIR}/tester/Tester64.exe
+                ${CMAKE_CURRENT_BINARY_DIR}/ft_client/FreeTrackClient.dll
+                ${CMAKE_CURRENT_BINARY_DIR}/ft_tester/ftc.exe
+                ${CMAKE_CURRENT_BINARY_DIR}/views/TrackIR.exe
             )
-            list(APPEND INSTALLER_TARGET_DEPS Tester)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/tester/Tester.exe.so)
-            list(APPEND INSTALLER_TARGET_DEPS Controller)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/controller/Controller.exe.so)
-            list(APPEND INSTALLER_TARGET_DEPS FreeTrackClient)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/ft_client/FreeTrackClient.dll.so)
-            list(APPEND INSTALLER_TARGET_DEPS ftc)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/ft_tester/ftc.exe.so)
-            list(APPEND INSTALLER_TARGET_DEPS TrackIR)
-            list(APPEND INSTALLER_FILE_DEPS ${CMAKE_CURRENT_BINARY_DIR}/views/TrackIR.exe.so)
         endif()
         
         # Build the installer using makensis - always rebuild from all built components
@@ -96,51 +81,37 @@ mkdir -p \"\${STAGING_DIR}/ft_client\"
 mkdir -p \"\${STAGING_DIR}/ft_tester\"
 mkdir -p \"\${STAGING_DIR}/views\"
 
-# Copy 64-bit components (always built when WINE_PLUGIN is enabled, if 64-bit libs found)
+# Copy built components
 ")
-        
-        # Add 64-bit components if available
-        if(WINE64)
-            file(APPEND ${INSTALLER_STAGING_SCRIPT} "
-if [ -f \"\${BUILD_DIR}/client/NPClient64.dll.so\" ]; then
-    cp \"\${BUILD_DIR}/client/NPClient64.dll.so\" \"\${STAGING_DIR}/client/NPClient64.dll.so\"
-fi
-if [ -f \"\${BUILD_DIR}/tester/Tester64.exe.so\" ]; then
-    cp \"\${BUILD_DIR}/tester/Tester64.exe.so\" \"\${STAGING_DIR}/tester/Tester64.exe.so\"
-fi
-")
-        endif()
-        
-        # Add 32-bit components if available (built when WINE_PLUGIN is enabled)
+
         if(WINE_PLUGIN)
             file(APPEND ${INSTALLER_STAGING_SCRIPT} "
-# Copy 32-bit components (built when WINE_PLUGIN is enabled)
-if [ -f \"\${BUILD_DIR}/client/NPClient.dll.so\" ]; then
-    cp \"\${BUILD_DIR}/client/NPClient.dll.so\" \"\${STAGING_DIR}/client/NPClient.dll.so\"
+if [ -f \"\${BUILD_DIR}/client/NPClient.dll\" ]; then
+    cp \"\${BUILD_DIR}/client/NPClient.dll\" \"\${STAGING_DIR}/client/NPClient.dll\"
 fi
-if [ -f \"\${BUILD_DIR}/client/check_data.exe.so\" ]; then
-    cp \"\${BUILD_DIR}/client/check_data.exe.so\" \"\${STAGING_DIR}/client/check_data.exe.so\"
+if [ -f \"\${BUILD_DIR}/client/NPClient64.dll\" ]; then
+    cp \"\${BUILD_DIR}/client/NPClient64.dll\" \"\${STAGING_DIR}/client/NPClient64.dll\"
 fi
-if [ -f \"\${BUILD_DIR}/tester/Tester.exe.so\" ]; then
-    cp \"\${BUILD_DIR}/tester/Tester.exe.so\" \"\${STAGING_DIR}/tester/Tester.exe.so\"
+if [ -f \"\${BUILD_DIR}/client/check_data.exe\" ]; then
+    cp \"\${BUILD_DIR}/client/check_data.exe\" \"\${STAGING_DIR}/client/check_data.exe\"
 fi
-")
-        endif()
-        
-        # Add other 32-bit components if they exist
-        if(WINE_PLUGIN)
-            file(APPEND ${INSTALLER_STAGING_SCRIPT} "
-if [ -f \"\${BUILD_DIR}/controller/Controller.exe.so\" ]; then
-    cp \"\${BUILD_DIR}/controller/Controller.exe.so\" \"\${STAGING_DIR}/controller/Controller.exe.so\"
+if [ -f \"\${BUILD_DIR}/tester/Tester.exe\" ]; then
+    cp \"\${BUILD_DIR}/tester/Tester.exe\" \"\${STAGING_DIR}/tester/Tester.exe\"
 fi
-if [ -f \"\${BUILD_DIR}/ft_client/FreeTrackClient.dll.so\" ]; then
-    cp \"\${BUILD_DIR}/ft_client/FreeTrackClient.dll.so\" \"\${STAGING_DIR}/ft_client/FreeTrackClient.dll.so\"
+if [ -f \"\${BUILD_DIR}/tester/Tester64.exe\" ]; then
+    cp \"\${BUILD_DIR}/tester/Tester64.exe\" \"\${STAGING_DIR}/tester/Tester64.exe\"
 fi
-if [ -f \"\${BUILD_DIR}/ft_tester/ftc.exe.so\" ]; then
-    cp \"\${BUILD_DIR}/ft_tester/ftc.exe.so\" \"\${STAGING_DIR}/ft_tester/ftc.exe.so\"
+if [ -f \"\${BUILD_DIR}/controller/Controller.exe\" ]; then
+    cp \"\${BUILD_DIR}/controller/Controller.exe\" \"\${STAGING_DIR}/controller/Controller.exe\"
 fi
-if [ -f \"\${BUILD_DIR}/views/TrackIR.exe.so\" ]; then
-    cp \"\${BUILD_DIR}/views/TrackIR.exe.so\" \"\${STAGING_DIR}/views/TrackIR.exe.so\"
+if [ -f \"\${BUILD_DIR}/ft_client/FreeTrackClient.dll\" ]; then
+    cp \"\${BUILD_DIR}/ft_client/FreeTrackClient.dll\" \"\${STAGING_DIR}/ft_client/FreeTrackClient.dll\"
+fi
+if [ -f \"\${BUILD_DIR}/ft_tester/ftc.exe\" ]; then
+    cp \"\${BUILD_DIR}/ft_tester/ftc.exe\" \"\${STAGING_DIR}/ft_tester/ftc.exe\"
+fi
+if [ -f \"\${BUILD_DIR}/views/TrackIR.exe\" ]; then
+    cp \"\${BUILD_DIR}/views/TrackIR.exe\" \"\${STAGING_DIR}/views/TrackIR.exe\"
 fi
 
 # Copy icon file if it exists (to both controller subdirectory and staging root for Icon directive)
@@ -160,22 +131,25 @@ if [ ! -f \"\${STAGING_DIR}/linuxtrack.ico\" ] ; then
 fi
 
 # Comment out File commands for files that don't exist (before changing directory)
-if [ ! -f \"\${STAGING_DIR}/controller/Controller.exe.so\" ] ; then
-    sed -i 's|^  File /oname=Controller.exe|  # File /oname=Controller.exe|' \"\${MODIFIED_SCRIPT}\"
+if [ ! -f \"\${STAGING_DIR}/controller/Controller.exe\" ] ; then
+    sed -i 's|^  File controller\\\\Controller.exe|  # File controller\\\\Controller.exe|' \"\${MODIFIED_SCRIPT}\"
 fi
-if [ ! -f \"\${STAGING_DIR}/tester/Tester.exe.so\" ] ; then
-    sed -i 's|^  File /oname=Tester.exe|  # File /oname=Tester.exe|' \"\${MODIFIED_SCRIPT}\"
+if [ ! -f \"\${STAGING_DIR}/tester/Tester.exe\" ] ; then
+    sed -i 's|^  File tester\\\\Tester.exe|  # File tester\\\\Tester.exe|' \"\${MODIFIED_SCRIPT}\"
 fi
-if [ ! -f \"\${STAGING_DIR}/tester/Tester64.exe.so\" ] ; then
-    sed -i 's|^  File /oname=Tester64.exe|  # File /oname=Tester64.exe|' \"\${MODIFIED_SCRIPT}\"
+if [ ! -f \"\${STAGING_DIR}/tester/Tester64.exe\" ] ; then
+    sed -i 's|^  File tester\\\\Tester64.exe|  # File tester\\\\Tester64.exe|' \"\${MODIFIED_SCRIPT}\"
 fi
-if [ ! -f \"\${STAGING_DIR}/views/TrackIR.exe.so\" ] ; then
-    sed -i 's|^  File /oname=TrackIR.exe|  # File /oname=TrackIR.exe|' \"\${MODIFIED_SCRIPT}\"
+if [ ! -f \"\${STAGING_DIR}/client/NPClient64.dll\" ] ; then
+    sed -i 's|^  File client\\\\NPClient64.dll|  # File client\\\\NPClient64.dll|' \"\${MODIFIED_SCRIPT}\"
 fi
-if [ ! -f \"\${STAGING_DIR}/ft_client/FreeTrackClient.dll.so\" ] ; then
-    sed -i 's|^  File /oname=FreeTrackClient.dll|  # File /oname=FreeTrackClient.dll|' \"\${MODIFIED_SCRIPT}\"
+if [ ! -f \"\${STAGING_DIR}/views/TrackIR.exe\" ] ; then
+    sed -i 's|^  File views\\\\TrackIR.exe|  # File views\\\\TrackIR.exe|' \"\${MODIFIED_SCRIPT}\"
 fi
-if [ ! -f \"\${STAGING_DIR}/ft_tester/ftc.exe.so\" ] ; then
+if [ ! -f \"\${STAGING_DIR}/ft_client/FreeTrackClient.dll\" ] ; then
+    sed -i 's|^  File ft_client\\\\FreeTrackClient.dll|  # File ft_client\\\\FreeTrackClient.dll|' \"\${MODIFIED_SCRIPT}\"
+fi
+if [ ! -f \"\${STAGING_DIR}/ft_tester/ftc.exe\" ] ; then
     sed -i 's|^  File /oname=FreeTrackTester.exe|  # File /oname=FreeTrackTester.exe|' \"\${MODIFIED_SCRIPT}\"
 fi
 if [ ! -f \"\${STAGING_DIR}/controller/linuxtrack.ico\" ] ; then

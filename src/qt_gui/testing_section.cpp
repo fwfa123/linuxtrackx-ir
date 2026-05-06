@@ -617,6 +617,8 @@ QString TestingSection::getCurrentGameSlug()
 
 void TestingSection::executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform, WineArchitecture arch)
 {
+    const QString selectedGameName = (gameComboBox ? gameComboBox->currentText() : QString());
+    const QString gameNameHint = !selectedGameName.isEmpty() ? selectedGameName : currentGame;
     // Check if a valid platform is selected
     if (platform == QStringLiteral("Select Platform") || platform.isEmpty()) {
         qDebug() << "No valid platform selected for tester execution";
@@ -649,10 +651,12 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     const QString compatDataPath = compatDir.absolutePath();
                     env.insert(QString::fromUtf8("STEAM_COMPAT_DATA_PATH"), compatDataPath);
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
+                    env.insert(QString::fromUtf8("HOME"), QDir::homePath());
+                    env.insert(QString::fromUtf8("LINUXTRACK_DBG"), QString::fromUtf8("w"));
                     env.insert(QString::fromUtf8("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamIntegration->getSteamPath());
                     // Provide game name hint to tester for auto-ID lookup
-                    if (!currentGame.isEmpty()) {
-                        env.insert(QString::fromUtf8("LTR_GAME_NAME"), currentGame);
+                    if (!gameNameHint.isEmpty()) {
+                        env.insert(QString::fromUtf8("LTR_GAME_NAME"), gameNameHint);
                     }
                     
                     // Set WINEARCH based on detected architecture
@@ -733,8 +737,13 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     
                     // Set up environment variables for Lutris
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
-                    if (!currentGame.isEmpty()) {
-                        env.insert(QString::fromUtf8("LTR_GAME_NAME"), currentGame);
+                    env.insert(QString::fromUtf8("HOME"), QDir::homePath());
+                    env.insert(QString::fromUtf8("LINUXTRACK_DBG"), QString::fromUtf8("w"));
+                    if (!gameNameHint.isEmpty()) {
+                        env.insert(QString::fromUtf8("LTR_GAME_NAME"), gameNameHint);
+                    }
+                    if (!gameSlug.isEmpty()) {
+                        env.insert(QString::fromUtf8("LTR_GAME_SLUG"), gameSlug);
                     }
                     
                     // Set WINEARCH based on detected architecture instead of tester filename
@@ -795,8 +804,10 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
         QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
         
         env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
-        if (!currentGame.isEmpty()) {
-            env.insert(QString::fromUtf8("LTR_GAME_NAME"), currentGame);
+        env.insert(QString::fromUtf8("HOME"), QDir::homePath());
+        env.insert(QString::fromUtf8("LINUXTRACK_DBG"), QString::fromUtf8("w"));
+        if (!gameNameHint.isEmpty()) {
+            env.insert(QString::fromUtf8("LTR_GAME_NAME"), gameNameHint);
         }
         
         // Set WINEARCH based on detected architecture

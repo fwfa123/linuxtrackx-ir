@@ -48,7 +48,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 **For Wine compatibility and modern installation methods**
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)** - Modern Wine support installation guide
 - **[AppImage_WineBridge.md](AppImage_WineBridge.md)** - AppImage + Wine bridge
-- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Packaging notes
+- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)** - Packaging notes (archived)
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Wine troubleshooting section
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)** - Wine compatibility checker script
 
@@ -59,7 +59,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 - **[technical/GAME_DATA_SYSTEM.md](technical/GAME_DATA_SYSTEM.md)** - Game data system architecture (15KB)
 - **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Historical Qt4→Qt5 migration (superseded by Qt6 stack; see [QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md))
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Original modernization plan (7KB)
-- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB)
+- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB, archived)
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
 - **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help bundling notes (filename legacy; verify against current Qt6 AppImage build)
 
@@ -175,14 +175,14 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 #### "Wine" or "Windows"
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)**
 - **[AppImage_WineBridge.md](AppImage_WineBridge.md)**
-- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
+- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)**
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** (Wine section)
 - **[scripts/wine_check.sh](../scripts/wine_check.sh)**
 
 #### "AppImage" or "Packaging" or "Distribution"
 - **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)**
 - **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)**
-- **[technical/WINE_BRIDGE_PACKAGING_PLAN.md](technical/WINE_BRIDGE_PACKAGING_PLAN.md)**
+- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)**
 - **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** (Packaging section)
 
 #### "ApplicationID" or "gamedata.txt" or "((null))"

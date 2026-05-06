@@ -100,6 +100,125 @@ static void append_log(const char *fmt, ...)
   fclose(f);
 }
 
+static void normalize_game_name(const char *raw, char *out, size_t out_sz)
+{
+  if(!out || out_sz == 0){
+    return;
+  }
+  out[0] = '\0';
+  if(!raw || !*raw){
+    return;
+  }
+
+  size_t j = 0;
+  for(size_t i = 0; raw[i] != '\0' && j + 1 < out_sz; ++i){
+    char ch = raw[i];
+    if(ch >= 'A' && ch <= 'Z'){
+      ch = (char)(ch - 'A' + 'a');
+    }
+    if(ch == '_' || ch == '-' || ch == ':' || ch == ';' || ch == ',' || ch == '.'){
+      ch = ' ';
+    }
+    out[j++] = ch;
+  }
+  out[j] = '\0';
+}
+
+static bool try_game_name_with_aliases(const char *env_name, int *found_id)
+{
+  if(!env_name || !*env_name || !found_id){
+    return false;
+  }
+
+  if(game_data_find_id_by_name(env_name, found_id) && *found_id > 0){
+    append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
+               env_name, *found_id, env_name);
+    return true;
+  }
+
+  char normalized[512];
+  normalize_game_name(env_name, normalized, sizeof(normalized));
+
+  // Common typo seen in launcher metadata.
+  for(char *p = strstr(normalized, "assualt"); p != NULL; p = strstr(p + 1, "assualt")){
+    memcpy(p, "assault", strlen("assault"));
+  }
+
+  if(normalized[0] != '\0' && strcmp(normalized, env_name) != 0){
+    if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
+      append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
+                 env_name, *found_id, normalized);
+      return true;
+    }
+  }
+
+  if(strstr(normalized, "arma cold war ass") != NULL){
+    *found_id = 10601; // ArmA
+    append_log("Using hardcoded ARMA CWA fallback for '%s' => TrackIR ID=%d", env_name, *found_id);
+    return true;
+  }
+
+  // ARMA CWA aliases often appear under different catalog names.
+  if(strstr(normalized, "arma") != NULL && strstr(normalized, "cold war") != NULL){
+    const char *aliases[] = {
+      "arma cold war assault",
+      "operation flashpoint",
+      "operation flashpoint resistance"
+    };
+    for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
+      if(game_data_find_id_by_name(aliases[i], found_id) && *found_id > 0){
+        append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
+                   env_name, *found_id, aliases[i]);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+static bool try_game_slug_with_aliases(const char *env_slug, int *found_id)
+{
+  if(!env_slug || !*env_slug || !found_id){
+    return false;
+  }
+
+  char normalized[512];
+  normalize_game_name(env_slug, normalized, sizeof(normalized));
+
+  if(strstr(normalized, "arma cold war ass") != NULL){
+    *found_id = 10601; // ArmA
+    append_log("Using hardcoded ARMA CWA fallback for slug '%s' => TrackIR ID=%d", env_slug, *found_id);
+    return true;
+  }
+
+  // Slugs are often hyphen/underscore separated - normalize already turns those into spaces.
+  if(normalized[0] != '\0'){
+    if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
+      append_log("Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d (query='%s')",
+                 env_slug, *found_id, normalized);
+      return true;
+    }
+  }
+
+  if(strstr(normalized, "arma") != NULL && strstr(normalized, "cold war") != NULL){
+    const char *aliases[] = {
+      "arma cold war assault",
+      "operation flashpoint",
+      "operation flashpoint resistance"
+    };
+    for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
+      if(game_data_find_id_by_name(aliases[i], found_id) && *found_id > 0){
+        append_log("Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d (query='%s')",
+                   env_slug, *found_id, aliases[i]);
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 HINSTANCE hInst;
 UINT_PTR timer = 0;
 
@@ -141,6 +260,11 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             {
               // Default
               int initial_id = 2307;
+              const char *env_name_dbg = getenv("LTR_GAME_NAME");
+              const char *env_slug_dbg = getenv("LTR_GAME_SLUG");
+              append_log("Autofill start: LTR_GAME_NAME='%s' LTR_GAME_SLUG='%s'",
+                         env_name_dbg ? env_name_dbg : "<unset>",
+                         env_slug_dbg ? env_slug_dbg : "<unset>");
               // Env override: LTR_GAME_ID
               char *env_id = getenv("LTR_GAME_ID");
               if(env_id && *env_id){
@@ -162,10 +286,19 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                   char *env_name = getenv("LTR_GAME_NAME");
                   if(env_name && *env_name){
                     int found_id = -1;
-                    if(game_data_find_id_by_name(env_name, &found_id) && found_id > 0){
+                    if(try_game_name_with_aliases(env_name, &found_id)){
                       initial_id = found_id;
                       printf("INFO: Using LTR_GAME_NAME match '%s' => TrackIR ID=%d\n", env_name, found_id);
-                      append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d", env_name, found_id);
+                    }
+                  }
+                  if(initial_id == 2307){
+                    char *env_slug = getenv("LTR_GAME_SLUG");
+                    if(env_slug && *env_slug){
+                      int found_id = -1;
+                      if(try_game_slug_with_aliases(env_slug, &found_id)){
+                        initial_id = found_id;
+                        printf("INFO: Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d\n", env_slug, found_id);
+                      }
                     }
                   }
                 }
@@ -209,6 +342,7 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                     if(!ok){
                       num = 2307;
                     }
+                  append_log("Start pressed with AppID=%u", (unsigned int)num);
                   game_desc_t gd;
                   if(timer != 0){
                     KillTimer(hwndDlg, timer);
@@ -216,16 +350,23 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                   }
                   if(game_data_get_desc(num, &gd)){
                     printf("Application ID: %d - %s\n", num, gd.name);
-                    if(npifc_init(hwndDlg, num)){
-                      UINT_PTR t = SetTimer(hwndDlg, 0, 50, TimerProcedure);
-                      if(t == 0){
-                        printf("Failed to start timer\n");
-                      }else{
-                        timer = t;
-                      }
-                    }
+                    append_log("Resolved AppID=%u to '%s'", (unsigned int)num, gd.name);
                   }else{
                     printf("Unknown Application ID: %d\n", num);
+                    append_log("game_data_get_desc failed for AppID=%u; continuing with direct NP init", (unsigned int)num);
+                  }
+                  if(npifc_init(hwndDlg, num)){
+                    append_log("npifc_init succeeded for AppID=%u", (unsigned int)num);
+                    UINT_PTR t = SetTimer(hwndDlg, 0, 50, TimerProcedure);
+                    if(t == 0){
+                      printf("Failed to start timer\n");
+                      append_log("SetTimer failed for AppID=%u", (unsigned int)num);
+                    }else{
+                      timer = t;
+                      append_log("SetTimer started (timer=%u) for AppID=%u", (unsigned int)t, (unsigned int)num);
+                    }
+                  }else{
+                    append_log("npifc_init failed for AppID=%u", (unsigned int)num);
                   }
                   break;
                   }
