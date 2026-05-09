@@ -22,6 +22,8 @@ Makefile
 *.cmake
 !CMakeLists.txt
 !*.cmake.in
+# In-repo CMake modules (must not be ignored — clean clones need these for configure)
+!cmake/*.cmake
 
 # Generated configuration files
 src/pathconfig.h
