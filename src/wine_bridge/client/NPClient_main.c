@@ -28,6 +28,19 @@
 #ifndef __MINGW32__
 #include <unistd.h>
 #endif
+/* MinGW defaults can target older Windows; Winsock AF_UNIX needs Win10+ surface.
+ * Without this, some toolchains still call ws2_32 socket() but Wine may reject AF_UNIX. */
+#ifdef __MINGW32__
+#ifndef WINVER
+#define WINVER 0x0A00
+#endif
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0A00
+#endif
+#ifndef NTDDI_VERSION
+#define NTDDI_VERSION 0x0A00000B
+#endif
+#endif
 #include "windef.h"
 #include "winbase.h"
 #include "NPClient_dll.h"
@@ -100,6 +113,15 @@ static mingw_pose_runtime_t mingw_pose_runtime = {
   false, false, INVALID_SOCKET, 0, 100, false, {0}, {0}, 0
 };
 
+static SOCKET mingw_create_afunix_stream_socket(void)
+{
+  SOCKET s = WSASocketW(AF_UNIX, SOCK_STREAM, 0, NULL, 0, 0);
+  if(s == INVALID_SOCKET){
+    s = socket(AF_UNIX, SOCK_STREAM, 0);
+  }
+  return s;
+}
+
 static void mingw_pose_disconnect(void)
 {
   if(mingw_pose_runtime.pose_socket != INVALID_SOCKET){
@@ -131,9 +153,14 @@ static int mingw_pose_connect(void)
     return -1;
   }
 
-  SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
+  SOCKET sock = mingw_create_afunix_stream_socket();
   if(sock == INVALID_SOCKET){
-    dbg_report("MinGW pose connect: socket() failed (err=%d)\n", (int)WSAGetLastError());
+    int err = (int)WSAGetLastError();
+    dbg_report("MinGW pose connect: WSASocketW/socket(AF_UNIX) failed (err=%d)\n", err);
+    if(err == 10047){
+      dbg_report("MinGW: err 10047 = WSAEAFNOSUPPORT — this Wine build rejects Winsock AF_UNIX for Unix domain sockets.\n");
+      dbg_report("MinGW: NPClient64 needs ws2_32 AF_UNIX (Wine 8.21+) or a winelib-built NPClient; try wine-staging or an older Wine if it worked before.\n");
+    }
     return -1;
   }
 
@@ -262,9 +289,9 @@ static void dbg_report(const char *msg,...)
   va_list ap;
   va_start(ap, msg);
 #ifdef __MINGW32__
-  /* Always mirror to host path so diagnostics are easy to find (CWD-based
-   * NPClient.log is often under WINEPREFIX and easy to miss; LINUXTRACK_DBG
-   * may not reach the DLL environment in some setups). */
+  /* Mirror diagnostics to real Linux paths. Win32 getenv("HOME") is often
+   * unset inside PEs even when ltr_gui exports it, so also use /tmp (Wine
+   * maps absolute /tmp/... to the host reliably). */
   {
     const char *home = getenv("LINUXTRACK_UNIX_HOME");
     if(home == NULL || home[0] == '\0'){
@@ -283,6 +310,17 @@ static void dbg_report(const char *msg,...)
           fclose(hf);
         }
       }
+    }
+  }
+  {
+    FILE *tf = fopen("/tmp/linuxtrack_npclient.log", "a");
+    if(tf != NULL){
+      va_list ap3;
+      va_copy(ap3, ap);
+      vfprintf(tf, msg, ap3);
+      va_end(ap3);
+      fflush(tf);
+      fclose(tf);
     }
   }
 #endif
@@ -308,7 +346,11 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
   if(ensure_socket_runtime_ready() != 0){
     return -1;
   }
+#ifdef __MINGW32__
+  SOCKET sock = mingw_create_afunix_stream_socket();
+#else
   SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
+#endif
   if (sock == INVALID_SOCKET) {
     return -1;
   }
@@ -370,7 +412,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
             dbg_flag = getDebugFlag('w');
             dbg_report("Attach request\n");
 #ifdef __MINGW32__
-            dbg_report("BUILD_MARKER: MinGW socket pose path active (pose AF_UNIX /tmp/ltr_m_sock; see ~/.config/linuxtrack/NPClient.log)\n");
+            dbg_report("BUILD_MARKER: MinGW socket pose path active (pose AF_UNIX /tmp/ltr_m_sock; log: /tmp/linuxtrack_npclient.log)\n");
 #endif
             break;
         case DLL_PROCESS_DETACH:
