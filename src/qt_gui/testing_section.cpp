@@ -27,6 +27,25 @@ static QString toPlatformKey(const QString &label)
     return QStringLiteral("");
 }
 
+// NPClient64 connects to /tmp/ltr_m_sock on the host. umu-run / Steam pressure-vessel
+// use a container /tmp, so the tester sees no linuxtrack pose (camera in ltr_gui still works).
+static QString wineBinaryForTrackIrTester(const QString &lutrisResolvedWine)
+{
+    const QString low = lutrisResolvedWine.toLower();
+    const bool containerRunner = low.contains(QStringLiteral("umu")) ||
+        lutrisResolvedWine.endsWith(QStringLiteral("/umu-run"));
+    if (!containerRunner) {
+        return lutrisResolvedWine;
+    }
+    for (const QString &cand : {QStringLiteral("wine64"), QStringLiteral("wine")}) {
+        const QString p = QStandardPaths::findExecutable(cand);
+        if (!p.isEmpty()) {
+            return p;
+        }
+    }
+    return lutrisResolvedWine;
+}
+
 TestingSection::TestingSection(QObject *parent)
     : QObject(parent)
     , testingGroupBox(nullptr)
@@ -765,12 +784,17 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     
                     QStringList arguments;
                     arguments << testerPath;
-                    
-                    qDebug() << "Launching tester with Lutris Wine:" << winePath;
-                    qDebug() << "Wine version:" << wineVersion;
+
+                    const QString testerWine = wineBinaryForTrackIrTester(winePath);
+                    if (testerWine != winePath) {
+                        qDebug() << "Lutris runner is containerized (umu); using host wine for tester so NPClient can reach /tmp/ltr_m_sock:"
+                                 << testerWine << "(Lutris config was:" << winePath << ")";
+                    }
+                    qDebug() << "Launching tester with Wine:" << testerWine;
+                    qDebug() << "Lutris wine version string:" << wineVersion;
                     qDebug() << "Game slug:" << gameSlug;
-                    
-                    process.setProgram(winePath);
+
+                    process.setProgram(testerWine);
                     process.setArguments(arguments);
                     
                     qint64 pid = 0;
