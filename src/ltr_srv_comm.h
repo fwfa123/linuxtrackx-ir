@@ -3,6 +3,11 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+/* Loopback TCP mirror of /tmp/ltr_m_sock for Wine/MinGW PE (Winsock AF_INET works; AF_UNIX often does not). */
+#ifndef LTR_MASTER_TCP_PORT
+#define LTR_MASTER_TCP_PORT 42371u
+#endif
 #include <sys/types.h>
 #include <linuxtrack.h>
 #include <ltlib.h>

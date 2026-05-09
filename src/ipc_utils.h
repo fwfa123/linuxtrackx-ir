@@ -47,6 +47,8 @@ int ltr_int_socket_send(int socket, void *buf, size_t size);
 ssize_t ltr_int_socket_receive(int socket, void *buf, size_t size);
 int ltr_int_pipe_poll(int pipe, int timeout, bool *hup);
 int ltr_int_create_server_socket(const char *name);
+/** Listen on 127.0.0.1:port for the same stream protocol as the Unix master socket. Returns -1 on failure. */
+int ltr_int_create_tcp_loopback_server(unsigned short port);
 int ltr_int_connect_to_socket(const char *name);
 int ltr_int_close_socket(int socket);
 #ifdef __cplusplus

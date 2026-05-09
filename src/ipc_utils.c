@@ -21,8 +21,11 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "ipc_utils.h"
+#include "ltr_srv_comm.h"
 #include "utils.h"
 
 //UNIX_PATH_MAX is defined in linux/un.h, but that doesn't seem portable.
@@ -429,6 +432,44 @@ int ltr_int_create_server_socket(const char *name){
     return -1;
   }
   return fifo;
+}
+
+int ltr_int_create_tcp_loopback_server(unsigned short port)
+{
+  int fd = socket(AF_INET, SOCK_STREAM, 0);
+  if(fd < 0){
+    ltr_int_my_perror("tcp_loopback socket");
+    return -1;
+  }
+  int reuse = 1;
+  if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) != 0){
+    ltr_int_my_perror("tcp_loopback setsockopt");
+    close(fd);
+    return -1;
+  }
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  if(bind(fd, (struct sockaddr *)&addr, sizeof(addr)) != 0){
+    ltr_int_my_perror("tcp_loopback bind");
+    close(fd);
+    return -1;
+  }
+  if(listen(fd, 8) != 0){
+    ltr_int_my_perror("tcp_loopback listen");
+    close(fd);
+    return -1;
+  }
+  int set = 1;
+  if(ioctl(fd, FIONBIO, (char *)&set) < 0){
+    perror("tcp_loopback ioctl");
+    close(fd);
+    return -1;
+  }
+  ltr_int_log_message("Master TCP (Wine bridge) listening on 127.0.0.1:%u\n", (unsigned)port);
+  return fd;
 }
 
 

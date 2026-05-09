@@ -51,7 +51,19 @@
 #include <afunix.h>
 #include <ws2tcpip.h>
 #include <io.h>
+#include <errno.h>
 #define CLOSE_SOCKET closesocket
+/* Linux host (libc) values — Winsock AF_UNIX may return WSAEAFNOSUPPORT (10047) on some Wine builds. */
+#ifndef LTR_HOST_AF_UNIX
+#define LTR_HOST_AF_UNIX 1
+#endif
+#ifndef LTR_LINUX_FIONBIO
+#define LTR_LINUX_FIONBIO 0x5421
+#endif
+/* Keep in sync with LTR_MASTER_TCP_PORT in src/ltr_srv_comm.h (master loopback for Wine). */
+#ifndef LTR_MASTER_TCP_PORT
+#define LTR_MASTER_TCP_PORT 42371u
+#endif
 #else
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -97,10 +109,20 @@ enum {
   LTR_CMD_POSE = 5
 };
 
+enum {
+  MINGW_POSE_IO_NONE = 0,
+  MINGW_POSE_IO_WINSOCK = 1,
+  MINGW_POSE_IO_LIBC = 2,
+  /* Host Linux fd via x86_64 syscalls (Wine PE cannot LoadLibrary libc; see mingw_is_wine). */
+  MINGW_POSE_IO_LNX_SYSCALL = 3
+};
+
 typedef struct {
   bool transmission_started;
   bool connected;
+  int pose_io; /* MINGW_POSE_IO_* */
   SOCKET pose_socket;
+  int pose_libc_fd;
   DWORD last_connect_attempt_ms;
   DWORD reconnect_backoff_ms;
   bool has_pose;
@@ -110,8 +132,302 @@ typedef struct {
 } mingw_pose_runtime_t;
 
 static mingw_pose_runtime_t mingw_pose_runtime = {
-  false, false, INVALID_SOCKET, 0, 100, false, {0}, {0}, 0
+  false, false, MINGW_POSE_IO_NONE, INVALID_SOCKET, -1, 0, 100, false, {0}, {0}, 0
 };
+
+static HMODULE ltr_libc_module;
+static int (*ltr_libc_socket)(int, int, int);
+static int (*ltr_libc_connect)(int, const struct sockaddr *, unsigned int);
+static long (*ltr_libc_recv)(int, void *, size_t, int);
+static long (*ltr_libc_send)(int, const void *, size_t, int);
+static int (*ltr_libc_close)(int);
+typedef int (*ltr_libc_ioctl3_t)(int, unsigned long, void *);
+static ltr_libc_ioctl3_t ltr_libc_ioctl3;
+static bool ltr_libc_resolve_attempted;
+static bool ltr_libc_resolve_ok;
+
+static bool mingw_libc_resolve(void)
+{
+  if(ltr_libc_resolve_attempted){
+    return ltr_libc_resolve_ok;
+  }
+  ltr_libc_resolve_attempted = true;
+  /* Wine PE: bare "libc.so.6" often fails; Z: maps to the Unix root, \??\unix\ is the NT unix path. */
+  static const char *const libc_candidates[] = {
+    "libc.so.6",
+    "libc.so",
+    "/lib/x86_64-linux-gnu/libc.so.6",
+    "/lib64/libc.so.6",
+    "/usr/lib/x86_64-linux-gnu/libc.so.6",
+    "/usr/lib64/libc.so.6",
+    "/usr/lib/libc.so.6",
+    "Z:\\lib\\x86_64-linux-gnu\\libc.so.6",
+    "Z:\\usr\\lib\\x86_64-linux-gnu\\libc.so.6",
+    "Z:\\lib64\\libc.so.6",
+    "Z:\\usr\\lib64\\libc.so.6",
+    "Z:\\usr\\lib\\libc.so.6",
+    "\\\\??\\unix\\lib\\x86_64-linux-gnu\\libc.so.6",
+    "\\\\??\\unix\\usr\\lib\\x86_64-linux-gnu\\libc.so.6",
+    "\\\\??\\unix\\lib64\\libc.so.6",
+    "\\\\??\\unix\\usr\\lib\\libc.so.6",
+  };
+  HMODULE m = NULL;
+  DWORD last_err = 0;
+  for(size_t i = 0; i < sizeof(libc_candidates) / sizeof(libc_candidates[0]); i++){
+    m = LoadLibraryA(libc_candidates[i]);
+    if(m != NULL){
+      dbg_report("MinGW libc AF_UNIX fallback: loaded host libc via \"%s\"\n", libc_candidates[i]);
+      break;
+    }
+    last_err = GetLastError();
+  }
+  if(m == NULL){
+    dbg_report(
+      "MinGW libc AF_UNIX fallback: LoadLibrary(libc) failed after trying all paths (GetLastError=%lu)\n",
+      (unsigned long)last_err);
+    return false;
+  }
+  ltr_libc_module = m;
+  ltr_libc_socket = (void *)GetProcAddress(m, "socket");
+  ltr_libc_connect = (void *)GetProcAddress(m, "connect");
+  ltr_libc_recv = (void *)GetProcAddress(m, "recv");
+  ltr_libc_send = (void *)GetProcAddress(m, "send");
+  ltr_libc_close = (void *)GetProcAddress(m, "close");
+  ltr_libc_ioctl3 = (void *)GetProcAddress(m, "ioctl");
+  if(ltr_libc_socket == NULL || ltr_libc_connect == NULL || ltr_libc_recv == NULL ||
+     ltr_libc_send == NULL || ltr_libc_close == NULL || ltr_libc_ioctl3 == NULL){
+    dbg_report("MinGW libc AF_UNIX fallback: missing libc socket symbols\n");
+    return false;
+  }
+  ltr_libc_resolve_ok = true;
+  dbg_report("MinGW libc AF_UNIX fallback: using host POSIX socket API (Winsock AF_UNIX unavailable)\n");
+  return true;
+}
+
+static int mingw_fill_sockaddr_un(struct sockaddr_un *addr)
+{
+  const char *sock_path = "/tmp/ltr_m_sock";
+  memset(addr, 0, sizeof(*addr));
+  addr->sun_family = (ADDRESS_FAMILY)LTR_HOST_AF_UNIX;
+  if(strlen(sock_path) >= sizeof(addr->sun_path)){
+    return -1;
+  }
+  memcpy(addr->sun_path, sock_path, strlen(sock_path) + 1);
+  return 0;
+}
+
+#if defined(__x86_64__) || defined(_M_AMD64)
+/* Linux x86_64 syscall ABI — used when Wine refuses LoadLibrary(libc) (e.g. GetLastError=126). */
+enum {
+  LTR_LNX_NR_READ = 0,
+  LTR_LNX_NR_WRITE = 1,
+  LTR_LNX_NR_CLOSE = 3,
+  LTR_LNX_NR_IOCTL = 16,
+  LTR_LNX_NR_SOCKET = 41,
+  LTR_LNX_NR_CONNECT = 42
+};
+
+/* intptr_t: MinGW x86_64 is LLP64 (long is 32-bit); syscalls need full-width pointers in rdi/rsi/... */
+static long long ltr_lnx_sc6(long long nr, intptr_t a1, intptr_t a2, intptr_t a3, intptr_t a4, intptr_t a5,
+                              intptr_t a6)
+{
+  register intptr_t r10 __asm__("r10") = a4;
+  register intptr_t r8 __asm__("r8") = a5;
+  register intptr_t r9 __asm__("r9") = a6;
+  long long ret;
+  __asm__ __volatile__(
+    "syscall"
+    : "=a"(ret)
+    : "a"(nr), "D"(a1), "S"(a2), "d"(a3), "r"(r10), "r"(r8), "r"(r9)
+    : "rcx", "r11", "memory");
+  return ret;
+}
+
+static void ltr_lnx_set_errno_from_ret(long long ret)
+{
+  if(ret < 0 && ret >= -4095){
+    errno = (int)-ret;
+  }else if(ret < 0){
+    errno = EIO;
+  }
+}
+
+static bool mingw_is_wine(void)
+{
+  static int tri;
+  if(tri == 0){
+    FARPROC p = GetProcAddress(GetModuleHandleA("ntdll.dll"), "wine_get_version");
+    tri = p ? 1 : -1;
+  }
+  return tri > 0;
+}
+
+/* Syscall numbers are Linux x86_64 only; Wine on macOS also has wine_get_version. */
+static bool mingw_wine_host_is_linux(void)
+{
+  static int tri;
+  if(tri != 0){
+    return tri > 0;
+  }
+  tri = -1;
+  if(!mingw_is_wine()){
+    return false;
+  }
+  HANDLE h = CreateFileA("Z:\\proc\\version", GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
+                         FILE_ATTRIBUTE_NORMAL, NULL);
+  if(h == INVALID_HANDLE_VALUE){
+    return false;
+  }
+  char buf[80];
+  DWORD n = 0;
+  if(!ReadFile(h, buf, sizeof(buf) - 1, &n, NULL) || n < 5){
+    CloseHandle(h);
+    return false;
+  }
+  CloseHandle(h);
+  buf[n] = '\0';
+  if(buf[0] == 'L' && buf[1] == 'i' && buf[2] == 'n' && buf[3] == 'u' && buf[4] == 'x'){
+    tri = 1;
+    return true;
+  }
+  return false;
+}
+
+static int mingw_lnx_socket(int domain, int type, int protocol)
+{
+  long long r = ltr_lnx_sc6(LTR_LNX_NR_SOCKET, domain, type, protocol, 0, 0, 0);
+  if(r < 0){
+    ltr_lnx_set_errno_from_ret(r);
+    return -1;
+  }
+  return (int)r;
+}
+
+static int mingw_lnx_connect(int fd, const struct sockaddr *addr, unsigned int addrlen)
+{
+  long long r =
+    ltr_lnx_sc6(LTR_LNX_NR_CONNECT, fd, (intptr_t)(void *)addr, (intptr_t)addrlen, 0, 0, 0);
+  if(r < 0){
+    ltr_lnx_set_errno_from_ret(r);
+    return -1;
+  }
+  return 0;
+}
+
+static long long mingw_lnx_read(int fd, void *buf, size_t count)
+{
+  return ltr_lnx_sc6(LTR_LNX_NR_READ, fd, (intptr_t)buf, (intptr_t)count, 0, 0, 0);
+}
+
+static long long mingw_lnx_write(int fd, const void *buf, size_t count)
+{
+  return ltr_lnx_sc6(LTR_LNX_NR_WRITE, fd, (intptr_t)buf, (intptr_t)count, 0, 0, 0);
+}
+
+static int mingw_lnx_close(int fd)
+{
+  long long r = ltr_lnx_sc6(LTR_LNX_NR_CLOSE, fd, 0, 0, 0, 0, 0);
+  if(r < 0){
+    ltr_lnx_set_errno_from_ret(r);
+    return -1;
+  }
+  return 0;
+}
+
+static int mingw_lnx_ioctl_set_nonblock(int fd)
+{
+  int nb = 1;
+  long long r =
+    ltr_lnx_sc6(LTR_LNX_NR_IOCTL, fd, (intptr_t)LTR_LINUX_FIONBIO, (intptr_t)(void *)&nb, 0, 0, 0);
+  if(r < 0){
+    ltr_lnx_set_errno_from_ret(r);
+    return -1;
+  }
+  return 0;
+}
+
+static int mingw_pose_connect_via_lnx_syscall(void)
+{
+  if(!mingw_wine_host_is_linux()){
+    return -1;
+  }
+  struct sockaddr_un addr;
+  if(mingw_fill_sockaddr_un(&addr) != 0){
+    return -1;
+  }
+  int fd = mingw_lnx_socket(LTR_HOST_AF_UNIX, SOCK_STREAM, 0);
+  if(fd < 0){
+    dbg_report("MinGW lnx-syscall pose: socket errno=%d\n", errno);
+    return -1;
+  }
+  if(mingw_lnx_connect(fd, (const struct sockaddr *)&addr, (unsigned int)sizeof(addr)) != 0){
+    dbg_report("MinGW lnx-syscall pose: connect errno=%d\n", errno);
+    mingw_lnx_close(fd);
+    return -1;
+  }
+  if(mingw_lnx_ioctl_set_nonblock(fd) != 0){
+    dbg_report("MinGW lnx-syscall pose: ioctl(FIONBIO) errno=%d (continuing)\n", errno);
+  }
+  ltr_message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = LTR_CMD_NEW_SOCKET;
+  snprintf(msg.str, sizeof(msg.str), "%s",
+           (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  long long sent = mingw_lnx_write(fd, &msg, sizeof(msg));
+  if(sent != (long long)sizeof(msg)){
+    if(sent < 0){
+      ltr_lnx_set_errno_from_ret(sent);
+    }
+    dbg_report("MinGW lnx-syscall pose: write(CMD_NEW_SOCKET) ret=%lld errno=%d\n", sent, errno);
+    mingw_lnx_close(fd);
+    return -1;
+  }
+  mingw_pose_runtime.pose_libc_fd = fd;
+  mingw_pose_runtime.pose_socket = INVALID_SOCKET;
+  mingw_pose_runtime.pose_io = MINGW_POSE_IO_LNX_SYSCALL;
+  mingw_pose_runtime.connected = true;
+  mingw_pose_runtime.reconnect_backoff_ms = 100;
+  dbg_report("MinGW lnx-syscall pose connect: ok profile='%s'\n",
+             (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  return 0;
+}
+
+static int mingw_send_command_via_lnx_syscall(const void *payload, size_t len)
+{
+  if(!mingw_wine_host_is_linux() || len == 0){
+    return -1;
+  }
+  struct sockaddr_un addr;
+  if(mingw_fill_sockaddr_un(&addr) != 0){
+    return -1;
+  }
+  int fd = mingw_lnx_socket(LTR_HOST_AF_UNIX, SOCK_STREAM, 0);
+  if(fd < 0){
+    return -1;
+  }
+  if(mingw_lnx_connect(fd, (const struct sockaddr *)&addr, (unsigned int)sizeof(addr)) != 0){
+    mingw_lnx_close(fd);
+    return -1;
+  }
+  long long w = mingw_lnx_write(fd, payload, len);
+  mingw_lnx_close(fd);
+  if(w != (long long)len){
+    return -1;
+  }
+  return 0;
+}
+#else
+static int mingw_pose_connect_via_lnx_syscall(void)
+{
+  return -1;
+}
+static int mingw_send_command_via_lnx_syscall(const void *payload, size_t len)
+{
+  (void)payload;
+  (void)len;
+  return -1;
+}
+#endif /* x86_64 */
 
 static SOCKET mingw_create_afunix_stream_socket(void)
 {
@@ -122,15 +438,143 @@ static SOCKET mingw_create_afunix_stream_socket(void)
   return s;
 }
 
+static int mingw_pose_connect_via_loopback_tcp(void)
+{
+  SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if(sock == INVALID_SOCKET){
+    dbg_report("MinGW TCP pose: socket(AF_INET) err=%d\n", (int)WSAGetLastError());
+    return -1;
+  }
+  struct sockaddr_in a;
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_port = htons((unsigned short)LTR_MASTER_TCP_PORT);
+  a.sin_addr.s_addr = htonl(0x7f000001UL);
+  if(connect(sock, (struct sockaddr *)&a, sizeof(a)) == SOCKET_ERROR){
+    dbg_report("MinGW TCP pose: connect 127.0.0.1:%u err=%d\n",
+               (unsigned)LTR_MASTER_TCP_PORT, (int)WSAGetLastError());
+    CLOSE_SOCKET(sock);
+    return -1;
+  }
+  u_long nb = 1;
+  ioctlsocket(sock, FIONBIO, &nb);
+  ltr_message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = LTR_CMD_NEW_SOCKET;
+  snprintf(msg.str, sizeof(msg.str), "%s",
+           (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  int sn = send(sock, (const char *)&msg, sizeof(msg), 0);
+  if(sn <= 0 || (size_t)sn != sizeof(msg)){
+    dbg_report("MinGW TCP pose: send(CMD_NEW_SOCKET) err=%d\n", (int)WSAGetLastError());
+    CLOSE_SOCKET(sock);
+    return -1;
+  }
+  mingw_pose_runtime.pose_socket = sock;
+  mingw_pose_runtime.pose_libc_fd = -1;
+  mingw_pose_runtime.pose_io = MINGW_POSE_IO_WINSOCK;
+  mingw_pose_runtime.connected = true;
+  mingw_pose_runtime.reconnect_backoff_ms = 100;
+  dbg_report("MinGW TCP pose connect: ok (127.0.0.1:%u) profile='%s'\n",
+             (unsigned)LTR_MASTER_TCP_PORT,
+             (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  return 0;
+}
+
+static int mingw_send_command_via_loopback_tcp(const void *payload, size_t len)
+{
+  SOCKET sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if(sock == INVALID_SOCKET){
+    return -1;
+  }
+  struct sockaddr_in a;
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_port = htons((unsigned short)LTR_MASTER_TCP_PORT);
+  a.sin_addr.s_addr = htonl(0x7f000001UL);
+  if(connect(sock, (struct sockaddr *)&a, sizeof(a)) == SOCKET_ERROR){
+    CLOSE_SOCKET(sock);
+    return -1;
+  }
+  int sn = send(sock, (const char *)payload, (int)len, 0);
+  CLOSE_SOCKET(sock);
+  if(sn <= 0 || (size_t)sn != len){
+    return -1;
+  }
+  return 0;
+}
+
 static void mingw_pose_disconnect(void)
 {
-  if(mingw_pose_runtime.pose_socket != INVALID_SOCKET){
-    dbg_report("MinGW pose disconnect: closing socket\n");
+  if((mingw_pose_runtime.pose_io == MINGW_POSE_IO_LIBC ||
+      mingw_pose_runtime.pose_io == MINGW_POSE_IO_LNX_SYSCALL) &&
+     mingw_pose_runtime.pose_libc_fd >= 0){
+    dbg_report("MinGW pose disconnect: closing host fd (io=%d)\n", mingw_pose_runtime.pose_io);
+    if(mingw_pose_runtime.pose_io == MINGW_POSE_IO_LIBC){
+      ltr_libc_close(mingw_pose_runtime.pose_libc_fd);
+    }else{
+#if defined(__x86_64__) || defined(_M_AMD64)
+      mingw_lnx_close(mingw_pose_runtime.pose_libc_fd);
+#endif
+    }
+    mingw_pose_runtime.pose_libc_fd = -1;
+  }
+  if(mingw_pose_runtime.pose_io == MINGW_POSE_IO_WINSOCK && mingw_pose_runtime.pose_socket != INVALID_SOCKET){
+    dbg_report("MinGW pose disconnect: closing Winsock handle\n");
     CLOSE_SOCKET(mingw_pose_runtime.pose_socket);
     mingw_pose_runtime.pose_socket = INVALID_SOCKET;
   }
+  mingw_pose_runtime.pose_io = MINGW_POSE_IO_NONE;
   mingw_pose_runtime.connected = false;
   mingw_pose_runtime.rx_used = 0;
+}
+
+static int mingw_pose_connect_via_libc(void)
+{
+  struct sockaddr_un addr;
+
+  if(!mingw_libc_resolve()){
+    return -1;
+  }
+  if(mingw_fill_sockaddr_un(&addr) != 0){
+    return -1;
+  }
+
+  int fd = ltr_libc_socket(LTR_HOST_AF_UNIX, SOCK_STREAM, 0);
+  if(fd < 0){
+    dbg_report("MinGW libc pose: socket() failed errno=%d\n", errno);
+    return -1;
+  }
+
+  if(ltr_libc_connect(fd, (const struct sockaddr *)&addr, (unsigned int)sizeof(addr)) != 0){
+    dbg_report("MinGW libc pose: connect() failed errno=%d\n", errno);
+    ltr_libc_close(fd);
+    return -1;
+  }
+
+  int nb = 1;
+  if(ltr_libc_ioctl3(fd, LTR_LINUX_FIONBIO, &nb) != 0){
+    dbg_report("MinGW libc pose: ioctl(FIONBIO) errno=%d (continuing)\n", errno);
+  }
+
+  ltr_message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = LTR_CMD_NEW_SOCKET;
+  snprintf(msg.str, sizeof(msg.str), "%s",
+           (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  if(ltr_libc_send(fd, &msg, sizeof(msg), 0) <= 0){
+    dbg_report("MinGW libc pose: send(CMD_NEW_SOCKET) failed errno=%d\n", errno);
+    ltr_libc_close(fd);
+    return -1;
+  }
+
+  mingw_pose_runtime.pose_libc_fd = fd;
+  mingw_pose_runtime.pose_socket = INVALID_SOCKET;
+  mingw_pose_runtime.pose_io = MINGW_POSE_IO_LIBC;
+  mingw_pose_runtime.connected = true;
+  mingw_pose_runtime.reconnect_backoff_ms = 100;
+  dbg_report("MinGW libc pose connect: ok profile='%s'\n",
+             (g_profile_name[0] != '\0') ? g_profile_name : "Default");
+  return 0;
 }
 
 static int mingw_pose_connect(void)
@@ -153,13 +597,26 @@ static int mingw_pose_connect(void)
     return -1;
   }
 
+  if(mingw_pose_connect_via_libc() == 0){
+    return 0;
+  }
+
+  if(mingw_pose_connect_via_loopback_tcp() == 0){
+    return 0;
+  }
+
+  if(mingw_pose_connect_via_lnx_syscall() == 0){
+    return 0;
+  }
+
+  dbg_report("MinGW pose: libc + TCP loopback + lnx-syscall failed; trying Winsock AF_UNIX\n");
+
   SOCKET sock = mingw_create_afunix_stream_socket();
   if(sock == INVALID_SOCKET){
     int err = (int)WSAGetLastError();
     dbg_report("MinGW pose connect: WSASocketW/socket(AF_UNIX) failed (err=%d)\n", err);
     if(err == 10047){
-      dbg_report("MinGW: err 10047 = WSAEAFNOSUPPORT — this Wine build rejects Winsock AF_UNIX for Unix domain sockets.\n");
-      dbg_report("MinGW: NPClient64 needs ws2_32 AF_UNIX (Wine 8.21+) or a winelib-built NPClient; try wine-staging or an older Wine if it worked before.\n");
+      dbg_report("MinGW: err 10047 = WSAEAFNOSUPPORT (Winsock AF_UNIX); libc fallback should be used when available.\n");
     }
     return -1;
   }
@@ -177,7 +634,7 @@ static int mingw_pose_connect(void)
     memcpy(addr.sun_path, sock_path, path_len + 1);
   }
 
-  if(connect(sock, (struct sockaddr*)&addr, sizeof(addr)) == -1){
+  if(connect(sock, (struct sockaddr *)&addr, sizeof(addr)) == -1){
     dbg_report("MinGW pose connect: connect() failed (err=%d)\n", (int)WSAGetLastError());
     CLOSE_SOCKET(sock);
     if(mingw_pose_runtime.reconnect_backoff_ms < 2000){
@@ -191,7 +648,7 @@ static int mingw_pose_connect(void)
   msg.cmd = LTR_CMD_NEW_SOCKET;
   snprintf(msg.str, sizeof(msg.str), "%s",
            (g_profile_name[0] != '\0') ? g_profile_name : "Default");
-  if(send(sock, (const char*)&msg, sizeof(msg), 0) <= 0){
+  if(send(sock, (const char *)&msg, sizeof(msg), 0) <= 0){
     dbg_report("MinGW pose connect: CMD_NEW_SOCKET send failed (err=%d)\n", (int)WSAGetLastError());
     CLOSE_SOCKET(sock);
     if(mingw_pose_runtime.reconnect_backoff_ms < 2000){
@@ -204,9 +661,11 @@ static int mingw_pose_connect(void)
   ioctlsocket(sock, FIONBIO, &non_blocking);
 
   mingw_pose_runtime.pose_socket = sock;
+  mingw_pose_runtime.pose_libc_fd = -1;
+  mingw_pose_runtime.pose_io = MINGW_POSE_IO_WINSOCK;
   mingw_pose_runtime.connected = true;
   mingw_pose_runtime.reconnect_backoff_ms = 100;
-  dbg_report("MinGW pose connect: connected and registered profile='%s'\n",
+  dbg_report("MinGW pose connect: Winsock connected profile='%s'\n",
              (g_profile_name[0] != '\0') ? g_profile_name : "Default");
   return 0;
 }
@@ -220,12 +679,35 @@ static int mingw_pose_pump(void)
 
   bool got_pose = false;
   for(;;){
-    int recvd = recv(
-      mingw_pose_runtime.pose_socket,
-      (char*)mingw_pose_runtime.rx_buf + mingw_pose_runtime.rx_used,
-      (int)(sizeof(mingw_pose_runtime.rx_buf) - mingw_pose_runtime.rx_used),
-      0
-    );
+    int recvd;
+    if(mingw_pose_runtime.pose_io == MINGW_POSE_IO_LIBC){
+      recvd = (int)ltr_libc_recv(
+        mingw_pose_runtime.pose_libc_fd,
+        (char *)mingw_pose_runtime.rx_buf + mingw_pose_runtime.rx_used,
+        sizeof(mingw_pose_runtime.rx_buf) - mingw_pose_runtime.rx_used,
+        0);
+    }else if(mingw_pose_runtime.pose_io == MINGW_POSE_IO_LNX_SYSCALL){
+#if defined(__x86_64__) || defined(_M_AMD64)
+      long long rr = mingw_lnx_read(
+        mingw_pose_runtime.pose_libc_fd,
+        (char *)mingw_pose_runtime.rx_buf + mingw_pose_runtime.rx_used,
+        sizeof(mingw_pose_runtime.rx_buf) - mingw_pose_runtime.rx_used);
+      if(rr < 0){
+        ltr_lnx_set_errno_from_ret(rr);
+        recvd = -1;
+      }else{
+        recvd = (int)rr;
+      }
+#else
+      recvd = -1;
+#endif
+    }else{
+      recvd = recv(
+        mingw_pose_runtime.pose_socket,
+        (char *)mingw_pose_runtime.rx_buf + mingw_pose_runtime.rx_used,
+        (int)(sizeof(mingw_pose_runtime.rx_buf) - mingw_pose_runtime.rx_used),
+        0);
+    }
     if(recvd > 0){
       mingw_pose_runtime.rx_used += (size_t)recvd;
       while(mingw_pose_runtime.rx_used >= sizeof(ltr_message_t)){
@@ -241,8 +723,7 @@ static int mingw_pose_pump(void)
           memmove(
             mingw_pose_runtime.rx_buf,
             mingw_pose_runtime.rx_buf + sizeof(ltr_message_t),
-            mingw_pose_runtime.rx_used
-          );
+            mingw_pose_runtime.rx_used);
         }
       }
       continue;
@@ -255,11 +736,23 @@ static int mingw_pose_pump(void)
     }
 
     if(recvd < 0){
-      int err = WSAGetLastError();
-      if(err == WSAEWOULDBLOCK){
-        break;
+      if(mingw_pose_runtime.pose_io == MINGW_POSE_IO_LIBC ||
+         mingw_pose_runtime.pose_io == MINGW_POSE_IO_LNX_SYSCALL){
+        if(errno == EAGAIN
+#ifdef EWOULDBLOCK
+           || errno == EWOULDBLOCK
+#endif
+           ){
+          break;
+        }
+        dbg_report("MinGW pose pump: host fd read errno=%d, disconnecting\n", errno);
+      }else{
+        int err = WSAGetLastError();
+        if(err == WSAEWOULDBLOCK){
+          break;
+        }
+        dbg_report("MinGW pose pump: recv error=%d, disconnecting\n", err);
       }
-      dbg_report("MinGW pose pump: recv error=%d, disconnecting\n", err);
       mingw_pose_disconnect();
       break;
     }
@@ -346,7 +839,44 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
   if(ensure_socket_runtime_ready() != 0){
     return -1;
   }
+
+  struct {
+    uint32_t cmd;
+    uint32_t data;
+    union {
+      char str[500];
+    };
+  } msg;
+
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = cmd;
+  msg.data = data;
+  msg.str[0] = '\0';
+
 #ifdef __MINGW32__
+  if(mingw_libc_resolve()){
+    struct sockaddr_un addr;
+    if(mingw_fill_sockaddr_un(&addr) == 0){
+      int fd = ltr_libc_socket(LTR_HOST_AF_UNIX, SOCK_STREAM, 0);
+      if(fd >= 0){
+        if(ltr_libc_connect(fd, (const struct sockaddr *)&addr, (unsigned int)sizeof(addr)) == 0){
+          long sent = ltr_libc_send(fd, &msg, sizeof(msg), 0);
+          ltr_libc_close(fd);
+          if(sent > 0){
+            return 0;
+          }
+        }else{
+          ltr_libc_close(fd);
+        }
+      }
+    }
+  }
+  if(mingw_send_command_via_loopback_tcp(&msg, sizeof(msg)) == 0){
+    return 0;
+  }
+  if(mingw_send_command_via_lnx_syscall(&msg, sizeof(msg)) == 0){
+    return 0;
+  }
   SOCKET sock = mingw_create_afunix_stream_socket();
 #else
   SOCKET sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -372,22 +902,6 @@ static int send_command_to_master(uint32_t cmd, uint32_t data)
     return -1;
   }
 
-  // Send command message using the same structure as ltr_srv_comm.h
-  struct {
-    uint32_t cmd;
-    uint32_t data;
-    union {
-      char str[500];
-      // Other union members not used here
-    };
-  } msg;
-
-  // Initialize the entire structure to zero (same as server does)
-  memset(&msg, 0, sizeof(msg));
-  msg.cmd = cmd;
-  msg.data = data;
-  msg.str[0] = '\0'; // Initialize string part
-
   int sent = send(sock, (const char*)&msg, sizeof(msg), 0);
   if (sent == -1) {
     CLOSE_SOCKET(sock);
@@ -412,7 +926,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
             dbg_flag = getDebugFlag('w');
             dbg_report("Attach request\n");
 #ifdef __MINGW32__
-            dbg_report("BUILD_MARKER: MinGW socket pose path active (pose AF_UNIX /tmp/ltr_m_sock; log: /tmp/linuxtrack_npclient.log)\n");
+            dbg_report("BUILD_MARKER: MinGW pose path (libc AF_UNIX first, then Winsock; /tmp/ltr_m_sock; also /tmp/linuxtrack_npclient.log)\n");
 #endif
             break;
         case DLL_PROCESS_DETACH:

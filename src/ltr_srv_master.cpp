@@ -18,6 +18,8 @@
 #include <pref.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/ioctl.h>
+#include <netinet/in.h>
 
 #include <map>
 #include <string>
@@ -279,7 +281,7 @@ bool remove_poll_desc(){
 }
 
 
-int ltr_int_master_main_loop(int socket)
+int ltr_int_master_main_loop(int unix_sock, int tcp_listen_sock)
 {
   int res;
   int new_fd;
@@ -290,7 +292,12 @@ int ltr_int_master_main_loop(int socket)
 
   struct sockaddr_un address;
   socklen_t address_len = sizeof(address);
-  add_poll_desc(socket);
+  struct sockaddr_in tcp_client;
+  socklen_t tcp_client_len = sizeof(tcp_client);
+  add_poll_desc(unix_sock);
+  if(tcp_listen_sock >= 0){
+    add_poll_desc(tcp_listen_sock);
+  }
   while(1){
     if(gui_shutdown_request || (!ltr_int_gui_lock(false)) ||
        no_slaves || (ltr_int_get_tracking_state() < LINUXTRACK_OK)){
@@ -327,9 +334,9 @@ int ltr_int_master_main_loop(int socket)
       }
       if(descs[i].revents){
         if(descs[i].revents & POLLIN){
-          if(descs[i].fd == socket){
+          if(descs[i].fd == unix_sock){
             do{
-              new_fd = accept(socket, (struct sockaddr*)&address, &address_len);
+              new_fd = accept(unix_sock, (struct sockaddr *)&address, &address_len);
               if(new_fd < 0){
                 if(errno != EWOULDBLOCK){
                   ltr_int_my_perror("accept");
@@ -337,6 +344,23 @@ int ltr_int_master_main_loop(int socket)
                 //No more connection requests
                 break;
               }else{
+                add_poll_desc(new_fd);
+              }
+            }while(new_fd >= 0);
+          }else if(tcp_listen_sock >= 0 && descs[i].fd == tcp_listen_sock){
+            do{
+              tcp_client_len = sizeof(tcp_client);
+              new_fd = accept(tcp_listen_sock, (struct sockaddr *)&tcp_client, &tcp_client_len);
+              if(new_fd < 0){
+                if(errno != EWOULDBLOCK){
+                  ltr_int_my_perror("accept tcp");
+                }
+                break;
+              }else{
+                int set = 1;
+                if(ioctl(new_fd, FIONBIO, (char *)&set) < 0){
+                  perror("tcp client ioctl");
+                }
                 add_poll_desc(new_fd);
               }
             }while(new_fd >= 0);
@@ -443,23 +467,33 @@ bool ltr_int_master(bool standalone)
     ltr_int_log_message("Master already running, quitting!\n");
     return true;
   }
+  int tcp_listen = ltr_int_create_tcp_loopback_server((unsigned short)LTR_MASTER_TCP_PORT);
+  if(tcp_listen < 0){
+    ltr_int_log_message("Master: optional TCP loopback listen failed; MinGW/Wine clients may not get pose.\n");
+  }
   ltr_int_log_message("Starting as master!\n");
   if(ltr_int_init() != 0){
     ltr_int_log_message("Could not initialize tracking!\n");
     ltr_int_log_message("Closing socket %d\n", socket);
     close(socket);
+    if(tcp_listen >= 0){
+      close(tcp_listen);
+    }
     unlink(ltr_int_master_socket_name());
     return false;
   }
 
   ltr_int_register_cbk(ltr_int_new_frame, NULL, ltr_int_state_changed, NULL);
 
-  ltr_int_master_main_loop(socket);
+  ltr_int_master_main_loop(socket, tcp_listen);
 
   ltr_int_log_message("Shutting down tracking!\n");
   ltr_int_shutdown();
   ltr_int_log_message("Master closing socket %d\n", socket);
   close(socket);
+  if(tcp_listen >= 0){
+    close(tcp_listen);
+  }
   unlink(ltr_int_master_socket_name());
   ltr_int_gui_lock_clean();
   int cntr = 10;
