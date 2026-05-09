@@ -837,7 +837,9 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
       table[7] = (unsigned char)(gd_mingw.key2 & 0xff); gd_mingw.key2 >>= 8;
     }
   }else{
-    if(id == 10601 || id == 7502 || id == 7503){
+    if(id == 8106){
+      snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Operation Flashpoint");
+    }else if(id == 10601 || id == 7502 || id == 7503){
       snprintf(g_profile_name, sizeof(g_profile_name), "%s", "ArmA");
     }else{
       snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default");
@@ -1013,7 +1015,9 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
   }else{
     // Keep a best-effort profile hint for IDs that may be absent from local gamedata.txt.
     // This helps StartDataTransmission pick a usable profile when registration metadata is incomplete.
-    if(id == 10601 || id == 7502 || id == 7503){
+    if(id == 8106){
+      snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Operation Flashpoint");
+    }else if(id == 10601 || id == 7502 || id == 7503){
       snprintf(g_profile_name, sizeof(g_profile_name), "%s", "ArmA");
     }else{
       snprintf(g_profile_name, sizeof(g_profile_name), "%s", "Default");

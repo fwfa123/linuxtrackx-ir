@@ -123,10 +123,70 @@ static void normalize_game_name(const char *raw, char *out, size_t out_sz)
   out[j] = '\0';
 }
 
+static void fix_assualt_typo(char *normalized)
+{
+  if(!normalized){
+    return;
+  }
+  for(char *p = strstr(normalized, "assualt"); p != NULL; p = strstr(p + 1, "assualt")){
+    memcpy(p, "assault", strlen("assault"));
+  }
+}
+
+// Steam / storefront title "Arma: Cold War Assault" is Operation Flashpoint; generic
+// name matching often mis-resolves to ArmA 2 (7502), wrong crypto keys -> no pose data.
+static bool name_hints_arma_cwa_or_ofp(const char *normalized)
+{
+  if(!normalized || !*normalized){
+    return false;
+  }
+  if(strstr(normalized, "operation flashpoint") != NULL){
+    return true;
+  }
+  bool has_arma = strstr(normalized, "arma") != NULL;
+  bool has_cold_war = strstr(normalized, "cold war") != NULL;
+  return has_arma && has_cold_war;
+}
+
+static bool try_cwa_ofp_gamedata_aliases(const char *orig_key, const char *normalized,
+                                         int *found_id, bool from_slug)
+{
+  if(!name_hints_arma_cwa_ofp(normalized) || !found_id){
+    return false;
+  }
+  static const char *aliases[] = {
+    "operation flashpoint",
+    "operation flashpoint resistance",
+    "arma cold war assault",
+    "operation flashpoint cold war assault",
+  };
+  for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
+    if(game_data_find_id_by_name(aliases[i], found_id) && *found_id > 0){
+      if(from_slug){
+        append_log("Using LTR_GAME_SLUG CWA/OFP alias '%s' => TrackIR ID=%d (slug='%s')",
+                   aliases[i], *found_id, orig_key);
+      }else{
+        append_log("Using LTR_GAME_NAME CWA/OFP alias '%s' => TrackIR ID=%d (from '%s')",
+                   aliases[i], *found_id, orig_key);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
 static bool try_game_name_with_aliases(const char *env_name, int *found_id)
 {
   if(!env_name || !*env_name || !found_id){
     return false;
+  }
+
+  char normalized[512];
+  normalize_game_name(env_name, normalized, sizeof(normalized));
+  fix_assualt_typo(normalized);
+
+  if(try_cwa_ofp_gamedata_aliases(env_name, normalized, found_id, false)){
+    return true;
   }
 
   if(game_data_find_id_by_name(env_name, found_id) && *found_id > 0){
@@ -135,41 +195,11 @@ static bool try_game_name_with_aliases(const char *env_name, int *found_id)
     return true;
   }
 
-  char normalized[512];
-  normalize_game_name(env_name, normalized, sizeof(normalized));
-
-  // Common typo seen in launcher metadata.
-  for(char *p = strstr(normalized, "assualt"); p != NULL; p = strstr(p + 1, "assualt")){
-    memcpy(p, "assault", strlen("assault"));
-  }
-
   if(normalized[0] != '\0' && strcmp(normalized, env_name) != 0){
     if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
       append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
                  env_name, *found_id, normalized);
       return true;
-    }
-  }
-
-  if(strstr(normalized, "arma cold war ass") != NULL){
-    *found_id = 10601; // ArmA
-    append_log("Using hardcoded ARMA CWA fallback for '%s' => TrackIR ID=%d", env_name, *found_id);
-    return true;
-  }
-
-  // ARMA CWA aliases often appear under different catalog names.
-  if(strstr(normalized, "arma") != NULL && strstr(normalized, "cold war") != NULL){
-    const char *aliases[] = {
-      "arma cold war assault",
-      "operation flashpoint",
-      "operation flashpoint resistance"
-    };
-    for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
-      if(game_data_find_id_by_name(aliases[i], found_id) && *found_id > 0){
-        append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
-                   env_name, *found_id, aliases[i]);
-        return true;
-      }
     }
   }
 
@@ -184,34 +214,17 @@ static bool try_game_slug_with_aliases(const char *env_slug, int *found_id)
 
   char normalized[512];
   normalize_game_name(env_slug, normalized, sizeof(normalized));
+  fix_assualt_typo(normalized);
 
-  if(strstr(normalized, "arma cold war ass") != NULL){
-    *found_id = 10601; // ArmA
-    append_log("Using hardcoded ARMA CWA fallback for slug '%s' => TrackIR ID=%d", env_slug, *found_id);
+  if(try_cwa_ofp_gamedata_aliases(env_slug, normalized, found_id, true)){
     return true;
   }
 
-  // Slugs are often hyphen/underscore separated - normalize already turns those into spaces.
   if(normalized[0] != '\0'){
     if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
       append_log("Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d (query='%s')",
                  env_slug, *found_id, normalized);
       return true;
-    }
-  }
-
-  if(strstr(normalized, "arma") != NULL && strstr(normalized, "cold war") != NULL){
-    const char *aliases[] = {
-      "arma cold war assault",
-      "operation flashpoint",
-      "operation flashpoint resistance"
-    };
-    for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
-      if(game_data_find_id_by_name(aliases[i], found_id) && *found_id > 0){
-        append_log("Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d (query='%s')",
-                   env_slug, *found_id, aliases[i]);
-        return true;
-      }
     }
   }
 
