@@ -259,17 +259,47 @@ static int ensure_socket_runtime_ready(void)
 
 static void dbg_report(const char *msg,...)
 {
-  static FILE *f = NULL;
-  if(dbg_flag){
-    if(f == NULL){
-      f = fopen("NPClient.log", "w");
+  va_list ap;
+  va_start(ap, msg);
+#ifdef __MINGW32__
+  /* Always mirror to host path so diagnostics are easy to find (CWD-based
+   * NPClient.log is often under WINEPREFIX and easy to miss; LINUXTRACK_DBG
+   * may not reach the DLL environment in some setups). */
+  {
+    const char *home = getenv("LINUXTRACK_UNIX_HOME");
+    if(home == NULL || home[0] == '\0'){
+      home = getenv("HOME");
     }
-    va_list ap;
-    va_start(ap,msg);
-    vfprintf(f, msg, ap);
-    fflush(f);
-    va_end(ap);
+    if(home != NULL && home[0] != '\0'){
+      char path[512];
+      if((size_t)snprintf(path, sizeof(path), "%s/.config/linuxtrack/NPClient.log", home) < sizeof(path)){
+        FILE *hf = fopen(path, "a");
+        if(hf != NULL){
+          va_list ap2;
+          va_copy(ap2, ap);
+          vfprintf(hf, msg, ap2);
+          va_end(ap2);
+          fflush(hf);
+          fclose(hf);
+        }
+      }
+    }
   }
+#endif
+  if(dbg_flag){
+    static FILE *f = NULL;
+    if(f == NULL){
+      f = fopen("NPClient.log", "a");
+    }
+    if(f != NULL){
+      va_list ap2;
+      va_copy(ap2, ap);
+      vfprintf(f, msg, ap2);
+      va_end(ap2);
+      fflush(f);
+    }
+  }
+  va_end(ap);
 }
 
 // Wine-specific socket communication functions
@@ -340,7 +370,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
             dbg_flag = getDebugFlag('w');
             dbg_report("Attach request\n");
 #ifdef __MINGW32__
-            dbg_report("BUILD_MARKER: MinGW socket pose path active\n");
+            dbg_report("BUILD_MARKER: MinGW socket pose path active (pose AF_UNIX /tmp/ltr_m_sock; see ~/.config/linuxtrack/NPClient.log)\n");
 #endif
             break;
         case DLL_PROCESS_DETACH:
