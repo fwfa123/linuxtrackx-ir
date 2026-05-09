@@ -151,7 +151,7 @@ static bool name_hints_arma_cwa_or_ofp(const char *normalized)
 static bool try_cwa_ofp_gamedata_aliases(const char *orig_key, const char *normalized,
                                          int *found_id, bool from_slug)
 {
-  if(!name_hints_arma_cwa_ofp(normalized) || !found_id){
+  if(!name_hints_arma_cwa_or_ofp(normalized) || !found_id){
     return false;
   }
   static const char *aliases[] = {
