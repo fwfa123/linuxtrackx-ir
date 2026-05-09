@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include "../unix_config_home.h"
 
 #ifdef HAVE_CONFIG_H
   #include <config.h>
@@ -64,20 +65,11 @@ static ssize_t my_getline(char **lineptr, size_t *n, FILE *f)
 bool game_data_get_desc(int id, game_desc_t *gd)
 {
   FILE *f = NULL;
-  char *home = getenv("HOME");
-  
-  // Fix for Wine environment: getenv("HOME") can return NULL
-  if (home == NULL) {
-    printf("DEBUG: HOME is NULL, trying USERPROFILE...\n");
-    // Fallback for Wine environments where HOME is not set
-    home = getenv("USERPROFILE");
-    if (home == NULL) {
-      printf("DEBUG: USERPROFILE is NULL, using current directory\n");
-      // Final fallback to current directory
-      home = ".";
-    }
+  const char *home = ltr_unix_home_for_config();
+  if(getenv("LINUXTRACK_UNIX_HOME") == NULL && getenv("HOME") == NULL){
+    printf("DEBUG: HOME unset; using USERPROFILE or '.' for config paths\n");
   }
-  
+
   char *path1 = (char *)malloc(200 + strlen(home));
   if (path1 == NULL) {
     printf("DEBUG: Memory allocation failed for path1!\n");
@@ -133,13 +125,7 @@ bool game_data_get_desc(int id, game_desc_t *gd)
 static bool game_data_iterate(bool (*on_entry)(int id, const char *name, bool encrypted, uint32_t k1, uint32_t k2, void *ctx), void *ctx)
 {
   FILE *f = NULL;
-  char *home = getenv("HOME");
-  if (home == NULL) {
-    home = getenv("USERPROFILE");
-    if (home == NULL) {
-      home = ".";
-    }
-  }
+  const char *home = ltr_unix_home_for_config();
   char *path1 = (char *)malloc(200 + strlen(home));
   if (path1 == NULL) return false;
   sprintf(path1, "%s/.config/linuxtrack/tir_firmware/gamedata.txt", home);
@@ -457,13 +443,7 @@ static bool parse_steam_mapping_line(const char *line, char *appid_out, size_t a
 bool game_data_find_id_by_steam_appid(const char *steam_appid, int *out_id)
 {
   if(!steam_appid || !*steam_appid || !out_id) return false;
-  const char *home = getenv("HOME");
-  if (home == NULL) {
-    home = getenv("USERPROFILE");
-    if (home == NULL) {
-      home = ".";
-    }
-  }
+  const char *home = ltr_unix_home_for_config();
   char path[4096];
   snprintf(path, sizeof(path), "%s/.config/linuxtrack/tir_firmware/steam_to_trackir_id.txt", home);
   FILE *f = fopen(path, "r");
@@ -493,20 +473,13 @@ bool game_data_find_id_by_steam_appid(const char *steam_appid, int *out_id)
 bool getSomeSeriousPoetry(char *verse1, char *verse2)
 {
   bool res = true;
-  char *home = getenv("HOME");
-  
-  // Fix for Wine environment: getenv("HOME") can return NULL
-  if (home == NULL) {
-    printf("DEBUG: HOME is NULL, trying USERPROFILE...\n");
-    // Fallback for Wine environments where HOME is not set
-    home = getenv("USERPROFILE");
-    if (home == NULL) {
-      printf("DEBUG: USERPROFILE is NULL, using current directory\n");
-      // Final fallback to current directory
-      home = ".";
-    }
+  const char *home = ltr_unix_home_for_config();
+  if(getenv("LINUXTRACK_UNIX_HOME")){
+    printf("DEBUG: Using LINUXTRACK_UNIX_HOME for tir_firmware paths\n");
+  }else if(getenv("HOME") == NULL){
+    printf("DEBUG: HOME is NULL, using USERPROFILE or '.' for tir_firmware...\n");
   }
-  
+
   char *path1 = (char *)malloc(200 + strlen(home));
   char *path2 = (char *)malloc(200 + strlen(home));
   

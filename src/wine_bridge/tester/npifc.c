@@ -4,6 +4,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include "npifc.h"
+#include "../unix_config_home.h"
 #include "rest.h"
 #include <stdlib.h>
 #include <stdarg.h>
@@ -51,9 +52,7 @@ unsigned char table[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 static void npifc_log(const char *fmt, ...)
 {
-  const char *home = getenv("HOME");
-  if(!home) home = getenv("USERPROFILE");
-  if(!home) home = ".";
+  const char *home = ltr_unix_home_for_config();
   char path[4096];
   snprintf(path, sizeof(path), "%s/.config/linuxtrack/tester_autofill.log", home);
   FILE *f = fopen(path, "a");

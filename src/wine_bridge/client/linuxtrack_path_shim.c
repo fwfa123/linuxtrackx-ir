@@ -1,16 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../unix_config_home.h"
 
 char *ltr_int_get_default_file_name(const char *fname)
 {
-  const char *home = getenv("HOME");
-  if(home == NULL){
-    home = getenv("USERPROFILE");
-  }
-  if(home == NULL){
-    return NULL;
-  }
+  const char *home = ltr_unix_home_for_config();
   if(fname == NULL){
     fname = "linuxtrack1.conf";
   }

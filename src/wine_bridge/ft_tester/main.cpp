@@ -21,6 +21,7 @@
 
 #include "resource.h"
 #include "../client/rest.h"
+#include "../unix_config_home.h"
 
 // Use shared helper from rest.c instead of duplicating parsing logic
 
@@ -53,9 +54,7 @@ static void ensure_parent_dirs(const char *filepath)
 
 static void append_log(const char *fmt, ...)
 {
-  const char *home = getenv("HOME");
-  if(!home) home = getenv("USERPROFILE");
-  if(!home) home = ".";
+  const char *home = ltr_unix_home_for_config();
   char path[4096];
   snprintf(path, sizeof(path), "%s/.config/linuxtrack/tester_autofill.log", home);
   ensure_parent_dirs(path);

@@ -21,21 +21,21 @@ if(WINE_PLUGIN)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Tester64_main.o
         COMMAND ${MINGW64_GPP_EXECUTABLE} -c ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${MW64_INC} -o ${CMAKE_CURRENT_BINARY_DIR}/Tester64_main.o
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../unix_config_home.h
     )
     list(APPEND TESTER64_OBJECTS ${CMAKE_CURRENT_BINARY_DIR}/Tester64_main.o)
 
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Tester64_rest.o
         COMMAND ${MINGW64_GCC_EXECUTABLE} -c ${CMAKE_CURRENT_SOURCE_DIR}/rest.c ${MW64_INC} -o ${CMAKE_CURRENT_BINARY_DIR}/Tester64_rest.o
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/rest.c
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/rest.c ${CMAKE_CURRENT_SOURCE_DIR}/../unix_config_home.h
     )
     list(APPEND TESTER64_OBJECTS ${CMAKE_CURRENT_BINARY_DIR}/Tester64_rest.o)
 
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Tester64_npifc.o
         COMMAND ${MINGW64_GCC_EXECUTABLE} -c ${CMAKE_CURRENT_SOURCE_DIR}/npifc.c ${MW64_INC} -o ${CMAKE_CURRENT_BINARY_DIR}/Tester64_npifc.o
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/npifc.c
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/npifc.c ${CMAKE_CURRENT_SOURCE_DIR}/../unix_config_home.h
     )
     list(APPEND TESTER64_OBJECTS ${CMAKE_CURRENT_BINARY_DIR}/Tester64_npifc.o)
 

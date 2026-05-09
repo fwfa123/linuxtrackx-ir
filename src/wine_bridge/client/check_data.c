@@ -1,5 +1,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include "../unix_config_home.h"
 #include "rest.h"
 #include <io.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@ int main()
   
   // Add detailed environment debugging
   printf("DEBUG: Environment variables check:\n");
+  printf("DEBUG: LINUXTRACK_UNIX_HOME = %s\n", getenv("LINUXTRACK_UNIX_HOME") ? getenv("LINUXTRACK_UNIX_HOME") : "NULL");
   printf("DEBUG: HOME = %s\n", getenv("HOME") ? getenv("HOME") : "NULL");
   printf("DEBUG: USERPROFILE = %s\n", getenv("USERPROFILE") ? getenv("USERPROFILE") : "NULL");
   printf("DEBUG: USER = %s\n", getenv("USER") ? getenv("USER") : "NULL");
@@ -32,35 +34,9 @@ int main()
   printf("DEBUG: game_desc_t structure initialized\n");
   fflush(stdout);
   
-  // Fix for Wine environment: getenv("HOME") can return NULL
-  printf("DEBUG: Getting HOME environment variable...\n");
+  printf("DEBUG: Resolving config home (LINUXTRACK_UNIX_HOME, HOME, USERPROFILE, .)...\n");
   fflush(stdout);
-  char *home = getenv("HOME");
-  if (home == NULL) {
-    printf("DEBUG: HOME is NULL, trying USERPROFILE...\n");
-    fflush(stdout);
-    // Fallback for Wine environments where HOME is not set
-    home = getenv("USERPROFILE");
-    if (home == NULL) {
-      printf("DEBUG: USERPROFILE is NULL, trying USER...\n");
-      fflush(stdout);
-      // Try to construct home from USER
-      char *user = getenv("USER");
-      if (user != NULL) {
-        printf("DEBUG: Using USER to construct home path\n");
-        fflush(stdout);
-        home = "/home/";
-        // Note: This is a simplified approach - in practice we'd need to allocate memory
-        // For now, let's use a more robust fallback
-      }
-      if (home == NULL) {
-        printf("DEBUG: All fallbacks failed, using current directory\n");
-        fflush(stdout);
-        // Final fallback to current directory
-        home = ".";
-      }
-    }
-  }
+  const char *home = ltr_unix_home_for_config();
   
   printf("DEBUG: Using home directory: %s\n", home);
   fflush(stdout);

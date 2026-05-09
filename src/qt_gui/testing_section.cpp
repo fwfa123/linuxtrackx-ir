@@ -652,6 +652,7 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     env.insert(QString::fromUtf8("STEAM_COMPAT_DATA_PATH"), compatDataPath);
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
                     env.insert(QString::fromUtf8("HOME"), QDir::homePath());
+                    env.insert(QString::fromUtf8("LINUXTRACK_UNIX_HOME"), QDir::homePath());
                     env.insert(QString::fromUtf8("LINUXTRACK_DBG"), QString::fromUtf8("w"));
                     env.insert(QString::fromUtf8("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamIntegration->getSteamPath());
                     // Provide game name hint to tester for auto-ID lookup
@@ -738,6 +739,7 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
                     // Set up environment variables for Lutris
                     env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
                     env.insert(QString::fromUtf8("HOME"), QDir::homePath());
+                    env.insert(QString::fromUtf8("LINUXTRACK_UNIX_HOME"), QDir::homePath());
                     env.insert(QString::fromUtf8("LINUXTRACK_DBG"), QString::fromUtf8("w"));
                     if (!gameNameHint.isEmpty()) {
                         env.insert(QString::fromUtf8("LTR_GAME_NAME"), gameNameHint);
@@ -805,6 +807,7 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
         
         env.insert(QString::fromUtf8("WINEPREFIX"), prefixPath);
         env.insert(QString::fromUtf8("HOME"), QDir::homePath());
+        env.insert(QString::fromUtf8("LINUXTRACK_UNIX_HOME"), QDir::homePath());
         env.insert(QString::fromUtf8("LINUXTRACK_DBG"), QString::fromUtf8("w"));
         if (!gameNameHint.isEmpty()) {
             env.insert(QString::fromUtf8("LTR_GAME_NAME"), gameNameHint);
