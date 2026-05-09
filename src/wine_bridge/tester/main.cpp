@@ -154,14 +154,16 @@ static bool try_cwa_ofp_gamedata_aliases(const char *orig_key, const char *norma
   if(!name_hints_arma_cwa_or_ofp(normalized) || !found_id){
     return false;
   }
+  /* Order: storefront title first; "operation flashpoint" only as exact normalized
+   * catalog match so fuzzy logic cannot pick "Operation Flashpoint 2 (inactive)". */
   static const char *aliases[] = {
-    "operation flashpoint",
-    "operation flashpoint resistance",
     "arma cold war assault",
+    "operation flashpoint resistance",
     "operation flashpoint cold war assault",
+    "operation flashpoint",
   };
   for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
-    if(game_data_find_id_by_name(aliases[i], found_id) && *found_id > 0){
+    if(game_data_find_id_by_normalized_exact(aliases[i], found_id) && *found_id > 0){
       if(from_slug){
         append_log("Using LTR_GAME_SLUG CWA/OFP alias '%s' => TrackIR ID=%d (slug='%s')",
                    aliases[i], *found_id, orig_key);

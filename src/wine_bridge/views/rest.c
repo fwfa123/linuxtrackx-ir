@@ -417,6 +417,84 @@ bool game_data_find_id_by_name(const char *name, int *out_id)
   return false;
 }
 
+static void normalize_catalog_name_for_match(char *out, size_t cap, const char *in)
+{
+  if(!out || cap < 2 || !in){
+    if(out && cap > 0) out[0] = '\0';
+    return;
+  }
+  size_t j = 0;
+  for(size_t i = 0; in[i] != '\0' && j + 1 < cap; ++i){
+    char ch = in[i];
+    if(ch >= 'A' && ch <= 'Z'){
+      ch = (char)(ch - 'A' + 'a');
+    }
+    if(ch == '_' || ch == '-' || ch == ':' || ch == ';' || ch == ',' || ch == '.'
+       || ch == '(' || ch == ')' || ch == '\t' || ch == '\r' || ch == '\n'){
+      ch = ' ';
+    }
+    out[j++] = ch;
+  }
+  out[j] = '\0';
+  char *w = out;
+  bool prev_space = true;
+  for(char *r = out; *r; ++r){
+    if(*r == ' '){
+      if(!prev_space){
+        *w++ = ' ';
+        prev_space = true;
+      }
+    }else{
+      *w++ = *r;
+      prev_space = false;
+    }
+  }
+  if(w > out && w[-1] == ' '){
+    --w;
+  }
+  *w = '\0';
+}
+
+typedef struct {
+  const char *target_norm;
+  char *scratch;
+  size_t scratch_cap;
+  int *out_id;
+} exact_norm_ctx_t;
+
+static bool exact_norm_on_entry(int id, const char *name, bool encrypted, uint32_t k1, uint32_t k2, void *ctx)
+{
+  (void)encrypted;
+  (void)k1;
+  (void)k2;
+  exact_norm_ctx_t *c = (exact_norm_ctx_t *)ctx;
+  if(!c || !name || !c->target_norm || !c->out_id || !c->scratch){
+    return false;
+  }
+  normalize_catalog_name_for_match(c->scratch, c->scratch_cap, name);
+  if(strcmp(c->scratch, c->target_norm) == 0){
+    *c->out_id = id;
+    return true;
+  }
+  return false;
+}
+
+bool game_data_find_id_by_normalized_exact(const char *normalized_query, int *out_id)
+{
+  if(!normalized_query || !*normalized_query || !out_id){
+    return false;
+  }
+  char scratch[4096];
+  exact_norm_ctx_t ctx;
+  ctx.target_norm = normalized_query;
+  ctx.scratch = scratch;
+  ctx.scratch_cap = sizeof(scratch);
+  ctx.out_id = out_id;
+  *out_id = -1;
+  bool hit = game_data_iterate(exact_norm_on_entry, &ctx);
+  return hit && *out_id > 0;
+}
+
 static bool parse_steam_mapping_line(const char *line, char *appid_out, size_t appid_cap, int *ltr_id_out)
 {
   if(!line || !appid_out || !ltr_id_out) return false;
