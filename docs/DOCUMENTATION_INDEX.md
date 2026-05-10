@@ -24,11 +24,10 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 
 ### 🛠️ User Guides (`guides/` + `readme/`)
 **For end users and system administrators**
-- **[guides/README.md](guides/README.md)** - Guide index and cross-links
-- **[guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)** - MX Linux build guide
-- **[guides/ARCH_LINUX_INSTALL_GUIDE.md](guides/ARCH_LINUX_INSTALL_GUIDE.md)** - Redirect to [readme/arch-linux.md](readme/arch-linux.md)
+- **[guides/README.md](guides/README.md)** - Supplemental guide index and cross-links
+- **[guides/WINE_BRIDGE_MODERN.md](guides/WINE_BRIDGE_MODERN.md)** - Modern WOW64 + MinGW Wine bridge details
 - **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)**, **[readme/fedora-rhel.md](readme/fedora-rhel.md)**, **[readme/arch-linux.md](readme/arch-linux.md)** - Primary per-distro docs
-- **[archive/guides/](archive/guides/)** - Historical `LEGACY_*` snapshots only
+- **[archive/guides/](archive/guides/)** - Historical MX/Arch guide snapshots and `LEGACY_*` files only
 
 ### 🧪 Testing Documentation (`testing/`)
 **For testing and validation procedures**
@@ -81,7 +80,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 9. **AppImage won't run on different distributions** → [technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)
 
 ### Distribution-Specific Guides
-- **MX Linux** → [guides/MX_LINUX_BUILD_GUIDE.md](guides/MX_LINUX_BUILD_GUIDE.md)
+- **MX Linux** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md) for Debian-family package guidance; historical MX notes are archived under [archive/guides/](archive/guides/)
 - **Ubuntu/Debian** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md)
 - **Fedora/RHEL** → [readme/fedora-rhel.md](readme/fedora-rhel.md)
 - **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md) (WOW64 / CachyOS); historical Arch–Wine notes → [archive/technical/](archive/technical/) (`ISSUE_206_*`, `ARCH_LINUX_WINE_BRIDGE_*`)

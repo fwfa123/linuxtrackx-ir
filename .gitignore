@@ -178,6 +178,7 @@ linuxtrack new.cursor/
 
 # Local feature plans and drafts (not part of tracked docs)
 docs/features/
+docs/issues/
 
 # Python bytecode cache
 __pycache__/

@@ -1,13 +1,11 @@
 # LinuxTrack user guides
 
-This directory holds a few distribution-focused guides. **Current releases use Qt6 and CMake** (see the main [README.md](../../README.md)). **Per-distro install and troubleshooting** live primarily under [`docs/readme/`](../readme/) (Debian/Ubuntu, Fedora/RHEL, Arch, Flatpak, migration notes).
+This directory holds focused supplemental guides. **Current releases use Qt6 and CMake** (see the main [README.md](../../README.md)). **Per-distro install and troubleshooting** live under [`docs/readme/`](../readme/) (Debian/Ubuntu, Fedora/RHEL, Arch, Flatpak, migration notes).
 
 ## Guides in this folder
 
 | File | Purpose |
 |------|---------|
-| [`MX_LINUX_BUILD_GUIDE.md`](MX_LINUX_BUILD_GUIDE.md) | MX Linux build and dependencies |
-| [`ARCH_LINUX_INSTALL_GUIDE.md`](ARCH_LINUX_INSTALL_GUIDE.md) | Redirect → [`readme/arch-linux.md`](../readme/arch-linux.md) |
 | [`WINE_BRIDGE_MODERN.md`](WINE_BRIDGE_MODERN.md) | Modern WOW64 + MinGW wine bridge requirements and verification |
 
 ## Cross-references
@@ -21,7 +19,7 @@ This directory holds a few distribution-focused guides. **Current releases use Q
 
 ## Legacy snapshots
 
-Older `LEGACY_*` guides were moved to **[`../archive/guides/`](../archive/guides/)** for historical reference only.
+Older MX Linux and Arch redirect guides, along with `LEGACY_*` snapshots, were moved to **[`../archive/guides/`](../archive/guides/)** for historical reference only.
 
 ## Quick commands
 

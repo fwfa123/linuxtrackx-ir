@@ -15,7 +15,7 @@ Major cleanups that removed or relocated tracked content. For full file-level hi
 | Repo root | Removed mis-committed `configure`/`libtool`/`test.c`/log-style files |
 | Root drafts | Moved `GITHUB_*` / `GITLAB_*` / `RELEASE_*` / `CHANGELOG_DRAFT_*`, fork/legacy text into `docs/archive/releases/` and `docs/archive/root-legacy/` |
 | `docs/progress/` | Removed (process artifacts; use issues / changelog) |
-| `docs/wiki/` | Removed in-repo mirror (PNGs + markdown); kept `docs/wiki/README.md` stub; wiki tooling targets external wiki clones |
+| `docs/wiki/` | Removed in-repo mirror and stub; wiki tooling targets external wiki clones |
 | `docs/testing/` | Removed huge logs `KUBUNTU_25_TESTING.md`, `TESTING_INSTRUCTIONS.md` |
 | `docs/guides/` | Moved `LEGACY_*.md` → `docs/archive/guides/` |
 | `docs/technical/` | Moved stale plans (e.g. help CI, desktop integration, MFC42 progress) → `docs/archive/technical/` |
