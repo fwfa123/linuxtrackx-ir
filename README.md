@@ -6,6 +6,8 @@
 
 Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility. **Current releases on `main` use Qt6** (CMake); older docs may still mention Qt5 for migration history.
 
+> **Modern Wine/WOW64 branch:** Users on current distros with Wine 11+ / Proton WOW64 should try the `wow64-rearchitecture` branch. Clone it directly with `git clone -b wow64-rearchitecture https://gitlab.com/fwfa123/linuxtrackx-ir.git`, or switch after cloning with `git switch wow64-rearchitecture`.
+
 ### Why 'X-IR'?
 This fork focuses on TrackIR hardware support and modern Linux distributions, while attempting to maintaining compatibility with the original codebase.
 
