@@ -1,118 +1,18 @@
 # LinuxTrack Build Guide: Arch Linux
 
-This guide applies to **Arch Linux** and derivatives (**CachyOS**, EndeavourOS, Manjaro, etc.). **CMake + Qt6** is the only supported build system.
+This guide applies to **Arch Linux** and derivatives (**CachyOS**, EndeavourOS, Manjaro, etc.). **CMake + Qt6** is the supported build system.
 
-## Choose your path
+## Choose Your Path
 
-### End users (recommended): AppImage
+For day-to-day use, prefer the official **AppImage**. It bundles the GUI and most runtime dependencies users need on rolling distributions.
 
-For day-to-day use, prefer the **official AppImage** (e.g. v1.0.1+). It bundles the GUI and dependencies users need on rolling distros.
-
-- **Wine bridge:** If a **source build** on your machine fails to produce a working `linuxtrack-wine.exe` (common with **Wine WOW64** on Arch), you can still install the bridge using the **installer shipped with the AppImage** while running **`ltr_gui` from a local `/opt` install** if you wish. Several users reported this workflow on [GitLab #38](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/38).
-- Releases: see the project README / GitLab releases.
-
-### Build from source
-
-**Script vs manual:** [`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) is the **usual** from-source path: it installs dependencies, sets Arch-friendly Wine paths, and configures roughly **README Level 2** (TrackIR + Wine bridge). Use the **package lists and CMake commands** below instead if you want full control, extra `-DENABLE_*` options (X-Plane, webcam, OSC, etc.), or to avoid the script (for example, no AUR helper / yay bootstrap). On **CachyOS** and similar, read [First-time build walkthrough](#first-time-build-walkthrough) — you may want AUR **wine32** before the first configure so the Wine bridge does not fail on the first try.
-
-Use this when you need a full **`/opt` install**, packaging work, or the latest `main` commits. Either follow the **package and CMake** sections below or run the helper script:
+Build from source when you need a full `/opt` install, packaging work, optional feature builds, or the latest branch changes:
 
 ```bash
 ./scripts/build_arch_linux.sh
 ```
 
-If the script’s Wine verification step is noisy on your system, use split steps (see [Automated build script](#automated-build-script)).
-
----
-
-## First-time build walkthrough
-
-For **CachyOS**, **Arch**, and similar after **`git clone`** when you want a **from-source** `/opt` install. (If you only need the app working, start with the **AppImage** in [Choose your path](#choose-your-path) — less friction than Arch Wine.)
-
-### What counts as success
-
-- **`ltr_gui` runs** (on Wayland often: `QT_QPA_PLATFORM=xcb ltr_gui`).
-- **TrackIR** works for your setup.
-- **Wine bridge** (Windows games): on WOW64-heavy systems this is the fragile part; see [Wine, WOW64, and the 32-bit bridge](#wine-wow64-and-the-32-bit-bridge) and [GitLab #38](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/38).
-
-### Steps
-
-1. **System prep:** Enable **`[multilib]`** in `/etc/pacman.conf` (uncomment the `Include` line under `[multilib]`). Run `sudo pacman -Syu`. Check libz with **`pacman -Q zlib zlib-ng-compat`** and **`pkg-config --exists zlib`** (not **`which`** — these are libraries, not shell commands; [package notes](#package-names-that-trip-people-up)). If **`pacman -S zlib`** conflicts with **`zlib-ng-compat`**, you already have the compat stack — answer **N** and skip `zlib`. If **neither** package is installed, add one: usually `sudo pacman -S zlib`, or `zlib-ng-compat` if your image standardizes on it.
-
-2. **Wine bridge (required for this from-source path):** This walkthrough and **`build_arch_linux.sh`** target **Level 2+** — the **Wine bridge is built on your machine** from this tree (not shipped prebuilt). The current path builds real PE `.dll/.exe` artifacts via MinGW-w64 and NSIS; *only* a deliberate **Level 1** configure skips the bridge.
-
-3. **Scripted build (default ≈ README Level 2):** From the repo root:
-   ```bash
-   ./scripts/build_arch_linux.sh --help
-   ./scripts/build_arch_linux.sh
-   ```
-   Use split steps if needed: `--deps-only`, `--wine32-only`, `--configure-only`, `--build-only`, `--install-only` ([Automated build script](#automated-build-script)). **`--configure-only`** runs **NSIS**, **liblo**, and **Wine** preflight so CMake can enable the **Wine bridge** and **OSC** (older script revisions skipped those on split runs — see [Troubleshooting](#wine-issues-common)).
-
-4. **If the Wine bridge still fails:** Use explicit CMake paths (see [Level 2](#level-2-trackir--wine-most-common)) or the **AppImage bridge** while keeping a local `ltr_gui` ([Choose your path](#choose-your-path)).
-
-5. **First launch:** `ltr_gui` or `QT_QPA_PLATFORM=xcb ltr_gui`; see [Camera view / 3D preview quirks](#camera-view--3d-preview-quirks).
-
-**`build_arch_linux.sh` and AUR `wine32`:** Repo **`wine`** and AUR **`wine32`** **conflict**. If **`paru`** asks to remove **`wine32`** to install **`wine`**, answer **`N`**. The script now **skips** repo **`wine`** when **`wine32`** is already installed; if an older script revision already failed mid-run, update the repo script and re-run from **`./scripts/build_arch_linux.sh --wine32-only`** or **`--configure-only`** as needed.
-
-### Faster builds (Octopi, parallel compile)
-
-- **Octopi:** Use it to install **all official-repo** dependencies in one go (with **multilib** enabled). **AUR `wine32`** still has to be built with **`makepkg`** — use Octopi’s **AUR** integration if your build includes it; otherwise install **`wine32`** once with **paru** / **yay** (or let **`build_arch_linux.sh`** bootstrap **yay**).
-- **Parallel jobs:** Before long AUR or CMake builds, run `export MAKEFLAGS="-j$(nproc)"` (or set the same **`MAKEFLAGS`** in **`/etc/makepkg.conf`** so Octopi/`makepkg` use all cores).
-- **Pacman:** In **`/etc/pacman.conf`**, raise **`ParallelDownloads`** (e.g. `10`) for quicker repo installs.
-- **Avoid redoing work:** Install **wine32** *before* the first **`cmake`** so you don’t repeat a full failed configure/build ([step 2](#first-time-build-walkthrough)).
-
-### Checkpoint table (for issues or doc improvements)
-
-Copy and fill when reporting problems:
-
-| Checkpoint | Pass/Fail | Notes |
-|------------|-----------|-------|
-| `[multilib]` enabled | | |
-| `zlib` / `zlib-ng-compat` conflict | | What you chose |
-| `ls /usr/lib32/wine/i386-unix` exists before configure | | e.g. after AUR **wine32** |
-| `./scripts/build_arch_linux.sh` full run | | Where it stopped |
-| MinGW toolchain warning/error vs build failure | | |
-| `cmake` Wine paths auto vs `-DWINE_*` | | |
-| `sudo cmake --install .` | | |
-| `ltr_gui` (with/without `QT_QPA_PLATFORM=xcb`) | | |
-| Wine bridge from **local** build | | Error snippet if any |
-| Wine bridge via **AppImage** installer only | | |
-
----
-
-## Package names that trip people up
-
-These mismatches caused real confusion on [GitLab #38](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/38):
-
-- **`mxml`** — Arch package is **`mxml`**, not `libmxml`.
-- **`wine-stable` / `lib32-wine-stable`** — **Not** in the official repos. They are **AUR** packages (or absent under those exact names). Do not expect `sudo pacman -S wine-stable` to work.
-- **`zlib` vs `zlib-ng-compat`** — On CachyOS and similar, **do not** remove `zlib-ng-compat` to install `zlib`. Prefer skipping `zlib` if `zlib-ng-compat` already provides `libz` (see Core Dependencies below).
-- **`which zlib` / `which zlib-ng-compat`** — These are **package names**, not programs on your `PATH`. Use **`pacman -Q zlib zlib-ng-compat`** to see what is installed, and **`pkg-config --exists zlib`** to confirm the build can find libz. If **`sudo pacman -S zlib`** reports a **conflict** with `zlib-ng-compat`, that means **`zlib-ng-compat` is already installed** — answer **N** (keep it) and **do not** install `zlib`.
-- **`liblo`** — Official **`[extra]`** repository: `sudo pacman -S liblo` (not AUR).
-
----
-
-## Wine, WOW64, and the 32-bit bridge
-
-Arch moved to a **WOW64**-style Wine packaging ([Arch announcement](https://archlinux.org/news/transition-to-the-new-wow64-wine-and-wine-staging/)). Stock **`wine`** may not expose the classic **32-bit Unix Wine libraries** under paths our CMake logic expects, which breaks **building** or **installing** the Wine bridge from a **local** build even when **64-bit** prefixes work.
-
-CMake detects 32-bit Wine Unix libs via `cmake/FindWineLibs.cmake`, notably:
-
-- `/usr/lib32/wine/i386-unix` (typical with AUR **wine32**)
-- `/usr/lib32/wine`
-- 64-bit: `/usr/lib/wine/x86_64-unix`
-
-**Practical tiers** (try in order):
-
-1. **Tier A — Official repos:** Enable **`[multilib]`** in `/etc/pacman.conf`. Install `wine`, `wine-mono`, `wine-gecko`, `lib32-glibc`, `lib32-gcc-libs`. Optionally install **`lib32-wine`** if your mirror lists it (`pacman -Ss lib32-wine`).
-2. **Tier B — AUR `wine32`:** Reported working on CachyOS for users who need the classic 32-bit tree under `/usr/lib32/wine/...` ([AUR: wine32](https://aur.archlinux.org/packages/wine32)). Matches the paths `FindWineLibs.cmake` checks first on Arch. While installing **`wine32`**, **paru** / **pacman** may ask for a provider for **`lib32-jack`**: **`lib32-pipewire-jack`** (option **2**) fits most **PipeWire** desktops (typical CachyOS); **`lib32-jack2`** (option **1**) if you use classic JACK. To skip the prompt: `sudo pacman -S lib32-pipewire-jack` or `lib32-jack2` first, then `paru -S wine32`. You may later see **`pipewire-jack`** conflicting with **`jack`** — on a **PipeWire** setup, removing **`jack`** (**`y`**) is normal; choose **`N`** only if you rely on standalone **JACK2** for pro audio. **CachyOS** may also offer the same name from **`cachyos-extra-v3`** vs **`extra`** (e.g. **`lib32-rust-libs`**) — either is usually fine; **default / repo (1)** is typical on CachyOS. If the terminal seems **stuck** showing a patch and **`Paging with less`**, press **`q`** to exit the pager and continue; or run with **`PAGER=cat`** to avoid **`less`** during **`paru`**.
-3. **Tier C — AUR `wine-stable` + `wine-stable-mono`:** Maintainer-tested on CachyOS for a full build. **Tradeoff:** this often means **replacing** repo `wine` / `wine-mono` with older AUR builds, which can affect other games. See discussion on [GitLab #38](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/38).
-
-**CachyOS / rolling Arch:** If you are building the **Wine bridge** from source, doing **Tier B** (`wine32`) **before** the first `cmake` run avoids a common first-time failure (stock WOW64 layout vs `FindWineLibs.cmake`). See [First-time build walkthrough](#first-time-build-walkthrough).
-
-**Runtime / prefixes / MFC42:** See [WINE_SUPPORT_MODERN.md](../WINE_SUPPORT_MODERN.md), [guides/WINE_BRIDGE_MODERN.md](../guides/WINE_BRIDGE_MODERN.md), and [src/wine_bridge/WINE_SETUP.md](../../src/wine_bridge/WINE_SETUP.md). In the GUI installer, if the default MFC42 path fails, try the **alternate option** in the dropdown (as noted in #38). **`winetricks`** is still commonly used for `mfc42` in game prefixes; Steam/Proton tips live in [archive/CROSS_DISTRIBUTION_WINE_BRIDGE.md](../archive/CROSS_DISTRIBUTION_WINE_BRIDGE.md).
-
----
+The Wine bridge in this branch is built as real MinGW PE artifacts. It no longer needs the old winegcc / classic Wine Unix library build path.
 
 ## Quick Package Installation
 
@@ -129,23 +29,20 @@ sudo pacman -S zlib   # omit if zlib-ng-compat is already installed (CachyOS, et
 
 ### Wine Support (Level 2+)
 ```bash
-# Enable multilib repository (edit /etc/pacman.conf: uncomment [multilib] and Include)
-sudo pacman -Syu
-
-# Wine: official repos
+# Wine runtime for testing/installing into Wine or Proton prefixes
 sudo pacman -S wine wine-mono wine-gecko
-# 32-bit support (multilib)
-sudo pacman -S lib32-glibc lib32-gcc-libs
-# Optional if available on your mirror:
-sudo pacman -S lib32-wine 2>/dev/null || true
-# If bridge still does not build/install, add Tier B or C from "Wine, WOW64" above (AUR).
 
-# MFC42 and Wine bridge installer
-sudo pacman -S winetricks cabextract wget
+# MinGW cross toolchain for NPClient.dll / NPClient64.dll and tester PE binaries
+sudo pacman -S mingw-w64-gcc
+
+# Wine bridge installer support
 ./scripts/install/install_nsis_arch.sh
+
+# Runtime prefix helpers for MFC42 setup
+sudo pacman -S winetricks cabextract wget
 ```
 
-**IMPORTANT:** Enable multilib in `/etc/pacman.conf`. The error `WINEARCH is set to 'win32' but this is not supported in wow64 mode` usually means missing multilib packages, missing 32-bit Wine support for the prefix, or needing an AUR Wine stack — see [Wine, WOW64, and the 32-bit bridge](#wine-wow64-and-the-32-bit-bridge).
+**Build model:** MinGW builds the Windows PE bridge files. Wine is still needed at runtime for prefixes and for testing/installing the bridge, but the DLL build no longer depends on `winegcc`, `wine-devel`, AUR `wine32`, or classic `/usr/lib32/wine/...` library paths.
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -188,9 +85,9 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not
 
 ## Automated build script
 
-[`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine (multilib), **liblo** (OSC), checks X-Plane SDK path, NSIS, configures CMake with Arch-friendly `WINE_*` paths, builds, and installs to `/opt`. **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
+[`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine runtime packages, MinGW-w64, **liblo** (OSC), checks the X-Plane SDK path, installs NSIS, configures CMake, builds, and installs to `/opt`. **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
 
-**CMake vs packages:** The script’s `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine + 32-bit lib + bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. The script still installs **opencv**, **v4l-utils**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
+**CMake vs packages:** The script’s `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. The script still installs **opencv**, **v4l-utils**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
 
 **AUR helper:** If neither **yay** nor **paru** is installed, the script clones and builds **yay** from the AUR (needs **network**, uses **`sudo pacman`**, and implies the usual AUR trust model). Install **paru**/**yay** yourself first if you prefer.
 
@@ -199,7 +96,8 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not
 ```bash
 ./scripts/build_arch_linux.sh --deps-only
 ./scripts/build_arch_linux.sh --deps-only --with-wiimote   # deps + optional Wiimote attempt
-./scripts/build_arch_linux.sh --wine32-only    # Wine + verification only
+./scripts/build_arch_linux.sh --wine-bridge-only
+./scripts/build_arch_linux.sh --wine32-only    # legacy alias
 ./scripts/build_arch_linux.sh --configure-only
 ./scripts/build_arch_linux.sh --build-only
 ./scripts/build_arch_linux.sh --install-only   # script runs sudo where needed for install
@@ -227,16 +125,6 @@ cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
-
-If `FindWineLibs` does not detect your layout, set paths explicitly (directories must exist on disk):
-
-```bash
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_LTR_32LIB_ON_X64=ON \
-  -DWINE_LIBS_PATH=/usr/lib32/wine/i386-unix \
-  -DWINE64_LIBS_PATH=/usr/lib/wine/x86_64-unix
-```
-
-Inspect candidates with `ls /usr/lib32/wine/i386-unix` and `ls /usr/lib/wine/x86_64-unix`.
 
 ### Level 3: TrackIR + Wine + X-Plane
 ```bash
@@ -310,22 +198,17 @@ ls /opt/share/linuxtrack/wine/linuxtrack-wine.exe 2>/dev/null || true  # NSIS in
 
 ## Troubleshooting
 
-### Wine bridge: `c000007b` or installer fails with AppImage-built bridge
-
-The NSIS step runs **`check_data.exe`** built against **Wine Unix libraries**. An AppImage produced on another distro may embed a bridge that fails on Arch paths. **Fix:** build and install on Arch (see Level 2 and explicit `-DWINE_LIBS_PATH` / `-DWINE64_LIBS_PATH` above) so `linuxtrack-wine.exe` matches your system, or use the **AppImage’s** bridge installer as in [Choose your path](#choose-your-path). Details were consolidated from older troubleshooting notes now in [docs/archive/technical/](../archive/technical/).
-
-### Wine issues (common)
+### Wine Bridge Issues
 
 | Problem | Solution |
 |---------|----------|
-| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | Enable multilib; install `lib32-glibc` `lib32-gcc-libs`; add AUR **wine32** or **wine-stable** stack if needed — see [Wine, WOW64, and the 32-bit bridge](#wine-wow64-and-the-32-bit-bridge) |
-| `wine-staging` conflicts | Remove conflicting packages: `sudo pacman -R wine-staging wine-gecko wine-mono winetricks` (adjust to your mix) |
-| Missing 32-bit headers | Install `lib32-glibc` and `lib32-gcc-libs` (multilib). Default CMake bridge build does **not** require `lib32-mxml` / `lib32-liblo` |
-| 32-bit/64-bit compilation conflicts | Use explicit 64-bit flags: `CFLAGS="-m64" CXXFLAGS="-m64" LDFLAGS="-m64"` |
+| `i686-w64-mingw32-gcc: command not found` | Install `mingw-w64-gcc` |
+| `x86_64-w64-mingw32-gcc: command not found` | Install `mingw-w64-gcc` |
+| `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install `mingw-w64-gcc` and NSIS (`./scripts/install/install_nsis_arch.sh` or AUR `nsis`), then reconfigure from a clean build dir |
+| MFC42 install fails | Use the GUI MFC42 installer or manual `winetricks mfc42` for the target prefix |
+| Wine/Proton prefix does not load the bridge | Verify `NPClient.dll` / `NPClient64.dll` were installed into the target prefix and check `NPClient.log` / Steam logs |
 | `zlib` and `zlib-ng-compat` in conflict (CachyOS etc.) | Answer **N** (do not remove zlib-ng-compat). Omit `zlib`; run `pkg-config --exists zlib` to confirm |
 | Qt6 CMake config not found | `sudo pacman -S qt6-base qt6-tools` |
-| CMake finds wrong Wine paths | Set `-DWINE_LIBS_PATH` and `-DWINE64_LIBS_PATH` to existing directories (see Level 2) |
-| **`Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)`** | Install `mingw-w64-gcc` and NSIS (`./scripts/install/install_nsis_arch.sh` or AUR `nsis`), then reconfigure from a clean build dir. |
 | **`liblo` not found** / OSC disabled | `sudo pacman -S liblo` then `pkg-config --exists liblo`. Split **`--configure-only`** previously skipped this; current **`build_arch_linux.sh`** runs **`install_osc_support`** before configure. |
 | **Webcam disabled** but V4L found | Default **`ENABLE_WEBCAM=OFF`**. Add **`-DENABLE_WEBCAM=ON`** to **`cmake`** (see Level 4) if you need webcam support. |
 
@@ -340,7 +223,7 @@ The NSIS step runs **`check_data.exe`** built against **Wine Unix libraries**. A
 
 ### 32-bit libraries (advanced)
 
-For optional historical **lib32** dependency notes, see [archive/ARCH_LINUX_32BIT_LIBRARIES.md](../archive/ARCH_LINUX_32BIT_LIBRARIES.md).
+The default MinGW bridge build does not require old `lib32-mxml`, `lib32-liblo`, or Wine Unix library development paths. Historical lib32 notes live in [archive/ARCH_LINUX_32BIT_LIBRARIES.md](../archive/ARCH_LINUX_32BIT_LIBRARIES.md), and the old Arch wine32 walkthrough is archived in [archive/technical/ARCH_LINUX_LEGACY_WINE32_BUILD_WALKTHROUGH.md](../archive/technical/ARCH_LINUX_LEGACY_WINE32_BUILD_WALKTHROUGH.md).
 
 ### Qt6 tools PATH (rare)
 ```bash
@@ -365,4 +248,4 @@ See the main README for all CMake options.
 
 ## Historical / archived notes
 
-Older Arch–Wine investigations (autotools-era wording, duplicate guides) live under **[docs/archive/technical/](../archive/technical/)**. **Current** instructions are only this file plus the main [README.md](../../README.md).
+Older Arch–Wine investigations, including the former AUR `wine32` / classic Wine Unix library walkthrough, live under **[docs/archive/technical/](../archive/technical/)**. **Current** instructions are only this file plus the main [README.md](../../README.md).

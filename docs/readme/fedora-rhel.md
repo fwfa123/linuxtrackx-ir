@@ -179,26 +179,16 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | `qmake` / `qmake6: command not found` | Qt6 tools not in PATH. Add `/usr/lib64/qt6/bin` to PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"` |
 | `Could not find a package configuration file provided by "Qt6"` | Install Qt6 development packages: `sudo dnf install qt6-qtbase-devel qt6-qttools-devel` |
 | `qhelpgenerator: command not found` | Install **`qt6-doctools`**. On Fedora the binary is **`/usr/lib64/qt6/libexec/qhelpgenerator`**; add `export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"` if tools are not found. |
-| `fatal error: bits/c++config.h: No such file or directory` | Install 32-bit C++ development: `sudo dnf install gcc-c++.i686` |
+| `fatal error: bits/c++config.h: No such file or directory` | Install the normal C++ compiler package: `sudo dnf install gcc-c++` |
 
-### 32-bit Library Issues
+### Legacy 32-bit Library Notes
 
-| Problem | Solution |
-|---------|----------|
-| `cannot find -lz: No such file or directory` | Install 32-bit zlib: `sudo dnf install zlib-ng-compat-devel.i686` |
-| `cannot find -lmxml: No such file or directory` | Install 32-bit mxml: `sudo dnf install mxml-devel.i686` |
-| `cannot find -lusb-1.0: No such file or directory` | Install 32-bit libusb: `sudo dnf install libusb1-devel.i686` |
-| `cannot find -lv4l2: No such file or directory` | Install 32-bit v4l: `sudo dnf install libv4l-devel.i686` |
-| `i386:x86-64 architecture of input file is incompatible` | Install all 32-bit packages listed above |
+The current Wine bridge is built with MinGW PE toolchains, so it no longer needs Fedora/RHEL `*.i686` development packages for the DLL bridge. If you are reading older notes that recommend `wine-devel.i686`, `glibc-devel.i686`, `libstdc++-devel.i686`, `mxml-devel.i686`, or similar packages for the Wine bridge, those notes apply to the archived winegcc-style build path.
 
-**Quick fix for common issues:**
+If Qt6 qmake is not found, prefer adding Qt6 tools to `PATH` rather than creating symlinks:
+
 ```bash
-# If you encounter missing library errors during build
-sudo dnf install -y gcc-c++.i686 zlib-ng-compat-devel.i686 libusb1-devel.i686 mxml-devel.i686 libv4l-devel.i686
-
-# If Qt6 qmake is not found
-sudo mkdir -p /usr/lib/qt6/bin
-sudo ln -s /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake
+export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"
 ```
 
 ### Wine Issues

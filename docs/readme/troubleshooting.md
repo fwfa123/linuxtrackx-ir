@@ -2,9 +2,6 @@
 
 This guide covers the most common issues across all supported distributions. For distribution-specific issues, see the individual build guides.
 
-## Wine32 - 64 bit install issue
-**[Wine INstall](scripts/dev/README_wine_dev.md)**
-
 ## Quick Diagnosis
 
 ### 1. Check Your Build
@@ -73,7 +70,7 @@ sudo usermod -a -G plugdev,input $USER
 | Problem | Symptom | Solution |
 |---------|---------|----------|
 | MFC42 installation fails | TrackIR not working in Wine | Use GUI MFC42 installer or manual winetricks |
-| 32-bit Wine prefix issues | Wine errors | Ensure wine-stable (not staging) on Arch |
+| Wine/Proton prefix issues | Wine errors | Verify the target prefix, Wine/Proton version, and MFC42 setup |
 | Wine bridge components missing | No `NPClient.dll`/`linuxtrack-wine.exe` | Verify MinGW + NSIS are installed, then reconfigure/rebuild |
 | Wine version conflicts | Incompatible Wine version | Use Wine 11.0+ (or current Proton/Wine Staging) |
 

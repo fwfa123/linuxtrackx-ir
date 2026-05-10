@@ -160,8 +160,8 @@ install_xplane_sdk() {
     return 0
 }
 
-# Function to install Wine + MinGW toolchains
-install_wine32() {
+# Function to install Wine runtime + MinGW bridge toolchains
+install_wine_bridge_toolchain() {
     print_status "Installing Wine + MinGW toolchains..."
     sudo pacman -S --needed wine wine-mono wine-gecko mingw-w64-gcc
 }
@@ -192,8 +192,8 @@ install_nsis() {
     fi
 }
 
-# Function to verify Wine + MinGW installation
-verify_wine32() {
+# Function to verify Wine runtime + MinGW bridge toolchains
+verify_wine_bridge_toolchain() {
     print_status "Verifying Wine + MinGW toolchains..."
     if ! command_exists wine; then
         print_error "wine not found"
@@ -290,7 +290,9 @@ show_usage() {
     echo ""
     echo "Options:"
     echo "  --deps-only      Install dependencies only"
-    echo "  --wine32-only    Install Wine + MinGW toolchains only (kept for compatibility)"
+    echo "  --wine-bridge-only"
+    echo "                   Install Wine runtime + MinGW bridge toolchains only"
+    echo "  --wine32-only    Compatibility alias for --wine-bridge-only"
     echo "  --configure-only Configure build only"
     echo "  --build-only     Build only (assumes dependencies installed)"
     echo "  --install-only   Install only (assumes build completed)"
@@ -311,7 +313,7 @@ main() {
     
     # Parse command line arguments
     local deps_only=false
-    local wine32_only=false
+    local wine_bridge_only=false
     local configure_only=false
     local build_only=false
     local install_only=false
@@ -328,7 +330,11 @@ main() {
                 shift
                 ;;
             --wine32-only)
-                wine32_only=true
+                wine_bridge_only=true
+                shift
+                ;;
+            --wine-bridge-only)
+                wine_bridge_only=true
                 shift
                 ;;
             --configure-only)
@@ -391,9 +397,9 @@ main() {
             install_wiimote_support
         fi
         exit 0
-    elif [ "$wine32_only" = true ]; then
-        install_wine32
-        verify_wine32
+    elif [ "$wine_bridge_only" = true ]; then
+        install_wine_bridge_toolchain
+        verify_wine_bridge_toolchain
         exit 0
     elif [ "$verify_only" = true ]; then
         verify_installation
@@ -414,12 +420,12 @@ main() {
         install_dependencies
     fi
     
-    # Install Wine (multilib) — wine32_only already exited above
+    # Install Wine runtime + MinGW bridge toolchains
     if [ "$build_only" = true ] || [ "$install_only" = true ] || [ "$configure_only" = true ]; then
         :
     else
-        install_wine32
-        verify_wine32
+        install_wine_bridge_toolchain
+        verify_wine_bridge_toolchain
     fi
     
     # Wiimote (cwiid): optional only — see GitLab #8
@@ -461,8 +467,8 @@ main() {
         print_status "configure-only: ensuring NSIS, liblo, and Wine + MinGW (same as full run before cmake)..."
         install_nsis
         install_osc_support
-        install_wine32
-        verify_wine32
+        install_wine_bridge_toolchain
+        verify_wine_bridge_toolchain
         configure_build
         exit 0
     elif [ "$build_only" = true ] || [ "$install_only" = true ]; then

@@ -141,7 +141,6 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW toolchain: `sudo apt install mingw-w64` |
 | Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton / Wine Staging) |
 | `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install toolchain + NSIS: `sudo apt install mingw-w64 nsis` |
-| `relocatable linking ... elf32-i386 ... to format elf64-x86-64` | Clear your build dir and reconfigure so 64-bit Wine bridge links against the 64-bit unix libs: `cmake .. -DWINE64_LIBS_PATH=/usr/lib/x86_64-linux-gnu/wine/x86_64-unix` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
