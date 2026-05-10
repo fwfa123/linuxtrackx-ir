@@ -313,8 +313,8 @@ if [ "$RECOVERY_SUCCESS" = true ]; then
     echo "🚀 Ready to use:"
     echo "   ./run_qt6_gui.sh"
     echo ""
-    echo "📊 Run health check to verify full functionality:"
-    echo "   ./linuxtrack_health_check.sh"
+    echo "📊 For follow-up checks, see:"
+    echo "   docs/readme/troubleshooting.md"
 else
     echo "⚠️ LinuxTrack Quick Recovery: PARTIAL"
     echo "🔧 $ACTIONS_TAKEN recovery action(s) completed"
@@ -324,8 +324,8 @@ else
     echo "   QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md"
     echo "   TRACKIR_PERMISSION_TROUBLESHOOTING.md"
     echo ""
-    echo "📊 Run health check for detailed diagnosis:"
-    echo "   ./linuxtrack_health_check.sh"
+    echo "📊 For detailed diagnosis, see:"
+    echo "   docs/readme/troubleshooting.md"
 fi
 
 echo ""

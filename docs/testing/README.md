@@ -8,9 +8,6 @@ This directory contains testing documentation for LinuxTrack. **New releases tar
 
 ### Essential Testing Commands
 ```bash
-# Quick health check
-./linuxtrack_health_check.sh
-
 # Build test
 ./build.sh --deps --clean --install
 
@@ -86,15 +83,12 @@ This directory contains testing documentation for LinuxTrack. **New releases tar
 
 ## Automated Testing
 
-### Health Check Script
+### Manual Checks
 ```bash
-# Run comprehensive health check
-./linuxtrack_health_check.sh
-
-# Check specific components
-./linuxtrack_health_check.sh --qt5
-./linuxtrack_health_check.sh --hardware
-./linuxtrack_health_check.sh --permissions
+# Check the built GUI and TrackIR access
+./scripts/test/run_qt5_gui.sh
+lsusb | grep 131d
+groups "$USER"
 ```
 
 ### Build Verification

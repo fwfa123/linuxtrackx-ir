@@ -164,9 +164,6 @@ QT_QPA_PLATFORM=xcb ltr_gui
 ```bash
 # Automated recovery script (fixes common issues automatically)
 ./scripts/install/linuxtrack_quick_recovery.sh
-
-# Or if run from project root:
-./linuxtrack_quick_recovery.sh
 ```
 
 ### Quick Diagnosis

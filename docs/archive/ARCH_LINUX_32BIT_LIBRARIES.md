@@ -42,7 +42,7 @@ sudo ln -sf /usr/lib32/liblo.so.7 /usr/lib32/liblo.so
 
 ### PKGBUILD
 
-A `scripts/lib32-mxml.PKGBUILD` exists for building lib32-mxml via makepkg; it is for manual/advanced use only.
+The old `scripts/lib32-mxml.PKGBUILD` was archived to `docs/archive/scripts/root/lib32-mxml.PKGBUILD`; it is historical and not required by the current MinGW bridge build.
 
 ## Building LinuxTrack (CMake)
 

@@ -1,218 +1,32 @@
-# 📦 Installation Scripts Directory
+# Installation Scripts Directory
 
-This directory contains all installation and setup scripts for LinuxTrack X-IR, organized by purpose and distribution.
+This directory now contains only helpers that still apply to the current CMake + Qt6 + MinGW/WOW64 branch.
 
----
+For normal source builds, use the distro guides under [`docs/readme/`](../../docs/readme/) or the Arch helper:
 
-## 🚀 Quick Start
-
-### **Arch Linux / Manjaro Users**
 ```bash
-# Recommended: source build (CMake + Qt6)
 ./scripts/build_arch_linux.sh
-# Or: docs/readme/arch-linux.md for manual steps
-```
-`install_arch_prebuilt.sh` is **deprecated**; use the above or [arch-linux.md](../../docs/readme/arch-linux.md).
-
-### **Other Distributions**
-```bash
-# Standard installation (CMake + Qt6)
-./scripts/install/linuxtrack_install.sh
 ```
 
----
+## Current Helpers
 
-## 📋 Scripts Overview
+- [`install_nsis_arch.sh`](install_nsis_arch.sh): Arch Linux helper for installing NSIS when the package or AUR path is awkward.
+- [`README_NSIS_ARCH.md`](README_NSIS_ARCH.md): Notes for the Arch NSIS helper.
+- [`install_winetricks.sh`](install_winetricks.sh): Optional runtime helper for installing a recent `winetricks`.
+- [`mfc42_alternative_installers.sh`](mfc42_alternative_installers.sh): MFC42 fallback installer used by the GUI path.
+- [`install_mfc42_alternative.sh`](install_mfc42_alternative.sh): Thin wrapper around the MFC42 fallback methods.
+- [`mfc42_python_installer.py`](mfc42_python_installer.py): Python fallback used by the MFC42 wrapper.
+- [`linuxtrack_quick_recovery.sh`](linuxtrack_quick_recovery.sh): CMake-oriented recovery helper for local source-tree repair.
 
-### **Distribution-Specific Installers**
+## Archived Legacy Helpers
 
-#### **Arch Linux / Manjaro**
-- **[install_arch_prebuilt.sh](install_arch_prebuilt.sh)** - **DEPRECATED**. Use [../../docs/readme/arch-linux.md](../../docs/readme/arch-linux.md) or `./scripts/build_arch_linux.sh`.
-- **Recommended**: [docs/readme/arch-linux.md](../../docs/readme/arch-linux.md), [build_arch_linux.sh](../build_arch_linux.sh) (CMake + Qt6)
+Older install-folder scripts that targeted the previous autotools, prebuilt bridge, Qt5, or winegcc-era workflows were moved to [`docs/archive/scripts/install/`](../../docs/archive/scripts/install/).
 
-#### **General Installation**
-- **[linuxtrack_install.sh](linuxtrack_install.sh)** - General LinuxTrack installation script
-  - **Purpose**: Standard installation with CMake/Qt6 and modern Wine bridge workflow
-  - **Status**: Production Ready
-  - **Features**: Dependency detection, build automation
+That archive includes the old prebuilt Wine bridge package scripts, the deprecated Arch prebuilt installer, the autotools-style `linuxtrack_install.sh`, stale setup/post-install scripts, and the Qt5-era health/verification helpers.
 
-### **Wine Bridge Components**
+## Related Docs
 
-#### **Package Creation**
-- **[create_wine_bridge_package.sh](create_wine_bridge_package.sh)** - Create prebuilt Wine bridge package
-  - **Purpose**: Build and package Wine bridge components for distribution
-  - **Status**: Production Ready
-  - **Features**: Component building, package creation, metadata generation
-
-#### **Build System Modification**
-- **[modify_build_for_prebuilt.sh](modify_build_for_prebuilt.sh)** - Modify build system for prebuilt components
-  - **Purpose**: Enable build system to use prebuilt Wine bridge components
-  - **Status**: Production Ready
-  - **Features**: Makefile modification, graceful fallback, component detection
-
-### **NSIS Installation**
-
-#### **Arch Linux NSIS**
-- **[install_nsis_arch.sh](install_nsis_arch.sh)** - Install NSIS on Arch Linux
-  - **Purpose**: Install NSIS with multiple fallback methods
-  - **Status**: Production Ready
-  - **Features**: AUR package installation, manual download, verification
-
-#### **Documentation**
-- **[README_NSIS_ARCH.md](README_NSIS_ARCH.md)** - NSIS installation guide for Arch Linux
-  - **Purpose**: Document NSIS installation process
-  - **Status**: Production Ready
-  - **Content**: Installation methods, troubleshooting, verification
-
-### **Winetricks Setup**
-- **[install_winetricks.sh](install_winetricks.sh)** - Install Winetricks and required components
-  - **Purpose**: Setup Winetricks for Wine compatibility
-  - **Status**: Production Ready
-  - **Features**: Winetricks installation, MFC42 setup, verification
-
-### **Post-Installation**
-- **[post_install_dialog.sh](post_install_dialog.sh)** - Post-installation setup dialog
-  - **Purpose**: Guide users through post-installation configuration
-  - **Status**: Production Ready
-  - **Features**: Interactive setup, group management, verification
-
-### **Verification and Health Checks**
-- **[verify_installation.sh](verify_installation.sh)** - Comprehensive installation verification
-  - **Purpose**: Verify complete LinuxTrack installation
-  - **Status**: Production Ready
-  - **Features**: Component verification, dependency checking, health assessment
-
-- **[linuxtrack_health_check.sh](linuxtrack_health_check.sh)** - System health verification
-  - **Purpose**: Check system health and LinuxTrack status
-  - **Status**: Production Ready
-  - **Features**: Health assessment, problem detection, repair suggestions
-
-- **[linuxtrack_quick_recovery.sh](linuxtrack_quick_recovery.sh)** - Quick system recovery
-  - **Purpose**: Recover from common installation issues
-  - **Status**: Production Ready
-  - **Features**: Automatic recovery, problem resolution, system repair
-
-### **Setup and Configuration**
-- **[setup.sh](setup.sh)** - General setup and configuration
-  - **Purpose**: Setup LinuxTrack environment and configuration
-  - **Status**: Production Ready
-  - **Features**: Environment setup, configuration management, initialization
-
-### **Documentation**
-- **[ARCH_LINUX_INSTALL_GUIDE.md](ARCH_LINUX_INSTALL_GUIDE.md)** - Redirect to **[`docs/readme/arch-linux.md`](../../docs/readme/arch-linux.md)** (maintained Arch / CachyOS / WOW64 guide)
-
----
-
-## 🎯 Usage by Distribution
-
-### **Arch Linux / Manjaro**
-```bash
-# Recommended: ./scripts/build_arch_linux.sh or docs/readme/arch-linux.md (CMake + Qt6)
-./scripts/build_arch_linux.sh
-
-# Alternative: linuxtrack_install.sh (if tailored for Arch)
-./scripts/install/linuxtrack_install.sh
-```
-`install_arch_prebuilt.sh` is deprecated.
-
-### **Ubuntu / Debian / MX Linux**
-```bash
-# Standard installation
-./scripts/install/linuxtrack_install.sh
-
-# Or manual installation (modern CMake build)
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt
-cmake --build . -j$(nproc)
-sudo cmake --install .
-```
-
-### **Fedora / RHEL / CentOS**
-```bash
-# Standard installation
-./scripts/install/linuxtrack_install.sh
-
-# Or manual installation (modern CMake build)
-mkdir build && cd build
-cmake .. -DCMAKE_INSTALL_PREFIX=/opt
-cmake --build . -j$(nproc)
-sudo cmake --install .
-```
-
----
-
-## 🔧 Script Development
-
-### **Creating New Scripts**
-1. **Follow naming convention**: `purpose_distribution.sh` or `purpose_general.sh`
-2. **Include header**: Script purpose, date, status
-3. **Add error handling**: Use `set -e` and proper error checking
-4. **Include documentation**: Add comments and usage examples
-5. **Test thoroughly**: Test on target distributions
-
-### **Script Categories**
-- **Installation**: Complete installation procedures
-- **Setup**: Environment and configuration setup
-- **Verification**: Health checks and verification
-- **Recovery**: Problem resolution and recovery
-- **Documentation**: Guides and documentation
-
-### **Status Levels**
-- **Development**: Under development, not ready for use
-- **Testing**: Ready for testing, may have issues
-- **Production Ready**: Tested and ready for production use
-- **Deprecated**: No longer maintained, use alternatives
-
----
-
-## 📚 Related Documentation
-
-### **Installation Guides**
-- **[Wine Bridge Installation Guide](../../docs/guides/WINE_BRIDGE_INSTALLATION_GUIDE.md)** - Complete Wine bridge installation guide
-- **[Main README](../../README.md)** - Project overview and quick start
-- **[Arch Linux Guide](ARCH_LINUX_INSTALL_GUIDE.md)** - Arch Linux specific installation
-
-### **Technical Documentation**
-- **[Wine Bridge Packaging Plan (archived)](../../docs/archive/WINE_BRIDGE_PACKAGING_PLAN.md)** - Historical prebuilt packaging plan
-- **[Troubleshooting Guide](../../docs/troubleshooting/TROUBLESHOOTING.md)** - Problem resolution
-- **[Testing Guide](../../docs/testing/README.md)** - Testing procedures
-
-### **Scripts in Other Directories**
-- **[wine_check.sh](../wine_check.sh)** - Wine compatibility checker
-- **[Health check scripts](../debug/)** - Additional health check scripts
-- **[Build scripts](../build/)** - Build automation scripts
-
----
-
-## 🎯 Quick Reference
-
-### **Most Common Commands**
-```bash
-# Arch Linux installation
-./scripts/build_arch_linux.sh
-
-# Health check
-./scripts/install/linuxtrack_health_check.sh
-
-# Quick recovery
-./scripts/install/linuxtrack_quick_recovery.sh
-
-# Installation verification
-./scripts/install/verify_installation.sh
-```
-
-### **Troubleshooting**
-```bash
-# Check system health
-./scripts/install/linuxtrack_health_check.sh
-
-# Recover from issues
-./scripts/install/linuxtrack_quick_recovery.sh
-
-# Verify installation
-./scripts/install/verify_installation.sh
-```
-
----
-
-**For detailed installation instructions, see the [Wine Bridge Installation Guide](../../docs/guides/WINE_BRIDGE_INSTALLATION_GUIDE.md).** 
+- [`docs/readme/arch-linux.md`](../../docs/readme/arch-linux.md)
+- [`docs/readme/debian-ubuntu.md`](../../docs/readme/debian-ubuntu.md)
+- [`docs/readme/fedora-rhel.md`](../../docs/readme/fedora-rhel.md)
+- [`docs/readme/troubleshooting.md`](../../docs/readme/troubleshooting.md)

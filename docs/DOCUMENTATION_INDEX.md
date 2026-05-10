@@ -16,7 +16,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 ### Existing Users (After System Changes)
 1. **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - ⚠️ **CRITICAL** - System upgrade resolution
 2. **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)** - Quick fixes for common issues
-3. **[linuxtrack_health_check.sh](../linuxtrack_health_check.sh)** - Automated system health verification
+3. **[readme/troubleshooting.md](readme/troubleshooting.md)** - Current diagnostics and common fixes
 
 ---
 
@@ -96,8 +96,8 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 ## 🚨 Emergency Procedures
 
 ### Quick Recovery (Immediate)
-1. **Run automated recovery**: `./linuxtrack_quick_recovery.sh`
-2. **Check status**: `./linuxtrack_health_check.sh`
+1. **Run automated recovery**: `./scripts/install/linuxtrack_quick_recovery.sh`
+2. **Check status**: `ltr_gui`, `lsusb | grep 131d`, and `groups "$USER"`
 3. **If still broken**: See [troubleshooting/README.md](troubleshooting/README.md)
 
 ### System Upgrade Recovery
@@ -118,7 +118,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 - **[README.md](../README.md)** - Main overview
 - **[guides/README.md](guides/README.md)** - User guides
 - **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)** - Quick fixes
-- **[linuxtrack_health_check.sh](../linuxtrack_health_check.sh)** - Health check
+- **[readme/troubleshooting.md](readme/troubleshooting.md)** - Health checks and common fixes
 
 ### System Administrators
 - **[readme/troubleshooting.md](readme/troubleshooting.md)** - Common issues and maintenance hints
@@ -135,7 +135,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 ### Testers
 - **[testing/README.md](testing/README.md)** - Testing procedures
 - **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - Testing guidelines
-- **[linuxtrack_health_check.sh](../linuxtrack_health_check.sh)** - Automated testing
+- **[testing/README.md](testing/README.md)** - Manual testing checks
 - **[README.md](../README.md)** - Expected install levels and behavior
 
 ---
@@ -157,7 +157,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 
 #### "System Upgrade" or "Broken"
 - **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
-- **[linuxtrack_quick_recovery.sh](../linuxtrack_quick_recovery.sh)**
+- **[scripts/install/linuxtrack_quick_recovery.sh](../scripts/install/linuxtrack_quick_recovery.sh)**
 - **[readme/troubleshooting.md](readme/troubleshooting.md)**
 
 #### "Permission" or "Access Denied"
@@ -196,11 +196,8 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 
 ### Emergency Commands
 ```bash
-# Quick health check
-./linuxtrack_health_check.sh
-
 # Automatic recovery
-./linuxtrack_quick_recovery.sh
+./scripts/install/linuxtrack_quick_recovery.sh
 
 # Rebuild GUI after CMake changes (from repo root)
 mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt && cmake --build . -j$(nproc)
@@ -224,8 +221,8 @@ lsusb | grep 131d
 ## 📞 Support Resources
 
 ### Self-Help (Recommended)
-1. **Health Check**: `./linuxtrack_health_check.sh`
-2. **Quick Recovery**: `./linuxtrack_quick_recovery.sh`
+1. **Health Check**: `ltr_gui`, `lsusb | grep 131d`, and `groups "$USER"`
+2. **Quick Recovery**: `./scripts/install/linuxtrack_quick_recovery.sh`
 3. **Troubleshooting Guides**: See issue-specific guides above
 
 ### Documentation History
@@ -241,6 +238,6 @@ lsusb | grep 131d
 ---
 
 **Documentation Status**: Actively maintained (see `readme/` and `guides/` for current install paths).  
-**Automation**: `linuxtrack_health_check.sh`, `linuxtrack_quick_recovery.sh`
+**Automation**: `scripts/install/linuxtrack_quick_recovery.sh`
 
 This documentation index provides complete navigation for all LinuxTrack resources, organized by category for easy access and maintenance. 

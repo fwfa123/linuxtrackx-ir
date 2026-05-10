@@ -140,7 +140,7 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-Verify: `linuxtrack-wine.exe` under `/opt/share/linuxtrack/`, and run `./scripts/install/verify_installation.sh`.
+Verify that `linuxtrack-wine.exe` was installed under `/opt/share/linuxtrack/wine/` and that the bridge DLLs are present under `/opt/lib/linuxtrack/wine_bridge/`.
 
 ## Support
 

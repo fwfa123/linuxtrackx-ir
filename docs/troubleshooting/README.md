@@ -8,14 +8,13 @@ This directory contains comprehensive troubleshooting documentation for LinuxTra
 
 ### Emergency Recovery
 ```bash
-# Quick health check
-./linuxtrack_health_check.sh
-
 # Automatic recovery
-./linuxtrack_quick_recovery.sh
+./scripts/install/linuxtrack_quick_recovery.sh
 
-# Manual Qt5 rebuild
-cd src/qt_gui && qmake-qt5 ltr_gui.pro && make -j$(nproc)
+# Manual CMake rebuild
+mkdir -p build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
 
 # Check TrackIR hardware
 lsusb | grep 131d
@@ -140,25 +139,21 @@ ls -la /dev/bus/usb/
 
 ### Health Checks
 ```bash
-# Comprehensive health check
-./linuxtrack_health_check.sh
-
-# Component-specific checks
-./linuxtrack_health_check.sh --qt5
-./linuxtrack_health_check.sh --hardware
-./linuxtrack_health_check.sh --permissions
-./linuxtrack_health_check.sh --libraries
+# Basic current checks
+ltr_gui
+lsusb | grep 131d
+groups "$USER"
 ```
 
 ### Recovery Procedures
 ```bash
 # Quick recovery
-./linuxtrack_quick_recovery.sh
+./scripts/install/linuxtrack_quick_recovery.sh
 
-# Manual Qt5 rebuild
-cd src/qt_gui
-qmake-qt5 ltr_gui.pro
-make clean && make -j$(nproc)
+# Manual CMake rebuild
+mkdir -p build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
 
 # Reinstall udev rules
 sudo cp 99-TIR.rules /lib/udev/rules.d/

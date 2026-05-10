@@ -30,7 +30,7 @@ mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt
 cmake --build . -j"$(nproc)"
 sudo cmake --install .
-./linuxtrack_health_check.sh
+ltr_gui
 ```
 
 Use your install’s `ltr_gui` launcher or helper scripts under **`scripts/test/`** (e.g. `run_qt5_gui.sh` — **legacy filename**, built against Qt6) to start the GUI. For Wayland/X11 issues, see **[`../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md`](../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**.

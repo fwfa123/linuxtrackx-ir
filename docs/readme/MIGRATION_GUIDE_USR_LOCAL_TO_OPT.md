@@ -129,7 +129,8 @@ ls -la /opt/lib/linuxtrack/
 ls -la /usr/local/bin/ltr_*
 
 # Verify installation
-./scripts/install/verify_installation.sh
+ls -la /opt/bin/ltr_*
+ls -la /opt/lib/linuxtrack/
 ```
 
 ### Step 7: Reinstall Wine Bridge

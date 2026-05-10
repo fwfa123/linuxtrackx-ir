@@ -193,7 +193,7 @@ cd linuxtrackx-ir
 mkdir build && cd build
 cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_DEBUG=ON
 cmake --build . -j$(nproc)
-./linuxtrack_health_check.sh
+./scripts/test/run_qt5_gui.sh
 ```
 
 ### Code Standards
