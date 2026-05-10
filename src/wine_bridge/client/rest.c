@@ -61,25 +61,76 @@ static ssize_t my_getline(char **lineptr, size_t *n, FILE *f)
 #endif
 }
 
+static void unix_path_to_wine_z(const char *unix_path, char *out, size_t out_size)
+{
+  if(out_size == 0){
+    return;
+  }
+  out[0] = '\0';
+  if(unix_path == NULL || unix_path[0] != '/'){
+    return;
+  }
+  if(out_size < 4){
+    return;
+  }
+  out[0] = 'Z';
+  out[1] = ':';
+  size_t j = 2;
+  for(size_t i = 0; unix_path[i] != '\0' && j + 1 < out_size; ++i){
+    out[j++] = (unix_path[i] == '/') ? '\\' : unix_path[i];
+  }
+  out[j] = '\0';
+}
+
+static FILE *open_tir_firmware_file(const char *filename, const char *mode,
+                                    char *opened_path, size_t opened_path_size)
+{
+  const char *home = ltr_unix_home_for_config();
+  char path[4096];
+
+  if(opened_path != NULL && opened_path_size > 0){
+    opened_path[0] = '\0';
+  }
+
+  snprintf(path, sizeof(path), "%s/.config/linuxtrack/tir_firmware/%s", home, filename);
+  FILE *f = fopen(path, mode);
+  if(f != NULL){
+    if(opened_path != NULL && opened_path_size > 0){
+      snprintf(opened_path, opened_path_size, "%s", path);
+    }
+    return f;
+  }
+
+#ifdef __MINGW32__
+  if(path[0] == '/'){
+    char zpath[4096];
+    unix_path_to_wine_z(path, zpath, sizeof(zpath));
+    if(zpath[0] != '\0'){
+      f = fopen(zpath, mode);
+      if(f != NULL){
+        if(opened_path != NULL && opened_path_size > 0){
+          snprintf(opened_path, opened_path_size, "%s", zpath);
+        }
+        return f;
+      }
+    }
+  }
+#endif
+
+  return NULL;
+}
+
 
 bool game_data_get_desc(int id, game_desc_t *gd)
 {
   FILE *f = NULL;
-  const char *home = ltr_unix_home_for_config();
   if(getenv("LINUXTRACK_UNIX_HOME") == NULL && getenv("HOME") == NULL){
     printf("DEBUG: HOME unset; using USERPROFILE or '.' for config paths\n");
   }
 
-  char *path1 = (char *)malloc(200 + strlen(home));
-  if (path1 == NULL) {
-    printf("DEBUG: Memory allocation failed for path1!\n");
-    return false;
-  }
-  
-  sprintf(path1, "%s/.config/linuxtrack/tir_firmware/gamedata.txt", home);
-    if((f = fopen(path1, "r"))== NULL){
-      printf("Can't open data file '%s'!\n", path1);
-      free(path1);
+  char opened_path[4096];
+  if((f = open_tir_firmware_file("gamedata.txt", "r", opened_path, sizeof(opened_path))) == NULL){
+      printf("Can't open data file from tir_firmware paths!\n");
       return false;
     }
     int tmp_id;
@@ -118,19 +169,14 @@ bool game_data_get_desc(int id, game_desc_t *gd)
     fclose(f);
     free(tmp_code);
     free(tmp_str);
-    free(path1);
   return gd->name != NULL;
 }
 
 static bool game_data_iterate(bool (*on_entry)(int id, const char *name, bool encrypted, uint32_t k1, uint32_t k2, void *ctx), void *ctx)
 {
   FILE *f = NULL;
-  const char *home = ltr_unix_home_for_config();
-  char *path1 = (char *)malloc(200 + strlen(home));
-  if (path1 == NULL) return false;
-  sprintf(path1, "%s/.config/linuxtrack/tir_firmware/gamedata.txt", home);
-  if((f = fopen(path1, "r"))== NULL){
-    free(path1);
+  char opened_path[4096];
+  if((f = open_tir_firmware_file("gamedata.txt", "r", opened_path, sizeof(opened_path))) == NULL){
     return false;
   }
   int tmp_id; size_t tmp_str_size = 4096; size_t tmp_code_size = 4096; char *tmp_str = (char *)malloc(tmp_str_size); char *tmp_code = (char *)malloc(tmp_code_size);
@@ -148,7 +194,7 @@ static bool game_data_iterate(bool (*on_entry)(int id, const char *name, bool en
     }
   }
   fclose(f);
-  free(tmp_code); free(tmp_str); free(path1);
+  free(tmp_code); free(tmp_str);
   return ok;
 }
 
@@ -521,10 +567,8 @@ static bool parse_steam_mapping_line(const char *line, char *appid_out, size_t a
 bool game_data_find_id_by_steam_appid(const char *steam_appid, int *out_id)
 {
   if(!steam_appid || !*steam_appid || !out_id) return false;
-  const char *home = ltr_unix_home_for_config();
-  char path[4096];
-  snprintf(path, sizeof(path), "%s/.config/linuxtrack/tir_firmware/steam_to_trackir_id.txt", home);
-  FILE *f = fopen(path, "r");
+  char opened_path[4096];
+  FILE *f = open_tir_firmware_file("steam_to_trackir_id.txt", "r", opened_path, sizeof(opened_path));
   if(!f){
     return false;
   }
@@ -551,26 +595,15 @@ bool game_data_find_id_by_steam_appid(const char *steam_appid, int *out_id)
 bool getSomeSeriousPoetry(char *verse1, char *verse2)
 {
   bool res = true;
-  const char *home = ltr_unix_home_for_config();
   if(getenv("LINUXTRACK_UNIX_HOME")){
     printf("DEBUG: Using LINUXTRACK_UNIX_HOME for tir_firmware paths\n");
   }else if(getenv("HOME") == NULL){
     printf("DEBUG: HOME is NULL, using USERPROFILE or '.' for tir_firmware...\n");
   }
 
-  char *path1 = (char *)malloc(200 + strlen(home));
-  char *path2 = (char *)malloc(200 + strlen(home));
-  
-  if (path1 == NULL || path2 == NULL) {
-    printf("DEBUG: Memory allocation failed for path1 or path2!\n");
-    if (path1) free(path1);
-    if (path2) free(path2);
-    return false;
-  }
-  
-  sprintf(path1, "%s/.config/linuxtrack/tir_firmware/poem1.txt", home);
-  sprintf(path2, "%s/.config/linuxtrack/tir_firmware/poem2.txt", home);
-  FILE *f1 = fopen(path1, "rb");
+  char path1[4096];
+  char path2[4096];
+  FILE *f1 = open_tir_firmware_file("poem1.txt", "rb", path1, sizeof(path1));
   memset(verse1, 0, 200);
   if(f1 != NULL){
     if(fread(verse1, 1, 200, f1) == 0){
@@ -583,8 +616,7 @@ bool getSomeSeriousPoetry(char *verse1, char *verse2)
     printf("Can't open dll signature ('%s')!\n", path1);
     res = false;
   }
-  free(path1);
-  FILE *f2 = fopen(path2, "rb");
+  FILE *f2 = open_tir_firmware_file("poem2.txt", "rb", path2, sizeof(path2));
   memset(verse2, 0, 200);
   if(f2 != NULL){
     if(fread(verse2, 1, 200, f2) == 0){
@@ -598,7 +630,6 @@ bool getSomeSeriousPoetry(char *verse1, char *verse2)
     printf("Cant open app signature('%s')!\n", path2);
     res = false;
   }
-  free(path2);
   return res;
 }
 

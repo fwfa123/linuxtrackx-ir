@@ -6,22 +6,32 @@ include(${CMAKE_SOURCE_DIR}/cmake/MinGWCompiler.cmake)
 if(WINE_PLUGIN)
     add_mingw_library(NPClient64
         ARCH x64
+        DEF NPClient.def
         SOURCES
             NPClient_main.c
             ../../linuxtrack.c
+            ../../axis.c
+            ../../spline.c
+            ../../math_utils.c
             rest.c
             linuxtrack_path_shim.c
-        LIBS -lws2_32
+            mingw_axes_prefs.c
+        LIBS -lws2_32 -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic
     )
 
     add_mingw_library(NPClient
         ARCH x86
+        DEF NPClient.def
         SOURCES
             NPClient_main.c
             ../../linuxtrack.c
+            ../../axis.c
+            ../../spline.c
+            ../../math_utils.c
             rest.c
             linuxtrack_path_shim.c
-        LIBS -lws2_32
+            mingw_axes_prefs.c
+        LIBS -lws2_32 -Wl,-Bstatic -lwinpthread -Wl,-Bdynamic
     )
 
     add_mingw_executable(check_data

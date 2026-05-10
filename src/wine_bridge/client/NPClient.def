@@ -1,0 +1,24 @@
+EXPORTS
+  NPPriv_ClientNotify @1
+  NPPriv_GetLastError @2
+  NPPriv_SetData @3
+  NPPriv_SetLastError @4
+  NPPriv_SetParameter @5
+  NPPriv_SetSignature @6
+  NPPriv_SetVersion @7
+  NP_GetData @8
+  NP_GetParameter @9
+  NP_GetSignature @10
+  NP_QueryVersion @11
+  NP_ReCenter @12
+  NP_RegisterProgramProfileID @13
+  NP_RegisterWindowHandle @14
+  NP_RequestData @15
+  NP_SetParameter @16
+  NP_StartCursor @17
+  NP_StartDataTransmission @18
+  NP_StopCursor @19
+  NP_StopDataTransmission @20
+  NP_UnregisterWindowHandle @21
+  DllRegisterServer @22
+  DllUnregisterServer @23

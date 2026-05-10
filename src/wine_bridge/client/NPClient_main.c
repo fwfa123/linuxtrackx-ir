@@ -9,6 +9,10 @@
 
 #include <linuxtrack.h>
 #include <ltlib.h>
+#ifdef __MINGW32__
+#include <axis.h>
+#include <math_utils.h>
+#endif
 #include "rest.h"
 //#include "config.h"
 #define __WINESRC__
@@ -133,6 +137,20 @@ typedef struct {
 
 static mingw_pose_runtime_t mingw_pose_runtime = {
   false, false, MINGW_POSE_IO_NONE, INVALID_SOCKET, -1, 0, 100, false, {0}, {0}, 0
+};
+
+typedef struct {
+  ltr_axes_t axes;
+  bool initialized;
+  char profile[256];
+  float filtered_angles[3];
+  float filtered_translations[3];
+  unsigned int processed_frames;
+  unsigned int failed_frames;
+} mingw_pose_processing_t;
+
+static mingw_pose_processing_t mingw_pose_processing = {
+  LTR_AXES_T_INITIALIZER, false, {0}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0, 0
 };
 
 static HMODULE ltr_libc_module;
@@ -670,6 +688,127 @@ static int mingw_pose_connect(void)
   return 0;
 }
 
+static void mingw_pose_processing_reset_filters(void)
+{
+  memset(mingw_pose_processing.filtered_angles, 0, sizeof(mingw_pose_processing.filtered_angles));
+  memset(mingw_pose_processing.filtered_translations, 0, sizeof(mingw_pose_processing.filtered_translations));
+}
+
+static void mingw_pose_processing_close(void)
+{
+  if(mingw_pose_processing.initialized){
+    ltr_int_close_axes(&mingw_pose_processing.axes);
+  }
+  mingw_pose_processing.axes = LTR_AXES_T_INITIALIZER;
+  mingw_pose_processing.initialized = false;
+  mingw_pose_processing.profile[0] = '\0';
+  mingw_pose_processing.processed_frames = 0;
+  mingw_pose_processing.failed_frames = 0;
+  mingw_pose_processing_reset_filters();
+}
+
+static bool mingw_pose_processing_ensure_axes(void)
+{
+  const char *profile = (g_profile_name[0] != '\0') ? g_profile_name : "Default";
+  if(mingw_pose_processing.initialized && strcmp(mingw_pose_processing.profile, profile) == 0){
+    return true;
+  }
+
+  if(mingw_pose_processing.initialized){
+    ltr_int_close_axes(&mingw_pose_processing.axes);
+    mingw_pose_processing.initialized = false;
+    mingw_pose_processing.axes = LTR_AXES_T_INITIALIZER;
+  }
+
+  ltr_int_init_axes(&mingw_pose_processing.axes, profile);
+  if(mingw_pose_processing.axes == NULL){
+    dbg_report("MinGW pose processing: failed to initialize axes for profile='%s'\n", profile);
+    return false;
+  }
+
+  snprintf(mingw_pose_processing.profile, sizeof(mingw_pose_processing.profile), "%s", profile);
+  mingw_pose_processing.initialized = true;
+  mingw_pose_processing_reset_filters();
+  dbg_report("MinGW pose processing: initialized axes for profile='%s' section='%s'\n",
+             profile, ltr_int_axes_get_section(mingw_pose_processing.axes));
+  return true;
+}
+
+static bool mingw_postprocess_axes(linuxtrack_pose_t *pose, linuxtrack_pose_t *unfiltered)
+{
+  if(!mingw_pose_processing_ensure_axes()){
+    return false;
+  }
+
+  ltr_axes_t axes = mingw_pose_processing.axes;
+  double raw_angles[3];
+  raw_angles[0] = unfiltered->pitch = ltr_int_val_on_axis(axes, PITCH, pose->raw_pitch);
+  raw_angles[1] = unfiltered->yaw = ltr_int_val_on_axis(axes, YAW, pose->raw_yaw);
+  raw_angles[2] = unfiltered->roll = ltr_int_val_on_axis(axes, ROLL, pose->raw_roll);
+
+  if(!ltr_int_is_vector_finite(raw_angles)){
+    return false;
+  }
+
+  pose->pitch =
+    clamp_angle(ltr_int_filter_axis(axes, PITCH, (float)raw_angles[0], &mingw_pose_processing.filtered_angles[0]));
+  pose->yaw =
+    clamp_angle(ltr_int_filter_axis(axes, YAW, (float)raw_angles[1], &mingw_pose_processing.filtered_angles[1]));
+  pose->roll =
+    clamp_angle(ltr_int_filter_axis(axes, ROLL, (float)raw_angles[2], &mingw_pose_processing.filtered_angles[2]));
+
+  double transform[3][3];
+  double displacement[3];
+  displacement[0] = ltr_int_val_on_axis(axes, TX, pose->raw_tx);
+  displacement[1] = ltr_int_val_on_axis(axes, TY, pose->raw_ty);
+  displacement[2] = ltr_int_val_on_axis(axes, TZ, pose->raw_tz);
+
+  /* Match pref_global.c's default: Align-translations is enabled unless prefs disable it. */
+  ltr_int_euler_to_matrix(pose->pitch / 180.0 * M_PI, pose->yaw / 180.0 * M_PI,
+                          pose->roll / 180.0 * M_PI, transform);
+  ltr_int_transpose_in_place(transform);
+  ltr_int_matrix_times_vec(transform, displacement, displacement);
+  unfiltered->tx = displacement[0];
+  unfiltered->ty = displacement[1];
+  unfiltered->tz = displacement[2];
+
+  pose->tx =
+    ltr_int_filter_axis(axes, TX, unfiltered->tx, &mingw_pose_processing.filtered_translations[0]);
+  pose->ty =
+    ltr_int_filter_axis(axes, TY, unfiltered->ty, &mingw_pose_processing.filtered_translations[1]);
+  pose->tz =
+    ltr_int_filter_axis(axes, TZ, unfiltered->tz, &mingw_pose_processing.filtered_translations[2]);
+  return true;
+}
+
+static void mingw_process_pose_message(linuxtrack_full_pose_t *pose)
+{
+  linuxtrack_pose_t unfiltered;
+  memset(&unfiltered, 0, sizeof(unfiltered));
+  if(mingw_postprocess_axes(&pose->pose, &unfiltered)){
+    ++mingw_pose_processing.processed_frames;
+    if(mingw_pose_processing.processed_frames <= 10 ||
+       (pose->pose.counter % 120u) == 0u){
+      dbg_report(
+        "MinGW pose processing: processed profile='%s' counter=%u pose(rpyxyz)=%.3f %.3f %.3f %.3f %.3f %.3f raw(rpyxyz)=%.3f %.3f %.3f %.3f %.3f %.3f\n",
+        mingw_pose_processing.profile,
+        (unsigned int)pose->pose.counter,
+        pose->pose.roll, pose->pose.pitch, pose->pose.yaw, pose->pose.tx, pose->pose.ty, pose->pose.tz,
+        pose->pose.raw_roll, pose->pose.raw_pitch, pose->pose.raw_yaw,
+        pose->pose.raw_tx, pose->pose.raw_ty, pose->pose.raw_tz);
+    }
+  }else{
+    ++mingw_pose_processing.failed_frames;
+    if(mingw_pose_processing.failed_frames <= 10 ||
+       (mingw_pose_processing.failed_frames % 120u) == 0u){
+      dbg_report("MinGW pose processing: failed for profile='%s' counter=%u (failures=%u)\n",
+                 (g_profile_name[0] != '\0') ? g_profile_name : "Default",
+                 (unsigned int)pose->pose.counter,
+                 mingw_pose_processing.failed_frames);
+    }
+  }
+}
+
 static int mingw_pose_pump(void)
 {
   if(!mingw_pose_runtime.connected && mingw_pose_connect() != 0){
@@ -714,6 +853,7 @@ static int mingw_pose_pump(void)
         ltr_message_t msg;
         memcpy(&msg, mingw_pose_runtime.rx_buf, sizeof(msg));
         if(msg.cmd == LTR_CMD_POSE){
+          mingw_process_pose_message(&msg.pose);
           mingw_pose_runtime.last_pose = msg.pose;
           mingw_pose_runtime.has_pose = true;
           got_pose = true;
@@ -932,6 +1072,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
         case DLL_PROCESS_DETACH:
 #ifdef __MINGW32__
             mingw_pose_disconnect();
+            mingw_pose_processing_close();
 #endif
             linuxtrack_shutdown();
 #ifdef __MINGW32__
@@ -973,78 +1114,64 @@ HRESULT WINAPI DllUnregisterServer(void)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_ClientNotify()
+int __stdcall NPPriv_ClientNotify(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 /******************************************************************
  *		NPPriv_GetLastError (NPCLIENT.2)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_GetLastError()
+int __stdcall NPPriv_GetLastError(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 /******************************************************************
  *		NPPriv_SetData (NPCLIENT.3)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_SetData()
+int __stdcall NPPriv_SetData(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 /******************************************************************
  *		NPPriv_SetLastError (NPCLIENT.4)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_SetLastError()
+int __stdcall NPPriv_SetLastError(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 /******************************************************************
  *		NPPriv_SetParameter (NPCLIENT.5)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_SetParameter()
+int __stdcall NPPriv_SetParameter(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 /******************************************************************
  *		NPPriv_SetSignature (NPCLIENT.6)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_SetSignature()
+int __stdcall NPPriv_SetSignature(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 /******************************************************************
  *		NPPriv_SetVersion (NPCLIENT.7)
  *
  *
  */
-#if 0
-__stdcall NPCLIENT_NPPriv_SetVersion()
+int __stdcall NPPriv_SetVersion(void)
 {
-	/* @stub in .spec */
+	return 0;
 }
-#endif
 
 static float limit_num(float min, float val, float max)
 {
@@ -1176,10 +1303,21 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   if(mingw_pose_pump() != 0){
     Sleep(5);
     if(mingw_pose_pump() != 0){
-      dbg_report("MinGW GetData: no pose frame available\n");
+      static unsigned int no_pose_log_count = 0;
       memset((char *)data, 0, sizeof(tir_data_t));
-      data->status = 1;
-      return 1;
+      data->status = 0;
+      data->frame = (short)(GetTickCount() & 0xFFFF);
+      data->cksum = 0;
+      data->cksum = cksum((unsigned char*)data, sizeof(tir_data_t));
+      if(crypted){
+        enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
+      }
+      if(no_pose_log_count < 40 || (no_pose_log_count % 120u) == 0u){
+        dbg_report("MinGW GetData: no pose frame available, returning neutral tracking frame (count=%u)\n",
+                   no_pose_log_count);
+      }
+      ++no_pose_log_count;
+      return 0;
     }
   }
 
@@ -1190,6 +1328,7 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   float pose_tx = pose->tx;
   float pose_ty = pose->ty;
   float pose_tz = pose->tz;
+  bool used_raw_fallback = false;
 
   /*
    * Some profiles can report zeroed filtered pose while raw pose is valid.
@@ -1213,13 +1352,30 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
       pose_tx = pose->raw_tx;
       pose_ty = pose->raw_ty;
       pose_tz = pose->raw_tz;
-      dbg_report("MinGW GetData: using raw pose fallback (counter=%u)\n",
-                 (unsigned int)pose->counter);
+      used_raw_fallback = true;
     }
   }
 
   memset((char *)data, 0, sizeof(tir_data_t));
-  data->status = (pose->status == RUNNING) ? 0 : 1;
+  static uint32_t last_returned_counter = 0;
+  const bool fresh_frame = (pose->counter != last_returned_counter);
+  const bool has_pose_values =
+    fabsf(pose_roll) > 0.001f ||
+    fabsf(pose_pitch) > 0.001f ||
+    fabsf(pose_yaw) > 0.001f ||
+    fabsf(pose_tx) > 0.001f ||
+    fabsf(pose_ty) > 0.001f ||
+    fabsf(pose_tz) > 0.001f;
+
+  /*
+   * The MinGW PE cannot use linuxtrack_get_pose() directly, so it consumes the
+   * master socket stream. Some master broadcasts carry valid, advancing pose
+   * frames before the embedded status field catches up; games tend to reject
+   * the frame outright if TrackIR status says "not tracking".
+   */
+  const bool tracking_frame =
+    (pose->status == RUNNING) || (fresh_frame && has_pose_values);
+  data->status = tracking_frame ? 0 : 1;
   data->frame = pose->counter & 0xFFFF;
   data->cksum = 0;
   data->roll = pose_roll / 180.0f * 16383.0f;
@@ -1229,6 +1385,27 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   data->ty = limit_num(-16383.0f, 32.7f * pose_ty, 16383.0f);
   data->tz = limit_num(-16383.0f, 32.7f * pose_tz, 16383.0f);
   data->cksum = cksum((unsigned char*)data, sizeof(tir_data_t));
+  static unsigned int diagnostic_count = 0;
+  if(diagnostic_count < 40 || (fresh_frame && (pose->counter % 120u) == 0u)){
+    dbg_report(
+      "MinGW GetData diag: profile='%s' pose_status=%u tracking_frame=%d fresh=%d raw_fallback=%d crypted=%d counter=%u "
+      "pose(rpyxyz)=%.3f %.3f %.3f %.3f %.3f %.3f raw(rpyxyz)=%.3f %.3f %.3f %.3f %.3f %.3f "
+      "tir(status=%d frame=%d rpyxyz)=%.2f %.2f %.2f %.2f %.2f %.2f cksum=0x%08X\n",
+      (g_profile_name[0] != '\0') ? g_profile_name : "Default",
+      (unsigned int)pose->status,
+      tracking_frame ? 1 : 0,
+      fresh_frame ? 1 : 0,
+      used_raw_fallback ? 1 : 0,
+      crypted ? 1 : 0,
+      (unsigned int)pose->counter,
+      pose->roll, pose->pitch, pose->yaw, pose->tx, pose->ty, pose->tz,
+      pose->raw_roll, pose->raw_pitch, pose->raw_yaw, pose->raw_tx, pose->raw_ty, pose->raw_tz,
+      (int)data->status, (int)data->frame,
+      data->roll, data->pitch, data->yaw, data->tx, data->ty, data->tz,
+      data->cksum);
+    ++diagnostic_count;
+  }
+  last_returned_counter = pose->counter;
   if(crypted){
     enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
   }
@@ -1366,7 +1543,12 @@ int __stdcall NPCLIENT_NP_GetSignature(tir_signature_t * sig)
     // Fall back to deterministic signatures so NP initialization can continue.
     snprintf(sig->DllSignature, sizeof(sig->DllSignature), "%s", "precise head tracking");
     snprintf(sig->AppSignature, sizeof(sig->AppSignature), "%s", "put your head into the game");
-    dbg_report("Signature result: fallback used\n");
+    dbg_report("Signature result: fallback used (LINUXTRACK_UNIX_HOME='%s', HOME='%s', USER='%s', LOGNAME='%s', USERPROFILE='%s')\n",
+               getenv("LINUXTRACK_UNIX_HOME") ? getenv("LINUXTRACK_UNIX_HOME") : "",
+               getenv("HOME") ? getenv("HOME") : "",
+               getenv("USER") ? getenv("USER") : "",
+               getenv("LOGNAME") ? getenv("LOGNAME") : "",
+               getenv("USERPROFILE") ? getenv("USERPROFILE") : "");
     return 0;
   }
 }
@@ -1837,13 +2019,28 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
 #ifdef __MINGW32__
   mingw_pose_runtime.transmission_started = true;
   transmission_start_time = GetTickCount();
+  mingw_pose_processing_reset_filters();
 
   // Best-effort: request the master to run if reachable; pose socket path is independent.
   send_command_to_master(LTR_CMD_WAKEUP, 0);
-  if(mingw_pose_connect() != 0){
-    dbg_report("MinGW StartDataTransmission: pose socket not ready yet, will retry lazily.\n");
+  DWORD wait_start = GetTickCount();
+  bool got_initial_pose = false;
+  do{
+    if(mingw_pose_connect() == 0){
+      if(mingw_pose_pump() == 0 && mingw_pose_runtime.has_pose){
+        got_initial_pose = true;
+        break;
+      }
+    }
+    Sleep(50);
+  }while((GetTickCount() - wait_start) < 3000);
+
+  if(got_initial_pose){
+    dbg_report("MinGW StartDataTransmission: pose socket connected with initial frame.\n");
+  }else if(mingw_pose_runtime.connected){
+    dbg_report("MinGW StartDataTransmission: pose socket connected, waiting for first frame lazily.\n");
   }else{
-    dbg_report("MinGW StartDataTransmission: pose socket connected.\n");
+    dbg_report("MinGW StartDataTransmission: pose socket not ready yet, returning neutral frames while retrying lazily.\n");
   }
   return 0;
 #endif
@@ -1987,6 +2184,7 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
   mingw_pose_runtime.transmission_started = false;
   mingw_pose_runtime.has_pose = false;
   mingw_pose_disconnect();
+  mingw_pose_processing_close();
   send_command_to_master(LTR_CMD_PAUSE, 0);
   return 0;
 #endif
