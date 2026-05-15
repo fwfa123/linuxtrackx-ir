@@ -89,7 +89,7 @@ The script tries installation methods in this order:
 - `base-devel` - Essential build tools
 - `scons` - Build system for NSIS
 - `pcre2` - Regular expression library
-- `zlib` - Compression library
+- `zlib` or `zlib-ng-compat` - Compression library (`zlib` is omitted on CachyOS etc. when `zlib-ng-compat` is already installed)
 - `bzip2` - Compression library
 
 ### NSIS Components
@@ -108,6 +108,17 @@ The script tries installation methods in this order:
 **"yay installation failed"**
 - Try manual installation: `./scripts/install/install_nsis_arch.sh --manual`
 - Or install yay manually from: https://github.com/Jguer/yay
+
+**"`zlib` and `zlib-ng-compat` are in conflict" (CachyOS, etc.)**
+- Do **not** remove `zlib-ng-compat` when pacman asks
+- The script skips `zlib` when `zlib-ng-compat` is installed; if an older script failed mid-run, install deps manually: `sudo pacman -S --needed scons pcre2 bzip2`
+- Confirm libz: `pkg-config --exists zlib && echo OK`
+
+**"scons: command not found"**
+- Usually means the pacman step above failed (often the zlib conflict). Install `scons` explicitly, then re-run the script
+
+**"`/usr/local/makensis`: Permission denied"**
+- The build succeeded but install to `/usr/local` needs root. Current script runs `sudo scons ... install-compiler` after the user build step; re-run the script or install manually from the extracted source directory
 
 **"Build failed"**
 - Check internet connection

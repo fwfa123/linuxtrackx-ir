@@ -81,10 +81,25 @@ check_yay() {
     fi
 }
 
+# makensis prints version to stderr on some builds; /VERSION and -VERSION both exist.
+get_makensis_version() {
+    local version
+    version=$(makensis /VERSION 2>&1 | head -n1)
+    if [[ -z "$version" ]]; then
+        version=$(makensis -VERSION 2>&1 | head -n1)
+    fi
+    if [[ -z "$version" ]]; then
+        echo "unknown"
+    else
+        echo "$version"
+    fi
+}
+
 # Function to check if makensis is already available
 check_makensis() {
     if command -v makensis &> /dev/null; then
-        local version=$(makensis /VERSION 2>/dev/null | head -n1 || echo "unknown")
+        local version
+        version=$(get_makensis_version)
         print_success "NSIS is already installed (version: $version)"
         return 0
     fi
@@ -103,6 +118,50 @@ install_nsis_aur() {
         print_warning "AUR installation failed, trying alternative methods..."
         return 1
     fi
+}
+
+# Install pacman build deps for manual NSIS compile.
+# CachyOS and some Arch derivatives ship zlib-ng-compat instead of zlib; the two packages conflict.
+install_nsis_build_deps() {
+    local deps=(scons pcre2 bzip2)
+
+    if pacman -Q zlib-ng-compat &>/dev/null; then
+        print_status "zlib-ng-compat present; skipping zlib package (provides libz)"
+        if ! pkg-config --exists zlib 2>/dev/null; then
+            print_error "zlib-ng-compat is installed but pkg-config cannot find zlib"
+            print_status "Try: sudo pacman -S zlib-ng-compat"
+            return 1
+        fi
+    elif ! pacman -Q zlib &>/dev/null; then
+        deps+=(zlib)
+    fi
+
+    print_status "Installing build dependencies: ${deps[*]}"
+    if ! sudo pacman -S --needed --noconfirm "${deps[@]}"; then
+        print_error "Failed to install NSIS build dependencies"
+        return 1
+    fi
+
+    if ! command -v scons &>/dev/null; then
+        print_error "scons not found after installing dependencies"
+        return 1
+    fi
+
+    return 0
+}
+
+# NSIS 3.09 + NSIS_CONFIG_CONST_DATA_PATH=no installs makensis as $PREFIX/makensis (not bin/).
+# CMake and this script expect makensis on PATH (typically /usr/local/bin).
+ensure_makensis_on_path() {
+    if command -v makensis &>/dev/null; then
+        return 0
+    fi
+    if [[ -x /usr/local/makensis ]]; then
+        print_status "Linking /usr/local/makensis into /usr/local/bin for PATH..."
+        sudo mkdir -p /usr/local/bin
+        sudo ln -sf /usr/local/makensis /usr/local/bin/makensis
+    fi
+    command -v makensis &>/dev/null
 }
 
 # Function to install NSIS manually
@@ -131,22 +190,48 @@ install_nsis_manual() {
     cd nsis-$nsis_version-src
     
     # Install build dependencies
-    print_status "Installing build dependencies..."
-    sudo pacman -S --needed scons pcre2 zlib bzip2
-    
-    # Build NSIS
-    print_status "Building NSIS (this may take several minutes)..."
-    if scons SKIPSTUBS=all SKIPPLUGINS=all SKIPUTILS=all SKIPMISC=all NSIS_CONFIG_CONST_DATA_PATH=no PREFIX=/usr/local install-compiler; then
-        print_success "NSIS built and installed successfully"
+    if ! install_nsis_build_deps; then
         cd -
         rm -rf "$temp_dir"
-        return 0
-    else
+        return 1
+    fi
+
+    # Build as user, install with sudo (/usr/local is not writable otherwise).
+    # install-compiler must use the same flags as the build step.
+    local -a nsis_scons_opts=(
+        SKIPSTUBS=all SKIPPLUGINS=all SKIPUTILS=all SKIPMISC=all
+        NSIS_CONFIG_CONST_DATA_PATH=no
+        PREFIX=/usr/local
+    )
+
+    print_status "Building NSIS (this may take several minutes)..."
+    if ! scons "${nsis_scons_opts[@]}"; then
         print_error "Failed to build NSIS"
         cd -
         rm -rf "$temp_dir"
         return 1
     fi
+
+    print_status "Installing makensis to /usr/local (requires sudo)..."
+    if ! sudo scons "${nsis_scons_opts[@]}" install-compiler; then
+        print_error "Failed to install NSIS to /usr/local"
+        cd -
+        rm -rf "$temp_dir"
+        return 1
+    fi
+
+    if ! ensure_makensis_on_path; then
+        print_error "makensis was installed but is not on PATH"
+        print_status "Add to PATH: export PATH=\"/usr/local/bin:\$PATH\""
+        cd -
+        rm -rf "$temp_dir"
+        return 1
+    fi
+
+    print_success "NSIS built and installed successfully"
+    cd -
+    rm -rf "$temp_dir"
+    return 0
 }
 
 # Function to install NSIS via alternative package managers
@@ -176,13 +261,12 @@ verify_installation() {
     if check_makensis; then
         print_success "NSIS installation verified successfully"
         
-        # Test NSIS functionality
+        # Test NSIS functionality (File paths are relative to the .nsi script directory)
         print_status "Testing NSIS functionality..."
-        local test_script=$(mktemp)
+        local test_dir
+        test_dir=$(mktemp -d)
+        local test_script="$test_dir/test.nsi"
         cat > "$test_script" << 'EOF'
-!define VERSION "1.0"
-!define RELEASE "1"
-
 Name "Test Installer"
 OutFile "test-installer.exe"
 InstallDir "$PROGRAMFILES\TestApp"
@@ -192,18 +276,16 @@ Section "Main Application"
     File /oname=test.txt "test.txt"
 SectionEnd
 EOF
-        
-        # Create a test file
-        echo "Test file" > test.txt
-        
-        if makensis "$test_script" >/dev/null 2>&1; then
+        echo "Test file" > "$test_dir/test.txt"
+
+        if (cd "$test_dir" && makensis test.nsi >/dev/null 2>&1); then
             print_success "NSIS is working correctly"
-            rm -f test.txt test-installer.exe
+        elif makensis -VERSION >/dev/null 2>&1 || makensis /VERSION >/dev/null 2>&1; then
+            print_success "NSIS compiler is available (minimal build without stubs; compile test skipped)"
         else
-            print_warning "NSIS installed but may have issues"
+            print_warning "NSIS installed but may have issues (run: makensis -VERSION)"
         fi
-        
-        rm -f "$test_script"
+        rm -rf "$test_dir"
         return 0
     else
         print_error "NSIS installation verification failed"
