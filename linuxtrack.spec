@@ -1,5 +1,5 @@
 Name:           linuxtrack
-Version:        0.99.24
+Version:        2.0.0
 Release:        1%{?dist}
 Summary:        Head tracking software for Linux
 

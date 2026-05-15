@@ -2,7 +2,13 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.30) continues development on GitLab for future development and releases.
+> **Note**: The `wow64-rearchitecture` branch uses **2.0.0** (major rearchitecture). The `main` branch continues the **0.99.x** release line until 2.0.0 is merged.
+
+## [2.0.0] - WOW64 rearchitecture (development on `wow64-rearchitecture`)
+
+### Major Changes
+- **Version 2.0.0**: Major version bump reflecting a new application architecture (Wine WOW64 bridge, Qt6/CMake-first build, modern toolchain requirements) rather than incremental `0.99.x` updates.
+- **Wine bridge**: WOW64-focused build and install path (see `docs/guides/WINE_BRIDGE_MODERN.md`).
 
 ## [0.99.30] - Lutris, AppImage & UI Improvements (March 2026)
 

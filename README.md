@@ -1,10 +1,13 @@
 # LinuxTrack X-IR - Modern Head Tracking for Linux
 
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 
-Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility. **Current releases on `main` use Qt6** (CMake); older docs may still mention Qt5 for migration history.
+Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility.
+
+**Version 2.0.0** (`wow64-rearchitecture` branch): major rearchitecture—Wine WOW64 bridge, Qt6 (CMake), and a different build/runtime model than the pre-2.0 `0.99.x` line on `main`. Older docs may still mention Qt5 or `0.99.x` for migration history.
 
 ### Why 'X-IR'?
 This fork focuses on TrackIR hardware support and modern Linux distributions, while attempting to maintaining compatibility with the original codebase.
