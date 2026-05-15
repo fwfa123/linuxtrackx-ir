@@ -14,6 +14,7 @@
 #include "XPStandardWidgets.h"
 #include "XPWidgets.h"
 #include "linuxtrack.h"
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,11 +51,15 @@ static XPLMCommandRef start_cmd;
 static XPLMCommandRef stop_cmd;
 static XPLMCommandRef pause_cmd;
 static XPLMCommandRef recenter_cmd;
+static XPLMHotKeyID hotkey_toggle;
+static XPLMHotKeyID hotkey_pause;
 
 static float GetHeadDataRefCB(void *inRefcon);
 static int GetHeadCtrlRefCB(void *inRefcon);
 static void SetHeadCtrlRefCB(void *inRefcon, int outValue);
 static void revertView(void);
+static void activate(void);
+static void deactivate(void);
 
 static float current_head_x;
 static float current_head_y;
@@ -72,9 +77,41 @@ static bool initialized = false;
 static int pos_init_flag = 0;
 static bool active_flag = false;
 static bool freeze = false;
+/* True after linuxtrack/ltr_start or ltr_run enabled X-Plane head control. */
+static bool xplane_driving_tracking = false;
+
+#define XPLANE_COCKPIT_VIEW_TYPE 1026
+
+static int xplane_debug_enabled(void) {
+  static int cached = -1;
+  if (cached < 0) {
+    const char *v = getenv("LINUXTRACK_XPLANE_DEBUG");
+    cached = (v != NULL && v[0] != '\0' && v[0] != '0') ? 1 : 0;
+  }
+  return cached;
+}
+
+static void xplane_debug(const char *msg) {
+  if (xplane_debug_enabled()) {
+    XPLMDebugString(msg);
+  }
+}
+
+static void xplane_debugf(const char *fmt, ...) {
+  char buf[384];
+  va_list ap;
+  if (!xplane_debug_enabled()) {
+    return;
+  }
+  va_start(ap, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, ap);
+  va_end(ap);
+  XPLMDebugString(buf);
+}
 
 static int cmd_cbk(XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
                    void *inRefcon);
+static void hotkey_cbk(void *inRefcon);
 
 enum { START, STOP, TOGGLE, PAUSE, RECENTER };
 
@@ -101,7 +138,7 @@ static int GetHeadCtrlRefCB(void *inRefcon) {
 static void SetHeadCtrlRefCB(void *inRefcon, int outValue) {
   if (inRefcon == (void *)&head_control_enable) {
     if ((head_control_enable != 0) && (outValue == 0) &&
-        (XPLMGetDatai(view) == 1026)) {
+        (XPLMGetDatai(view) == XPLANE_COCKPIT_VIEW_TYPE)) {
       // Revert only when turning off while in 3D cockpit
       revertView();
     }
@@ -243,10 +280,19 @@ PLUGIN_API int XPluginStart(char *outName, char *outSig, char *outDesc) {
                                  -1.0,                /* Interval */
                                  NULL);               /* refcon not used. */
 
+  hotkey_toggle = XPLMRegisterHotKey(XPLM_VK_F8, xplm_DownFlag,
+                                     "Linuxtrack toggle (F8)", hotkey_cbk,
+                                     (void *)(intptr_t)TOGGLE);
+  hotkey_pause = XPLMRegisterHotKey(XPLM_VK_F9, xplm_DownFlag,
+                                    "Linuxtrack pause (F9)", hotkey_cbk,
+                                    (void *)(intptr_t)PAUSE);
+
   return (1);
 }
 
 PLUGIN_API void XPluginStop(void) {
+  XPLMUnregisterHotKey(hotkey_toggle);
+  XPLMUnregisterHotKey(hotkey_pause);
   XPLMUnregisterCommandHandler(run_cmd, cmd_cbk, true, (void *)TOGGLE);
   XPLMUnregisterCommandHandler(start_cmd, cmd_cbk, true, (void *)START);
   XPLMUnregisterCommandHandler(stop_cmd, cmd_cbk, true, (void *)STOP);
@@ -256,9 +302,13 @@ PLUGIN_API void XPluginStop(void) {
 }
 
 PLUGIN_API void XPluginDisable(void) {
+  if (active_flag) {
+    deactivate();
+  }
   if (initialized) {
     linuxtrack_shutdown();
     initialized = false;
+    xplane_driving_tracking = false;
 
     XPLMDebugString("\nlinuxtrackx-ir shut down\n\n");
   }
@@ -272,7 +322,11 @@ PLUGIN_API int XPluginEnable(void) {
       return 0;
     }
 
+    initialized = true;
+    xplane_driving_tracking = false;
+    active_flag = false;
     XPLMDebugString("\nlinuxtrackx-ir initialized\n\n");
+    xplane_debugf("linuxtrackx-ir: enable ok, tracker state=%d\n", (int)state);
   }
   return 1;
 }
@@ -342,18 +396,23 @@ PLUGIN_API void XPluginReceiveMessage(XPLMPluginID inFromWho, long inMessage,
 }
 
 static void activate(void) {
-  if (initialized) {
-    active_flag = true;
-    pos_init_flag = 1;
-    freeze = false;
-    linuxtrack_wakeup();
-    linuxtrack_recenter();
+  if (!initialized) {
+    xplane_debug("linuxtrackx-ir: activate ignored (not initialized)\n");
+    return;
   }
+  active_flag = true;
+  xplane_driving_tracking = true;
+  pos_init_flag = 1;
+  freeze = false;
+  linuxtrack_wakeup();
+  linuxtrack_recenter();
+  xplane_debugf("linuxtrackx-ir: tracking activated (state=%d)\n",
+                (int)linuxtrack_get_tracking_state());
 }
 
 static void revertView(void) {
   int current_view = XPLMGetDatai(view);
-  if (current_view == 1026) {
+  if (current_view == XPLANE_COCKPIT_VIEW_TYPE) {
     XPLMSetDataf(head_x, base_x);
     XPLMSetDataf(head_y, base_y);
     XPLMSetDataf(head_z, base_z);
@@ -366,8 +425,25 @@ static void revertView(void) {
 static void deactivate() {
   active_flag = false;
   revertView();
-  if (initialized) {
+  if (initialized && xplane_driving_tracking) {
     linuxtrack_suspend();
+    xplane_driving_tracking = false;
+  }
+  xplane_debug("linuxtrackx-ir: tracking deactivated\n");
+}
+
+static void hotkey_cbk(void *inRefcon) {
+  intptr_t which = (intptr_t)inRefcon;
+  if (which == TOGGLE) {
+    xplane_debug("linuxtrackx-ir: hotkey F8 toggle\n");
+    if (active_flag == false) {
+      activate();
+    } else {
+      deactivate();
+    }
+  } else if (which == PAUSE) {
+    freeze = (freeze == false) ? true : false;
+    xplane_debugf("linuxtrackx-ir: hotkey F9 freeze=%d\n", freeze ? 1 : 0);
   }
 }
 
@@ -376,23 +452,31 @@ static int cmd_cbk(XPLMCommandRef inCommand, XPLMCommandPhase inPhase,
   (void)inRefcon;
   if (inPhase == xplm_CommandBegin) {
     if (inCommand == run_cmd) {
+      xplane_debug("linuxtrackx-ir: command ltr_run\n");
       if (active_flag == false) {
         activate();
       } else {
         deactivate();
       }
     } else if (inCommand == start_cmd) {
+      xplane_debug("linuxtrackx-ir: command ltr_start\n");
       if (active_flag == false) {
         activate();
       }
     } else if (inCommand == stop_cmd) {
+      xplane_debug("linuxtrackx-ir: command ltr_stop\n");
       if (active_flag == true) {
         deactivate();
       }
     } else if (inCommand == pause_cmd) {
       freeze = (freeze == false) ? true : false;
+      xplane_debugf("linuxtrackx-ir: command ltr_pause freeze=%d\n",
+                    freeze ? 1 : 0);
     } else if (inCommand == recenter_cmd) {
-      linuxtrack_recenter();
+      xplane_debug("linuxtrackx-ir: command ltr_recenter\n");
+      if (initialized) {
+        linuxtrack_recenter();
+      }
     }
   }
   return 1;
@@ -407,7 +491,7 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
   (void)inRefcon;
 
   int currentView = XPLMGetDatai(view);
-  bool view_changed = (currentView != 1026);
+  bool view_changed = (currentView != XPLANE_COCKPIT_VIEW_TYPE);
 
   if (pos_init_flag) {
     pos_init_flag = 0;
@@ -417,10 +501,13 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
     view_changed = false;
   }
 
-  if (!initialized) {
-    if (linuxtrack_get_tracking_state() != STOPPED) {
-      initialized = true;
-      linuxtrack_suspend();
+  if (view_changed && xplane_debug_enabled()) {
+    static int last_logged_view = -1;
+    if (currentView != last_logged_view) {
+      last_logged_view = currentView;
+      xplane_debugf(
+          "linuxtrackx-ir: view_type=%d (head control needs %d)\n", currentView,
+          XPLANE_COCKPIT_VIEW_TYPE);
     }
   }
 
@@ -437,12 +524,14 @@ static float xlinuxtrackCallback(float inElapsedSinceLastCall,
   unsigned int counter;
 
   if (initialized && (freeze == false)) {
+    linuxtrack_state_type trk = linuxtrack_get_tracking_state();
+    if (trk != RUNNING && trk != PAUSED) {
+      return -1.0;
+    }
     retval = linuxtrack_get_pose(&current_head_heading, &current_head_pitch,
                                  &current_head_roll, &current_head_x,
                                  &current_head_y, &current_head_z, &counter);
-    if (retval < 0) {
-      return -1.0;
-    }
+    (void)retval;
     current_head_x *= 1e-3f;
     current_head_y *= 1e-3f;
     current_head_z *= 1e-3f;
