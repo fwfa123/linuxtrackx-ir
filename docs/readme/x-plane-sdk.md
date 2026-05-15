@@ -25,14 +25,14 @@ CMake expects headers at **`/opt/xplane-sdk/CHeaders`** (or set `-DXPLANE_SDK_PA
 
 ## Extract (all distributions)
 
-Install `unzip` if needed, then:
+Install `unzip` if needed, then (each line works in **bash**, **zsh**, and **fish**):
 
 ```bash
 sudo mkdir -p /opt/xplane-sdk
-tmpdir=$(mktemp -d)
-unzip -q /path/to/XPSDK*.zip -d "$tmpdir"
-sudo cp -a "$tmpdir"/SDK/. /opt/xplane-sdk/
-rm -rf "$tmpdir"
+sudo rm -rf /tmp/xplane-sdk-extract
+sudo unzip -q /path/to/XPSDK*.zip -d /tmp/xplane-sdk-extract
+sudo cp -a /tmp/xplane-sdk-extract/SDK/. /opt/xplane-sdk/
+sudo rm -rf /tmp/xplane-sdk-extract
 
 test -f /opt/xplane-sdk/CHeaders/XPLM/XPLMPlugin.h && echo "X-Plane SDK OK"
 ```

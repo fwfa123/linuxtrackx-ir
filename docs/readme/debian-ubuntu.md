@@ -31,10 +31,10 @@ WineBridge in this branch targets Wine WOW64 behavior and requires Wine 11.0+.
 sudo apt install unzip
 
 sudo mkdir -p /opt/xplane-sdk
-tmpdir=$(mktemp -d)
-unzip -q ~/Downloads/XPSDK*.zip -d "$tmpdir"
-sudo cp -a "$tmpdir"/SDK/. /opt/xplane-sdk/
-rm -rf "$tmpdir"
+sudo rm -rf /tmp/xplane-sdk-extract
+sudo unzip -q ~/Downloads/XPSDK*.zip -d /tmp/xplane-sdk-extract
+sudo cp -a /tmp/xplane-sdk-extract/SDK/. /opt/xplane-sdk/
+sudo rm -rf /tmp/xplane-sdk-extract
 
 # CMake expects:
 test -f /opt/xplane-sdk/CHeaders/XPLM/XPLMPlugin.h && echo "X-Plane SDK OK"
