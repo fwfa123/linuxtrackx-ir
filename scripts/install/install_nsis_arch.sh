@@ -81,6 +81,9 @@ check_yay() {
     fi
 }
 
+# Wine bridge needs makensis plus installer stubs (e.g. zlib-x86-unicode).
+NSIS_STUB_NAME="zlib-x86-unicode"
+
 # makensis prints version to stderr on some builds; /VERSION and -VERSION both exist.
 get_makensis_version() {
     local version
@@ -95,15 +98,48 @@ get_makensis_version() {
     fi
 }
 
-# Function to check if makensis is already available
-check_makensis() {
-    if command -v makensis &> /dev/null; then
-        local version
-        version=$(get_makensis_version)
-        print_success "NSIS is already installed (version: $version)"
-        return 0
-    fi
+find_nsis_stub() {
+    local dir
+    for dir in /usr/share/nsis/Stubs /usr/local/share/nsis/Stubs; do
+        if [[ -f "$dir/$NSIS_STUB_NAME" ]]; then
+            echo "$dir/$NSIS_STUB_NAME"
+            return 0
+        fi
+    done
     return 1
+}
+
+# Full NSIS install suitable for linuxtrack-wine.exe (not compiler-only).
+check_nsis_wine_ready() {
+    command -v makensis &>/dev/null || return 1
+    find_nsis_stub &>/dev/null
+}
+
+# Remove compiler-only manual installs that break stub lookup (/usr/Stubs/...).
+remove_minimal_nsis_local() {
+    local removed=false
+    if [[ -e /usr/local/bin/makensis ]]; then
+        sudo rm -f /usr/local/bin/makensis
+        removed=true
+    fi
+    if [[ -e /usr/local/makensis ]]; then
+        sudo rm -f /usr/local/makensis
+        removed=true
+    fi
+    if [[ -d /usr/local/Stubs ]]; then
+        sudo rm -rf /usr/local/Stubs
+        removed=true
+    fi
+    if [[ "$removed" = true ]]; then
+        print_status "Removed incomplete /usr/local NSIS (compiler-only) install"
+    fi
+}
+
+report_nsis_status() {
+    local version
+    version=$(get_makensis_version)
+    print_success "NSIS ready for Wine bridge (makensis: $(command -v makensis), version: $version)"
+    print_success "NSIS stub: $(find_nsis_stub)"
 }
 
 # Function to install NSIS via AUR
@@ -111,7 +147,7 @@ install_nsis_aur() {
     print_status "Attempting to install NSIS via AUR..."
     
     # Try to install via yay
-    if yay -S nsis --noconfirm; then
+    if yay -S --needed nsis mingw-w64-gcc --noconfirm; then
         print_success "NSIS installed successfully via AUR"
         return 0
     else
@@ -120,10 +156,10 @@ install_nsis_aur() {
     fi
 }
 
-# Install pacman build deps for manual NSIS compile.
+# Install pacman build deps for manual NSIS compile (stubs require MinGW on Linux).
 # CachyOS and some Arch derivatives ship zlib-ng-compat instead of zlib; the two packages conflict.
 install_nsis_build_deps() {
-    local deps=(scons pcre2 bzip2)
+    local deps=(scons pcre2 bzip2 mingw-w64-gcc)
 
     if pacman -Q zlib-ng-compat &>/dev/null; then
         print_status "zlib-ng-compat present; skipping zlib package (provides libz)"
@@ -150,21 +186,7 @@ install_nsis_build_deps() {
     return 0
 }
 
-# NSIS 3.09 + NSIS_CONFIG_CONST_DATA_PATH=no installs makensis as $PREFIX/makensis (not bin/).
-# CMake and this script expect makensis on PATH (typically /usr/local/bin).
-ensure_makensis_on_path() {
-    if command -v makensis &>/dev/null; then
-        return 0
-    fi
-    if [[ -x /usr/local/makensis ]]; then
-        print_status "Linking /usr/local/makensis into /usr/local/bin for PATH..."
-        sudo mkdir -p /usr/local/bin
-        sudo ln -sf /usr/local/makensis /usr/local/bin/makensis
-    fi
-    command -v makensis &>/dev/null
-}
-
-# Function to install NSIS manually
+# Function to install NSIS manually (full install: makensis + Stubs under PREFIX/share/nsis)
 install_nsis_manual() {
     print_status "Installing NSIS manually from source..."
     
@@ -196,15 +218,13 @@ install_nsis_manual() {
         return 1
     fi
 
-    # Build as user, install with sudo (/usr/local is not writable otherwise).
-    # install-compiler must use the same flags as the build step.
+    # Full install (includes Stubs). Do not use SKIPSTUBS — Wine bridge needs them.
     local -a nsis_scons_opts=(
-        SKIPSTUBS=all SKIPPLUGINS=all SKIPUTILS=all SKIPMISC=all
-        NSIS_CONFIG_CONST_DATA_PATH=no
+        SKIPPLUGINS=all SKIPUTILS=all SKIPMISC=all
         PREFIX=/usr/local
     )
 
-    print_status "Building NSIS (this may take several minutes)..."
+    print_status "Building NSIS with stubs (this may take several minutes)..."
     if ! scons "${nsis_scons_opts[@]}"; then
         print_error "Failed to build NSIS"
         cd -
@@ -212,61 +232,67 @@ install_nsis_manual() {
         return 1
     fi
 
-    print_status "Installing makensis to /usr/local (requires sudo)..."
-    if ! sudo scons "${nsis_scons_opts[@]}" install-compiler; then
+    print_status "Installing NSIS to /usr/local (requires sudo)..."
+    if ! sudo scons "${nsis_scons_opts[@]}" install; then
         print_error "Failed to install NSIS to /usr/local"
         cd -
         rm -rf "$temp_dir"
         return 1
     fi
 
-    if ! ensure_makensis_on_path; then
-        print_error "makensis was installed but is not on PATH"
-        print_status "Add to PATH: export PATH=\"/usr/local/bin:\$PATH\""
+    if ! check_nsis_wine_ready; then
+        print_error "NSIS installed but stubs are missing at /usr/local/share/nsis/Stubs"
+        print_status "Prefer package install: yay -S nsis"
         cd -
         rm -rf "$temp_dir"
         return 1
     fi
 
-    print_success "NSIS built and installed successfully"
+    print_success "NSIS built and installed successfully (with Stubs)"
     cd -
     rm -rf "$temp_dir"
     return 0
 }
 
-# Function to install NSIS via alternative package managers
-install_nsis_alternative() {
-    print_status "Trying alternative installation methods..."
-    
-    # Try pacman (in case it's in the main repos)
-    if sudo pacman -S nsis --noconfirm 2>/dev/null; then
+# Official repos or AUR — both ship makensis and Stubs (AUR may pull mingw-w64-gcc).
+install_nsis_pacman() {
+    print_status "Trying pacman (nsis + mingw-w64-gcc)..."
+    if sudo pacman -S --needed --noconfirm nsis mingw-w64-gcc 2>/dev/null; then
         print_success "NSIS installed via pacman"
         return 0
     fi
-    
-    # Try paru if available
-    if command -v paru &> /dev/null; then
-        print_status "Trying paru..."
-        if paru -S nsis --noconfirm; then
-            print_success "NSIS installed via paru"
-            return 0
-        fi
-    fi
-    
     return 1
 }
 
-# Function to verify NSIS installation
+install_nsis_paru() {
+    if ! command -v paru &> /dev/null; then
+        return 1
+    fi
+    print_status "Trying paru (AUR nsis)..."
+    if paru -S --needed nsis mingw-w64-gcc --noconfirm; then
+        print_success "NSIS installed via paru"
+        return 0
+    fi
+    return 1
+}
+
+# Function to verify NSIS installation (Wine bridge requires stubs + working makensis).
 verify_installation() {
-    if check_makensis; then
-        print_success "NSIS installation verified successfully"
-        
-        # Test NSIS functionality (File paths are relative to the .nsi script directory)
-        print_status "Testing NSIS functionality..."
-        local test_dir
-        test_dir=$(mktemp -d)
-        local test_script="$test_dir/test.nsi"
-        cat > "$test_script" << 'EOF'
+    if ! check_nsis_wine_ready; then
+        print_error "NSIS is not ready for Wine bridge builds"
+        if command -v makensis &>/dev/null; then
+            print_error "makensis is on PATH but installer stubs are missing"
+            print_status "Install full NSIS: yay -S nsis   (or re-run this script with --force)"
+        fi
+        return 1
+    fi
+
+    report_nsis_status
+
+    print_status "Testing NSIS compile (requires stubs)..."
+    local test_dir
+    test_dir=$(mktemp -d)
+    cat > "$test_dir/test.nsi" << 'EOF'
 Name "Test Installer"
 OutFile "test-installer.exe"
 InstallDir "$PROGRAMFILES\TestApp"
@@ -276,21 +302,18 @@ Section "Main Application"
     File /oname=test.txt "test.txt"
 SectionEnd
 EOF
-        echo "Test file" > "$test_dir/test.txt"
+    echo "Test file" > "$test_dir/test.txt"
 
-        if (cd "$test_dir" && makensis test.nsi >/dev/null 2>&1); then
-            print_success "NSIS is working correctly"
-        elif makensis -VERSION >/dev/null 2>&1 || makensis /VERSION >/dev/null 2>&1; then
-            print_success "NSIS compiler is available (minimal build without stubs; compile test skipped)"
-        else
-            print_warning "NSIS installed but may have issues (run: makensis -VERSION)"
-        fi
+    if (cd "$test_dir" && makensis test.nsi >/dev/null 2>&1); then
+        print_success "NSIS compile test passed (Wine bridge installer can be built)"
         rm -rf "$test_dir"
         return 0
-    else
-        print_error "NSIS installation verification failed"
-        return 1
     fi
+
+    print_error "NSIS compile test failed — linuxtrack-wine.exe will not build"
+    print_status "Ensure /usr/bin/makensis is used: which -a makensis"
+    rm -rf "$test_dir"
+    return 1
 }
 
 # Function to show usage
@@ -305,13 +328,13 @@ show_usage() {
     echo "  -v, --verify   Only verify existing installation"
     echo "  -m, --manual   Skip AUR and install manually from source"
     echo ""
-    echo "This script helps install NSIS on Arch Linux systems for building"
-    echo "LinuxTrack X-IR Windows compatibility components."
+    echo "Installs full NSIS (makensis + Stubs) required to build linuxtrack-wine.exe."
     echo ""
     echo "The script will try multiple installation methods:"
-    echo "1. AUR installation via yay"
-    echo "2. Alternative package managers (paru)"
-    echo "3. Manual installation from source"
+    echo "1. pacman (nsis, if available in repos)"
+    echo "2. AUR nsis via yay"
+    echo "3. AUR nsis via paru"
+    echo "4. Manual source build (makensis + Stubs under /usr/local/share/nsis)"
     echo ""
 }
 
@@ -357,12 +380,18 @@ main() {
     # Check if running as root
     check_root
     
-    # Check if NSIS is already installed
-    if check_makensis && [ "$FORCE" = false ]; then
+  # Incomplete compiler-only installs block AUR makensis on PATH
+    if command -v makensis &>/dev/null && ! find_nsis_stub &>/dev/null; then
+        print_warning "makensis found but NSIS stubs are missing (Wine bridge installer will fail)"
+        remove_minimal_nsis_local
+    fi
+
+    if check_nsis_wine_ready && [ "$FORCE" = false ]; then
         if [ "$VERIFY_ONLY" = true ]; then
             verify_installation
             exit $?
         else
+            report_nsis_status
             print_success "NSIS is already installed. Use --force to reinstall."
             exit 0
         fi
@@ -381,20 +410,18 @@ main() {
     local install_success=false
     
     if [ "$MANUAL_ONLY" = false ]; then
-        # Try AUR installation first
-        if install_nsis_aur; then
+        if install_nsis_pacman; then
             install_success=true
-        else
-            # Try alternative package managers
-            if install_nsis_alternative; then
-                install_success=true
-            fi
+        elif install_nsis_aur; then
+            install_success=true
+        elif install_nsis_paru; then
+            install_success=true
         fi
     fi
-    
-    # If AUR methods failed, try manual installation
+
     if [ "$install_success" = false ]; then
-        print_status "All package manager methods failed, trying manual installation..."
+        print_status "Package installs failed, trying manual source build (with Stubs)..."
+        remove_minimal_nsis_local
         if install_nsis_manual; then
             install_success=true
         fi
@@ -412,10 +439,9 @@ main() {
         fi
     else
         print_error "All installation methods failed"
-        print_status "Please try installing NSIS manually:"
-        print_status "1. Visit: https://nsis.sourceforge.io/Download"
-        print_status "2. Download and install NSIS manually"
-        print_status "3. Add NSIS to your PATH"
+        print_status "Install full NSIS (must include Stubs for Wine bridge):"
+        print_status "  yay -S nsis mingw-w64-gcc"
+        print_status "  test -f /usr/share/nsis/Stubs/zlib-x86-unicode && which makensis"
         exit 1
     fi
 }

@@ -12,9 +12,9 @@ if(WINE_PLUGIN)
     add_subdirectory(ft_tester)
     add_subdirectory(views)
     
-    # NSIS installer generation (if makensis is available)
-    if(MAKENSIS_EXECUTABLE)
-        message(STATUS "NSIS installer support: enabled (makensis found)")
+    # NSIS installer generation (requires makensis and Stubs — see install_nsis_arch.sh)
+    if(MAKENSIS_EXECUTABLE AND NSIS_HAVE_STUBS)
+        message(STATUS "NSIS installer support: enabled (makensis + stubs)")
         
         # Set variables for NSIS template configuration
         set(srcdir ${CMAKE_CURRENT_SOURCE_DIR})
@@ -204,8 +204,13 @@ fi
         )
         message(STATUS "Wine installer will be built from components and installed to: share/linuxtrack/wine/linuxtrack-wine.exe")
     else()
-        message(STATUS "NSIS installer support: disabled (makensis not found)")
-        message(WARNING "Wine installer cannot be built without makensis. Install makensis to build the installer from components.")
+        if(MAKENSIS_EXECUTABLE)
+            message(STATUS "NSIS installer support: disabled (NSIS stubs not found)")
+            message(WARNING "Wine installer cannot be built without NSIS stubs. Arch/CachyOS: yay -S nsis, or ./scripts/install/install_nsis_arch.sh --force")
+        else()
+            message(STATUS "NSIS installer support: disabled (makensis not found)")
+            message(WARNING "Wine installer cannot be built without makensis. Install full NSIS (with Stubs) to build linuxtrack-wine.exe.")
+        endif()
     endif()
     
     # Install Wine bridge README

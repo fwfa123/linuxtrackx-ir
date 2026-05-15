@@ -12,7 +12,7 @@ The NSIS package in the AUR (Arch User Repository) can sometimes have issues:
 - Missing build dependencies
 - AUR helper compatibility issues
 
-This script provides multiple fallback methods to ensure NSIS can be installed successfully.
+This script installs **full NSIS** (makensis **and** installer **Stubs**). Stubs are required to build `linuxtrack-wine.exe`; a compiler-only install will fail with `Error: reading stub ".../zlib-x86-unicode"`.
 
 ## Features
 
@@ -94,8 +94,7 @@ The script tries installation methods in this order:
 
 ### NSIS Components
 - `makensis` - NSIS compiler
-- Core NSIS libraries and tools
-- Minimal installation (skips unnecessary components)
+- `Stubs/` - Installer stubs (e.g. `zlib-x86-unicode`) under `/usr/share/nsis/Stubs/` (AUR/pacman) or `/usr/local/share/nsis/Stubs/` (manual build)
 
 ## Troubleshooting
 
@@ -125,10 +124,30 @@ The script tries installation methods in this order:
 - Ensure you have sufficient disk space
 - Try updating your system: `sudo pacman -Syu`
 
+**AUR: `gpg: keyserver receive failed` / `PGP keys need importing` (mingw-w64-zlib)**
+
+The `nsis` package pulls in AUR MinGW dependencies that must be signed. If yay cannot reach a keyserver:
+
+```bash
+mkdir -p ~/.gnupg
+printf '%s\n' 'keyserver hkps://keys.openpgp.org' >> ~/.gnupg/dirmngr.conf
+gpgconf --kill dirmngr
+gpg --recv-keys 5ED46A6721D365587791E2AA783FCD8E58BCAFBA
+yay -S nsis mingw-w64-gcc
+```
+
+If `keys.openpgp.org` fails, try `hkps://keyserver.ubuntu.com` in `dirmngr.conf` instead. On CachyOS you can also import the key from the [mingw-w64-zlib AUR page](https://aur.archlinux.org/packages/mingw-w64-zlib) (PGP key link).
+
+**"Error: reading stub ... zlib-x86-unicode" / Wine bridge installer fails**
+- Install full NSIS: `yay -S nsis mingw-w64-gcc`
+- Remove broken compiler-only install: `sudo rm -f /usr/local/bin/makensis /usr/local/makensis`
+- Re-run: `./scripts/install/install_nsis_arch.sh --force`
+- Verify: `test -f /usr/share/nsis/Stubs/zlib-x86-unicode && which makensis`
+- Reconfigure CMake from a clean build dir so `MAKENSIS_EXECUTABLE` points at `/usr/bin/makensis`
+
 **"NSIS verification failed"**
-- Check if NSIS is in your PATH
-- Try logging out and back in
-- Run: `which makensis` to verify installation
+- Run `./scripts/install/install_nsis_arch.sh --verify`
+- Check stubs: `ls /usr/share/nsis/Stubs/zlib-x86-unicode`
 
 ### Manual Fallback
 

@@ -167,30 +167,33 @@ install_wine_bridge_toolchain() {
     sudo pacman -S --needed wine wine-mono wine-gecko mingw-w64-gcc
 }
 
-# Function to install NSIS
+# Function to install NSIS (full install with Stubs — required for linuxtrack-wine.exe)
 install_nsis() {
-    print_status "Checking NSIS installation..."
-    
-    if command_exists makensis; then
-        print_success "NSIS is already installed"
+    print_status "Checking NSIS installation (makensis + Stubs)..."
+
+    if [ -f "scripts/install/install_nsis_arch.sh" ]; then
+        chmod +x scripts/install/install_nsis_arch.sh
+        if ./scripts/install/install_nsis_arch.sh --verify 2>/dev/null; then
+            print_success "NSIS ready for Wine bridge installer"
+            return 0
+        fi
+        print_status "Installing NSIS using helper script..."
+        ./scripts/install/install_nsis_arch.sh || return 1
         return 0
     fi
-    
-    # Try to install NSIS using our helper script
-    if [ -f "scripts/install/install_nsis_arch.sh" ]; then
-        print_status "Installing NSIS using helper script..."
-        chmod +x scripts/install/install_nsis_arch.sh
-        ./scripts/install/install_nsis_arch.sh
-    else
-        print_warning "NSIS helper script not found. Installing manually..."
-        local aur_helper=$(detect_aur_helper)
-        if [ "$aur_helper" != "none" ]; then
-            $aur_helper -S nsis --noconfirm
-        else
-            print_error "No AUR helper available for NSIS installation"
-            return 1
-        fi
+
+    print_warning "NSIS helper script not found. Installing via AUR..."
+    local aur_helper=$(detect_aur_helper)
+    if [ "$aur_helper" = "none" ]; then
+        print_error "No AUR helper available for NSIS installation"
+        return 1
     fi
+    $aur_helper -S --needed nsis mingw-w64-gcc --noconfirm || return 1
+    if [ ! -f /usr/share/nsis/Stubs/zlib-x86-unicode ]; then
+        print_error "NSIS stubs missing after install — Wine bridge installer will not build"
+        return 1
+    fi
+    print_success "NSIS installed with stubs"
 }
 
 # Function to verify Wine runtime + MinGW bridge toolchains
