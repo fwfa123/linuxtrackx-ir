@@ -46,10 +46,19 @@ sudo pacman -S winetricks cabextract wget
 
 ### X-Plane Support (Level 3+)
 ```bash
-# Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
-# Extract to: /opt/xplane-sdk/
+# Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
+# Official SDK archives are ZIP (e.g. XPSDK430.zip); the version in the filename may change.
+# Inside the zip: SDK/CHeaders/ (no longer .tar.gz).
+sudo pacman -S unzip
+
 sudo mkdir -p /opt/xplane-sdk
-sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
+tmpdir=$(mktemp -d)
+unzip -q ~/Downloads/XPSDK*.zip -d "$tmpdir"
+sudo cp -a "$tmpdir"/SDK/. /opt/xplane-sdk/
+rm -rf "$tmpdir"
+
+# CMake expects:
+test -f /opt/xplane-sdk/CHeaders/XPLM/XPLMPlugin.h && echo "X-Plane SDK OK"
 ```
 
 ### Webcam Support (Level 4+)
@@ -211,6 +220,7 @@ ls /opt/share/linuxtrack/wine/linuxtrack-wine.exe 2>/dev/null || true  # NSIS in
 | Qt6 CMake config not found | `sudo pacman -S qt6-base qt6-tools` |
 | **`liblo` not found** / OSC disabled | `sudo pacman -S liblo` then `pkg-config --exists liblo`. Split **`--configure-only`** previously skipped this; current **`build_arch_linux.sh`** runs **`install_osc_support`** before configure. |
 | **Webcam disabled** but V4L found | Default **`ENABLE_WEBCAM=OFF`**. Add **`-DENABLE_WEBCAM=ON`** to **`cmake`** (see Level 4) if you need webcam support. |
+| X-Plane SDK not found / wrong path | Official download is **ZIP** (`XPSDK*.zip`) with `SDK/CHeaders/` inside. Copy `SDK/` contents to `/opt/xplane-sdk/` — see [x-plane-sdk.md](x-plane-sdk.md) |
 
 ### Common issues
 

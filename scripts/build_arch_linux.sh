@@ -142,20 +142,21 @@ install_osc_support() {
     fi
 }
 
-# Function to install X-Plane SDK (manual download; that URL serves HTML, not a .zip)
+# Function to check X-Plane SDK (manual download from developer.x-plane.com)
 install_xplane_sdk() {
     local sdk_dir="/opt/xplane-sdk"
-    if [ -d "$sdk_dir/CHeaders" ]; then
-        print_success "X-Plane SDK found at $sdk_dir"
+    if [ -d "$sdk_dir/CHeaders/XPLM" ]; then
+        print_success "X-Plane SDK found at $sdk_dir/CHeaders"
         if [ ! -f /etc/profile.d/xplane-sdk.sh ]; then
-            echo "export XPLANE_SDK_PATH=$sdk_dir" | sudo tee /etc/profile.d/xplane-sdk.sh
-            echo "export XPLANE_SDK_INCLUDE=$sdk_dir/CHeaders" | sudo tee -a /etc/profile.d/xplane-sdk.sh
+            echo "export XPLANE_SDK_PATH=$sdk_dir/CHeaders" | sudo tee /etc/profile.d/xplane-sdk.sh
         fi
         return 0
     fi
     print_warning "X-Plane SDK not found at $sdk_dir/CHeaders"
-    print_status "Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
-    print_status "Extract so that $sdk_dir/CHeaders exists. Then re-run or pass -DXPLANE_SDK_PATH=$sdk_dir/CHeaders to cmake."
+    print_status "Download a ZIP from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/"
+    print_status "  (e.g. XPSDK430.zip — version in the filename may change)"
+    print_status "  unzip -q XPSDK*.zip -d /tmp/xpsdk && sudo cp -a /tmp/xpsdk/SDK/. $sdk_dir/"
+    print_status "Then re-run or pass -DXPLANE_SDK_PATH=$sdk_dir/CHeaders to cmake."
     sudo mkdir -p "$sdk_dir"
     return 0
 }

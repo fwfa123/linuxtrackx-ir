@@ -28,10 +28,19 @@ sudo dnf install cabextract wget  # REQUIRED: For alternative installation metho
 
 ### X-Plane Support (Level 3+)
 ```bash
-# Download X-Plane SDK from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
-# Extract to: /opt/xplane-sdk/
+# Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/
+# Official SDK archives are ZIP (e.g. XPSDK430.zip); the version in the filename may change.
+# Inside the zip: SDK/CHeaders/ (no longer .tar.gz).
+sudo dnf install unzip
+
 sudo mkdir -p /opt/xplane-sdk
-sudo tar -xzf XPSDK*.tar.gz -C /opt/xplane-sdk/
+tmpdir=$(mktemp -d)
+unzip -q ~/Downloads/XPSDK*.zip -d "$tmpdir"
+sudo cp -a "$tmpdir"/SDK/. /opt/xplane-sdk/
+rm -rf "$tmpdir"
+
+# CMake expects:
+test -f /opt/xplane-sdk/CHeaders/XPLM/XPLMPlugin.h && echo "X-Plane SDK OK"
 ```
 
 ### Webcam Support (Level 4+)

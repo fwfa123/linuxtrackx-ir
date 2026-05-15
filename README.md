@@ -94,6 +94,7 @@ sudo cmake --build . --target uninstall
 
 - **[Debian/Ubuntu/MX Linux](docs/readme/debian-ubuntu.md)**
 - **[Arch Linux](docs/readme/arch-linux.md)** (Arch / CachyOS: read **AppImage vs source** and **Wine WOW64** first)
+- **[X-Plane SDK install](docs/readme/x-plane-sdk.md)** (ZIP download, e.g. `XPSDK430.zip` — not `.tar.gz`)
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
 - **[Flatpak (Lutris and games)](docs/readme/flatpak.md)** - Using LinuxTrack when Lutris or games run from Flatpak (Flatseal, library path).
 

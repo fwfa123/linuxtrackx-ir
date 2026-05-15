@@ -1,22 +1,16 @@
 # X-Plane Plugin Support
 
-Linuxtrack package contains two plugins for X-Plane simulator:
+LinuxTrack builds two X-Plane plugins when the SDK is present at configure time:
 
-- **xlinuxtrack.so.0** - Legacy plugin for X-Plane v8.XX and v9.XX
-- **xlinuxtrack9.so.0** - Current plugin for X-Plane v9.XX and newer versions
+- **xlinuxtrack.so** — legacy plugin for X-Plane 8.x and 9.x
+- **xlinuxtrack9.so** — current plugin for X-Plane 9.x and newer
 
-## Requirements
+## X-Plane SDK (required to build)
 
-To build X-Plane plugins, you need the **X-Plane SDK**:
-
-1. **Download**: Get the SDK from [Laminar Research Developer Site](https://developer.x-plane.com/sdk/plugin-sdk-downloads/)
-2. **Install**: Extract to `/usr/include/xplane_sdk/` or specify custom path during configure
-3. **Configure**: Use `--with-xplane-sdk=/path/to/sdk` if not in default location
-
-## Installation
-
-The xlinuxtrack9 plugin is installed by default when X-Plane SDK is available during build.
+1. **Download**: [X-Plane plugin SDK downloads](https://developer.x-plane.com/sdk/plugin-sdk-downloads/) — current releases are **ZIP** archives (e.g. `XPSDK430.zip`; the version in the filename may change).
+2. **Extract**: Archives contain `SDK/CHeaders/` (not `.tar.gz`). See [docs/readme/x-plane-sdk.md](../../readme/x-plane-sdk.md) for full steps.
+3. **Configure**: `-DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` (CMake default search path is `/opt/xplane-sdk/CHeaders`).
 
 ## Usage
 
-After installation, the plugin will be available in X-Plane's plugin manager for head tracking support.
+After installation, enable the plugin in X-Plane’s plugin manager for head tracking support.
