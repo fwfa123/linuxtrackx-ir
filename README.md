@@ -195,6 +195,7 @@ groups $USER
 | Library not found when game launched from Lutris Flatpak | Use Flatseal to allow filesystem access; see [Flatpak doc](docs/readme/flatpak.md) |
 | AppImage: Steam/Lutris not found (Flatpak installed) | AppImage used to break host `flatpak` via `LD_LIBRARY_PATH`; use a build with the Flatpak detection fix, or install from source. Confirm `~/.var/app/com.valvesoftware.Steam/data/Steam` exists after launching Flatpak Steam once. |
 | Debian 13: `wine32-tools` conflicts with `wine64-tools` | Install **only** `wine64-tools` + `libwine-dev` (not both tool packages). See [debian-ubuntu.md](docs/readme/debian-ubuntu.md). |
+| AppImage build: `patchelf not available` | Install `patchelf` on the **build** machine, then rebuild. See [AppImage Build](#appimage-build) and your distro guide. |
 
 **[Detailed troubleshooting guide](docs/readme/troubleshooting.md)** - Distribution-specific issues and advanced diagnostics.
 
@@ -223,6 +224,8 @@ The maintained pipeline lives under **`scripts/appimage/v2/`**. Typical entry po
 ```
 
 The v2 **`prepare.sh`** configure line targets README **Level 7** in the table above: `ENABLE_WEBCAM=ON`, `ENABLE_OSC=ON`, **`ENABLE_FACE_TRACKER=ON`**, **`DISABLE_WIIMOTE=OFF`** (Wiimote builds when **libcwiid** is available), and **`ENABLE_XPLANE=ON`** when the X-Plane SDK is present (otherwise X-Plane is turned off for that run). Install the same **development** packages as a Level 4–7 source build on the host (webcam/V4L, **liblo**, **OpenCV**, **libcwiid**); see your [distribution guide](#distribution-specific-instructions). The **`scripts/appimage/Dockerfile`** includes OpenCV and libcwiid dev packages so official container builds can produce **`libp3eft`** and **`wii_server`**. Set **`XPLANE_SDK_PATH`** if headers are not under `/opt/xplane-sdk/CHeaders`.
+
+**AppImage packaging tools (maintainers):** install **`patchelf`** on the build host so v2 can set library rpaths for TrackIR plugins inside the AppImage (`package.sh` / `bundle.sh`). Without it the build still completes but logs `patchelf not available`. Also need **`appimagetool`** (or the script’s bundled copy) and the usual Level 2+ Wine/NSIS stack if you build the Wine bridge into the image. Package names: `patchelf` on Debian/Ubuntu, Fedora, and Arch — see your distro guide.
 
 Validation (**`validate.sh`**) defaults to **`EXPECT_LEVEL7=1`** (see **`config.sh`**): the AppDir must include OpenCV face-track support (**`libp3eft`**) and **`usr/bin/wii_server`**. Export **`EXPECT_LEVEL7=0`** if you are checking a slim or partial tree. **`ci_build.sh`** runs the full v2 sequence with **`CLEAN=1`** (prepare, bundle, optimize, validate, package).
 

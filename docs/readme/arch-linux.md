@@ -163,6 +163,10 @@ sudo pacman -S libv4l v4l-utils
 ### AppImage / packaging build (maintainers)
 The v2 `prepare.sh` enables `-DENABLE_WEBCAM=ON`, `-DENABLE_OSC=ON`, `-DENABLE_XPLANE=ON`, and `-DENABLE_FACE_TRACKER=OFF` (same as CMake default; aligns with README **Level 5**). Install **Webcam Support (Level 4+)** on the build host so `libwc` and PS3 Eye (`libp3e`) build. To ship OpenCV facetrack inside the AppImage, add `-DENABLE_FACE_TRACKER=ON` and install **Face tracking (Level 6+)** packages on the builder. End users of the released AppImage do not need OpenCV on the system.
 
+```bash
+sudo pacman -S patchelf   # rpath fixups for TrackIR libs in the AppImage (package.sh)
+```
+
 ### OSC Support (Level 5+)
 ```bash
 sudo pacman -S liblo   # official [extra], not AUR

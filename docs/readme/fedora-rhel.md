@@ -42,6 +42,10 @@ sudo dnf install libv4l-devel v4l-utils
 ### AppImage / packaging build (maintainers)
 The v2 `prepare.sh` enables `-DENABLE_WEBCAM=ON`, `-DENABLE_OSC=ON`, `-DENABLE_XPLANE=ON`, and `-DENABLE_FACE_TRACKER=OFF` (CMake default; matches README **Level 5**). Install **Webcam Support (Level 4+)** on the build host so webcam and PS3 Eye (`libp3e`) build. To include OpenCV-based facetrack plugins, add `-DENABLE_FACE_TRACKER=ON` and install **Face tracking (Level 6+)** packages on the builder. Users who only run the AppImage are not required to install `opencv-devel` on their system.
 
+```bash
+sudo dnf install patchelf   # rpath fixups for TrackIR libs in the AppImage (package.sh)
+```
+
 **Qt Help / `qhelpgenerator`:** On Fedora, `qhelpgenerator` is installed as **`/usr/lib64/qt6/libexec/qhelpgenerator`** by **`qt6-doctools`** (it is not always in `.../bin/`). Install before `ci_build.sh` / `prepare.sh`: `sudo dnf install qt6-doctools`.
 
 ### OSC Support (Level 5+)

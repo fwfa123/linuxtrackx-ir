@@ -44,6 +44,10 @@ sudo apt install libv4l-dev v4l-utils
 ### AppImage / packaging build (maintainers)
 The AppImage v2 `prepare.sh` configures with `-DENABLE_WEBCAM=ON`, `-DENABLE_OSC=ON`, `-DENABLE_XPLANE=ON`, and `-DENABLE_FACE_TRACKER=OFF` (CMake default; matches README **Level 5**). On the machine that runs the v2 pipeline (or legacy `build_appimage_phase4.sh` if present), install **Webcam Support (Level 4+)** so `libwc` and **PS3 Eye** (`libp3e`) build. To bundle OpenCV **facetrack** (`libp3eft`), add `-DENABLE_FACE_TRACKER=ON` and install **Face tracking (Level 6+)** packages on the builder. People who only download the AppImage do not need `libopencv-dev` on their system.
 
+```bash
+sudo apt install patchelf   # rpath fixups for TrackIR libs in the AppImage (package.sh)
+```
+
 ### OSC Support (Level 5+)
 ```bash
 sudo apt install liblo-dev
@@ -154,6 +158,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
 | OpenCV detection failed | Facetrack / `libp3eft` missing; webcam without face mode may still work. On the **build** machine: `sudo apt install libopencv-dev` and configure with `-DENABLE_FACE_TRACKER=ON`. AppImage users should get OpenCV from the bundle, not the distro. |
+| AppImage build: `patchelf not available` | `sudo apt install patchelf`, then rebuild the AppImage |
 
 ### Qt6 Tools PATH (Rare)
 If Qt6 tools aren't found, they should be in `/usr/lib/x86_64-linux-gnu/qt6/bin/`. Add to PATH if needed:
