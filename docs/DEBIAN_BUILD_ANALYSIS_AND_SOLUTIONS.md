@@ -18,17 +18,17 @@ LinuxTrack builds multiple Wine bridge components:
 - **32-bit components**: Tester.exe, NPClient.dll.so (uses `-m32` flag)
 - **64-bit components**: Tester64.exe, NPClient64.dll.so (no architecture flag)
 
-**Solution Implemented:**
+**Solution (Debian 12 / Ubuntu 22.04 and older):**
 ```bash
-# Correct package for full Wine bridge support
-sudo apt install -y wine wine-staging libwine-dev wine32-tools
+sudo apt install -y wine libwine-dev wine32-tools
 ```
 
-**Why wine32-tools is Superior:**
-- ✅ Provides 32-bit winegcc (`winegcc -m32`)
-- ✅ Provides 64-bit winegcc (`winegcc` without flags)
-- ✅ Handles both architectures seamlessly
-- ✅ Essential for Tester.exe (32-bit) and Tester64.exe (64-bit)
+**Solution (Debian 13+ / Wine 10 WoW64):** `wine32-tools` and `wine64-tools` **conflict**. Use **`wine64-tools` only** (builds 32- and 64-bit via `winegcc -m32` and plain `winegcc`):
+```bash
+sudo apt install -y libwine-dev wine64-tools gcc-multilib g++-multilib libc6-dev-i386 nsis
+```
+
+**Historical note:** Older docs recommended `wine32-tools` alone on Bullseye/Bookworm; on Trixie, `wine64-tools` replaces that role.
 
 **Verification Results:**
 ```bash

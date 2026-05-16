@@ -193,6 +193,8 @@ groups $USER
 | TrackIR not detected | Check USB: `lsusb \| grep Track` |
 | Wine bridge fails | Check Wine 32-bit installation and MFC42 setup |
 | Library not found when game launched from Lutris Flatpak | Use Flatseal to allow filesystem access; see [Flatpak doc](docs/readme/flatpak.md) |
+| AppImage: Steam/Lutris not found (Flatpak installed) | AppImage used to break host `flatpak` via `LD_LIBRARY_PATH`; use a build with the Flatpak detection fix, or install from source. Confirm `~/.var/app/com.valvesoftware.Steam/data/Steam` exists after launching Flatpak Steam once. |
+| Debian 13: `wine32-tools` conflicts with `wine64-tools` | Install **only** `wine64-tools` + `libwine-dev` (not both tool packages). See [debian-ubuntu.md](docs/readme/debian-ubuntu.md). |
 
 **[Detailed troubleshooting guide](docs/readme/troubleshooting.md)** - Distribution-specific issues and advanced diagnostics.
 

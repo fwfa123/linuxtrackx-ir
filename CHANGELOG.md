@@ -2,7 +2,15 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: This version (0.99.30) continues development on GitLab for future development and releases.
+> **Note**: Release versioning follows `1.0.x` for stable AppImage builds; older `0.99.x` entries are historical.
+
+## [1.0.2] - AppImage Flatpak Steam/Lutris detection (May 2026)
+
+### Fixed
+- **AppImage + Flatpak**: Steam and Lutris not detected when installed via Flatpak (GitLab #56). AppImage `LD_LIBRARY_PATH` broke host `flatpak` CLI; detection now sanitizes the environment for host tools and checks `~/.var/app/...` data paths before requiring `flatpak list`.
+
+### Changed
+- Troubleshooting notes for AppImage + Flatpak in README and Fedora/RHEL guide.
 
 ## [0.99.30] - Lutris, AppImage & UI Improvements (March 2026)
 

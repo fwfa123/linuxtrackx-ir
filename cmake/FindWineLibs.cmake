@@ -129,3 +129,48 @@ function(detect_wine_libs)
     endif()
 endfunction()
 
+# Wine Windows API headers (windows.h, windef.h) — required for winegcc/wrc.
+# winegcc normally adds these when libwine-dev is installed; we pass -I explicitly
+# so builds work on Debian/Ubuntu/Fedora layouts and fail clearly when headers are absent.
+function(detect_wine_headers)
+    set(_dirs "")
+    set(_found FALSE)
+
+    # Probe known distro layouts (path -> extra -I dirs for wine/debug.h etc.)
+    set(_layouts
+        "/usr/include/wine/windows.h|/usr/include/wine"
+        "/usr/include/wine/windows/windows.h|/usr/include/wine/windows;/usr/include/wine"
+        "/usr/include/wine/wine/windows/windows.h|/usr/include/wine/wine/windows;/usr/include/wine/wine"
+    )
+    foreach(_entry IN LISTS _layouts)
+        string(REPLACE "|" ";" _parts "${_entry}")
+        list(GET _parts 0 _marker)
+        list(REMOVE_AT _parts 0)
+        if(EXISTS "${_marker}")
+            set(_found TRUE)
+            foreach(_d IN LISTS _parts)
+                list(APPEND _dirs "${_d}")
+            endforeach()
+        endif()
+    endforeach()
+
+    if(_dirs)
+        list(REMOVE_DUPLICATES _dirs)
+    endif()
+
+    set(WINE_HEADERS_FOUND ${_found} CACHE BOOL "Wine windows.h headers found" FORCE)
+    set(WINE_INCLUDE_DIRS "${_dirs}" CACHE STRING "Wine header include directories" FORCE)
+
+    set(_flags "")
+    foreach(_d IN LISTS _dirs)
+        list(APPEND _flags "-I${_d}")
+    endforeach()
+    set(WINE_INCLUDE_FLAGS "${_flags}" CACHE STRING "Wine header -I flags for winegcc/wrc" FORCE)
+
+    if(_found)
+        message(STATUS "Wine headers: ${WINE_INCLUDE_DIRS}")
+    else()
+        message(STATUS "Wine headers: not found (install libwine-dev / wine-devel)")
+    endif()
+endfunction()
+

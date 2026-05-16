@@ -2,7 +2,7 @@
 # Migrated from Autotools
 
 cmake_minimum_required(VERSION 3.16)
-project(LinuxTrack VERSION 1.0.1 LANGUAGES C CXX)
+project(LinuxTrack VERSION 1.0.2 LANGUAGES C CXX)
 
 # Set default installation prefix to /opt (matching Autotools)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
@@ -298,6 +298,21 @@ if(WINEGCC_EXECUTABLE AND WINEGPP_EXECUTABLE AND MAKENSIS_EXECUTABLE)
     # Wine library paths detection (must be done before setting WINE64/WINE32)
     include(cmake/FindWineLibs.cmake)
     detect_wine_libs()
+    detect_wine_headers()
+
+    if(NOT WINE_HEADERS_FOUND)
+        message(FATAL_ERROR "\n"
+            "Wine Windows headers not found (windows.h / windef.h).\n"
+            "The Wine bridge cannot be built without Wine development headers.\n\n"
+            "Install for your distribution:\n"
+            "  Debian/Ubuntu 12+:  sudo apt install libwine-dev wine64-tools \\\n"
+            "                        gcc-multilib g++-multilib libc6-dev-i386 nsis\n"
+            "    (Do NOT install wine32-tools — it conflicts with wine64-tools on Debian 13.)\n"
+            "  Fedora/RHEL:        sudo dnf install wine-devel wine-devel.i686\n"
+            "  Arch:               install wine + multilib (see docs/readme/arch-linux.md)\n\n"
+            "Then remove the build directory and re-run cmake.\n"
+        )
+    endif()
     
     # 64-bit components are ALWAYS built when WINE_PLUGIN is enabled (if 64-bit libs found)
     # 64-bit Wine is easier to install, so we prioritize it

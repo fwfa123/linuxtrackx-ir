@@ -19,6 +19,10 @@ if(NOT DEFINED WINE64_LIBS)
     set(WINE64_LIBS "-L/usr/lib/x86_64-linux-gnu/wine/x86_64-unix" CACHE STRING "Wine 64-bit library path")
     message(WARNING "WINE64_LIBS not set, using default: ${WINE64_LIBS}")
 endif()
+if(NOT DEFINED WINE_INCLUDE_FLAGS)
+    set(WINE_INCLUDE_FLAGS "" CACHE STRING "Wine header -I flags for winegcc/wrc")
+    message(WARNING "WINE_INCLUDE_FLAGS not set; Wine headers may not be found at compile time")
+endif()
 
 # Helper function to compile a single source file
 function(wine_compile_source src obj is_64bit)
@@ -40,7 +44,10 @@ function(wine_compile_source src obj is_64bit)
         endif()
         add_custom_command(
             OUTPUT ${obj}
-            COMMAND ${WRC_EXECUTABLE} --utf8 -o ${obj} -I${CMAKE_CURRENT_SOURCE_DIR} ${src_path}
+            COMMAND ${WRC_EXECUTABLE} --utf8 -o ${obj}
+                -I${CMAKE_CURRENT_SOURCE_DIR}
+                ${WINE_INCLUDE_FLAGS}
+                ${src_path}
             DEPENDS ${src_path}
             COMMENT "Compiling resource file ${src} with wrc"
         )
@@ -54,6 +61,7 @@ function(wine_compile_source src obj is_64bit)
                     -fPIC
                     -g
                     -DHAVE_CONFIG_H
+                    ${WINE_INCLUDE_FLAGS}
                     -I${CMAKE_SOURCE_DIR}
                     -I${CMAKE_SOURCE_DIR}/src
                     -I${CMAKE_BINARY_DIR}
@@ -71,6 +79,7 @@ function(wine_compile_source src obj is_64bit)
                     -m32
                     -g
                     -DHAVE_CONFIG_H
+                    ${WINE_INCLUDE_FLAGS}
                     -I${CMAKE_SOURCE_DIR}
                     -I${CMAKE_SOURCE_DIR}/src
                     -I${CMAKE_BINARY_DIR}
@@ -92,6 +101,7 @@ function(wine_compile_source src obj is_64bit)
                     -fPIC
                     -g
                     -DHAVE_CONFIG_H
+                    ${WINE_INCLUDE_FLAGS}
                     -I${CMAKE_SOURCE_DIR}
                     -I${CMAKE_SOURCE_DIR}/src
                     -I${CMAKE_BINARY_DIR}
@@ -109,6 +119,7 @@ function(wine_compile_source src obj is_64bit)
                     -m32
                     -g
                     -DHAVE_CONFIG_H
+                    ${WINE_INCLUDE_FLAGS}
                     -I${CMAKE_SOURCE_DIR}
                     -I${CMAKE_SOURCE_DIR}/src
                     -I${CMAKE_BINARY_DIR}

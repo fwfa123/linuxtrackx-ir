@@ -225,6 +225,8 @@ sudo ln -s /usr/lib64/qt6/bin/qmake /usr/lib/qt6/bin/qmake
 
 When Lutris is installed via Flatpak, game data and Wine/Proton runners live under **`~/.var/app/net.lutris.Lutris/data/lutris/`** (e.g. runners under `runners/wine/` and `runners/proton/`). LinuxtrackX-ir detects this path automatically when you run the prefix tester or install the Wine bridge.
 
+**AppImage + Flatpak Steam or Lutris:** If the native GUI finds Steam/Lutris but the AppImage reports "not found" and the log mentions `flatpak: symbol lookup error` / `libcurl`, the AppImage was invoking the host `flatpak` command with AppImage libraries on `LD_LIBRARY_PATH`. Current builds clear that for host tools and check `~/.var/app/...` data paths directly. After installing Flatpak Steam, launch it once so `~/.var/app/com.valvesoftware.Steam/data/Steam` exists.
+
 If you see **"Lutris wine binary not found for version: GE-Proton10-32"** (or a similar version) with Flatpak Lutris, the app should now use the Flatpak runners path automatically. If the issue persists, check the exact Wine/Proton version in the game's Lutris config and ensure that runner is installed in Lutris (e.g. via Lutris → Runners).
 
 If games show **"All library search attempts failed"** when launched from Lutris Flatpak, grant filesystem access using Flatseal; see **[Flatpak (Lutris and games)](flatpak.md)**.

@@ -6,7 +6,7 @@ This guide applies to **Arch Linux** and derivatives (**CachyOS**, EndeavourOS, 
 
 ### End users (recommended): AppImage
 
-For day-to-day use, prefer the **official AppImage** (e.g. v1.0.1+). It bundles the GUI and dependencies users need on rolling distros.
+For day-to-day use, prefer the **official AppImage** (e.g. v1.0.2+). It bundles the GUI and dependencies users need on rolling distros.
 
 - **Wine bridge:** If a **source build** on your machine fails to produce a working `linuxtrack-wine.exe` (common with **Wine WOW64** on Arch), you can still install the bridge using the **installer shipped with the AppImage** while running **`ltr_gui` from a local `/opt` install** if you wish. Several users reported this workflow on [GitLab #38](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/38).
 - Releases: see the project README / GitLab releases.

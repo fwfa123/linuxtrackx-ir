@@ -10,6 +10,10 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the LinuxTrack X-IR software.
 
+<h2>LinuxTrack X-IR v1.0.2 - AppImage Flatpak Steam & Lutris detection</h2>
+<h3>AppImage + Flatpak gaming platforms</h3>
+Fixed detection of Flatpak Steam and Lutris when running the AppImage. The bundled library path no longer breaks the host <code>flatpak</code> command, and Steam/Lutris data under <code>~/.var/app/</code> is found directly.
+
 <h2>LinuxTrack X-IR v0.99.27 - Build System Reliability & Cross-Distribution Compatibility</h2>
 <h3>Build System & Compatibility</h3>
 Enhanced cross-distribution support with improved compatibility for Fedora 42, Debian 12, Arch Linux, and other distributions. Properly implemented minimal build philosophy where optional components gracefully disable instead of failing. Added full DESTDIR support for staging installations in packaging systems. Fixed compatibility issues with glibc 2.38+ functions.

@@ -14,14 +14,19 @@ sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-me
 
 ### Wine Support (Level 2+)
 ```bash
-sudo apt install wine wine-staging wine64 wine64-tools libwine-dev wine32-tools
-sudo apt-get install g++-14-multilib libstdc++-14-dev:amd64
+# Headers + winegcc/wrc (Debian 12+/13: wine64-tools only — do NOT install wine32-tools)
+sudo apt install libwine-dev wine64-tools nsis
+sudo apt install gcc-multilib g++-multilib libc6-dev-i386   # -m32 Wine bridge objects
+sudo apt install wine wine64                                # runtime (optional for testing)
 
-sudo apt install gcc-multilib libc6-dev-i386  # REQUIRED: 32-bit development headers
-sudo apt install winetricks  # REQUIRED: For MFC42 library installation
-sudo apt install cabextract wget  # REQUIRED: For alternative installation methods
-sudo apt install nsis  # REQUIRED: For Wine bridge installer generation
+sudo apt install winetricks cabextract wget   # MFC42 / installer helpers
 ```
+
+**Debian 13 (Trixie) / Wine 10:** `wine32-tools` and `wine64-tools` **conflict** — install **`wine64-tools` only**. It provides `winegcc`/`wrc` for both 32-bit (`-m32`) and 64-bit builds (WoW64). Installing both tool packages fails with apt solver errors.
+
+Headers: `libwine-dev` installs `windows.h` at **`/usr/include/wine/wine/windows/windows.h`** (not `/usr/include/wine/windows.h`). Verify: `ls /usr/include/wine/wine/windows/windows.h`
+
+Alternative: run `sudo ./scripts/dev/install_wine_dev.sh` (same policy: `wine64-tools`, not `wine32-tools`).
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -138,8 +143,10 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | Problem | Solution |
 |---------|----------|
 | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install Qt6 development packages: `sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev` |
-| `winegcc: command not found` | Install Wine development tools: `sudo apt install libwine-dev wine32-tools` |
-| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | Install full 32-bit Wine: `sudo apt install wine wine32 wine32-tools` |
+| `winegcc: command not found` | `sudo apt install libwine-dev wine64-tools` (not `wine32-tools` on Debian 12+) |
+| `wine32-tools` conflicts with `wine64-tools` | Install **only** `wine64-tools` + `libwine-dev` — see Wine Support above |
+| `windows.h` / `windef.h: No such file or directory` (winegcc) | `sudo apt install libwine-dev` (on Debian 13 headers live under `/usr/include/wine/wine/windows/`, not `/usr/include/wine/windows.h`). Re-run cmake after install. |
+| `wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode` | On WoW64 Debian use `wine64` + `wine64-tools`; avoid mixing old `wine32-tools` |
 | `bits/libc-header-start.h: No such file or directory` | **REQUIRED**: Install 32-bit headers: `sudo apt install gcc-multilib libc6-dev-i386` |
 | `Wine plugin: disabled (winegcc/wineg++/makensis not found)` | Install NSIS: `sudo apt install nsis` |
 | `relocatable linking ... elf32-i386 ... to format elf64-x86-64` | Clear your build dir and reconfigure so 64-bit Wine bridge links against the 64-bit unix libs: `cmake .. -DWINE64_LIBS_PATH=/usr/lib/x86_64-linux-gnu/wine/x86_64-unix` |
