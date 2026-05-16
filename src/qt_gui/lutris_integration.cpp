@@ -1379,29 +1379,38 @@ bool LutrisIntegration::isLutrisInstalledFlatpak()
 bool LutrisIntegration::detectLutrisFlatpak()
 {
     FlatpakDetector detector;
+    static const QString lutrisAppId = QStringLiteral("net.lutris.Lutris");
+    const QString flatpakLutrisPath = detector.getAppDataPath(lutrisAppId) + QStringLiteral("/lutris");
 
-    // Check if Lutris is installed as a Flatpak app
-    if (!detector.isAppInstalled(QStringLiteral("net.lutris.Lutris"))) {
+    ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Checking Flatpak Lutris path: %s\n",
+                        flatpakLutrisPath.toUtf8().constData());
+
+    const bool flatpakDataValid = QDir(flatpakLutrisPath).exists()
+        && (QFileInfo(flatpakLutrisPath + QStringLiteral("/pga.db")).exists()
+            || hasGameConfigs(flatpakLutrisPath + QStringLiteral("/games/"))
+            || QDir(flatpakLutrisPath + QStringLiteral("/runners")).exists());
+
+    if (flatpakDataValid) {
+        ltr_int_log_message(
+            "LutrisIntegration::detectLutrisFlatpak() - Flatpak Lutris data found (filesystem)\n");
+        setupFlatpakLutrisPaths();
+        return true;
+    }
+
+    if (!detector.isAppInstalled(lutrisAppId)) {
         ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Lutris Flatpak app not found\n");
         return false;
     }
 
-    // Get the Lutris data directory for Flatpak
-    QString flatpakLutrisPath = detector.getAppDataPath(QStringLiteral("net.lutris.Lutris")) + QStringLiteral("/lutris");
-
-    ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Checking Flatpak Lutris path: %s\n",
-                      flatpakLutrisPath.toUtf8().constData());
-
-    // Check if the Lutris directory structure exists in Flatpak data
     if (QDir(flatpakLutrisPath).exists()) {
         ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Flatpak Lutris directory found\n");
         setupFlatpakLutrisPaths();
         return true;
-    } else {
-        ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Flatpak Lutris directory not found: %s\n",
-                          flatpakLutrisPath.toUtf8().constData());
-        return false;
     }
+
+    ltr_int_log_message("LutrisIntegration::detectLutrisFlatpak() - Flatpak Lutris directory not found: %s\n",
+                        flatpakLutrisPath.toUtf8().constData());
+    return false;
 }
 
 void LutrisIntegration::setupFlatpakLutrisPaths()

@@ -10,6 +10,9 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 - **Version 2.0.0**: Major version bump reflecting a new application architecture (Wine WOW64 bridge, Qt6/CMake-first build, modern toolchain requirements) rather than incremental `0.99.x` updates.
 - **Wine bridge**: WOW64-focused build and install path (see `docs/guides/WINE_BRIDGE_MODERN.md`).
 
+### Fixed
+- **AppImage + Flatpak**: Steam and Lutris detection when installed via Flatpak (ported from main 1.0.2, GitLab #56). Sanitized host `flatpak` invocation and data-first `~/.var/app/...` paths.
+
 ## [0.99.30] - Lutris, AppImage & UI Improvements (March 2026)
 
 ### Major Changes

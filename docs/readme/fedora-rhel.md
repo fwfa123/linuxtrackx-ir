@@ -51,6 +51,10 @@ sudo dnf install libv4l-devel v4l-utils
 ### AppImage / packaging build (maintainers)
 The v2 `prepare.sh` enables `-DENABLE_WEBCAM=ON`, `-DENABLE_OSC=ON`, `-DENABLE_XPLANE=ON`, and `-DENABLE_FACE_TRACKER=OFF` (CMake default; matches README **Level 5**). Install **Webcam Support (Level 4+)** on the build host so webcam and PS3 Eye (`libp3e`) build. To include OpenCV-based facetrack plugins, add `-DENABLE_FACE_TRACKER=ON` and install **Face tracking (Level 6+)** packages on the builder. Users who only run the AppImage are not required to install `opencv-devel` on their system.
 
+```bash
+sudo dnf install patchelf   # rpath fixups for TrackIR libs in the AppImage (package.sh)
+```
+
 **Qt Help / `qhelpgenerator`:** On Fedora, `qhelpgenerator` is installed as **`/usr/lib64/qt6/libexec/qhelpgenerator`** by **`qt6-doctools`** (it is not always in `.../bin/`). Install before `ci_build.sh` / `prepare.sh`: `sudo dnf install qt6-doctools`.
 
 ### OSC Support (Level 5+)
@@ -223,6 +227,8 @@ export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"
 ### Lutris (Flatpak)
 
 When Lutris is installed via Flatpak, game data and Wine/Proton runners live under **`~/.var/app/net.lutris.Lutris/data/lutris/`** (e.g. runners under `runners/wine/` and `runners/proton/`). LinuxtrackX-ir detects this path automatically when you run the prefix tester or install the Wine bridge.
+
+**AppImage + Flatpak Steam or Lutris:** If the native GUI finds Steam/Lutris but the AppImage reports "not found" and the log mentions `flatpak: symbol lookup error` / `libcurl`, the AppImage was invoking the host `flatpak` command with AppImage libraries on `LD_LIBRARY_PATH`. Current builds clear that for host tools and check `~/.var/app/...` data paths directly. After installing Flatpak Steam, launch it once so `~/.var/app/com.valvesoftware.Steam/data/Steam` exists.
 
 If you see **"Lutris wine binary not found for version: GE-Proton10-32"** (or a similar version) with Flatpak Lutris, the app should now use the Flatpak runners path automatically. If the issue persists, check the exact Wine/Proton version in the game's Lutris config and ensure that runner is installed in Lutris (e.g. via Lutris → Runners).
 

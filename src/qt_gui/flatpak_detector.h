@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include <QObject>
+#include <QProcessEnvironment>
 
 /**
  * @brief Class for detecting and managing Flatpak installations
@@ -65,11 +66,17 @@ public:
 private:
     QString lastError;
     void setLastError(const QString &error);
+    static QProcessEnvironment hostEnvironmentForSystemBinary();
+    static QString flatpakExecutable();
+    static bool flatpakInstallTreeExists();
+    bool isAppInstalledByFilesystem(const QString &appId) const;
+    bool startFlatpakProcess(QProcess &process, const QStringList &args, int timeoutMs);
     // Cached state to reduce repeated flatpak invocations during a session
     QStringList cachedApps;
     bool isAppListCached = false;
     bool flatpakChecked = false;
     bool flatpakInstalled = false;
+    bool flatpakCliWorks = false;
 };
 
 #endif // FLATPAK_DETECTOR_H
