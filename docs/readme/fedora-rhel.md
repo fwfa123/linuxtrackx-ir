@@ -24,6 +24,13 @@ sudo dnf install winetricks  # REQUIRED: For MFC42 library installation
 sudo dnf install cabextract wget  # REQUIRED: For alternative installation methods
 ```
 
+**Fedora 44 / dnf arch:** On x86_64, the MinGW compiler packages are the same RPMs whether you omit the arch or pin `.x86_64` (e.g. when `dnf` lists multilib choices). Equivalent explicit install:
+
+```bash
+sudo dnf install mingw32-gcc.x86_64 mingw32-gcc-c++.x86_64 mingw32-binutils.x86_64
+sudo dnf install mingw64-gcc.x86_64 mingw64-gcc-c++.x86_64 mingw64-binutils.x86_64
+```
+
 **IMPORTANT**: This branch targets modern WOW64 and requires Wine 11.0+ with MinGW toolchains and NSIS.
 
 ### X-Plane Support (Level 3+)
