@@ -34,6 +34,10 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 - **[testing/README.md](testing/README.md)** - Testing guide overview
 - **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - General testing guidelines (13KB)
 
+### Game workarounds
+
+- **[GAME_WORKAROUNDS.md](GAME_WORKAROUNDS.md)** - Per-title Wine/Proton/Lutris hints (community-tested)
+
 ### 🔧 Troubleshooting (`troubleshooting/`)
 **For problem resolution and diagnostics**
 - **[troubleshooting/README.md](troubleshooting/README.md)** - Troubleshooting guide overview
