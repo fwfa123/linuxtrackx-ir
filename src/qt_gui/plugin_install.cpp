@@ -684,11 +684,12 @@ void PluginInstall::installLutrisWineBridge()
   
   // Create game selection dialog
   QStringList gameNames;
-  QStringList gameSlugs;
   for (const LutrisGame &game : games) {
     QString displayName = game.game_name.isEmpty() ? game.game_slug : game.game_name;
+    if (!game.wine_prefix.isEmpty()) {
+      displayName += QString::fromUtf8("  [") + game.wine_prefix + QString::fromUtf8("]");
+    }
     gameNames.append(displayName);
-    gameSlugs.append(game.game_slug);
   }
   
   bool ok;
@@ -708,25 +709,33 @@ void PluginInstall::installLutrisWineBridge()
       QString::fromUtf8("Invalid game selection."));
     return;
   }
-  
-  QString selectedSlug = gameSlugs[selectedIndex];
-  
+
+  const LutrisGame selectedLutrisGame = games[selectedIndex];
+  lutrisIntegration->setSelectedLutrisGameConfig(selectedLutrisGame.game_slug,
+                                                 selectedLutrisGame.config_path);
+
   // Show information dialog about interactive installation (align with Steam flow)
   QMessageBox::information(getParentWidget(), QObject::tr("Starting Interactive Installation"),
-    QObject::tr("Starting Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
+    QObject::tr("Starting Linuxtrack Wine Bridge installation for: %1\n\n")
+        .arg(selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
+                                                    : selectedLutrisGame.game_name) +
     QObject::tr("The NSIS installer will open in a new window.\n") +
     QObject::tr("Please follow the installation prompts in that window."));
   
-  // Install to the selected game
-  bool success = lutrisIntegration->installToLutrisGame(selectedSlug);
-  
+  // Install to the selected game (by config/prefix, not slug alone — duplicate slugs are common)
+  bool success = lutrisIntegration->installToLutrisGame(selectedLutrisGame);
+
   if (success) {
     QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
-      QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n").arg(selectedGame) +
+      QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n")
+          .arg(selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
+                                                      : selectedLutrisGame.game_name) +
       QObject::tr("You can now use Linuxtrack with this game in Lutris!"));
   } else {
     QMessageBox::critical(getParentWidget(), QObject::tr("Installation Failed"),
-      QObject::tr("Failed to start Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
+      QObject::tr("Failed to start Linuxtrack Wine Bridge installation for: %1\n\n")
+          .arg(selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
+                                                      : selectedLutrisGame.game_name) +
       QObject::tr("Error: ") + lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
       QObject::tr("Debug Info: ") + lutrisIntegration->getDebugInfo());
   }

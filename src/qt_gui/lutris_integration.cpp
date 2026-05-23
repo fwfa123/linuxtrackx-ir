@@ -946,15 +946,39 @@ bool LutrisIntegration::hasGameConfigs(const QString &directoryPath)
     return false;
 }
 
+bool LutrisIntegration::installToLutrisGame(const LutrisGame &game)
+{
+    if (!game.wine_prefix.isEmpty() && isValidWinePrefix(game.wine_prefix)) {
+        setSelectedLutrisGameConfig(game.game_slug, game.config_path);
+        selectedParsedGame = game;
+        return installToLutrisPrefix(game.wine_prefix, game.wine_version);
+    }
+    if (!game.config_path.isEmpty()) {
+        LutrisGame parsed;
+        if (parseLutrisConfig(game.config_path, parsed)) {
+            parsed.game_slug = game.game_slug;
+            parsed.game_name = game.game_name;
+            parsed.install_id = game.install_id;
+            parsed.config_path = game.config_path;
+            setSelectedLutrisGameConfig(parsed.game_slug, parsed.config_path);
+            selectedParsedGame = parsed;
+            configParseCache.insert(parsed.config_path, parsed);
+            return installToLutrisPrefix(parsed.wine_prefix, parsed.wine_version);
+        }
+        lastError = QString::fromUtf8("Failed to parse Lutris config: ") + game.config_path;
+        return false;
+    }
+    lastError = QString::fromUtf8("No wine prefix or config path for the selected Lutris game.");
+    return false;
+}
+
 bool LutrisIntegration::installToLutrisGame(const QString &gameSlug)
 {
-    // Fast path: if the selected game is set and matches the slug, reuse it
-    if (hasSelectedGame && selectedGameSlug == gameSlug) {
-        // Ensure we have parsed details for the selected config
+    // Fast path: selected row from the install dialog (config file is unique per entry)
+    if (hasSelectedGame && selectedGameSlug == gameSlug && !selectedConfigPath.isEmpty()) {
         if (selectedParsedGame.game_slug == selectedGameSlug && !selectedParsedGame.wine_prefix.isEmpty()) {
             return installToLutrisPrefix(selectedParsedGame.wine_prefix, selectedParsedGame.wine_version);
         }
-        // Parse from cache or file
         LutrisGame parsed;
         if (configParseCache.contains(selectedConfigPath)) {
             parsed = configParseCache.value(selectedConfigPath);
@@ -971,13 +995,30 @@ bool LutrisIntegration::installToLutrisGame(const QString &gameSlug)
     }
 
     QList<LutrisGame> games = queryLutrisGames();
-    
+    LutrisGame matched;
+    int matchCount = 0;
     for (const LutrisGame &game : games) {
-        if (game.game_slug == gameSlug) {
-            return installToLutrisPrefix(game.wine_prefix, game.wine_version);
+        if (game.game_slug != gameSlug) {
+            continue;
+        }
+        matchCount++;
+        matched = game;
+        if (hasSelectedGame && !selectedConfigPath.isEmpty() && game.config_path == selectedConfigPath) {
+            return installToLutrisGame(game);
         }
     }
-    
+
+    if (matchCount == 1) {
+        return installToLutrisGame(matched);
+    }
+    if (matchCount > 1) {
+        lastError = QString::fromUtf8(
+            "Multiple Lutris games share slug '%1' (e.g. standard and WOW64 prefixes). "
+            "Re-run install from the game list so the correct config is selected.")
+            .arg(gameSlug);
+        return false;
+    }
+
     lastError = QString::fromUtf8("Game not found: ") + gameSlug;
     return false;
 }

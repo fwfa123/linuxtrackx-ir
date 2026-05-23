@@ -43,6 +43,7 @@ public:
     QStringList getAvailableGames();
     QList<LutrisGame> getLutrisGames();
     bool installToLutrisGame(const QString &gameSlug);
+    bool installToLutrisGame(const LutrisGame &game);
     bool installToLutrisPrefix(const QString &prefixPath, const QString &wineVersion = QString());
     // Fast path: set the currently selected game's identifiers so we can avoid full scans
     void setSelectedLutrisGameConfig(const QString &gameSlug, const QString &configPath);
