@@ -10,6 +10,9 @@
 #include <QStandardPaths>
 #include <QProcess>
 #include "flatpak_detector.h"
+#include "wine_bridge_install.h"
+
+class QWidget;
 
 class SteamGame {
 public:
@@ -67,6 +70,9 @@ public:
     QString getDebugInfo() const;
     void setLastError(const QString &error);
 
+    void setInstallPromptParent(QWidget *parent) { installPromptParent = parent; }
+    WineBridgeInstall::InstallOutcome getLastInstallOutcome() const { return lastInstallOutcome; }
+
 private:
     QString lastError;
     QString debugInfo;
@@ -76,7 +82,9 @@ private:
     QStringList libraryPaths;
     QMap<QString, QString> gameToLibraryMap; // gameId -> libraryPath
     QString selectedPrefixLibrary; // Store which library was used for prefix lookup
-    
+    QWidget *installPromptParent = nullptr;
+    WineBridgeInstall::InstallOutcome lastInstallOutcome = WineBridgeInstall::InstallOutcome::Failed;
+
     // Helper methods
     bool initializePaths();
     QString getHomeDirectory();

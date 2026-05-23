@@ -983,11 +983,20 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
 
     QString installError;
     QString debug;
-    const bool ok = WineBridgeInstall::installToPrefix(prefixPath, wineBinary, env, &installError, &debug);
+    const bool ok = WineBridgeInstall::installToPrefix(prefixPath, wineBinary, env, &installError, &debug,
+                                                     installPromptParent, &lastInstallOutcome);
+    installPromptParent = nullptr;
     debugInfo += debug;
     if (!ok) {
-        setLastError(installError);
+        if (lastInstallOutcome != WineBridgeInstall::InstallOutcome::Cancelled)
+            setLastError(installError);
+        else
+            setLastError(QString());
         return false;
+    }
+    if (lastInstallOutcome == WineBridgeInstall::InstallOutcome::UninstalledOnly) {
+        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - uninstall only OK\n");
+        return true;
     }
     ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - native install OK\n");
     return true;

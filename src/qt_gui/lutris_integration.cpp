@@ -1169,10 +1169,14 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
                         winePath.toUtf8().constData());
 
     QString installError;
-    const bool ok =
-        WineBridgeInstall::installToPrefix(prefixPath, winePath, &installError, &debugInfo);
+    const bool ok = WineBridgeInstall::installToPrefix(prefixPath, winePath, &installError, &debugInfo,
+                                                       installPromptParent, &lastInstallOutcome);
+    installPromptParent = nullptr;
     if (!ok) {
-        lastError = installError;
+        if (lastInstallOutcome != WineBridgeInstall::InstallOutcome::Cancelled)
+            lastError = installError;
+        else
+            lastError.clear();
         debugInfo += lastError + QString::fromUtf8("\n");
     }
     return ok;

@@ -56,7 +56,7 @@ All GUI entry points use the same **native install**:
 ./scripts/install/install_wine_bridge.sh /path/to/prefix /path/to/wine
 ```
 
-**Uninstall:** Delete the `Linuxtrack` folder under `Program Files` or `Program Files (x86)` and remove registry keys under `NaturalPoint`, `Freetrack`, and `HKLM\SOFTWARE\Linuxtrack`.
+**Uninstall:** When reinstalling, the GUI prompts if a bridge is already present: you can remove and reinstall, install over existing, **uninstall only** (files + registry, no new install), or cancel. To uninstall manually, delete the `Linuxtrack` folder under `Program Files` or `Program Files (x86)` and remove registry keys under `NaturalPoint`, `Freetrack`, and `HKLM\SOFTWARE\Linuxtrack`.
 
 ## Runtime Model
 

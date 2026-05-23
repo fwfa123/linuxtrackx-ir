@@ -21,6 +21,32 @@
   #include "config.h"
 #endif
 
+namespace {
+
+void reportWineBridgeInstallOutcome(QWidget *parent, WineBridgeInstall::InstallOutcome outcome, bool ok,
+                                    const QString &errorMessage, const QString &installedPath)
+{
+    if (outcome == WineBridgeInstall::InstallOutcome::Cancelled)
+        return;
+    if (!ok) {
+        QMessageBox::critical(parent, QObject::tr("Installation Failed"),
+                              errorMessage.isEmpty() ? QObject::tr("Wine bridge operation failed.")
+                                                     : errorMessage);
+        return;
+    }
+    if (outcome == WineBridgeInstall::InstallOutcome::UninstalledOnly) {
+        QMessageBox::information(parent, QObject::tr("Uninstall Completed"),
+                               QObject::tr("Linuxtrack Wine bridge was removed from the selected prefix."));
+        return;
+    }
+    if (!installedPath.isEmpty()) {
+        QMessageBox::information(parent, QObject::tr("Installation Completed"),
+                               QObject::tr("Linuxtrack Wine bridge installed to:\n%1").arg(installedPath));
+    }
+}
+
+} // namespace
+
 PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):QObject(parent),
   state(DONE), gui(ui), inst(NULL), dlfw(NULL), dlmfc42(NULL),
   poem1(PREF.getRsrcDirPath() + QString::fromUtf8("/tir_firmware/poem1.txt")),
@@ -217,14 +243,14 @@ void PluginInstall::installLinuxtrackWine()
 
   QString installError;
   QString debugInfo;
-  if (!WineBridgeInstall::installToPrefix(prefix, winePath, &installError, &debugInfo)) {
-    QMessageBox::critical(parentWidget, QObject::tr("Installation Failed"), installError);
+  WineBridgeInstall::InstallOutcome outcome = WineBridgeInstall::InstallOutcome::Failed;
+  if (!WineBridgeInstall::installToPrefix(prefix, winePath, &installError, &debugInfo, parentWidget,
+                                          &outcome)) {
+    reportWineBridgeInstallOutcome(parentWidget, outcome, false, installError, QString());
     return;
   }
-
-  QMessageBox::information(parentWidget, QObject::tr("Installation Completed"),
-    QObject::tr("Linuxtrack Wine bridge installed to:\n%1")
-        .arg(WineBridgeInstall::installDirectoryForPrefix(prefix)));
+  reportWineBridgeInstallOutcome(parentWidget, outcome, true, QString(),
+                                 WineBridgeInstall::installDirectoryForPrefix(prefix));
 #else
   if(isTirFirmwareInstalled() && isMfc42uInstalled()){
     // Get the main window by finding the top-level widget
@@ -718,23 +744,36 @@ void PluginInstall::installLutrisWineBridge()
   lutrisIntegration->setSelectedLutrisGameConfig(selectedLutrisGame.game_slug,
                                                  selectedLutrisGame.config_path);
 
+  lutrisIntegration->setInstallPromptParent(getParentWidget());
+
   // Install to the selected game (by config/prefix, not slug alone — duplicate slugs are common)
   bool success = lutrisIntegration->installToLutrisGame(selectedLutrisGame);
+  const WineBridgeInstall::InstallOutcome outcome = lutrisIntegration->getLastInstallOutcome();
+  const QString gameLabel = selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
+                                                                 : selectedLutrisGame.game_name;
 
-  if (success) {
-    QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
-      QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n")
-          .arg(selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
-                                                      : selectedLutrisGame.game_name) +
-      QObject::tr("You can now use Linuxtrack with this game in Lutris!"));
-  } else {
+  if (outcome == WineBridgeInstall::InstallOutcome::Cancelled)
+    return;
+
+  if (!success) {
     QMessageBox::critical(getParentWidget(), QObject::tr("Installation Failed"),
       QObject::tr("Failed to start Linuxtrack Wine Bridge installation for: %1\n\n")
-          .arg(selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
-                                                      : selectedLutrisGame.game_name) +
+          .arg(gameLabel) +
       QObject::tr("Error: ") + lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
       QObject::tr("Debug Info: ") + lutrisIntegration->getDebugInfo());
+    return;
   }
+
+  if (outcome == WineBridgeInstall::InstallOutcome::UninstalledOnly) {
+    QMessageBox::information(getParentWidget(), QObject::tr("Uninstall Completed"),
+      QObject::tr("Linuxtrack Wine bridge was removed from: %1").arg(gameLabel));
+    return;
+  }
+
+  QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
+    QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n")
+        .arg(gameLabel) +
+    QObject::tr("You can now use Linuxtrack with this game in Lutris!"));
 }
 
 // New method for Steam Proton bridge installation
@@ -814,20 +853,33 @@ void PluginInstall::installSteamProtonBridge()
   }
   
   QString selectedGameId = gameIds[selectedIndex];
-  
+
+  steamIntegration->setInstallPromptParent(getParentWidget());
+
   // Install to the selected game
   bool success = steamIntegration->installToSteamGame(selectedGameId);
-  
-  if (success) {
-    QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
-      QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n").arg(selectedGame) +
-      QObject::tr("You can now use Linuxtrack with this game in Steam!"));
-  } else {
+  const WineBridgeInstall::InstallOutcome outcome = steamIntegration->getLastInstallOutcome();
+
+  if (outcome == WineBridgeInstall::InstallOutcome::Cancelled)
+    return;
+
+  if (!success) {
     QMessageBox::critical(getParentWidget(), QObject::tr("Installation Failed"),
       QObject::tr("Failed to start Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
       QObject::tr("Error: ") + steamIntegration->getLastError() + QString::fromUtf8("\n\n") +
       QObject::tr("Debug Info: ") + steamIntegration->getDebugInfo());
+    return;
   }
+
+  if (outcome == WineBridgeInstall::InstallOutcome::UninstalledOnly) {
+    QMessageBox::information(getParentWidget(), QObject::tr("Uninstall Completed"),
+      QObject::tr("Linuxtrack Wine bridge was removed from: %1").arg(selectedGame));
+    return;
+  }
+
+  QMessageBox::information(getParentWidget(), QObject::tr("Installation Completed"),
+    QObject::tr("Linuxtrack Wine Bridge has been successfully installed for: %1\n\n").arg(selectedGame) +
+    QObject::tr("You can now use Linuxtrack with this game in Steam!"));
 }
 
 

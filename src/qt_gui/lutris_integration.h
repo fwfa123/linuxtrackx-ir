@@ -13,6 +13,9 @@
 #include <QStandardPaths>
 #include <QSettings>
 #include "flatpak_detector.h"
+#include "wine_bridge_install.h"
+
+class QWidget;
 
 class LutrisGame {
 public:
@@ -80,6 +83,9 @@ public:
     void clearError() { lastError.clear(); }
     QString getDebugInfo() const { return debugInfo; }
 
+    void setInstallPromptParent(QWidget *parent) { installPromptParent = parent; }
+    WineBridgeInstall::InstallOutcome getLastInstallOutcome() const { return lastInstallOutcome; }
+
 public:
     // Path initialization (public for external re-initialization)
     bool initializePaths();
@@ -104,6 +110,8 @@ private:
     QString selectedConfigPath;
     LutrisGame selectedParsedGame;
     QMap<QString, LutrisGame> configParseCache; // key: configPath
+    QWidget *installPromptParent = nullptr;
+    WineBridgeInstall::InstallOutcome lastInstallOutcome = WineBridgeInstall::InstallOutcome::Failed;
     QString getHomeDirectory();
     bool detectLutrisFlatpak();
     void setupFlatpakLutrisPaths();
