@@ -54,6 +54,7 @@
 #include <winsock2.h>
 #include <afunix.h>
 #include <ws2tcpip.h>
+#include <tlhelp32.h>
 #include <io.h>
 #include <errno.h>
 #define CLOSE_SOCKET closesocket
@@ -152,6 +153,171 @@ typedef struct {
 static mingw_pose_processing_t mingw_pose_processing = {
   LTR_AXES_T_INITIALIZER, false, {0}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, 0, 0
 };
+/* Defer axes/TCP work out of StartDataTransmission; Arma 2 can fault during that window. */
+static bool mingw_axes_processing_enabled = false;
+static bool mingw_trackir_stub_launch_attempted = false;
+
+/* OpenTrack/FreeTrack-style shared memory; some games map FT_SharedMem before NP_GetData. */
+#define MINGW_FT_MM_NAME "FT_SharedMem"
+#define MINGW_FT_MUTEX_NAME "FT_Mutext"
+
+typedef struct {
+  int DataID;
+  int CamWidth;
+  int CamHeight;
+  float Yaw;
+  float Pitch;
+  float Roll;
+  float X;
+  float Y;
+  float Z;
+  float RawYaw;
+  float RawPitch;
+  float RawRoll;
+  float RawX;
+  float RawY;
+  float RawZ;
+  float X1;
+  float Y1;
+  float X2;
+  float Y2;
+  float X3;
+  float Y3;
+  float X4;
+  float Y4;
+} mingw_ft_track_data_t;
+
+typedef struct {
+  mingw_ft_track_data_t data;
+  int32_t GameId;
+  unsigned char ft_table[8];
+  int32_t GameId2;
+} mingw_ft_memmap_t;
+
+static HANDLE mingw_ft_mapping = NULL;
+static mingw_ft_memmap_t *mingw_ft_view = NULL;
+static unsigned short mingw_registered_game_id = 0;
+
+static bool mingw_ft_create_mapping(void)
+{
+  if(mingw_ft_view != NULL){
+    return true;
+  }
+  HANDLE mutex = CreateMutexA(NULL, FALSE, MINGW_FT_MUTEX_NAME);
+  if(mutex != NULL){
+    CloseHandle(mutex);
+  }
+  mingw_ft_mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0,
+                                        sizeof(mingw_ft_memmap_t), MINGW_FT_MM_NAME);
+  if(mingw_ft_mapping == NULL){
+    dbg_report("MinGW FT_SharedMem: CreateFileMapping failed (err=%lu)\n",
+               (unsigned long)GetLastError());
+    return false;
+  }
+  mingw_ft_view = (mingw_ft_memmap_t *)MapViewOfFile(mingw_ft_mapping, FILE_MAP_ALL_ACCESS, 0, 0,
+                                                    sizeof(mingw_ft_memmap_t));
+  if(mingw_ft_view == NULL){
+    dbg_report("MinGW FT_SharedMem: MapViewOfFile failed (err=%lu)\n",
+               (unsigned long)GetLastError());
+    CloseHandle(mingw_ft_mapping);
+    mingw_ft_mapping = NULL;
+    return false;
+  }
+  memset(mingw_ft_view, 0, sizeof(mingw_ft_memmap_t));
+  dbg_report("MinGW FT_SharedMem: created\n");
+  return true;
+}
+
+static void mingw_ft_destroy_mapping(void)
+{
+  if(mingw_ft_view != NULL){
+    UnmapViewOfFile(mingw_ft_view);
+    mingw_ft_view = NULL;
+  }
+  if(mingw_ft_mapping != NULL){
+    CloseHandle(mingw_ft_mapping);
+    mingw_ft_mapping = NULL;
+  }
+}
+
+static void mingw_ft_update_game_id(unsigned short id)
+{
+  mingw_registered_game_id = id;
+  if(mingw_ft_view == NULL){
+    return;
+  }
+  mingw_ft_view->GameId = (int32_t)id;
+  mingw_ft_view->GameId2 = (int32_t)id;
+  if(crypted){
+    memcpy(mingw_ft_view->ft_table, table, sizeof(table));
+  }
+}
+
+static void mingw_ft_publish_pose(float roll, float pitch, float yaw, float tx, float ty, float tz)
+{
+  if(mingw_ft_view == NULL){
+    return;
+  }
+  const float deg2rad = (float)(M_PI / 180.0);
+  mingw_ft_view->data.Yaw = yaw * deg2rad;
+  mingw_ft_view->data.Pitch = pitch * deg2rad;
+  mingw_ft_view->data.Roll = roll * deg2rad;
+  mingw_ft_view->data.RawYaw = mingw_ft_view->data.Yaw;
+  mingw_ft_view->data.RawPitch = mingw_ft_view->data.Pitch;
+  mingw_ft_view->data.RawRoll = mingw_ft_view->data.Roll;
+  mingw_ft_view->data.X = tx;
+  mingw_ft_view->data.Y = ty;
+  mingw_ft_view->data.Z = tz;
+  mingw_ft_view->data.RawX = tx;
+  mingw_ft_view->data.RawY = ty;
+  mingw_ft_view->data.RawZ = tz;
+  mingw_ft_view->data.DataID = (int)mingw_registered_game_id;
+  mingw_ft_view->GameId = (int32_t)mingw_registered_game_id;
+  mingw_ft_view->GameId2 = (int32_t)mingw_registered_game_id;
+}
+
+static bool mingw_process_with_name_running(const char *exe_name)
+{
+  HANDLE snap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+  if(snap == INVALID_HANDLE_VALUE){
+    return false;
+  }
+  PROCESSENTRY32 pe;
+  pe.dwSize = sizeof(pe);
+  bool found = false;
+  if(Process32First(snap, &pe)){
+    do{
+      if(_stricmp(pe.szExeFile, exe_name) == 0){
+        found = true;
+        break;
+      }
+    }while(Process32Next(snap, &pe));
+  }
+  CloseHandle(snap);
+  return found;
+}
+
+/* Several games expect a running TrackIR.exe (TIRViews stub); opt-in only (can confuse NPClient). */
+static void mingw_ensure_trackir_process(void)
+{
+  if(getenv("LINUXTRACK_RUN_TRACKIR_EXE") == NULL){
+    return;
+  }
+  if(mingw_process_with_name_running("TrackIR.exe")){
+    dbg_report("MinGW: TrackIR.exe already running\n");
+    return;
+  }
+  if(mingw_trackir_stub_launch_attempted){
+    return;
+  }
+  mingw_trackir_stub_launch_attempted = true;
+  if(runFile("TrackIR.exe")){
+    dbg_report("MinGW: launched TrackIR.exe stub\n");
+    Sleep(800);
+  }else{
+    dbg_report("MinGW: failed to launch TrackIR.exe stub (install TrackIR.exe beside NPClient.dll)\n");
+  }
+}
 
 static HMODULE ltr_libc_module;
 static int (*ltr_libc_socket)(int, int, int);
@@ -170,7 +336,26 @@ static bool mingw_libc_resolve(void)
     return ltr_libc_resolve_ok;
   }
   ltr_libc_resolve_attempted = true;
-  /* Wine PE: bare "libc.so.6" often fails; Z: maps to the Unix root, \??\unix\ is the NT unix path. */
+  /* Wine PE: bare "libc.so.6" often fails; Z: maps to the Unix root, \??\unix\ is the NT unix path.
+   * NPClient.dll is i686 — x86_64 libc paths always fail with GetLastError=126. */
+#if defined(__i386__) || defined(_M_IX86)
+  static const char *const libc_candidates[] = {
+    "libc.so.6",
+    "libc.so",
+    "/lib/i386-linux-gnu/libc.so.6",
+    "/lib32/libc.so.6",
+    "/usr/lib/i386-linux-gnu/libc.so.6",
+    "/usr/lib32/libc.so.6",
+    "Z:\\lib\\i386-linux-gnu\\libc.so.6",
+    "Z:\\usr\\lib\\i386-linux-gnu\\libc.so.6",
+    "Z:\\lib32\\libc.so.6",
+    "Z:\\usr\\lib32\\libc.so.6",
+    "\\\\??\\unix\\lib\\i386-linux-gnu\\libc.so.6",
+    "\\\\??\\unix\\usr\\lib\\i386-linux-gnu\\libc.so.6",
+    "\\\\??\\unix\\lib32\\libc.so.6",
+    "\\\\??\\unix\\usr\\lib32\\libc.so.6",
+  };
+#else
   static const char *const libc_candidates[] = {
     "libc.so.6",
     "libc.so",
@@ -189,6 +374,7 @@ static bool mingw_libc_resolve(void)
     "\\\\??\\unix\\lib64\\libc.so.6",
     "\\\\??\\unix\\usr\\lib\\libc.so.6",
   };
+#endif
   HMODULE m = NULL;
   DWORD last_err = 0;
   for(size_t i = 0; i < sizeof(libc_candidates) / sizeof(libc_candidates[0]); i++){
@@ -783,6 +969,9 @@ static bool mingw_postprocess_axes(linuxtrack_pose_t *pose, linuxtrack_pose_t *u
 
 static void mingw_process_pose_message(linuxtrack_full_pose_t *pose)
 {
+  if(!mingw_axes_processing_enabled){
+    return;
+  }
   linuxtrack_pose_t unfiltered;
   memset(&unfiltered, 0, sizeof(unfiltered));
   if(mingw_postprocess_axes(&pose->pose, &unfiltered)){
@@ -1073,6 +1262,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 #ifdef __MINGW32__
             mingw_pose_disconnect();
             mingw_pose_processing_close();
+            mingw_ft_destroy_mapping();
 #endif
             linuxtrack_shutdown();
 #ifdef __MINGW32__
@@ -1300,6 +1490,29 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
     return 1;
   }
 
+  if(!mingw_axes_processing_enabled){
+    mingw_axes_processing_enabled = true;
+    dbg_report("MinGW GetData: enabling pose pump/axes (deferred from StartDataTransmission)\n");
+  }
+
+  /* Early startup: return a valid encrypted neutral frame before the game finishes init. */
+  if(transmission_start_time != 0){
+    DWORD startup_elapsed = GetTickCount() - transmission_start_time;
+    if(startup_elapsed < 750u){
+      memset((char *)data, 0, sizeof(tir_data_t));
+      data->status = 0;
+      data->frame = (short)(startup_elapsed & 0xFFFF);
+      data->cksum = 0;
+      data->cksum = cksum((unsigned char *)data, sizeof(tir_data_t));
+      if(crypted){
+        enhance((unsigned char *)data, sizeof(tir_data_t), table, sizeof(table));
+      }
+      mingw_ft_publish_pose(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+      dbg_report("MinGW GetData: startup neutral frame (%u ms)\n", (unsigned)startup_elapsed);
+      return 0;
+    }
+  }
+
   if(mingw_pose_pump() != 0){
     Sleep(5);
     if(mingw_pose_pump() != 0){
@@ -1374,7 +1587,9 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
    * the frame outright if TrackIR status says "not tracking".
    */
   const bool tracking_frame =
-    (pose->status == RUNNING) || (fresh_frame && has_pose_values);
+    (pose->status == RUNNING) || (fresh_frame && has_pose_values) ||
+    (pose->counter == 0u && transmission_start_time != 0 &&
+     (GetTickCount() - transmission_start_time) < 3000u);
   data->status = tracking_frame ? 0 : 1;
   data->frame = pose->counter & 0xFFFF;
   data->cksum = 0;
@@ -1409,6 +1624,7 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   if(crypted){
     enhance((unsigned char*)data, sizeof(tir_data_t), table, sizeof(table));
   }
+  mingw_ft_publish_pose(pose_roll, pose_pitch, pose_yaw, pose_tx, pose_ty, pose_tz);
   return 0;
 #endif
 
@@ -1614,6 +1830,14 @@ int __stdcall NPCLIENT_NP_RegisterProgramProfileID(unsigned short id)
     }
     crypted = false;
   }
+  if(!mingw_ft_create_mapping()){
+    dbg_report("MinGW RegisterProgramProfileID: FT_SharedMem unavailable, return 1\n");
+    return 1;
+  }
+  mingw_ft_update_game_id(id);
+  mingw_ft_publish_pose(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+  mingw_ensure_trackir_process();
+  send_command_to_master(LTR_CMD_WAKEUP, 0);
   return 0;
 #endif
   game_desc_t gd;
@@ -2019,29 +2243,27 @@ int __stdcall NPCLIENT_NP_StartDataTransmission(void)
 #ifdef __MINGW32__
   mingw_pose_runtime.transmission_started = true;
   transmission_start_time = GetTickCount();
+  mingw_axes_processing_enabled = false;
   mingw_pose_processing_reset_filters();
 
-  // Best-effort: request the master to run if reachable; pose socket path is independent.
-  send_command_to_master(LTR_CMD_WAKEUP, 0);
-  DWORD wait_start = GetTickCount();
-  bool got_initial_pose = false;
-  do{
-    if(mingw_pose_connect() == 0){
-      if(mingw_pose_pump() == 0 && mingw_pose_runtime.has_pose){
-        got_initial_pose = true;
-        break;
-      }
-    }
-    Sleep(50);
-  }while((GetTickCount() - wait_start) < 3000);
-
-  if(got_initial_pose){
-    dbg_report("MinGW StartDataTransmission: pose socket connected with initial frame.\n");
-  }else if(mingw_pose_runtime.connected){
-    dbg_report("MinGW StartDataTransmission: pose socket connected, waiting for first frame lazily.\n");
-  }else{
-    dbg_report("MinGW StartDataTransmission: pose socket not ready yet, returning neutral frames while retrying lazily.\n");
+  if(!mingw_ft_create_mapping()){
+    dbg_report("MinGW StartDataTransmission: FT_SharedMem missing, return 1\n");
+    data_transmission_started = false;
+    mingw_pose_runtime.transmission_started = false;
+    return 1;
   }
+  mingw_ft_update_game_id(mingw_registered_game_id);
+  mingw_ft_publish_pose(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+  mingw_ensure_trackir_process();
+  send_command_to_master(LTR_CMD_WAKEUP, 0);
+
+  if(mingw_pose_connect() != 0){
+    dbg_report("MinGW StartDataTransmission: pose socket not ready yet (FT_SharedMem ok, return 0)\n");
+  }else{
+    dbg_report("MinGW StartDataTransmission: pose socket connected; GetData will pump\n");
+  }
+
   return 0;
 #endif
 
@@ -2181,6 +2403,7 @@ int __stdcall NPCLIENT_NP_StopDataTransmission(void)
   transmission_start_time = 0;  // Reset timer when transmission stops
 
 #ifdef __MINGW32__
+  mingw_axes_processing_enabled = false;
   mingw_pose_runtime.transmission_started = false;
   mingw_pose_runtime.has_pose = false;
   mingw_pose_disconnect();
