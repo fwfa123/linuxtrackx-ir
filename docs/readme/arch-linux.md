@@ -41,6 +41,8 @@ sudo pacman -S winetricks cabextract wget
 
 **Build model:** MinGW builds the Windows PE bridge files. Wine is still needed at runtime for prefixes and for testing/installing the bridge, but the DLL build no longer depends on `winegcc`, `wine-devel`, AUR `wine32`, or classic `/usr/lib32/wine/...` library paths.
 
+**NSIS is not required** for v2.0.0 (`nsis` / `makensis` / `linuxtrack-wine.exe` are legacy). Installing the Arch `nsis` package is unnecessary and may confuse older guides.
+
 ### X-Plane Support (Level 3+)
 ```bash
 # Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/

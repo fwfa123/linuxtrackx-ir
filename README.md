@@ -29,6 +29,8 @@ Have you installed Steam or Lutris from Flatpak? There are issues that you will 
 
 **Build requirements:** the GUI and tools use **Qt6** (CMake `find_package(Qt6 …)`). Use your distribution’s Qt6 development packages; see the distribution guides below. On **KDE Plasma** (Wayland or X11), build from the `main` branch as usual—no separate Qt branch is needed.
 
+**Wine bridge (Level 2+):** requires **MinGW-w64** cross-compilers and Wine 11.0+ at runtime for prefixes. **NSIS (`makensis`) is not used** — do not install it for Linuxtrack builds; v2 ships PE artifacts and installs via native copy + `wine reg` (see [`docs/guides/WINE_BRIDGE_MODERN.md`](docs/guides/WINE_BRIDGE_MODERN.md)).
+
 ```bash
 git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
 cd linuxtrackx-ir

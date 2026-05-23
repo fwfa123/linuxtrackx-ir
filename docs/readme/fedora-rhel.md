@@ -32,6 +32,8 @@ sudo dnf install mingw64-gcc.x86_64 mingw64-gcc-c++.x86_64 mingw64-binutils.x86_
 
 **IMPORTANT**: This branch targets modern WOW64 and requires Wine 11.0+ with MinGW toolchains.
 
+NSIS is **not** required for v2.0.0; the Wine bridge builds with MinGW only (`makensis` and `linuxtrack-wine.exe` are legacy).
+
 ### X-Plane Support (Level 3+)
 ```bash
 # Download from: https://developer.x-plane.com/sdk/plugin-sdk-downloads/

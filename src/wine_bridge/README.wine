@@ -1,26 +1,24 @@
-Linuxtrack - wine bridge
-------------------------
-At the moment this is only experimental thing!
-To compile the package, following prerequisities must be met:
- - Wine installed, along with development files (winegcc/wineg++ available)
- - libmxml installed for dumper (not mandatory)
- - Nullsoft installator compiler (makensis available)
+Linuxtrack — Wine bridge (v2)
+-----------------------------
 
-To build it, specify --enable-wine-plugin to the linuxtrack configure command.
+The Wine bridge is built as **MinGW PE** artifacts (`NPClient.dll`, `NPClient64.dll`, testers, etc.) via CMake when the MinGW toolchain is detected.
 
-Make sure to install it in each of the wine "prefixes" you need the linuxtrack support in.
+**Build prerequisites (maintainers):**
 
-Dumper is to be used to dump new application data; go to the NaturalPoint site, and look for Game Updates.
-Download the latest update and unpack it somewhere. Then take the sgl.dat contained in the archive, 
-copy it next to the dumper and run dumper using 'dumper sgl.dat > data.txt'(no need for wine there, it is native 
-linux app). Resulting file data.txt is to be copied in the linuxtrack support directory.
+- `i686-w64-mingw32-gcc` and `x86_64-w64-mingw32-gcc` (and matching `windres`)
+- **Not** required: NSIS (`makensis`), `linuxtrack-wine.exe`, or Wine’s `winegcc` / Unix `.so` bridge build
 
-Controller allows you to controll the tracking using keyboard (no joystick support); just run it, select keys 
-to controll the actions (press button, then a key). No Ctrl/Shift/Alt is taken into account - the first 
-key to be pressed is used.
+**Install into a prefix (users):**
 
-Tester is used to check how the link works. Write an application number (from data.txt) and after 
-pressing start, the link is activated and you should see the numbers moving...
+- GUI: Gaming tab → Install Wine Bridge (Lutris / Steam / custom prefix)
+- CLI: `scripts/install/install_wine_bridge.sh <WINEPREFIX> <wine-binary>`
 
-If you have any questions, reach me through http://linuxtrack.eu or the google code project page...
- 
+See `docs/guides/WINE_BRIDGE_MODERN.md` for WOW64 layout and registry keys.
+
+**Dumper (game list updates):**
+
+Native Linux `dumper` — download NaturalPoint game updates, unpack `sgl.dat` next to `dumper`, run `dumper sgl.dat > data.txt`, copy the result into your linuxtrack support directory.
+
+**Tester / Controller:**
+
+Run under Wine in the prefix after install; see project help and `docs/readme/` guides.

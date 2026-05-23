@@ -19,6 +19,7 @@ This directory contains technical documentation for LinuxTrack, including implem
 - **`INSTALLATION_ANALYSIS_COMPREHENSIVE.md`** — Installation analysis
 - **Arch + Wine history** — see [`../readme/arch-linux.md`](../readme/arch-linux.md); old notes in [`../archive/technical/ISSUE_206_TRACKIR_ARCH_FIXES.md`](../archive/technical/ISSUE_206_TRACKIR_ARCH_FIXES.md)
 - **`APPIMAGE_IMPLEMENTATION_PLAN.md`**, **`QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md`** — AppImage and help bundling
+- **Wine bridge (current)** — [`../guides/WINE_BRIDGE_MODERN.md`](../guides/WINE_BRIDGE_MODERN.md) (MinGW PE build; **NSIS not required**)
 - **Wine bridge packaging (archived)** — [`../archive/WINE_BRIDGE_PACKAGING_PLAN.md`](../archive/WINE_BRIDGE_PACKAGING_PLAN.md); archived Arch-specific investigation: [`../archive/technical/ARCH_LINUX_WINE_BRIDGE_ISSUES_AND_SOLUTIONS.md`](../archive/technical/ARCH_LINUX_WINE_BRIDGE_ISSUES_AND_SOLUTIONS.md)
 - **`ROBUST_HELP_SYSTEM.md`**, **`QT_HELP_SYSTEM_FIX.md`** — Help / Qt help engine
 - MFC42 / TrackIR DLL analysis: **`MFC42_*.md`**, **`TRACKIR_*.md`**, **`TrackIR_MFC42_*.md`**

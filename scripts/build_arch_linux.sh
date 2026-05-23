@@ -431,9 +431,8 @@ main() {
         install_xplane_sdk
     fi
     
-    # Install NSIS
+    # v2: no NSIS package (install_nsis is a no-op stub)
     if [ "$build_only" = true ] || [ "$install_only" = true ] || [ "$configure_only" = true ]; then
-        # Skip NSIS installation for these modes
         :
     else
         install_nsis
