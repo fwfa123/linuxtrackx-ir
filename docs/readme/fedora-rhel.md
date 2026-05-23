@@ -19,7 +19,6 @@ sudo dnf install sqlite  # Qt SQL (QSQLITE driver): Lutris game-database integra
 sudo dnf install wine
 sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils
 sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils
-sudo dnf install mingw32-nsis  # REQUIRED: NSIS installer (includes stub files for building Windows installers)
 sudo dnf install winetricks  # REQUIRED: For MFC42 library installation
 sudo dnf install cabextract wget  # REQUIRED: For alternative installation methods
 ```
@@ -31,7 +30,7 @@ sudo dnf install mingw32-gcc.x86_64 mingw32-gcc-c++.x86_64 mingw32-binutils.x86_
 sudo dnf install mingw64-gcc.x86_64 mingw64-gcc-c++.x86_64 mingw64-binutils.x86_64
 ```
 
-**IMPORTANT**: This branch targets modern WOW64 and requires Wine 11.0+ with MinGW toolchains and NSIS.
+**IMPORTANT**: This branch targets modern WOW64 and requires Wine 11.0+ with MinGW toolchains.
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -218,9 +217,6 @@ export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"
 | `i686-w64-mingw32-gcc: command not found` | Install MinGW 32-bit tools: `sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW 64-bit tools: `sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils` |
 | Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton/Wine Staging) |
-| `Error: reading stub "/usr/share/nsis/Stubs/zlib-x86-unicode"` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
-| `Error initializing CEXEBuild: error setting default stub` | Install NSIS with stubs: `sudo dnf install mingw32-nsis` |
-
 ### Common Issues
 
 | Problem | Solution |

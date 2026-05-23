@@ -22,7 +22,7 @@ not reproduce the startup crash.
 
 **Working setup (32-bit and WOW64 prefixes):**
 
-1. Install the bridge as usual (`ltr_gui` Lutris install or native copy into the
+1. Install the bridge as usual (`ltr_gui` Gaming tab → Lutris/Steam/custom prefix, or `scripts/install/install_wine_bridge.sh`) into the
    prefix).
 2. **Remove** from the prefix `Linuxtrack` folder (do not deploy):
    - `FreeTrackClient.dll`

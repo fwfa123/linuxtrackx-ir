@@ -56,22 +56,23 @@ ls /usr/include/i386-linux-gnu/bits/libc-header-start.h 2>/dev/null || ls /usr/i
 
 ## 🐧 Distribution-Specific Dependencies
 
+> **v2.0.0:** For current Qt6/CMake builds and the native Wine bridge (MinGW only, no NSIS), use [`docs/readme/`](../readme/) and [`docs/guides/WINE_BRIDGE_MODERN.md`](../guides/WINE_BRIDGE_MODERN.md). The package lists below are legacy autotools/Qt5 references.
+
 ### Debian/Ubuntu/MX Linux
 ```bash
-sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex nsis gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks liblo7 liblo-dev libcwiid1 libcwiid-dev
+sudo apt install -y build-essential autoconf automake libtool qtbase5-dev qttools5-dev-tools qttools5-dev libqt5x11extras5-dev libopencv-dev libusb-1.0-0-dev libmxml-dev libx11-dev libxrandr-dev bison flex gcc-multilib libc6-dev-i386 libv4l-dev wine-staging winetricks liblo7 liblo-dev libcwiid1 libcwiid-dev mingw-w64
 sudo apt install -y wine-devel wine32:i386
 ```
 
 ### Fedora/RHEL/CentOS
 ```bash
-sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex nsis glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks liblo liblo-devel libcwiid libcwiid-devel
+sudo dnf install -y gcc gcc-c++ make autoconf automake libtool qt5-qtbase-devel qt5-qttools-devel qttools5-dev qt5-qtx11extras-devel opencv-devel libusb1-devel libmxml-devel libX11-devel libXrandr-devel bison flex glibc-devel.i686 libstdc++-devel.i686 v4l-utils-devel wine-staging winetricks liblo liblo-devel libcwiid libcwiid-devel mingw32-gcc mingw64-gcc
 sudo dnf install -y wine-devel wine-tools
 ```
 
 ### Arch Linux/Manjaro
 ```bash
-sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks liblo libcwiid
-./scripts/install/install_nsis_arch.sh
+sudo pacman -S --needed base-devel autoconf automake libtool qt5-base qt5-tools qt5-x11extras opencv libusb mxml libx11 libxrandr bison flex lib32-glibc lib32-gcc-libs v4l-utils wine-staging winetricks liblo libcwiid mingw-w64-gcc
 ```
 
 ---

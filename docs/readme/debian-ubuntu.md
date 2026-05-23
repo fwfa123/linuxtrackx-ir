@@ -18,8 +18,9 @@ sudo apt install wine wine-staging
 sudo apt install mingw-w64  # REQUIRED: builds real PE DLL/EXE artifacts
 sudo apt install winetricks  # REQUIRED: For MFC42 library installation
 sudo apt install cabextract wget  # REQUIRED: For alternative installation methods
-sudo apt install nsis  # REQUIRED: For Wine bridge installer generation
 ```
+
+NSIS is **not** required for v2.0.0; the Wine bridge builds with MinGW-w64 only.
 
 WineBridge in this branch targets Wine WOW64 behavior and requires Wine 11.0+.
 
@@ -153,7 +154,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install Qt6 development packages: `sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW toolchain: `sudo apt install mingw-w64` |
 | Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton / Wine Staging) |
-| `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install toolchain + NSIS: `sudo apt install mingw-w64 nsis` |
+| `Wine bridge: disabled (mingw-w64 toolchains not found)` | Install MinGW toolchain: `sudo apt install mingw-w64` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |

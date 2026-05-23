@@ -35,23 +35,25 @@ sudo zypper install wine wine-32bit
 
 ## Installation
 
-### Automatic Installation
-1. Run the LinuxTrack Wine Bridge launcher:
-   ```bash
-   linuxtrack-wine-launcher.sh
-   ```
-2. Follow the prompts to select your Wine prefix
-3. The installer will automatically set up all required components
+### GUI (recommended)
+1. Open `ltr_gui` → **Gaming** tab.
+2. Install TrackIR firmware and MFC42 prerequisites if prompted.
+3. Use **Install Wine Bridge** (Lutris, Steam Proton, or custom Wine prefix).
 
-### Manual Installation
-1. Navigate to the wine bridge directory:
-   ```bash
-   cd /usr/share/linuxtrack/wine/
-   ```
-2. Run the installer in your desired Wine prefix:
-   ```bash
-   WINEPREFIX=~/.wine wine linuxtrack-wine.exe
-   ```
+### CLI
+After `cmake --install` (payload under `/opt/lib/linuxtrack/wine_bridge/`):
+
+```bash
+./scripts/install/install_wine_bridge.sh "$WINEPREFIX" /path/to/wine
+```
+
+Example for a Lutris prefix:
+
+```bash
+./scripts/install/install_wine_bridge.sh \
+  "$HOME/Games/Lutris/my-game" \
+  "$HOME/.local/share/lutris/runners/wine/wine-10.0-x86_64/bin/wine"
+```
 
 ## Components Installed
 
@@ -138,8 +140,8 @@ Any game that supports TrackIR or FreeTrack should work. The wine bridge provide
 ### Multiple Wine Prefixes
 Install the wine bridge in each prefix where you need head tracking:
 ```bash
-WINEPREFIX=~/.wine-gaming wine linuxtrack-wine.exe
-WINEPREFIX=~/.wine-work wine linuxtrack-wine.exe
+./scripts/install/install_wine_bridge.sh ~/.wine-gaming /usr/bin/wine
+./scripts/install/install_wine_bridge.sh ~/.wine-work /usr/bin/wine
 ```
 
 ### Profile Management

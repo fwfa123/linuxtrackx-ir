@@ -10,25 +10,31 @@ print_status "Wine bridge staging"
 [[ -d "$APPDIR" ]] || die "AppDir not found: $APPDIR. Run prepare.sh first."
 
 ensure_dir "$APPDIR/wine_bridge"
+ensure_dir "$APPDIR/wine_bridge/payload"
 ensure_dir "$APPDIR/wine_bridge/scripts"
 
-# Prefer artifacts installed by the project during make install
-WINE_SRC_DIR1="$APPDIR/usr/share/linuxtrack/wine"
-WINE_SRC_DIR2="$APPDIR/usr/share/linuxtrack"
-if [[ -f "$WINE_SRC_DIR1/linuxtrack-wine.exe" ]]; then
-    cp "$WINE_SRC_DIR1/linuxtrack-wine.exe" "$APPDIR/wine_bridge/"
-    print_success "Staged linuxtrack-wine.exe"
-elif [[ -f "$WINE_SRC_DIR2/linuxtrack-wine.exe" ]]; then
-    cp "$WINE_SRC_DIR2/linuxtrack-wine.exe" "$APPDIR/wine_bridge/"
-    print_success "Staged linuxtrack-wine.exe"
+PAYLOAD_SRC=""
+for d in \
+  "$APPDIR/usr/lib/linuxtrack/wine_bridge" \
+  "$APPDIR/opt/lib/linuxtrack/wine_bridge" \
+  "/opt/lib/linuxtrack/wine_bridge"; do
+  if [[ -f "$d/NPClient.dll" ]]; then
+    PAYLOAD_SRC="$d"
+    break
+  fi
+done
+
+if [[ -n "$PAYLOAD_SRC" ]]; then
+  cp -a "$PAYLOAD_SRC/." "$APPDIR/wine_bridge/payload/"
+  print_success "Staged wine_bridge payload from $PAYLOAD_SRC"
 else
-    print_warning "linuxtrack-wine.exe not found under $WINE_SRC_DIR1 or $WINE_SRC_DIR2; Wine bridge installer unavailable"
+  print_warning "NPClient.dll payload not found; Wine bridge install will fail in AppImage"
 fi
 
-# Installer wrapper script (inside AppImage)
+# Installer wrapper (native copy + wine reg; no NSIS)
 cat > "$APPDIR/wine_bridge/scripts/install_wine_bridge.sh" << 'EOF'
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
 info() { echo -e "${BLUE}[INFO]${NC} $*"; }
@@ -37,18 +43,15 @@ err() { echo -e "${RED}[ERROR]${NC} $*"; }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 APPDIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
+PAYLOAD="$APPDIR/wine_bridge/payload"
 
 if ! command -v wine >/dev/null 2>&1; then
     err "Wine is not installed. Please install Wine first."
-    info "Ubuntu/Debian: sudo apt install wine wine32 wine64"
-    info "Fedora: sudo dnf install wine"
-    info "Arch: sudo pacman -S wine wine-mono wine-gecko"
     exit 1
 fi
 
-INSTALLER="$APPDIR/wine_bridge/linuxtrack-wine.exe"
-if [[ ! -f "$INSTALLER" ]]; then
-    err "Wine bridge installer not found"
+if [[ ! -f "$PAYLOAD/NPClient.dll" ]]; then
+    err "Wine bridge payload not found in AppImage"
     exit 1
 fi
 
@@ -56,32 +59,78 @@ TARGET_PREFIX="${WINEPREFIX:-$HOME/.wine}"
 info "Installing Wine bridge into: $TARGET_PREFIX"
 export WINEPREFIX="$TARGET_PREFIX"
 
-# Ensure 32-bit runtime is discoverable by linuxtrack loader in 32-bit prefixes
-APPDIR_ROOT="$(dirname "$(dirname "$SCRIPT_DIR")")"
-LTR32="$APPDIR_ROOT/usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
-if [[ -f "$LTR32" ]]; then
-    info "Configuring 32-bit linuxtrack runtime for Wine (LINUXTRACK_LIBS)"
-    export LINUXTRACK_LIBS="$LTR32"
+if grep -q '#arch=win64' "$TARGET_PREFIX/user.reg" 2>/dev/null; then
+  INSTALL_SUBDIR="Program Files (x86)/Linuxtrack"
+  REG_PATH='C:\Program Files (x86)\Linuxtrack\'
 else
-    warn "32-bit linuxtrack runtime not bundled; relying on system installation"
+  INSTALL_SUBDIR="Program Files/Linuxtrack"
+  REG_PATH='C:\Program Files\Linuxtrack\'
 fi
 
-set +e
-wine "$INSTALLER" /S 2>/dev/null
-rc=$?
-set -e
-if [[ $rc -ne 0 ]]; then
-    warn "Silent install failed (rc=$rc); attempting interactive"
-    wine "$INSTALLER" 2>/dev/null || true
+INSTALL_DIR="$TARGET_PREFIX/drive_c/$INSTALL_SUBDIR"
+mkdir -p "$INSTALL_DIR"
+
+WIN64=0
+grep -q '#arch=win64' "$TARGET_PREFIX/user.reg" 2>/dev/null && WIN64=1
+
+copy_required() {
+  local src="$1" dst="$2"
+  if [[ ! -f "$PAYLOAD/$src" ]]; then
+    err "Required payload file missing: $PAYLOAD/$src"
+    exit 1
+  fi
+  cp -f "$PAYLOAD/$src" "$INSTALL_DIR/$dst"
+}
+
+copy_optional() {
+  local src="$1" dst="$2"
+  [[ -f "$PAYLOAD/$src" ]] && cp -f "$PAYLOAD/$src" "$INSTALL_DIR/$dst"
+}
+
+copy_required NPClient.dll NPClient.dll
+if [[ "$WIN64" -eq 1 ]]; then
+  copy_required NPClient64.dll NPClient64.dll
+else
+  copy_optional NPClient64.dll NPClient64.dll
+fi
+for pair in \
+  "check_data.exe:check_data.exe" \
+  "Controller.exe:Controller.exe" \
+  "Tester.exe:Tester.exe" \
+  "Tester64.exe:Tester64.exe" \
+  "TrackIR.exe:TrackIR.exe" \
+  "FreeTrackClient.dll:FreeTrackClient.dll" \
+  "ftc.exe:FreeTrackTester.exe"; do
+  copy_optional "${pair%%:*}" "${pair##*:}"
+done
+
+if [[ ! -f "$INSTALL_DIR/NPClient.dll" ]]; then
+  err "NPClient.dll was not installed into the prefix."
+  exit 1
+fi
+if [[ "$WIN64" -eq 1 && ! -f "$INSTALL_DIR/NPClient64.dll" ]]; then
+  err "NPClient64.dll was not installed (required for WOW64 prefixes)."
+  exit 1
 fi
 
-info "Wine bridge installation complete"
+INSTALL_DIR_WIN="${REG_PATH%\\}"
+wine reg add 'HKLM\SOFTWARE\Linuxtrack' /v Install_dir /t REG_SZ /d "$INSTALL_DIR_WIN" /f
+wine reg add 'HKCU\Software\NaturalPoint\NATURALPOINT\NPClient Location' /v Path /t REG_SZ /d "$REG_PATH" /f
+wine reg add 'HKCU\Software\Freetrack\FreetrackClient' /v Path /t REG_SZ /d "$REG_PATH" /f || true
+
+FIRMWARE="$HOME/.config/linuxtrack/tir_firmware"
+for name in TIRViews.dll mfc42u.dll mfc42.dll; do
+  [[ -f "$FIRMWARE/$name" ]] && ln -sf "$FIRMWARE/$name" "$INSTALL_DIR/$name"
+done
+
+[[ -f "$INSTALL_DIR/check_data.exe" ]] && wine "$INSTALL_DIR/check_data.exe" || true
+info "Wine bridge installation complete: $INSTALL_DIR"
 EOF
 chmod +x "$APPDIR/wine_bridge/scripts/install_wine_bridge.sh"
 
 print_success "Wine bridge staging complete"
 
-# Provide a helper wrapper to run Wine with bundled 32-bit liblinuxtrack
+# Helper: run Wine with bundled 32-bit liblinuxtrack when present
 cat > "$APPDIR/wine_bridge/scripts/run_with_ltr32.sh" << 'EOF'
 #!/usr/bin/env bash
 set -e
@@ -99,5 +148,3 @@ export LINUXTRACK_LIBS="$LTR32"
 exec wine "$@"
 EOF
 chmod +x "$APPDIR/wine_bridge/scripts/run_with_ltr32.sh"
-
-

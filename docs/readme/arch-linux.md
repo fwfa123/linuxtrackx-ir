@@ -35,11 +35,6 @@ sudo pacman -S wine wine-mono wine-gecko
 # MinGW cross toolchain for NPClient.dll / NPClient64.dll and tester PE binaries
 sudo pacman -S mingw-w64-gcc
 
-# Wine bridge installer support (full NSIS with Stubs — required for linuxtrack-wine.exe)
-./scripts/install/install_nsis_arch.sh
-# Or: yay -S nsis mingw-w64-gcc
-# Verify: test -f /usr/share/nsis/Stubs/zlib-x86-unicode && which makensis
-
 # Runtime prefix helpers for MFC42 setup
 sudo pacman -S winetricks cabextract wget
 ```
@@ -100,7 +95,7 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not
 
 ## Automated build script
 
-[`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine runtime packages, MinGW-w64, **liblo** (OSC), checks the X-Plane SDK path, installs NSIS, configures CMake, builds, and installs to `/opt`. **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
+[`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine runtime packages, MinGW-w64, **liblo** (OSC), checks the X-Plane SDK path, configures CMake, builds, and installs to `/opt` (NSIS is not required for the v2 Wine bridge). **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
 
 **CMake vs packages:** The script’s `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. The script still installs **opencv**, **v4l-utils**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
 
@@ -205,8 +200,7 @@ Some users on **source builds** report weak camera preview or a broken 3D view w
 ldconfig -p | grep linuxtrack
 ltr_server1 --help
 ltr_gui
-ls /opt/lib/linuxtrack/wine_bridge/   # built bridge pieces (Level 2+)
-ls /opt/share/linuxtrack/wine/linuxtrack-wine.exe 2>/dev/null || true  # NSIS installer when built
+ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # built bridge payload (Level 2+)
 ```
 
 ---
@@ -219,10 +213,8 @@ ls /opt/share/linuxtrack/wine/linuxtrack-wine.exe 2>/dev/null || true  # NSIS in
 |---------|----------|
 | `i686-w64-mingw32-gcc: command not found` | Install `mingw-w64-gcc` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install `mingw-w64-gcc` |
-| `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install `mingw-w64-gcc` and full NSIS (`yay -S nsis` or `./scripts/install/install_nsis_arch.sh`), then reconfigure from a clean build dir |
-| `Error: reading stub ".../Stubs/zlib-x86-unicode"` | Compiler-only NSIS is not enough. Install full package: `yay -S nsis`, remove `/usr/local/bin/makensis` if present, re-run `./scripts/install/install_nsis_arch.sh --force`, then `cmake --build . --target wine_installer` |
-| `NSIS installer support: disabled (NSIS stubs not found)` | Same as stub error above; CMake skips `linuxtrack-wine.exe` until stubs exist under `/usr/share/nsis/Stubs/` |
-| AUR `nsis` / `mingw-w64-zlib`: `gpg: keyserver receive failed: No keyserver available` | Configure a keyserver (below), import the key, retry `yay -S nsis mingw-w64-gcc` |
+| `Wine bridge: disabled (mingw-w64 toolchains not found)` | Install `mingw-w64-gcc`, then reconfigure from a clean build dir |
+| Wine bridge payload not found at install time | After build, confirm `/opt/lib/linuxtrack/wine_bridge/NPClient.dll`; install via GUI or `./scripts/install/install_wine_bridge.sh` |
 | MFC42 install fails | Use the GUI MFC42 installer or manual `winetricks mfc42` for the target prefix |
 | Wine/Proton prefix does not load the bridge | Verify `NPClient.dll` / `NPClient64.dll` were installed into the target prefix and check `NPClient.log` / Steam logs |
 | `zlib` and `zlib-ng-compat` in conflict (CachyOS etc.) | Answer **N** (do not remove zlib-ng-compat). Omit `zlib`; run `pkg-config --exists zlib` to confirm |

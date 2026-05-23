@@ -41,14 +41,14 @@ Choose the level that matches your needs. Each level includes all features from 
 | Level | Use Case | Features |
 |-------|----------|----------|
 | **1: TrackIR Only** | Linux native games only | TrackIR hardware, LinuxTrack server |
-| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires Wine 11.0+ + MinGW-w64 + NSIS**) |
+| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires Wine 11.0+ + MinGW-w64**) |
 | **3: + X-Plane** | Flight simulator | Level 2 + X-Plane plugin |
 | **4: + Webcam** | Webcam / optical tracking (V4L) | Level 3 + webcam drivers |
 | **5: + OSC** | External applications/MIDI | Level 4 + Open Sound Control |
 | **6: + Face tracking** | OpenCV-based face tracking (`libwc` facetrack, `libp3eft`) | Level 5 + face tracking (OpenCV) |
 | **7: + Wiimote** | Nintendo Wii Remote | Level 6 + Wiimote support |
 
-> **⚠️ Important**: Level 2 targets modern WOW64 and requires Wine 11.0+ (or current Proton/Wine Staging), MinGW-w64 cross-compilers, and NSIS.
+> **⚠️ Important**: Level 2 targets modern WOW64 and requires Wine 11.0+ (or current Proton/Wine Staging) and MinGW-w64 cross-compilers. Install into prefixes from the GUI (Lutris / Steam / custom) or `scripts/install/install_wine_bridge.sh`.
 
 ## 🛠️ Build Overview
 
@@ -84,7 +84,7 @@ sudo cmake --build . --target uninstall
 | Level | CMake Command | Description |
 |-------|---------------|-------------|
 | 1 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | TrackIR only (default prefix is `/opt`) |
-| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | + Wine support (Wine 11.0+ + MinGW/NSIS toolchain required) |
+| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | + Wine support (Wine 11.0+ + MinGW toolchain required) |
 | 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
 | 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON` | + Webcam |
 | 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
@@ -232,7 +232,7 @@ The maintained pipeline lives under **`scripts/appimage/v2/`**. Typical entry po
 
 The v2 **`prepare.sh`** configure line targets README **Level 7** in the table above: `ENABLE_WEBCAM=ON`, `ENABLE_OSC=ON`, **`ENABLE_FACE_TRACKER=ON`**, **`DISABLE_WIIMOTE=OFF`** (Wiimote builds when **libcwiid** is available), and **`ENABLE_XPLANE=ON`** when the X-Plane SDK is present (otherwise X-Plane is turned off for that run). Install the same **development** packages as a Level 4–7 source build on the host (webcam/V4L, **liblo**, **OpenCV**, **libcwiid**); see your [distribution guide](#distribution-specific-instructions). The **`scripts/appimage/Dockerfile`** includes OpenCV and libcwiid dev packages so official container builds can produce **`libp3eft`** and **`wii_server`**. Set **`XPLANE_SDK_PATH`** if headers are not under `/opt/xplane-sdk/CHeaders`.
 
-**AppImage packaging tools (maintainers):** install **`patchelf`** on the build host so v2 can set library rpaths for TrackIR plugins inside the AppImage (`package.sh` / `bundle.sh`). Without it the build still completes but logs `patchelf not available`. Also need **`appimagetool`** (or the script’s bundled copy) and the usual Level 2+ MinGW/NSIS stack if you build the Wine bridge into the image. Package names: `patchelf` on Debian/Ubuntu, Fedora, and Arch — see your distro guide.
+**AppImage packaging tools (maintainers):** install **`patchelf`** on the build host so v2 can set library rpaths for TrackIR plugins inside the AppImage (`package.sh` / `bundle.sh`). Without it the build still completes but logs `patchelf not available`. Also need **`appimagetool`** (or the script’s bundled copy) and the usual Level 2+ MinGW stack if you build the Wine bridge into the image. Package names: `patchelf` on Debian/Ubuntu, Fedora, and Arch — see your distro guide.
 
 Validation (**`validate.sh`**) defaults to **`EXPECT_LEVEL7=1`** (see **`config.sh`**): the AppDir must include OpenCV face-track support (**`libp3eft`**) and **`usr/bin/wii_server`**. Export **`EXPECT_LEVEL7=0`** if you are checking a slim or partial tree. **`ci_build.sh`** runs the full v2 sequence with **`CLEAN=1`** (prepare, bundle, optimize, validate, package).
 

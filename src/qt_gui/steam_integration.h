@@ -83,7 +83,6 @@ private:
     bool detectSteamFlatpak();
     void setupFlatpakSteamPaths();
     bool createProtonEnvironment(const SteamGame &game);
-    bool runWineBridgeInstaller(const QString &prefixPath, const QString &winePath);
     bool runWineBridgeInstallerWithProton(const QString &prefixPath, const QString &protonPath, const QProcessEnvironment &env);
     QStringList parseVDFFile(const QString &filePath);
     QString extractVDFValue(const QString &line);

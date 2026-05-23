@@ -9,6 +9,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 ### Major Changes
 - **Version 2.0.0**: Major version bump reflecting a new application architecture (Wine WOW64 bridge, Qt6/CMake-first build, modern toolchain requirements) rather than incremental `0.99.x` updates.
 - **Wine bridge**: WOW64-focused build and install path (see `docs/guides/WINE_BRIDGE_MODERN.md`).
+- **Breaking — NSIS installer removed**: `linuxtrack-wine.exe`, `makensis`, and NSIS stub dependencies are no longer used. Wine bridge builds with **MinGW only**. Lutris, Steam Proton, custom prefix, and AppImage all install via native file copy + `wine reg` (`WineBridgeInstall` in `ltr_gui`, or `scripts/install/install_wine_bridge.sh`).
 
 ### Fixed
 - **AppImage + Flatpak**: Steam and Lutris detection when installed via Flatpak (ported from main 1.0.2, GitLab #56). Sanitized host `flatpak` invocation and data-first `~/.var/app/...` paths.

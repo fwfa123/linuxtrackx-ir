@@ -46,7 +46,7 @@ sudo usermod -a -G plugdev,input $USER
 | Qt6 CMake config not found | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install `qt6-base-dev` (provides `Qt6Config.cmake`). See distro guide for complete Qt6 package list |
 | MinGW toolchains missing | `i686-w64-mingw32-gcc: command not found` | **REQUIRED for Wine bridge**: Install MinGW-w64 cross-compilers for your distro |
 | Qt6 tools not found | `qmake: command not found` | Add Qt6 bin directory to PATH (see distro guide) |
-| Wine bridge toolchain missing | `Wine bridge: disabled (mingw-w64 toolchains and/or makensis not found)` | Install MinGW-w64 toolchains + NSIS |
+| Wine bridge toolchain missing | `Wine bridge: disabled (mingw-w64 toolchains not found)` | Install MinGW-w64 cross-compilers for your distro |
 | OpenCV detection failed | Build succeeds without facetrack / `libp3eft` | **Build-time only**: install OpenCV dev packages on the **builder** (see distro guide). AppImage **end users** should not need system OpenCV if the release bundles `libopencv_*`. |
 | ldconfig permission denied | Warning during install | Use `-DENABLE_LDCONFIG=OFF` for packaging |
 
@@ -71,15 +71,15 @@ sudo usermod -a -G plugdev,input $USER
 |---------|---------|----------|
 | MFC42 installation fails | TrackIR not working in Wine | Use GUI MFC42 installer or manual winetricks |
 | Wine/Proton prefix issues | Wine errors | Verify the target prefix, Wine/Proton version, and MFC42 setup |
-| Wine bridge components missing | No `NPClient.dll`/`linuxtrack-wine.exe` | Verify MinGW + NSIS are installed, then reconfigure/rebuild |
+| Wine bridge components missing | No `NPClient.dll` under `/opt/lib/linuxtrack/wine_bridge` | Verify MinGW is installed, rebuild, `cmake --install`, then install into prefix from GUI or `scripts/install/install_wine_bridge.sh` |
 | Wine version conflicts | Incompatible Wine version | Use Wine 11.0+ (or current Proton/Wine Staging) |
 
 ### Distribution-Specific Quick Fixes
 
 #### Debian/Ubuntu
 ```bash
-# MinGW bridge toolchain + NSIS
-sudo apt install mingw-w64 nsis
+# MinGW bridge toolchain (NSIS not required for v2 native Wine bridge)
+sudo apt install mingw-w64
 
 # Qt6 tools (rare)
 sudo apt install qt6-tools-dev-tools
@@ -87,8 +87,8 @@ sudo apt install qt6-tools-dev-tools
 
 #### Arch Linux
 ```bash
-# MinGW bridge toolchain + NSIS + Wine runtime
-sudo pacman -S mingw-w64-gcc nsis wine wine-mono wine-gecko
+# MinGW bridge toolchain + Wine runtime
+sudo pacman -S mingw-w64-gcc wine wine-mono wine-gecko
 
 # Wayland is default: if GUI does not show, use
 QT_QPA_PLATFORM=xcb ltr_gui
@@ -100,10 +100,10 @@ The `build_32bit_libs.sh` script has been removed. Lib32-mxml and lib32-liblo ar
 # Qt6 tools PATH (critical)
 export PATH="/usr/lib64/qt6/bin:$PATH"
 
-# MinGW bridge toolchain + NSIS + Wine runtime
+# MinGW bridge toolchain + Wine runtime
 sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils
 sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils
-sudo dnf install mingw32-nsis wine
+sudo dnf install wine
 ```
 
 ## Advanced Diagnostics
@@ -155,7 +155,7 @@ udevadm info -a -n /dev/bus/usb/XXX/YYY  # Replace with device numbers
 ## Known Limitations
 
 - **Wayland**: Some features work better with X11 (force with `QT_QPA_PLATFORM=xcb`)
-- **Toolchain drift**: Wine bridge build requires MinGW-w64 cross-compilers and NSIS on the build host
+- **Toolchain drift**: Wine bridge build requires MinGW-w64 cross-compilers on the build host (NSIS not used in v2)
 - **Qt6 themes**: Some desktop themes may affect GUI appearance
 - **Multiple TrackIR devices**: Only one device supported simultaneously
 

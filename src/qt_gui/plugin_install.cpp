@@ -13,6 +13,7 @@
 #include "extractor.h"
 #include "utils.h"
 #include "installer_paths.h"
+#include "wine_bridge_install.h"
 #include "lutris_path_config_dialog.h"
 #include "tracker.h"
 
@@ -31,11 +32,8 @@ PluginInstall::PluginInstall(const Ui::LinuxtrackMainForm &ui, QObject *parent):
   isTirMfcOnlyInstallation(false)
 {
 #ifndef DARWIN
-  // Check for wine installer in common locations and warn/disable legacy buttons if not found
-  QString wineInstallerPath = InstallerPaths::resolveWineBridgeInstallerPath();
-  if(wineInstallerPath.isEmpty()){
+  if (InstallerPaths::resolveWineBridgePayloadDir().isEmpty()) {
     enableButtons(false);
-    // Do not return; allow Custom Prefix button flow to run and report a clear error later
   }
 #endif
   inst = new WineLauncher();
@@ -202,25 +200,31 @@ void PluginInstall::installLinuxtrackWine()
     return;
   }
   
-  // Resolve installer via centralized resolver
-  QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
-  if (installerPath.isEmpty()) {
-    QMessageBox::critical(parentWidget, QObject::tr("Installer Not Found"),
-      QObject::tr("Could not find linuxtrack-wine.exe in expected locations."));
+  if (InstallerPaths::resolveWineBridgePayloadDir().isEmpty()) {
+    QMessageBox::critical(parentWidget, QObject::tr("Wine Bridge Not Found"),
+      QObject::tr("Linuxtrack Wine bridge files (NPClient.dll) were not found.\n"
+                    "Install linuxtrack with the Wine bridge built (MinGW), or use the AppImage."));
     return;
   }
 
-  // Do not auto-start tracking here; installation should be non-intrusive
+  QString winePath = inst ? inst->selectBestWineVersion() : QString();
+  if (winePath.isEmpty()) {
+    winePath = QFileDialog::getOpenFileName(parentWidget, QObject::tr("Select Wine binary..."),
+                                            QStringLiteral("/usr/bin"), QObject::tr("Wine (wine)"));
+    if (winePath.isEmpty())
+      return;
+  }
 
-  // Ensure launcher is available (should be constructed in constructor)
-  if (!inst) {
-    QMessageBox::critical(parentWidget, QObject::tr("Installer Not Available"),
-      QObject::tr("Wine installer launcher is not available."));
+  QString installError;
+  QString debugInfo;
+  if (!WineBridgeInstall::installToPrefix(prefix, winePath, &installError, &debugInfo)) {
+    QMessageBox::critical(parentWidget, QObject::tr("Installation Failed"), installError);
     return;
   }
 
-  inst->setEnv(QString::fromUtf8("WINEPREFIX"), prefix);
-  inst->run(installerPath);
+  QMessageBox::information(parentWidget, QObject::tr("Installation Completed"),
+    QObject::tr("Linuxtrack Wine bridge installed to:\n%1")
+        .arg(WineBridgeInstall::installDirectoryForPrefix(prefix)));
 #else
   if(isTirFirmwareInstalled() && isMfc42uInstalled()){
     // Get the main window by finding the top-level widget
@@ -238,7 +242,7 @@ void PluginInstall::installLinuxtrackWine()
     }
     QMessageBox::information(parentWidget, QObject::tr("Firmware extraction successfull"),
       QObject::tr("Firmware extraction finished successfully!"
-      "\nNow you can install linuxtrack-wine.exe to the Wine bottle/prefix of your choice.")
+      "\nUse Install to Wine Prefix on the Gaming tab to copy the bridge into a prefix.")
     );
   }
 #endif
@@ -714,14 +718,6 @@ void PluginInstall::installLutrisWineBridge()
   lutrisIntegration->setSelectedLutrisGameConfig(selectedLutrisGame.game_slug,
                                                  selectedLutrisGame.config_path);
 
-  // Show information dialog about interactive installation (align with Steam flow)
-  QMessageBox::information(getParentWidget(), QObject::tr("Starting Interactive Installation"),
-    QObject::tr("Starting Linuxtrack Wine Bridge installation for: %1\n\n")
-        .arg(selectedLutrisGame.game_name.isEmpty() ? selectedLutrisGame.game_slug
-                                                    : selectedLutrisGame.game_name) +
-    QObject::tr("The NSIS installer will open in a new window.\n") +
-    QObject::tr("Please follow the installation prompts in that window."));
-  
   // Install to the selected game (by config/prefix, not slug alone — duplicate slugs are common)
   bool success = lutrisIntegration->installToLutrisGame(selectedLutrisGame);
 
@@ -818,15 +814,6 @@ void PluginInstall::installSteamProtonBridge()
   }
   
   QString selectedGameId = gameIds[selectedIndex];
-  
-  // Show information dialog about interactive installation
-  QMessageBox::information(getParentWidget(), QObject::tr("Starting Interactive Installation"),
-    QObject::tr("Starting Linuxtrack Wine Bridge installation for: %1\n\n").arg(selectedGame) +
-    QObject::tr("The NSIS installer will open in a new window.\n") +
-    QObject::tr("Please follow the installation prompts in that window.\n\n") +
-    QObject::tr("Click OK to start the installation."));
-  
-  // Do not auto-start tracking here; installation should be non-intrusive
   
   // Install to the selected game
   bool success = steamIntegration->installToSteamGame(selectedGameId);

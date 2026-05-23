@@ -1,5 +1,6 @@
 #include "steam_integration.h"
 #include "installer_paths.h"
+#include "wine_bridge_install.h"
 #include <QDebug>
 #include <QProcess>
 // #include <QMessageBox> // Not needed for CLI test
@@ -592,7 +593,6 @@ bool SteamIntegration::installToSteamGame(const QString &gameId)
     ltr_int_log_message("  STEAM_COMPAT_DATA_PATH: %s\n", (getCompatDataPath() + gameId).toUtf8().constData());
     ltr_int_log_message("  STEAM_COMPAT_CLIENT_INSTALL_PATH: %s\n", steamPath.toUtf8().constData());
     
-    // Launch NSIS installer with Proton
     bool result = runWineBridgeInstallerWithProton(prefixPath, protonPath, env);
     
     if (result) {
@@ -956,133 +956,42 @@ QString SteamIntegration::getProtonPath(const QString &protonVersion)
 }
 
 bool SteamIntegration::runWineBridgeInstallerWithProton(
-    const QString &prefixPath, 
-    const QString &protonPath, 
+    const QString &prefixPath,
+    const QString &protonPath,
     const QProcessEnvironment &env)
 {
-    QProcess process;
-    process.setProcessEnvironment(env);
-    
-    // Set working directory to the Proton prefix root (like Wstart example)
-    process.setWorkingDirectory(prefixPath);
-    
-    // Get wine bridge installer path via centralized resolver
-    QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
-    if (installerPath.isEmpty()) {
-        setLastError(QStringLiteral("Could not find wine bridge installer"));
+    QDir prefixDir(prefixPath);
+    if (!prefixDir.exists()) {
+        setLastError(QStringLiteral("Prefix does not exist: ") + prefixPath);
         return false;
     }
-    
-    // Validate that the Proton binary exists and is executable
-    QString protonBinaryPath = protonPath + QStringLiteral("/proton");
-    QFileInfo protonBinary(protonBinaryPath);
-    
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Validating Proton binary: %s\n", 
-        protonBinaryPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Binary exists: %s\n", 
-        protonBinary.exists() ? "YES" : "NO");
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Binary executable: %s\n", 
-        protonBinary.isExecutable() ? "YES" : "NO");
-    
-    if (!protonBinary.exists()) {
-        setLastError(QStringLiteral("Proton binary not found: ") + protonBinaryPath);
+
+    QString wineBinary = QDir(protonPath).filePath(QStringLiteral("files/bin/wine"));
+    QFileInfo wineInfo(wineBinary);
+    if (!wineInfo.exists() || !wineInfo.isExecutable()) {
+        wineBinary = QDir(protonPath).filePath(QStringLiteral("dist/bin/wine"));
+        wineInfo.setFile(wineBinary);
+    }
+    if (!wineInfo.exists() || !wineInfo.isExecutable()) {
+        setLastError(QStringLiteral("Proton wine binary not found under: ") + protonPath);
+        ltr_int_log_message("runWineBridgeInstallerWithProton: no wine at files/bin or dist/bin\n");
         return false;
     }
-    
-    if (!protonBinary.isExecutable()) {
-        setLastError(QStringLiteral("Proton binary not executable: ") + protonBinaryPath);
+
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - wine=%s prefix=%s\n",
+                        wineBinary.toUtf8().constData(), prefixPath.toUtf8().constData());
+
+    QString installError;
+    QString debug;
+    const bool ok = WineBridgeInstall::installToPrefix(prefixPath, wineBinary, env, &installError, &debug);
+    debugInfo += debug;
+    if (!ok) {
+        setLastError(installError);
         return false;
     }
-    
-    // Validate working directory
-    QDir workingDir(prefixPath);
-    if (!workingDir.exists()) {
-        setLastError(QStringLiteral("Working directory does not exist: ") + prefixPath);
-        return false;
-    }
-    
-    // Set environment variables for Proton (following Wstart example)
-    QProcessEnvironment processEnv = QProcessEnvironment::systemEnvironment();
-    // STEAM_COMPAT_DATA_PATH should point to the compatdata/[GAME_ID] directory (without /pfx)
-    QString compatDataPath = prefixPath;
-    compatDataPath.chop(4); // Remove "/pfx" from the end
-    processEnv.insert(QStringLiteral("STEAM_COMPAT_DATA_PATH"), compatDataPath);
-    processEnv.insert(QStringLiteral("WINEPREFIX"), prefixPath);
-    processEnv.insert(QStringLiteral("STEAM_COMPAT_CLIENT_INSTALL_PATH"), steamPath);
-    process.setProcessEnvironment(processEnv);
-    
-    // Build command: proton run [installer_path] (following Wstart example)
-    QStringList arguments;
-    arguments << QStringLiteral("run") << installerPath;
-    
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton path: %s\n", 
-        protonPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Prefix path: %s\n", 
-        prefixPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Working directory: %s\n", 
-        prefixPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Installer path: %s\n", 
-        installerPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - STEAM_COMPAT_DATA_PATH: %s\n", 
-        compatDataPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - WINEPREFIX: %s\n", 
-        prefixPath.toUtf8().constData());
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Executing: %s run %s\n", 
-        protonBinaryPath.toUtf8().constData(), installerPath.toUtf8().constData());
-    
-    // Start the Proton process
-    process.start(protonBinaryPath, QStringList() << QStringLiteral("run") << installerPath);
-    
-    if (!process.waitForStarted()) {
-        QString errorMsg = QStringLiteral("Failed to start Proton process: ") + process.errorString();
-        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - %s\n", 
-            errorMsg.toUtf8().constData());
-        setLastError(errorMsg);
-        return false;
-    }
-    
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton process started successfully\n");
-    
-    // Wait for completion with a longer timeout (120 seconds instead of 30)
-    // Proton initialization and NSIS installer can take time, especially on first run
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Waiting for Proton process to complete (timeout: 120 seconds)...\n");
-    
-    if (!process.waitForFinished(120000)) { // 120 seconds
-        process.kill();
-        QString errorMsg = QStringLiteral("Proton process timed out after 120 seconds");
-        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - %s\n", 
-            errorMsg.toUtf8().constData());
-        setLastError(errorMsg);
-        return false;
-    }
-    
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton process completed\n");
-    
-    int exitCode = process.exitCode();
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Proton process finished with exit code: %d\n", exitCode);
-    
-    if (exitCode != 0) {
-        QString errorOutput = QString::fromUtf8(process.readAllStandardError());
-        QString standardOutput = QString::fromUtf8(process.readAllStandardOutput());
-        
-        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Standard output: %s\n", 
-            standardOutput.toUtf8().constData());
-        ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Error output: %s\n", 
-            errorOutput.toUtf8().constData());
-        
-        QString errorMsg = QStringLiteral("Proton process failed with exit code ") + QString::number(exitCode);
-        if (!errorOutput.isEmpty()) {
-            errorMsg += QStringLiteral(": ") + errorOutput;
-        }
-        setLastError(errorMsg);
-        return false;
-    }
-    
-    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - Wine Bridge installer completed successfully\n");
+    ltr_int_log_message("SteamIntegration::runWineBridgeInstallerWithProton() - native install OK\n");
     return true;
 }
-
-// Removed: getWineBridgeInstallerPath() – now centralized in InstallerPaths
 
 QString SteamIntegration::getLastError() const
 {

@@ -8,22 +8,18 @@
 </head>
 <body>
 <h1>Linuxtrack X-IR - Wine Support</h1>
-To allow Windows programs running under Wine to use headtracking, Linuxtrack X-IR provides Linuxtrack-Wine installer.
-This installer provides necessary interfaces to channel headtracking data to both TrackIR enabled applications (both native like Condor Soaring, or via TIRViews.dll like MSFS series) and FreeTrack compatible applications.
-Be aware, that Linuxtrack-Wine requires TrackIR firmware with companion files to be available (even if you aren't using the TrackIR for tracking).
+To allow Windows programs running under Wine to use headtracking, Linuxtrack X-IR installs a Wine bridge (NPClient.dll and related PE files) into each Wine or Proton prefix where you need tracking.
+The bridge channels headtracking data to TrackIR-enabled applications and FreeTrack-compatible applications.
+TrackIR firmware with companion files must be available on the Linux host (even if you are not using TrackIR hardware for tracking).
 
 <p>
-Please note, that it is necessary to install TrackIR firmware (along with mfc42u.dll needed by TIRViews.dll) to utilize all of the above options. The easiest way to do that is to use the <strong>Install Linuxtrack-Wine support...</strong> button found on the Misc pane of the ltr_gui. That way, all the necessary components will be installed/extracted in one go.
+Install TrackIR firmware and mfc42u.dll first using the prerequisites on the <strong>Gaming</strong> tab of ltr_gui.
 <p>
-On Linux, a dialogue asking for the target "Wine prefix" (or "bottle") pops up after you install the prerequisites - the Linuxtrack-Wine will be installed to the prefix/bottle of your choice.
+Then use <strong>Install Wine Bridge</strong> (Lutris, Steam Proton, or custom Wine prefix). The GUI copies bridge files from <code>/opt/lib/linuxtrack/wine_bridge/</code>, writes registry keys with <code>wine reg</code>, and links firmware DLLs into the prefix.
 <p>
-On Mac OS X, the linuxtrack-wine.exe installer (located in the Linuxtrack .dmg package) must be
-installed manually - just run the installer in the desired "bottle".
+You can also install from the shell: <code>scripts/install/install_wine_bridge.sh &lt;WINEPREFIX&gt; &lt;wine-binary&gt;</code>
 <p>
-Please be aware that linuxtrack-wine.exe must be installed into each and every wine bottle/prefix in which you require the headtracking.
-
-<p>
-If you installed Linuxtrack-Wine prior to version 0.99.11, to gain access to the new features you need to uninstall it first, reinstall TrackIR firmware (to get TIRViews.dll and mfc42u.dll) and then install the new linuxtrack-wine.exe.
+Install the bridge into every wine bottle/prefix where you require headtracking.
 
 <h2>Modern Installation Methods</h2>
 LinuxTrack X-IR now uses modern installation methods for better compatibility with current distributions:
@@ -75,8 +71,8 @@ The build system generates the following Wine-compatible components:
 <li><strong>TrackIR.exe</strong> - Fake TrackIR executable for games</li>
 </ul>
 
-<h2>Linuxtrack-wine usage</h2>
-When you installed the Linuxtrack-Wine to the bottle/prefix of your choice, there are several programs at your disposal.
+<h2>Programs in the Wine prefix</h2>
+After you install the Wine bridge into a bottle/prefix, several programs are available there:
 
 <p>
 <strong>Controller</strong> allows you to bind hotkeys to pause/resume and recenter the tracking.
@@ -103,7 +99,7 @@ One thing to be aware of is, that the <strong>Controller</strong> works (meaning
 <strong>FreeTrackTester</strong>, <strong>Tester</strong> (and on 64bit Wine also <strong>Tester64</strong>) allow you to troubleshoot the Linuxtrack-Wine installation. They are FreeTrack and TrackIR client applications and if they are working, the installation is OK.
 
 <p>
-Linuxtrack-Wine can also be uninstalled if necessary using the <strong>Uninstall</strong>.
+To remove the bridge, delete the <code>Linuxtrack</code> folder under <code>Program Files</code> or <code>Program Files (x86)</code> in that prefix, and remove registry keys under <code>NaturalPoint</code>, <code>Freetrack</code>, and <code>HKLM\SOFTWARE\Linuxtrack</code>.
 
 <h2>Supported games</h2>
 Technically speaking, any FreeTrack and/or TrackIR enabled game/application should work. Directly tested (meaning I tested them) were the following:
@@ -135,15 +131,14 @@ If you encounter issues with the Wine installation:
 <h3>Common Issues</h3>
 <ul>
 <li><strong>Build Errors:</strong> Ensure MinGW toolchains are installed and on PATH</li>
-<li><strong>NSIS Errors:</strong> Ensure <code>makensis</code> is installed</li>
+<li><strong>Payload not found:</strong> Confirm <code>/opt/lib/linuxtrack/wine_bridge/NPClient.dll</code> exists after <code>cmake --install</code></li>
 <li><strong>Artifact Mismatch:</strong> expected outputs are <code>.exe</code>/<code>.dll</code> (not <code>.exe.so</code>/<code>.dll.so</code>)</li>
 <li><strong>Missing Files:</strong> Verify all dependencies are installed (see README for details)</li>
 </ul>
 
 <h3>Verification Steps</h3>
 1. Check that MinGW toolchains are available: <code>which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc</code>
-2. Verify NSIS: <code>which makensis</code>
-3. Test the build process: <code>cmake -S . -B build && cmake --build build -j$(nproc)</code>
+2. Test the build process: <code>cmake -S . -B build && cmake --build build -j$(nproc)</code>
 4. Check generated files: look for <code>.exe</code> and <code>.dll</code> files in wine bridge build directories
 
 </body>

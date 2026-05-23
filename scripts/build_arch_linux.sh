@@ -167,33 +167,10 @@ install_wine_bridge_toolchain() {
     sudo pacman -S --needed wine wine-mono wine-gecko mingw-w64-gcc
 }
 
-# Function to install NSIS (full install with Stubs — required for linuxtrack-wine.exe)
+# v2.0.0+: Wine bridge needs MinGW only (no NSIS / linuxtrack-wine.exe)
 install_nsis() {
-    print_status "Checking NSIS installation (makensis + Stubs)..."
-
-    if [ -f "scripts/install/install_nsis_arch.sh" ]; then
-        chmod +x scripts/install/install_nsis_arch.sh
-        if ./scripts/install/install_nsis_arch.sh --verify 2>/dev/null; then
-            print_success "NSIS ready for Wine bridge installer"
-            return 0
-        fi
-        print_status "Installing NSIS using helper script..."
-        ./scripts/install/install_nsis_arch.sh || return 1
-        return 0
-    fi
-
-    print_warning "NSIS helper script not found. Installing via AUR..."
-    local aur_helper=$(detect_aur_helper)
-    if [ "$aur_helper" = "none" ]; then
-        print_error "No AUR helper available for NSIS installation"
-        return 1
-    fi
-    $aur_helper -S --needed nsis mingw-w64-gcc --noconfirm || return 1
-    if [ ! -f /usr/share/nsis/Stubs/zlib-x86-unicode ]; then
-        print_error "NSIS stubs missing after install — Wine bridge installer will not build"
-        return 1
-    fi
-    print_success "NSIS installed with stubs"
+    print_status "NSIS not required for Wine bridge (v2 native install)"
+    return 0
 }
 
 # Function to verify Wine runtime + MinGW bridge toolchains
@@ -274,13 +251,10 @@ verify_installation() {
         return 1
     fi
     
-    # Wine bridge: NSIS installer under share/linuxtrack/wine/ (see src/wine_bridge/CMakeLists.txt)
-    if [ -f "/opt/share/linuxtrack/wine/linuxtrack-wine.exe" ]; then
-        print_success "Wine bridge installer present: /opt/share/linuxtrack/wine/linuxtrack-wine.exe"
-    elif [ -d "/opt/lib/linuxtrack/wine_bridge" ] && compgen -G '/opt/lib/linuxtrack/wine_bridge/*' >/dev/null; then
-        print_success "Wine bridge built files present under /opt/lib/linuxtrack/wine_bridge (installer may be missing if NSIS was unavailable at install time)"
+    if [ -f "/opt/lib/linuxtrack/wine_bridge/NPClient.dll" ]; then
+        print_success "Wine bridge payload present: /opt/lib/linuxtrack/wine_bridge/NPClient.dll"
     else
-        print_warning "Wine bridge not found (no installer at /opt/share/linuxtrack/wine/linuxtrack-wine.exe and no /opt/lib/linuxtrack/wine_bridge). Build with MinGW toolchains + makensis, or use AppImage bridge."
+        print_warning "Wine bridge not found at /opt/lib/linuxtrack/wine_bridge. Build with MinGW toolchains or use AppImage bridge."
     fi
     
     print_success "Installation verification completed"
@@ -307,7 +281,7 @@ show_usage() {
     echo "  --test-xplane    Test X-Plane SDK support"
     echo "  --help           Show this help message"
     echo ""
-    echo "Default: deps + Wine + MinGW + OSC + X-Plane SDK check + NSIS + configure/build/install."
+    echo "Default: deps + Wine + MinGW + OSC + X-Plane SDK check + configure/build/install."
     echo "Wiimote is NOT installed unless you pass --with-wiimote."
 }
 
@@ -467,9 +441,7 @@ main() {
     
     # Configure build
     if [ "$configure_only" = true ]; then
-        # Main flow skips NSIS/Wine/OSC when using split flags — CMake needs makensis + MinGW toolchains for WINE_PLUGIN and liblo.pc for OSC.
-        print_status "configure-only: ensuring NSIS, liblo, and Wine + MinGW (same as full run before cmake)..."
-        install_nsis
+        print_status "configure-only: ensuring liblo and Wine + MinGW (same as full run before cmake)..."
         install_osc_support
         install_wine_bridge_toolchain
         verify_wine_bridge_toolchain

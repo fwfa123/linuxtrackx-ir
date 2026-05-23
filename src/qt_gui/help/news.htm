@@ -12,7 +12,7 @@ This page summarizes the most notable changes in the LinuxTrack X-IR software.
 
 <h2>LinuxTrack X-IR v2.0.0 - WOW64 rearchitecture</h2>
 <h3>Major release</h3>
-Version 2.0.0 marks a new architecture: Wine WOW64 bridge, Qt6 with CMake, and modern toolchain requirements (Wine 11.0+, MinGW-w64, NSIS). This is a major step beyond the 0.99.x line and reflects a different approach to building and deploying the Wine bridge on current Linux distributions.
+Version 2.0.0 marks a new architecture: Wine WOW64 bridge, Qt6 with CMake, and modern toolchain requirements (Wine 11.0+, MinGW-w64). Wine prefixes are installed via native file copy (no NSIS installer). This is a major step beyond the 0.99.x line and reflects a different approach to building and deploying the Wine bridge on current Linux distributions.
 
 <h3>AppImage + Flatpak</h3>
 The AppImage GUI now detects Flatpak Steam and Lutris reliably: host <code>flatpak</code> is invoked with a sanitized environment (AppImage <code>LD_LIBRARY_PATH</code> no longer breaks the CLI), and standard <code>~/.var/app/...</code> data paths are checked before requiring <code>flatpak list</code>. Ported from the main-branch 1.0.2 fix (GitLab #56).
