@@ -162,6 +162,21 @@ QT_QPA_PLATFORM=xcb ltr_gui
 - Commanche vs Havoc
 - **X-Plane** (requires X-Plane SDK)
 
+### Known issue: Arma 2 (Bohemia)
+
+On the `wow64-rearchitecture` branch, the Wine NPClient bridge is **not reliable
+with Arma 2** (`arma2.exe`, NaturalPoint profile 7502). With the bridge installed,
+the game may crash during startup (fault in game code, often before the first
+`NP_GetData`). Removing the bridge from the prefix allows Arma 2 to run normally.
+
+Other titles (e.g. Falcon 4, Arma: Armed Assault) have been verified with the
+same bridge build. For Arma 2, prefer a **32-bit Wine runner** (e.g. Lutris
+`wine-11.5-x86` / `ge-25-x86_64`) matching setups that work for Arma AA, rather
+than GE-Proton WOW64 prefixes, until Arma 2 support is investigated further.
+
+Diagnostics: `/tmp/linuxtrack_npclient.log` (look for `BUILD_MARKER` and whether
+`GetData request` appears). Optional env: `LINUXTRACK_UNIX_HOME`, `LINUXTRACK_DBG=w`.
+
 ## 🐛 Troubleshooting
 
 ### Quick Recovery (Recommended First Step)
@@ -191,6 +206,7 @@ groups $USER
 | Library not found | Run: `sudo ldconfig` |
 | TrackIR not detected | Check USB: `lsusb \| grep Track` |
 | Wine bridge fails | Check Wine 11.0+ runtime, MinGW toolchain, and MFC42 setup |
+| Arma 2 crashes at startup with Wine bridge | Known limitation; see [Known issue: Arma 2](#known-issue-arma-2-bohemia). Try 32-bit Wine runner or remove bridge from prefix. |
 | Library not found when game launched from Lutris Flatpak | Use Flatseal to allow filesystem access; see [Flatpak doc](docs/readme/flatpak.md) |
 | AppImage: Steam/Lutris not found (Flatpak installed) | Use a V2 build with the Flatpak detection fix; confirm `~/.var/app/com.valvesoftware.Steam/data/Steam` exists after launching Flatpak Steam once. See [Fedora/RHEL](docs/readme/fedora-rhel.md) Lutris section. |
 | AppImage build: `patchelf not available` | Install `patchelf` on the **build** machine, then rebuild. See [AppImage Build](#appimage-build) and your distro guide. |
