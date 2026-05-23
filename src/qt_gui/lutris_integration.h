@@ -108,6 +108,8 @@ private:
     void setupFlatpakLutrisPaths();
     bool createWineEnvironment(const LutrisGame &game);
     bool runWineBridgeInstaller(const QString &prefixPath, const QString &winePath);
+    bool installWineBridgeNative(const QString &prefixPath, const QString &winePath);
+    static bool lutrisPrefixIsWin64(const QString &prefixPath);
 };
 
 #endif // LUTRIS_INTEGRATION_H 

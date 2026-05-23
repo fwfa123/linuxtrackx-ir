@@ -1119,8 +1119,164 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
     return runWineBridgeInstaller(prefixPath, winePath);
 }
 
+bool LutrisIntegration::lutrisPrefixIsWin64(const QString &prefixPath)
+{
+    QFile userReg(prefixPath + QStringLiteral("/user.reg"));
+    if (!userReg.open(QIODevice::ReadOnly))
+        return false;
+    return userReg.readAll().contains(QByteArrayView("#arch=win64"));
+}
+
+static bool wineRegAddString(const QString &winePath, const QString &prefixPath,
+                             const QString &hiveKey, const QString &valueName,
+                             const QString &valueData)
+{
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert(QStringLiteral("WINEPREFIX"), prefixPath);
+    QProcess process;
+    process.setProcessEnvironment(env);
+    process.start(winePath,
+                  {QStringLiteral("reg"), QStringLiteral("add"), hiveKey,
+                   QStringLiteral("/v"), valueName, QStringLiteral("/t"), QStringLiteral("REG_SZ"),
+                   QStringLiteral("/d"), valueData, QStringLiteral("/f")});
+    if (!process.waitForFinished(30000) || process.exitCode() != 0) {
+        ltr_int_log_message("wineRegAddString failed key=%s name=%s exit=%d stderr=%s\n",
+                            hiveKey.toUtf8().constData(), valueName.toUtf8().constData(),
+                            process.exitCode(), process.readAllStandardError().constData());
+        return false;
+    }
+    return true;
+}
+
+static void applyWineBridgeFirmwareLinks(const QString &installDir)
+{
+    const QString firmwareBase =
+        QStandardPaths::writableLocation(QStandardPaths::HomeLocation)
+        + QStringLiteral("/.config/linuxtrack/tir_firmware/");
+    const QStringList linkNames = {QStringLiteral("TIRViews.dll"), QStringLiteral("mfc42u.dll"),
+                                   QStringLiteral("mfc42.dll")};
+    for (const QString &name : linkNames) {
+        const QString sourcePath = firmwareBase + name;
+        const QString destPath = installDir + QStringLiteral("/") + name;
+        QFileInfo sourceInfo(sourcePath);
+        if (!sourceInfo.exists()) {
+            ltr_int_log_message("applyWineBridgeFirmwareLinks: missing source %s\n",
+                                sourcePath.toUtf8().constData());
+            continue;
+        }
+        QFileInfo destInfo(destPath);
+        if (destInfo.exists() || destInfo.isSymLink()) {
+            if (!QFile::remove(destPath)) {
+                ltr_int_log_message("applyWineBridgeFirmwareLinks: could not remove %s\n",
+                                    destPath.toUtf8().constData());
+                continue;
+            }
+        }
+        if (!QFile::link(sourcePath, destPath)) {
+            ltr_int_log_message("applyWineBridgeFirmwareLinks: link failed %s -> %s\n",
+                                destPath.toUtf8().constData(), sourcePath.toUtf8().constData());
+            continue;
+        }
+        ltr_int_log_message("applyWineBridgeFirmwareLinks: %s -> %s\n",
+                            destPath.toUtf8().constData(), sourcePath.toUtf8().constData());
+    }
+}
+
+bool LutrisIntegration::installWineBridgeNative(const QString &prefixPath, const QString &winePath)
+{
+    const QString payloadDir = InstallerPaths::resolveWineBridgePayloadDir();
+    if (payloadDir.isEmpty()) {
+        lastError = QString::fromUtf8("Linuxtrack Wine bridge files not found (NPClient.dll payload directory).");
+        debugInfo += lastError + QString::fromUtf8("\n");
+        return false;
+    }
+
+    const bool win64 = lutrisPrefixIsWin64(prefixPath);
+    const QString installDir =
+        win64 ? prefixPath + QStringLiteral("/drive_c/Program Files (x86)/Linuxtrack")
+              : prefixPath + QStringLiteral("/drive_c/Program Files/Linuxtrack");
+    const QString regPath =
+        win64 ? QStringLiteral("C:\\Program Files (x86)\\Linuxtrack\\")
+              : QStringLiteral("C:\\Program Files\\Linuxtrack\\");
+
+    if (!QDir().mkpath(installDir)) {
+        lastError = QString::fromUtf8("Could not create install directory: ") + installDir;
+        return false;
+    }
+
+    struct BridgeFileMap {
+        const char *source;
+        const char *dest;
+    };
+    static const BridgeFileMap files[] = {
+        {"NPClient.dll", "NPClient.dll"},
+        {"NPClient64.dll", "NPClient64.dll"},
+        {"check_data.exe", "check_data.exe"},
+        {"Controller.exe", "Controller.exe"},
+        {"Tester.exe", "Tester.exe"},
+        {"Tester64.exe", "Tester64.exe"},
+        {"TrackIR.exe", "TrackIR.exe"},
+        {"FreeTrackClient.dll", "FreeTrackClient.dll"},
+        {"ftc.exe", "FreeTrackTester.exe"},
+    };
+
+    for (const BridgeFileMap &entry : files) {
+        const QString src = QDir(payloadDir).filePath(QString::fromUtf8(entry.source));
+        const QString dst = QDir(installDir).filePath(QString::fromUtf8(entry.dest));
+        if (!QFileInfo::exists(src)) {
+            ltr_int_log_message("installWineBridgeNative: skipping missing payload %s\n",
+                                src.toUtf8().constData());
+            continue;
+        }
+        if (QFileInfo::exists(dst) && !QFile::remove(dst)) {
+            lastError = QString::fromUtf8("Could not replace existing file: ") + dst;
+            return false;
+        }
+        if (!QFile::copy(src, dst)) {
+            lastError = QString::fromUtf8("Failed to copy ") + src + QString::fromUtf8(" to ") + dst;
+            return false;
+        }
+        ltr_int_log_message("installWineBridgeNative: copied %s\n", dst.toUtf8().constData());
+    }
+
+    const QString installDirWin =
+        regPath.endsWith(QLatin1Char('\\')) ? regPath.chopped(1) : regPath;
+    if (!wineRegAddString(winePath, prefixPath, QStringLiteral("HKLM\\SOFTWARE\\Linuxtrack"),
+                          QStringLiteral("Install_dir"), installDirWin)) {
+        lastError = QString::fromUtf8("Failed to write HKLM\\SOFTWARE\\Linuxtrack registry keys.");
+        return false;
+    }
+    if (!wineRegAddString(
+            winePath, prefixPath,
+            QStringLiteral("HKCU\\Software\\NaturalPoint\\NATURALPOINT\\NPClient Location"),
+            QStringLiteral("Path"), regPath)) {
+        lastError = QString::fromUtf8("Failed to write NaturalPoint NPClient Location registry key.");
+        return false;
+    }
+    if (!wineRegAddString(winePath, prefixPath,
+                          QStringLiteral("HKCU\\Software\\Freetrack\\FreetrackClient"),
+                          QStringLiteral("Path"), regPath)) {
+        ltr_int_log_message("installWineBridgeNative: Freetrack registry optional write failed\n");
+    }
+
+    debugInfo += QString::fromUtf8("Installed Wine bridge natively to: ") + installDir + QString::fromUtf8("\n");
+    debugInfo += QString::fromUtf8("Registry NPClient path: ") + regPath + QString::fromUtf8("\n");
+    ltr_int_log_message("installWineBridgeNative: success dir=%s reg=%s\n",
+                        installDir.toUtf8().constData(), regPath.toUtf8().constData());
+
+    applyWineBridgeFirmwareLinks(installDir);
+    return true;
+}
+
 bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const QString &winePath)
 {
+    if (lutrisPrefixIsWin64(prefixPath)) {
+        debugInfo += QString::fromUtf8(
+            "64-bit Wine prefix detected; using native file install (NSIS installer is 32-bit).\n");
+        ltr_int_log_message("runWineBridgeInstaller: win64 prefix, skipping NSIS\n");
+        return installWineBridgeNative(prefixPath, winePath);
+    }
+
     // Centralized resolution of linuxtrack-wine.exe
     QString installerPath = InstallerPaths::resolveWineBridgeInstallerPath();
     if (installerPath.isEmpty()) {
@@ -1240,64 +1396,24 @@ bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const 
         if (!errorOutput.isEmpty()) {
             lastError += QString::fromUtf8(": ") + errorOutput;
         }
+        if (lutrisPrefixIsWin64(prefixPath)) {
+            debugInfo += QString::fromUtf8("NSIS failed on 64-bit prefix; retrying native install.\n");
+            return installWineBridgeNative(prefixPath, winePath);
+        }
         return false;
     }
 
     ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Wine Bridge installer completed successfully\n");
 
-    // Native-side firmware links for WOW64/MinGW bridge: keep filesystem mutation outside Wine code.
-    const QString firmwareBase = getHomeDirectory() + QStringLiteral("/.config/linuxtrack/tir_firmware/");
-    const QStringList linkNames = {
-        QStringLiteral("TIRViews.dll"),
-        QStringLiteral("mfc42u.dll"),
-        QStringLiteral("mfc42.dll")
-    };
     const QStringList installDirCandidates = {
         prefixPath + QStringLiteral("/drive_c/Program Files/Linuxtrack"),
         prefixPath + QStringLiteral("/drive_c/Program Files (x86)/Linuxtrack")
     };
-
-    QString installDir;
     for (const QString &candidate : installDirCandidates) {
         if (QDir(candidate).exists()) {
-            installDir = candidate;
+            applyWineBridgeFirmwareLinks(candidate);
             break;
         }
-    }
-
-    if (installDir.isEmpty()) {
-        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - No Linuxtrack install directory found under Program Files; skipping native firmware links\n");
-        return true;
-    }
-
-    for (const QString &name : linkNames) {
-        const QString sourcePath = firmwareBase + name;
-        const QString destPath = installDir + QStringLiteral("/") + name;
-
-        QFileInfo sourceInfo(sourcePath);
-        if (!sourceInfo.exists()) {
-            ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Firmware source missing, skipping link: %s\n",
-                                sourcePath.toUtf8().constData());
-            continue;
-        }
-
-        QFileInfo destInfo(destPath);
-        if (destInfo.exists() || destInfo.isSymLink()) {
-            if (!QFile::remove(destPath)) {
-                ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Could not remove existing target before relink: %s\n",
-                                    destPath.toUtf8().constData());
-                continue;
-            }
-        }
-
-        if (!QFile::link(sourcePath, destPath)) {
-            ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Failed to create firmware link %s -> %s\n",
-                                destPath.toUtf8().constData(), sourcePath.toUtf8().constData());
-            continue;
-        }
-
-        ltr_int_log_message("LutrisIntegration::runWineBridgeInstaller() - Created firmware link %s -> %s\n",
-                            destPath.toUtf8().constData(), sourcePath.toUtf8().constData());
     }
 
     return true;
