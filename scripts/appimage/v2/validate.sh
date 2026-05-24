@@ -153,8 +153,21 @@ else
     done
 fi
 
-# ---- 32-bit Wine bridge library ----
+# ---- Wine bridge (MinGW PE payload + native install script; no NSIS) ----
 if [[ "${WITH_WINE_BRIDGE:-1}" == "1" ]]; then
+    if [[ -f "$APPDIR/wine_bridge/payload/NPClient.dll" ]]; then
+        print_success "Wine bridge payload present: wine_bridge/payload/NPClient.dll"
+    else
+        print_error "Missing Wine bridge payload: wine_bridge/payload/NPClient.dll (MinGW build + wine_bridge.sh required)"
+        failures=$((failures+1))
+    fi
+    if [[ -x "$APPDIR/wine_bridge/scripts/install_wine_bridge.sh" ]]; then
+        print_success "Wine bridge install script present"
+    else
+        print_error "Missing or non-executable: wine_bridge/scripts/install_wine_bridge.sh"
+        failures=$((failures+1))
+    fi
+
     LTR32_PATH="$APPDIR/$LTR32_LIB_REL"
     LTR32_ALT="$APPDIR/usr/lib/linuxtrack/liblinuxtrack32.so.0"
     if [[ -f "$LTR32_PATH" ]]; then

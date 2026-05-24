@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# AppImage v2 CI orchestrator: prepare → bundle → wine_bridge → optimize → validate → package.
+# Wine bridge uses MinGW PE payloads + native copy/wine reg (no NSIS / linuxtrack-wine.exe).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -24,6 +26,12 @@ echo "[STEP DONE] prepare"
 echo "[STEP] bundle"
 "$SCRIPT_DIR/bundle.sh"
 echo "[STEP DONE] bundle"
+
+if [[ -x "$SCRIPT_DIR/wine_bridge.sh" ]] && [[ "${WITH_WINE_BRIDGE:-1}" == "1" ]]; then
+    echo "[STEP] wine_bridge"
+    "$SCRIPT_DIR/wine_bridge.sh"
+    echo "[STEP DONE] wine_bridge"
+fi
 
 echo "[STEP] optimize"
 "$SCRIPT_DIR/optimize.sh" || true

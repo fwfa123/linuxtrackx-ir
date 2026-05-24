@@ -93,6 +93,17 @@ pushd "$PROJECT_ROOT" >/dev/null
                 print_error "Missing 32-bit liblinuxtrack in AppImage: usr/lib/i386-linux-gnu/linuxtrack/liblinuxtrack.so.0"
                 HELP_OK=0
             fi
+
+            if [[ "${WITH_WINE_BRIDGE:-1}" == "1" ]]; then
+                if [[ ! -f "$ROOT_DIR/wine_bridge/payload/NPClient.dll" ]]; then
+                    print_error "Missing Wine bridge payload in AppImage: wine_bridge/payload/NPClient.dll"
+                    HELP_OK=0
+                fi
+                if [[ ! -x "$ROOT_DIR/wine_bridge/scripts/install_wine_bridge.sh" ]]; then
+                    print_error "Missing Wine bridge install script in AppImage: wine_bridge/scripts/install_wine_bridge.sh"
+                    HELP_OK=0
+                fi
+            fi
         popd >/dev/null
         rm -rf "$TMP_EXTRACT_DIR"
         if [[ $HELP_OK -ne 1 ]]; then

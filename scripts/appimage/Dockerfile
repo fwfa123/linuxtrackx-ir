@@ -40,6 +40,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libopencv-dev libcwiid-dev \
     libudev-dev libdbus-1-dev \
     gcc-multilib g++-multilib libc6-dev-i386 \
+    gcc-mingw-w64-i686 g++-mingw-w64-i686 mingw-w64-tools \
+    gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
     && rm -rf /var/lib/apt/lists/*
 
 # Extract appimagetool (--appimage-extract works without FUSE)
