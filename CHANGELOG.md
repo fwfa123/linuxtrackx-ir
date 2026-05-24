@@ -2,14 +2,13 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: The `wow64-rearchitecture` branch uses **2.0.0** (major rearchitecture). The `main` branch continues the **0.99.x** release line until 2.0.0 is merged.
+> **Note**: **2.0.0** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
-## [Unreleased]
+## [2.0.0] - 2026-05-24 — WOW64 rearchitecture (now on `main`)
 
 ### Changed
 - **Docs / UI**: Removed stated Wine 11+ and WOW64-only runtime requirements; bridge supports 32-bit and 64-bit Wine/Proton prefixes (MinGW-w64 still required at build time).
-
-## [2.0.0] - WOW64 rearchitecture (development on `wow64-rearchitecture`)
+- **Branch policy**: `main` is 2.0.0; `legacy/1.0.x` preserves the 1.0.2 / 0.99.x release line.
 
 ### Major Changes
 - **Version 2.0.0**: Major version bump reflecting a new application architecture (Wine WOW64 bridge, Qt6/CMake-first build, modern toolchain requirements) rather than incremental `0.99.x` updates.

@@ -7,7 +7,7 @@
 
 Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility.
 
-**Version 2.0.0** (`wow64-rearchitecture` branch): major rearchitecture—native Wine bridge (MinGW PE payloads), Qt6 (CMake), and a different build/runtime model than the pre-2.0 `0.99.x` line on `main`. Older docs may still mention Qt5 or `0.99.x` for migration history.
+**Version 2.0.0** on `main`: major rearchitecture—native Wine bridge (MinGW PE payloads), Qt6 (CMake), and a different build/runtime model than the pre-2.0 line. The **1.0.x** AppImage/Qt5-era tree is preserved on [`legacy/1.0.x`](https://gitlab.com/fwfa123/linuxtrackx-ir/-/tree/legacy/1.0.x). Older docs may still mention Qt5 or `0.99.x` for migration history.
 
 ### Why 'X-IR'?
 This fork focuses on TrackIR hardware support and modern Linux distributions, while attempting to maintaining compatibility with the original codebase.
