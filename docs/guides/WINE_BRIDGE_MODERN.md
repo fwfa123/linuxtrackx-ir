@@ -44,6 +44,7 @@ CMake reports `Wine bridge: enabled (MinGW toolchain)` when MinGW is found.
 
 All GUI entry points use the same **native install**:
 
+**MANUAL:**
 1. Copy files from `lib/linuxtrack/wine_bridge/` into `Program Files/Linuxtrack` or `Program Files (x86)/Linuxtrack` (WOW64 prefixes).
 2. Write registry keys with `wine reg` (`NaturalPoint`, `Freetrack`, `HKLM\SOFTWARE\Linuxtrack`). NaturalPoint and `Install_dir` must succeed; a Freetrack registry failure is logged only (some games need that key removed on disk instead — see `docs/GAME_WORKAROUNDS.md`).
 3. Symlink firmware DLLs from `~/.config/linuxtrack/tir_firmware/`.
