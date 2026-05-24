@@ -52,7 +52,7 @@ LinuxTrack X-IR uses MinGW-w64 cross-compilation for generating real Windows PE 
 <h3>Benefits of MinGW Approach</h3>
 <ul>
 <li><strong>Real Windows Artifacts:</strong> outputs are <code>.exe</code> and <code>.dll</code> PE binaries</li>
-<li><strong>WOW64-friendly:</strong> aligned with modern Wine 11.0+ runtime model</li>
+<li><strong>Dual-prefix install:</strong> GUI/CLI detects 32-bit or 64-bit Wine prefixes and copies the correct PE files</li>
 <li><strong>Cleaner Host Dependencies:</strong> no winegcc-specific compile path required</li>
 <li><strong>Native Linux Symlink Handling:</strong> filesystem link creation stays on the Linux side</li>
 <li><strong>Simplified CI/CD:</strong> consistent MinGW toolchain behavior across distros</li>

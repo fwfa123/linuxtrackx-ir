@@ -4,6 +4,11 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: The `wow64-rearchitecture` branch uses **2.0.0** (major rearchitecture). The `main` branch continues the **0.99.x** release line until 2.0.0 is merged.
 
+## [Unreleased]
+
+### Changed
+- **Docs / UI**: Removed stated Wine 11+ and WOW64-only runtime requirements; bridge supports 32-bit and 64-bit Wine/Proton prefixes (MinGW-w64 still required at build time).
+
 ## [2.0.0] - WOW64 rearchitecture (development on `wow64-rearchitecture`)
 
 ### Major Changes

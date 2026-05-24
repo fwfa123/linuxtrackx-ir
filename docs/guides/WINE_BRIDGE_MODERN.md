@@ -1,14 +1,14 @@
-# Modern Wine Bridge Guide (WOW64 + MinGW)
+# Modern Wine Bridge Guide (MinGW)
 
 This guide describes the current LinuxTrack Wine bridge architecture and build/runtime requirements.
 
 ## Baseline Requirements
 
-- Wine 11.0+ (or current Proton / Wine Staging equivalent)
-- MinGW-w64 cross-compilers:
+- **Build:** MinGW-w64 cross-compilers:
   - `i686-w64-mingw32-gcc`
   - `x86_64-w64-mingw32-gcc`
   - corresponding `windres` tools
+- **Runtime:** Wine or Proton with a working game prefix (32-bit or 64-bit)
 
 NSIS is **not** required as of v2.0.0. The bridge builds native PE outputs (`.dll` / `.exe`) with MinGW only.
 
@@ -42,10 +42,13 @@ CMake reports `Wine bridge: enabled (MinGW toolchain)` when MinGW is found.
 
 ## Installing into a Wine/Proton prefix
 
-All GUI entry points use the same **native install**:
+All GUI entry points use the same **native install**. The installer detects prefix type from `user.reg` (`#arch=win64`):
+
+- **32-bit prefix:** `Program Files/Linuxtrack` — `NPClient.dll` required
+- **64-bit prefix:** `Program Files (x86)/Linuxtrack` — `NPClient.dll` and `NPClient64.dll` required
 
 **MANUAL:**
-1. Copy files from `lib/linuxtrack/wine_bridge/` into `Program Files/Linuxtrack` or `Program Files (x86)/Linuxtrack` (WOW64 prefixes).
+1. Copy files from `lib/linuxtrack/wine_bridge/` into the correct `Program Files` path for your prefix (see above).
 2. Write registry keys with `wine reg` (`NaturalPoint`, `Freetrack`, `HKLM\SOFTWARE\Linuxtrack`). NaturalPoint and `Install_dir` must succeed; a Freetrack registry failure is logged only (some games need that key removed on disk instead — see `docs/GAME_WORKAROUNDS.md`).
 3. Symlink firmware DLLs from `~/.config/linuxtrack/tir_firmware/`.
 

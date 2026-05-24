@@ -1,6 +1,6 @@
 # Installation Scripts Directory
 
-This directory now contains only helpers that still apply to the current CMake + Qt6 + MinGW/WOW64 branch.
+This directory now contains only helpers that still apply to the current CMake + Qt6 + MinGW native Wine bridge.
 
 For normal source builds, use the distro guides under [`docs/readme/`](../../docs/readme/) or the Arch helper:
 

@@ -25,7 +25,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 ### 🛠️ User Guides (`guides/` + `readme/`)
 **For end users and system administrators**
 - **[guides/README.md](guides/README.md)** - Supplemental guide index and cross-links
-- **[guides/WINE_BRIDGE_MODERN.md](guides/WINE_BRIDGE_MODERN.md)** - Modern WOW64 + MinGW Wine bridge details
+- **[guides/WINE_BRIDGE_MODERN.md](guides/WINE_BRIDGE_MODERN.md)** - Modern MinGW Wine bridge details
 - **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)**, **[readme/fedora-rhel.md](readme/fedora-rhel.md)**, **[readme/arch-linux.md](readme/arch-linux.md)** - Primary per-distro docs
 - **[archive/guides/](archive/guides/)** - Historical MX/Arch guide snapshots and `LEGACY_*` files only
 
@@ -87,7 +87,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 - **MX Linux** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md) for Debian-family package guidance; historical MX notes are archived under [archive/guides/](archive/guides/)
 - **Ubuntu/Debian** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md)
 - **Fedora/RHEL** → [readme/fedora-rhel.md](readme/fedora-rhel.md)
-- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md) (WOW64 / CachyOS); historical Arch–Wine notes → [archive/technical/](archive/technical/) (`ISSUE_206_*`, `ARCH_LINUX_WINE_BRIDGE_*`)
+- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md) (CachyOS / AppImage vs source); historical Arch–Wine notes → [archive/technical/](archive/technical/) (`ISSUE_206_*`, `ARCH_LINUX_WINE_BRIDGE_*`)
 
 ### Development Resources
 - **Qt / framework migration** → [technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md), [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md) (older)

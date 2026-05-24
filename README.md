@@ -7,7 +7,7 @@
 
 Modern fork of LinuxTrack with enhanced TrackIR support and modern Linux compatibility.
 
-**Version 2.0.0** (`wow64-rearchitecture` branch): major rearchitecture—Wine WOW64 bridge, Qt6 (CMake), and a different build/runtime model than the pre-2.0 `0.99.x` line on `main`. Older docs may still mention Qt5 or `0.99.x` for migration history.
+**Version 2.0.0** (`wow64-rearchitecture` branch): major rearchitecture—native Wine bridge (MinGW PE payloads), Qt6 (CMake), and a different build/runtime model than the pre-2.0 `0.99.x` line on `main`. Older docs may still mention Qt5 or `0.99.x` for migration history.
 
 ### Why 'X-IR'?
 This fork focuses on TrackIR hardware support and modern Linux distributions, while attempting to maintaining compatibility with the original codebase.
@@ -29,7 +29,7 @@ Have you installed Steam or Lutris from Flatpak? There are issues that you will 
 
 **Build requirements:** the GUI and tools use **Qt6** (CMake `find_package(Qt6 …)`). Use your distribution’s Qt6 development packages; see the distribution guides below. On **KDE Plasma** (Wayland or X11), build from the `main` branch as usual—no separate Qt branch is needed.
 
-**Wine bridge (Level 2+):** requires **MinGW-w64** cross-compilers and Wine 11.0+ at runtime for prefixes. **NSIS (`makensis`) is not used** — do not install it for Linuxtrack builds; v2 ships PE artifacts and installs via native copy + `wine reg` (see [`docs/guides/WINE_BRIDGE_MODERN.md`](docs/guides/WINE_BRIDGE_MODERN.md)).
+**Wine bridge (Level 2+):** requires **MinGW-w64** cross-compilers at build time. At runtime, use **Wine or Proton** with a 32-bit or 64-bit game prefix; install via native copy + `wine reg` (see [`docs/guides/WINE_BRIDGE_MODERN.md`](docs/guides/WINE_BRIDGE_MODERN.md)). **NSIS (`makensis`) is not used** — do not install it for Linuxtrack builds.
 
 ```bash
 git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
@@ -43,14 +43,14 @@ Choose the level that matches your needs. Each level includes all features from 
 | Level | Use Case | Features |
 |-------|----------|----------|
 | **1: TrackIR Only** | Linux native games only | TrackIR hardware, LinuxTrack server |
-| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**requires Wine 11.0+ + MinGW-w64**) |
+| **2: + Wine Support** | Windows games via Wine/Proton | Level 1 + Wine bridge, Steam compatibility (**MinGW-w64** at build time) |
 | **3: + X-Plane** | Flight simulator | Level 2 + X-Plane plugin |
 | **4: + Webcam** | Webcam / optical tracking (V4L) | Level 3 + webcam drivers |
 | **5: + OSC** | External applications/MIDI | Level 4 + Open Sound Control |
 | **6: + Face tracking** | OpenCV-based face tracking (`libwc` facetrack, `libp3eft`) | Level 5 + face tracking (OpenCV) |
 | **7: + Wiimote** | Nintendo Wii Remote | Level 6 + Wiimote support |
 
-> **⚠️ Important**: Level 2 targets modern WOW64 and requires Wine 11.0+ (or current Proton/Wine Staging) and MinGW-w64 cross-compilers. Install into prefixes from the GUI (Lutris / Steam / custom) or `scripts/install/install_wine_bridge.sh`.
+> **⚠️ Important**: Level 2 requires **MinGW-w64** cross-compilers to build the bridge. Install into Wine/Proton prefixes (32-bit or 64-bit) from the GUI (Lutris / Steam / custom) or `scripts/install/install_wine_bridge.sh`.
 
 ## 🛠️ Build Overview
 
@@ -86,7 +86,7 @@ sudo cmake --build . --target uninstall
 | Level | CMake Command | Description |
 |-------|---------------|-------------|
 | 1 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | TrackIR only (default prefix is `/opt`) |
-| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | + Wine support (Wine 11.0+ + MinGW toolchain required) |
+| 2 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt` | + Wine support (MinGW-w64 toolchain required at build time) |
 | 3 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders` | + X-Plane |
 | 4 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON` | + Webcam |
 | 5 | `cmake .. -DCMAKE_INSTALL_PREFIX=/opt -DENABLE_XPLANE=ON -DXPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders -DENABLE_WEBCAM=ON -DENABLE_OSC=ON` | + OSC |
@@ -98,7 +98,7 @@ sudo cmake --build . --target uninstall
 ### Distribution-Specific Instructions
 
 - **[Debian/Ubuntu/MX Linux](docs/readme/debian-ubuntu.md)**
-- **[Arch Linux](docs/readme/arch-linux.md)** (Arch / CachyOS: read **AppImage vs source** and **Wine WOW64** first)
+- **[Arch Linux](docs/readme/arch-linux.md)** (Arch / CachyOS: read **AppImage vs source** first)
 - **[X-Plane SDK install](docs/readme/x-plane-sdk.md)** (ZIP download, e.g. `XPSDK430.zip` — not `.tar.gz`)
 - **[Fedora/RHEL](docs/readme/fedora-rhel.md)**
 - **[Flatpak (Lutris and games)](docs/readme/flatpak.md)** - Using LinuxTrack when Lutris or games run from Flatpak (Flatseal, library path).
@@ -198,7 +198,7 @@ groups $USER
 | Permission denied | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
 | Library not found | Run: `sudo ldconfig` |
 | TrackIR not detected | Check USB: `lsusb \| grep Track` |
-| Wine bridge fails | Check Wine 11.0+ runtime, MinGW toolchain, and MFC42 setup |
+| Wine bridge fails | Check Wine/Proton prefix, MinGW toolchain (build), and MFC42 setup |
 | Arma 2 crashes at startup with Wine bridge | Remove `FreeTrackClient.dll` from the prefix; see [Game workarounds](docs/GAME_WORKAROUNDS.md#arma-2-arma2exe--wine--lutris). |
 | Library not found when game launched from Lutris Flatpak | Use Flatseal to allow filesystem access; see [Flatpak doc](docs/readme/flatpak.md) |
 | AppImage: Steam/Lutris not found (Flatpak installed) | Use a V2 build with the Flatpak detection fix; confirm `~/.var/app/com.valvesoftware.Steam/data/Steam` exists after launching Flatpak Steam once. See [Fedora/RHEL](docs/readme/fedora-rhel.md) Lutris section. |

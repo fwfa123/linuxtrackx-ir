@@ -6,7 +6,7 @@ This directory holds focused supplemental guides. **Current releases use Qt6 and
 
 | File | Purpose |
 |------|---------|
-| [`WINE_BRIDGE_MODERN.md`](WINE_BRIDGE_MODERN.md) | Modern WOW64 + MinGW wine bridge (no NSIS); build and install |
+| [`WINE_BRIDGE_MODERN.md`](WINE_BRIDGE_MODERN.md) | Modern MinGW wine bridge (no NSIS); build and install into 32-bit or 64-bit prefixes |
 
 ## Cross-references
 

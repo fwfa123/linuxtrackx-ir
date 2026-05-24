@@ -30,7 +30,7 @@ The LinuxTrack documentation has been successfully reorganized from a flat struc
 ### 🛠️ User Guides (`guides/` + `readme/`)
 **Purpose**: End user and system administrator documentation
 - **`guides/README.md`** — Supplemental guide index; points to per-distro docs under **`readme/`**
-- **`guides/WINE_BRIDGE_MODERN.md`** — Current WOW64 + MinGW Wine bridge details
+- **`guides/WINE_BRIDGE_MODERN.md`** — Current MinGW native Wine bridge details
 - **`readme/debian-ubuntu.md`**, **`readme/fedora-rhel.md`**, **`readme/arch-linux.md`** — Primary install paths (Qt6 / CMake)
 - **`archive/guides/`** — Historical MX/Arch guide snapshots and `LEGACY_*` files moved out of `guides/`
 

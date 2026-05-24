@@ -27,7 +27,7 @@
      </property>
      <property name="text">
       <string>Wine is not available or version is incompatible.
-You'll need Wine 11.0+ and winetricks installed for NP firmware support and Wine bridge functionality!</string>
+You'll need Wine or Proton (for game prefixes) and winetricks installed for NP firmware support and Wine bridge functionality!</string>
      </property>
     </widget>
    </item>

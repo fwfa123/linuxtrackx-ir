@@ -30,7 +30,7 @@ sudo dnf install mingw32-gcc.x86_64 mingw32-gcc-c++.x86_64 mingw32-binutils.x86_
 sudo dnf install mingw64-gcc.x86_64 mingw64-gcc-c++.x86_64 mingw64-binutils.x86_64
 ```
 
-**IMPORTANT**: This branch targets modern WOW64 and requires Wine 11.0+ with MinGW toolchains.
+**IMPORTANT**: Level 2+ requires **MinGW-w64** toolchains to build the Wine bridge PE artifacts. Runtime: Wine or Proton with a 32-bit or 64-bit prefix.
 
 NSIS is **not** required for v2.0.0; the Wine bridge builds with MinGW only (`makensis` and `linuxtrack-wine.exe` are legacy).
 
@@ -218,7 +218,7 @@ export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"
 |---------|----------|
 | `i686-w64-mingw32-gcc: command not found` | Install MinGW 32-bit tools: `sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW 64-bit tools: `sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils` |
-| Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton/Wine Staging) |
+| Wine bridge install fails in prefix | Verify prefix path, `wine` binary, and that MinGW-built payload exists under `/opt/lib/linuxtrack/wine_bridge/`; try current Proton or Wine Staging if issues persist |
 ### Common Issues
 
 | Problem | Solution |

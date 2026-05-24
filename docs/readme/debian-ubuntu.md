@@ -12,7 +12,7 @@ sudo apt install libqt6opengl6-dev  # Required for Qt6OpenGL CMake config
 sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
 ```
 
-### WineBridge Support (Level 2+, WOW64 branch)
+### WineBridge Support (Level 2+)
 ```bash
 sudo apt install wine wine-staging
 sudo apt install mingw-w64  # REQUIRED: builds real PE DLL/EXE artifacts
@@ -22,7 +22,7 @@ sudo apt install cabextract wget  # REQUIRED: For alternative installation metho
 
 NSIS is **not** required for v2.0.0; the Wine bridge builds with MinGW-w64 only.
 
-WineBridge in this branch targets Wine WOW64 behavior and requires Wine 11.0+.
+Wine bridge installs into 32-bit or 64-bit Wine/Proton prefixes via native copy + `wine reg` (MinGW-w64 required at build time).
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -153,7 +153,7 @@ ls /opt/lib/linuxtrack/wine_bridge/
 |---------|----------|
 | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install Qt6 development packages: `sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW toolchain: `sudo apt install mingw-w64` |
-| Wine older than required baseline | Upgrade to Wine 11.0+ (or current Proton / Wine Staging) |
+| Wine bridge install fails in prefix | Verify prefix path, `wine` binary, and payload under `/opt/lib/linuxtrack/wine_bridge/`; try current Proton or Wine Staging if issues persist |
 | `Wine bridge: disabled (mingw-w64 toolchains not found)` | Install MinGW toolchain: `sudo apt install mingw-w64` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |

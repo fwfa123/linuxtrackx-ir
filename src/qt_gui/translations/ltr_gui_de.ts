@@ -240,7 +240,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location filename="../wine_warn.ui" line="29"/>
         <source>Wine is not available or version is incompatible.
-You&apos;ll need Wine 11.0+ and winetricks installed for NP firmware support and Wine bridge functionality!</source>
+You&apos;ll need Wine or Proton (for game prefixes) and winetricks installed for NP firmware support and Wine bridge functionality!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

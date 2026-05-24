@@ -72,7 +72,7 @@ sudo usermod -a -G plugdev,input $USER
 | MFC42 installation fails | TrackIR not working in Wine | Use GUI MFC42 installer or manual winetricks |
 | Wine/Proton prefix issues | Wine errors | Verify the target prefix, Wine/Proton version, and MFC42 setup |
 | Wine bridge components missing | No `NPClient.dll` under `/opt/lib/linuxtrack/wine_bridge` | Verify MinGW is installed, rebuild, `cmake --install`, then install into prefix from GUI or `scripts/install/install_wine_bridge.sh` |
-| Wine version conflicts | Incompatible Wine version | Use Wine 11.0+ (or current Proton/Wine Staging) |
+| Wine version conflicts | Incompatible Wine/Proton with a game | Try current Proton or Wine Staging; bridge install has no fixed Wine version gate |
 
 ### Distribution-Specific Quick Fixes
 
