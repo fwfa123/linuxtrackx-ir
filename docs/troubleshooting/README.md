@@ -27,7 +27,7 @@ lsusb | grep 131d
 4. **ApplicationID shows ((null)) in gamedata.txt** → [APPLICATIONID_PARSING_ISSUE.md](APPLICATIONID_PARSING_ISSUE.md)
 5. **Application won't launch** → [QUICK_TROUBLESHOOTING_QT5.md](QUICK_TROUBLESHOOTING_QT5.md)
 6. **Display issues on Wayland** → [WAYLAND_COMPATIBILITY_ISSUE.md](WAYLAND_COMPATIBILITY_ISSUE.md)
-7. **Steam (Flatpak) debug logs** → [STEAM_FLATPAK_DEBUG_LOGS.md](STEAM_FLATPAK_DEBUG_LOGS.md)
+7. **Steam (Flatpak) no tracking / debug logs** → [STEAM_FLATPAK_DEBUG_LOGS.md](STEAM_FLATPAK_DEBUG_LOGS.md)
 8. **Per-game Wine/Proton workarounds** → [../GAME_WORKAROUNDS.md](../GAME_WORKAROUNDS.md)
 
 ## Troubleshooting Files
@@ -40,7 +40,7 @@ lsusb | grep 131d
 - **`APPLICATIONID_PARSING_ISSUE.md`** - ApplicationID parsing bug causing ((null)) in gamedata.txt (12KB)
 - **`QUICK_TROUBLESHOOTING_QT5.md`** - Quick fixes for common issues (3KB)
 - **`WAYLAND_COMPATIBILITY_ISSUE.md`** - Display server compatibility (2KB)
-- **`STEAM_FLATPAK_DEBUG_LOGS.md`** - Collecting Proton/Steam logs with Flatpak Steam
+- **`STEAM_FLATPAK_DEBUG_LOGS.md`** - Flatpak Steam: Flatseal tracking fix, `/opt` notes, Proton logs
 - **[`../GAME_WORKAROUNDS.md`](../GAME_WORKAROUNDS.md)** - Per-title hints (e.g. Arma 2: omit FreeTrackClient.dll)
 
 ## Issue Categories

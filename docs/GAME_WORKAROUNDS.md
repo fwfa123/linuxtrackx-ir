@@ -9,6 +9,41 @@ below (game name, platform, prefix type, what to avoid, what works).
 
 ---
 
+## Flatpak (Steam or Lutris) — Flatseal / CLI
+
+If **Steam** or **Lutris** is installed from **Flatpak**, games run in a sandbox.
+The same Wine prefix on `/media` may track with native Steam/Lutris but fail under
+Flatpak until the sandbox can see LinuxTrack paths on the host.
+
+**Flatseal (GUI):** install from Flathub (`com.github.tchx84.Flatseal`), select
+**Steam** (`com.valvesoftware.Steam`) or **Lutris** (`net.lutris.Lutris`), then
+under **Filesystem → Other files** add:
+
+| Flatpak app | Path to allow (read-only is enough) |
+|-------------|-------------------------------------|
+| **Steam** | `/home/<username>/.config/linuxtrack` |
+| **Steam** (library on external drive) | `/media`, `/run/media`, or your library mount |
+| **Lutris** | `/opt` or `/usr` if LinuxTrack is installed there |
+
+Optional **Environment** in Flatseal for Steam: `LINUXTRACK_UNIX_HOME=/home/<username>`.
+
+**CLI (same permissions):**
+
+```bash
+# Steam — head tracking (Wine bridge / Proton)
+flatpak override --user --filesystem=/home/<username>/.config/linuxtrack:ro com.valvesoftware.Steam
+
+# Lutris — host install tree
+flatpak override --user --filesystem=/opt:ro net.lutris.Lutris
+```
+
+Fully quit and restart Steam or Lutris after changing permissions.
+
+More detail: [Steam (Flatpak) tracking and logs](troubleshooting/STEAM_FLATPAK_DEBUG_LOGS.md),
+[Lutris Flatpak](readme/flatpak.md).
+
+---
+
 ## Arma 2 (`arma2.exe`) — Wine / Lutris
 
 **Symptom:** Game crashes during startup when the Linuxtrack Wine bridge is
