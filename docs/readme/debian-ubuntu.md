@@ -1,6 +1,73 @@
-# LinuxTrack Build Guide: Debian/Ubuntu/MX Linux
+# LinuxTrack: Debian / Ubuntu / MX Linux
 
-## Quick Package Installation
+> Built with **CMake + Qt6**. The Wine bridge ships as real **MinGW-w64 PE** artifacts — the old winegcc / classic Wine Unix library build path is no longer used.
+
+---
+
+## Option A — AppImage (no build required)
+
+Download the latest AppImage from the [Releases page](https://gitlab.com/fwfa123/linuxtrackx-ir/-/releases), make it executable, and run:
+
+```bash
+chmod +x LinuxTrack-x86_64.AppImage
+./LinuxTrack-x86_64.AppImage
+```
+
+The AppImage bundles the GUI and Wine bridge. No system packages beyond Wine (for prefix setup) are required.
+
+---
+
+## Option B — Build from Source
+
+### Step 1: Install dependencies (Level 2 — TrackIR + Wine, most common)
+
+```bash
+# Core build tools and Qt6
+sudo apt update
+sudo apt install build-essential cmake pkg-config
+sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
+sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev
+sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
+
+# Wine bridge (MinGW cross-compiler builds the PE DLLs; Wine provides the runtime prefix)
+sudo apt install wine wine-staging mingw-w64 winetricks cabextract wget
+```
+
+> NSIS is **not** required. The bridge builds with MinGW-w64 only (`makensis` and `linuxtrack-wine.exe` are legacy).
+
+### Step 2: Clone and build
+
+```bash
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+cd linuxtrackx-ir
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
+
+### Step 3: Launch
+
+```bash
+ltr_gui
+```
+
+On Wayland, if the window does not appear:
+```bash
+QT_QPA_PLATFORM=xcb ltr_gui
+```
+
+### Step 4: Verify
+
+```bash
+ldconfig -p | grep linuxtrack
+ltr_server1 --help
+ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # Level 2+ Wine bridge
+```
+
+---
+
+## All Dependency Levels (reference)
 
 ### Core Dependencies (All Levels)
 ```bash
@@ -72,7 +139,9 @@ sudo apt install libcwiid-dev
 pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not found; check libcwiid installation."
 ```
 
-## Build Commands
+---
+
+## All Build Levels (reference)
 
 ### Level 1: TrackIR Only
 ```bash
@@ -130,20 +199,7 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-## Verification
-```bash
-# Check installed components
-ldconfig -p | grep linuxtrack
-
-# Test TrackIR support
-ltr_server1 --help
-
-# Test GUI
-ltr_gui
-
-# Test Wine bridge (if built)
-ls /opt/lib/linuxtrack/wine_bridge/
-```
+---
 
 ## Troubleshooting
 
@@ -166,6 +222,8 @@ If Qt6 tools aren't found, they should be in `/usr/lib/x86_64-linux-gnu/qt6/bin/
 ```bash
 export PATH="/usr/lib/x86_64-linux-gnu/qt6/bin:$PATH"
 ```
+
+---
 
 ## Advanced: Custom Build Combinations
 

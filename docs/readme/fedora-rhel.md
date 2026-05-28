@@ -1,6 +1,78 @@
-# LinuxTrack Build Guide: Fedora/RHEL
+# LinuxTrack: Fedora / RHEL
 
-## Quick Package Installation
+> Built with **CMake + Qt6**. The Wine bridge ships as real **MinGW-w64 PE** artifacts — the old winegcc / classic Wine Unix library build path is no longer used.
+
+---
+
+## Option A — AppImage (no build required)
+
+Download the latest AppImage from the [Releases page](https://gitlab.com/fwfa123/linuxtrackx-ir/-/releases), make it executable, and run:
+
+```bash
+chmod +x LinuxTrack-x86_64.AppImage
+./LinuxTrack-x86_64.AppImage
+```
+
+The AppImage bundles the GUI and Wine bridge. No system packages beyond Wine (for prefix setup) are required.
+
+---
+
+## Option B — Build from Source
+
+### Step 1: Install dependencies (Level 2 — TrackIR + Wine, most common)
+
+```bash
+# Core build tools and Qt6
+sudo dnf group install development-tools
+sudo dnf install cmake pkg-config
+sudo dnf install libusb1-devel zlib-devel bison flex
+sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
+sudo dnf install mxml-devel mesa-libGL-devel mesa-libGLU-devel
+sudo dnf install sqlite   # Qt SQL (QSQLITE driver): Lutris game-database integration
+
+# Wine bridge (MinGW cross-compiler builds the PE DLLs; Wine provides the runtime prefix)
+sudo dnf install wine
+sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils
+sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils
+sudo dnf install winetricks cabextract wget
+```
+
+> NSIS is **not** required. The bridge builds with MinGW-w64 only (`makensis` and `linuxtrack-wine.exe` are legacy).
+
+### Step 2: Clone and build
+
+```bash
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+cd linuxtrackx-ir
+mkdir build && cd build
+export PATH="/usr/lib64/qt6/bin:$PATH"   # if CMake does not find moc/uic
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
+
+### Step 3: Launch
+
+```bash
+ltr_gui
+```
+
+On Wayland, if the window does not appear:
+```bash
+QT_QPA_PLATFORM=xcb ltr_gui
+```
+
+### Step 4: Verify
+
+```bash
+ldconfig -p | grep linuxtrack
+ltr_server1 --help
+ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # Level 2+ Wine bridge
+```
+
+---
+
+## All Dependency Levels (reference)
 
 ### Core Dependencies (All Levels)
 ```bash
@@ -32,7 +104,7 @@ sudo dnf install mingw64-gcc.x86_64 mingw64-gcc-c++.x86_64 mingw64-binutils.x86_
 
 **IMPORTANT**: Level 2+ requires **MinGW-w64** toolchains to build the Wine bridge PE artifacts. Runtime: Wine or Proton with a 32-bit or 64-bit prefix.
 
-NSIS is **not** required for v2.0.0; the Wine bridge builds with MinGW only (`makensis` and `linuxtrack-wine.exe` are legacy).
+NSIS is **not** required for v2.0.0; the Wine bridge builds with MinGW-w64 only (`makensis` and `linuxtrack-wine.exe` are legacy).
 
 ### X-Plane Support (Level 3+)
 ```bash
@@ -99,18 +171,9 @@ sudo ldconfig
 pkg-config --exists cwiid && pkg-config --modversion cwiid
 ```
 
-## Qt6 and in-app help
+---
 
-In-app help is built from HTML in the repo; AppImage builds may run `qhelpgenerator`. On Fedora install **`qt6-doctools`** so **`/usr/lib64/qt6/libexec/qhelpgenerator`** exists (not under `bin/`). If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
-
-**Verify Qt6 tools are accessible (optional):**
-```bash
-test -x /usr/lib64/qt6/libexec/qhelpgenerator && echo OK || echo "Install: sudo dnf install qt6-doctools"
-which qmake6 moc
-# qhelpgenerator is under libexec on Fedora; moc/qmake6 are under .../qt6/bin/
-```
-
-## Build Commands
+## All Build Levels (reference)
 
 ### Level 1: TrackIR Only
 ```bash
@@ -176,20 +239,20 @@ cmake --build . -j$(nproc)
 sudo cmake --install .
 ```
 
-## Verification
+---
+
+## Qt6 and In-App Help
+
+In-app help is built from HTML in the repo; AppImage builds may run `qhelpgenerator`. On Fedora install **`qt6-doctools`** so **`/usr/lib64/qt6/libexec/qhelpgenerator`** exists (not under `bin/`). If CMake does not find moc/uic, add Qt6 to your PATH: `export PATH="/usr/lib64/qt6/bin:$PATH"`.
+
+**Verify Qt6 tools are accessible (optional):**
 ```bash
-# Check installed components
-ldconfig -p | grep linuxtrack
-
-# Test TrackIR support
-ltr_server1 --help
-
-# Test GUI
-ltr_gui
-
-# Test Wine bridge (if built)
-ls /opt/lib/linuxtrack/wine_bridge/
+test -x /usr/lib64/qt6/libexec/qhelpgenerator && echo OK || echo "Install: sudo dnf install qt6-doctools"
+which qmake6 moc
+# qhelpgenerator is under libexec on Fedora; moc/qmake6 are under .../qt6/bin/
 ```
+
+---
 
 ## Troubleshooting
 
@@ -219,6 +282,7 @@ export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"
 | `i686-w64-mingw32-gcc: command not found` | Install MinGW 32-bit tools: `sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW 64-bit tools: `sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils` |
 | Wine bridge install fails in prefix | Verify prefix path, `wine` binary, and that MinGW-built payload exists under `/opt/lib/linuxtrack/wine_bridge/`; try current Proton or Wine Staging if issues persist |
+
 ### Common Issues
 
 | Problem | Solution |
@@ -238,6 +302,8 @@ When Lutris is installed via Flatpak, game data and Wine/Proton runners live und
 If you see **"Lutris wine binary not found for version: GE-Proton10-32"** (or a similar version) with Flatpak Lutris, the app should now use the Flatpak runners path automatically. If the issue persists, check the exact Wine/Proton version in the game's Lutris config and ensure that runner is installed in Lutris (e.g. via Lutris → Runners).
 
 If games show **"All library search attempts failed"** when launched from Lutris Flatpak, grant filesystem access using Flatseal; see **[Flatpak (Lutris and games)](flatpak.md)**.
+
+---
 
 ## Advanced: Custom Build Combinations
 

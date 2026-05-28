@@ -1,20 +1,75 @@
-# LinuxTrack Build Guide: Arch Linux
+# LinuxTrack: Arch Linux
 
-This guide applies to **Arch Linux** and derivatives (**CachyOS**, EndeavourOS, Manjaro, etc.). **CMake + Qt6** is the supported build system.
+Applies to **Arch Linux** and derivatives (**CachyOS**, EndeavourOS, Manjaro, etc.).
 
-## Choose Your Path
+> Built with **CMake + Qt6**. The Wine bridge ships as real **MinGW-w64 PE** artifacts — the old winegcc / classic Wine Unix library build path is no longer used.
 
-For day-to-day use, prefer the official **AppImage**. It bundles the GUI and most runtime dependencies users need on rolling distributions.
+---
 
-Build from source when you need a full `/opt` install, packaging work, optional feature builds, or the latest branch changes:
+## Option A — AppImage (no build required)
+
+Download the latest AppImage from the [Releases page](https://gitlab.com/fwfa123/linuxtrackx-ir/-/releases), make it executable, and run:
 
 ```bash
-./scripts/build_arch_linux.sh
+chmod +x LinuxTrack-x86_64.AppImage
+./LinuxTrack-x86_64.AppImage
 ```
 
-The Wine bridge in this branch is built as real MinGW PE artifacts. It no longer needs the old winegcc / classic Wine Unix library build path.
+The AppImage bundles the GUI and Wine bridge. No system packages beyond Wine (for prefix setup) are required.
 
-## Quick Package Installation
+---
+
+## Option B — Build from Source
+
+### Step 1: Install dependencies (Level 2 — TrackIR + Wine, most common)
+
+```bash
+# Core build tools and Qt6
+sudo pacman -S base-devel cmake pkg-config libusb bison flex
+sudo pacman -S qt6-base qt6-tools qt6-5compat
+sudo pacman -S mxml mesa glu
+# CachyOS / systems with zlib-ng-compat: skip the zlib line below (zlib-ng-compat already provides libz)
+sudo pacman -S zlib
+
+# Wine bridge (MinGW cross-compiler builds the PE DLLs; Wine provides the runtime prefix)
+sudo pacman -S wine wine-mono wine-gecko mingw-w64-gcc winetricks cabextract wget
+```
+
+> NSIS is **not** required. The bridge builds with MinGW-w64 only (`makensis` and `linuxtrack-wine.exe` are legacy).
+
+### Step 2: Clone and build
+
+```bash
+git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
+cd linuxtrackx-ir
+mkdir build && cd build
+cmake .. -DCMAKE_INSTALL_PREFIX=/opt
+cmake --build . -j$(nproc)
+sudo cmake --install .
+```
+
+### Step 3: Launch
+
+```bash
+ltr_gui
+```
+
+On Wayland, if the window does not appear:
+```bash
+QT_QPA_PLATFORM=xcb ltr_gui
+```
+
+### Step 4: Verify
+
+```bash
+ldconfig -p | grep linuxtrack
+ltr_server1 --help
+ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # Level 2+ Wine bridge
+```
+
+---
+
+## All Dependency Levels (reference)
 
 ### Core Dependencies (All Levels)
 ```bash
@@ -39,7 +94,7 @@ sudo pacman -S mingw-w64-gcc
 sudo pacman -S winetricks cabextract wget
 ```
 
-**Build model:** MinGW builds the Windows PE bridge files. Wine is still needed at runtime for prefixes and for testing/installing the bridge, but the DLL build no longer depends on `winegcc`, `wine-devel`, AUR `wine32`, or classic `/usr/lib32/wine/...` library paths.
+**Build model:** MinGW-w64 builds the Windows PE bridge files. Wine is still needed at runtime for prefixes and for testing/installing the bridge, but the DLL build no longer depends on `winegcc`, `wine-devel`, AUR `wine32`, or classic `/usr/lib32/wine/...` library paths.
 
 **NSIS is not required** for v2.0.0 (`nsis` / `makensis` / `linuxtrack-wine.exe` are legacy). Installing the Arch `nsis` package is unnecessary and may confuse older guides.
 
@@ -95,32 +150,7 @@ pkg-config --exists cwiid && pkg-config --modversion cwiid || echo "cwiid.pc not
 
 ---
 
-## Automated build script
-
-[`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine runtime packages, MinGW-w64, **liblo** (OSC), checks the X-Plane SDK path, configures CMake, builds, and installs to `/opt` (NSIS is not required for the v2 Wine bridge). **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
-
-**CMake vs packages:** The script’s `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. The script still installs **opencv**, **v4l-utils**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
-
-**AUR helper:** If neither **yay** nor **paru** is installed, the script clones and builds **yay** from the AUR (needs **network**, uses **`sudo pacman`**, and implies the usual AUR trust model). Install **paru**/**yay** yourself first if you prefer.
-
-**Split runs** (if a verification step fails or you prefer control — see [GitLab #37](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/37)):
-
-```bash
-./scripts/build_arch_linux.sh --deps-only
-./scripts/build_arch_linux.sh --deps-only --with-wiimote   # deps + optional Wiimote attempt
-./scripts/build_arch_linux.sh --wine-bridge-only
-./scripts/build_arch_linux.sh --wine32-only    # legacy alias
-./scripts/build_arch_linux.sh --configure-only
-./scripts/build_arch_linux.sh --build-only
-./scripts/build_arch_linux.sh --install-only   # script runs sudo where needed for install
-./scripts/build_arch_linux.sh --with-wiimote   # full run + try AUR cwiid
-```
-
-Use `--help` for all flags.
-
----
-
-## Build Commands
+## All Build Levels (reference)
 
 ### Level 1: TrackIR Only
 ```bash
@@ -180,30 +210,28 @@ sudo cmake --install .
 
 ---
 
-## First launch (Wayland is default on modern Arch)
+## Automated Build Script
 
-On **Wayland**, if the GUI does not appear, run:
+[`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine runtime packages, MinGW-w64, **liblo** (OSC), checks the X-Plane SDK path, configures CMake, builds, and installs to `/opt` (NSIS is not required for the v2 Wine bridge). **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
+
+**CMake vs packages:** The script's `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. The script still installs **opencv**, **v4l-utils**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
+
+**AUR helper:** If neither **yay** nor **paru** is installed, the script clones and builds **yay** from the AUR (needs **network**, uses **`sudo pacman`**, and implies the usual AUR trust model). Install **paru**/**yay** yourself first if you prefer.
+
+**Split runs** (if a verification step fails or you prefer control — see [GitLab #37](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/37)):
+
 ```bash
-QT_QPA_PLATFORM=xcb ltr_gui
+./scripts/build_arch_linux.sh --deps-only
+./scripts/build_arch_linux.sh --deps-only --with-wiimote   # deps + optional Wiimote attempt
+./scripts/build_arch_linux.sh --wine-bridge-only
+./scripts/build_arch_linux.sh --wine32-only    # legacy alias
+./scripts/build_arch_linux.sh --configure-only
+./scripts/build_arch_linux.sh --build-only
+./scripts/build_arch_linux.sh --install-only   # script runs sudo where needed for install
+./scripts/build_arch_linux.sh --with-wiimote   # full run + try AUR cwiid
 ```
-Otherwise:
-```bash
-ltr_gui
-```
 
-### Camera view / 3D preview quirks
-
-Some users on **source builds** report weak camera preview or a broken 3D view while **in-game tracking still works**. Try `QT_QPA_PLATFORM=xcb`, update GPU/Mesa drivers, and in **Misc** settings try disabling heavy **3D** preview options. This is environment-dependent; there is no single guaranteed fix.
-
----
-
-## Verification
-```bash
-ldconfig -p | grep linuxtrack
-ltr_server1 --help
-ltr_gui
-ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # built bridge payload (Level 2+)
-```
+Use `--help` for all flags.
 
 ---
 
@@ -225,7 +253,7 @@ ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # built bridge payload (Level 
 | **Webcam disabled** but V4L found | Default **`ENABLE_WEBCAM=OFF`**. Add **`-DENABLE_WEBCAM=ON`** to **`cmake`** (see Level 4) if you need webcam support. |
 | X-Plane SDK not found / wrong path | Official download is **ZIP** (`XPSDK*.zip`) with `SDK/CHeaders/` inside. Copy `SDK/` contents to `/opt/xplane-sdk/` — see [x-plane-sdk.md](x-plane-sdk.md) |
 
-### Common issues
+### Common Issues
 
 | Problem | Solution |
 |---------|----------|
@@ -233,6 +261,10 @@ ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # built bridge payload (Level 
 | GUI not displaying on Wayland | `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Permission denied on device | `sudo usermod -a -G plugdev,input $USER` (re-login) |
 | Application not in launcher | `sudo update-desktop-database /opt/share/applications` |
+
+### Camera view / 3D preview quirks
+
+Some users on **source builds** report weak camera preview or a broken 3D view while **in-game tracking still works**. Try `QT_QPA_PLATFORM=xcb`, update GPU/Mesa drivers, and in **Misc** settings try disabling heavy **3D** preview options. This is environment-dependent; there is no single guaranteed fix.
 
 ### 32-bit libraries (advanced)
 
