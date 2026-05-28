@@ -2,27 +2,29 @@
 
 ## Overview
 
-This directory contains testing documentation for LinuxTrack. **New releases target Qt6 + CMake**; some files (e.g. `KUBUNTU_25_QT5_TESTING.md`) are **historical** Qt5-era validation logs—use them for context, not as the authoritative build recipe.
+This directory contains testing documentation for LinuxTrack. **Current releases target Qt6 + CMake**.
 
 ## Quick Testing Reference
 
 ### Essential Testing Commands
 ```bash
-# Build test
-./build.sh --deps --clean --install
+# Build (from repo root)
+mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt && cmake --build . -j$(nproc)
 
-# Launch application (from repo root; script names are legacy)
-./scripts/test/run_qt5_gui.sh
+# Launch application (from repo root)
+./scripts/test/run_gui.sh
 
-# Force X11 mode (for Wayland)
-./scripts/test/run_qt5_gui.sh --force-x11
+# Force X11 mode (for Wayland sessions)
+./scripts/test/run_gui.sh --force-x11
+# or
+./scripts/test/run_gui_x11.sh
 ```
 
 ### Success Criteria
-- ✅ Build completes without errors
-- ✅ GUI launches successfully
-- ✅ TrackIR hardware detected (no permission errors)
-- ✅ Head tracking responds to movement
+- Build completes without errors
+- GUI launches successfully
+- TrackIR hardware detected (no permission errors)
+- Head tracking responds to movement
 
 ## Distribution-Specific Testing
 
@@ -37,37 +39,31 @@ This directory contains testing documentation for LinuxTrack. **New releases tar
 - Wine bridge detection failures → Verify wine installation
 - Configuration file copy errors → Check permissions
 
-### Kubuntu 25.10 Testing
+### Kubuntu Testing
 **Specific Notes:**
-- Prefer **Qt6** packages from [readme/debian-ubuntu.md](../readme/debian-ubuntu.md); older Qt5 package-name notes are obsolete for current `main`
+- Prefer **Qt6** packages from [readme/debian-ubuntu.md](../readme/debian-ubuntu.md)
 - 32-bit support requires explicit package installation
-- Wayland compatibility requires X11 mode for optimal tracking
+- Wayland compatibility: use `run_gui_x11.sh` for optimal tracking
 
 ### MX Linux Testing
 **Advantages:**
-- Excellent Qt5 compatibility
-- Minimal dependency conflicts
 - Stable build environment
+- See [readme/debian-ubuntu.md](../readme/debian-ubuntu.md) for Debian-family package guidance
 
 ## Testing Files
 
 ### Current Testing Documentation
-- **`ARCH_PHASE1_RUNBOOK.md`** - Arch Linux full install test (Phase 1): AppImage, Levels 1–6, scripts. Use with **`ARCH_INSTALL_PROBLEM_LOG.md`** to record results for doc updates.
-- **Gaming tab** – In `ltr_gui`, exercise the Gaming tab (profiles, Wine/Proton-related paths) and confirm behavior matches your distribution; use **`TESTING_GUIDE.md`** for general checks.
-- **`KUBUNTU_25_QT5_TESTING.md`** - Qt5-specific Kubuntu testing (29KB)
-- **`TESTING_GUIDE.md`** - General testing guidelines (13KB)
-- **`KUBUNTU_FIXES.md`** - Kubuntu-specific fixes (5KB)
+- **`TESTING_GUIDE.md`** - General testing guidelines
 
 ### File Descriptions
-- **Large files** contain detailed build logs and troubleshooting steps
-- **Medium files** provide procedural guidance
-- **Small files** contain specific fixes and workarounds
+- Large files contain detailed build logs and troubleshooting steps
+- Medium files provide procedural guidance
 
 ## Testing Priorities
 
 ### High Priority
-1. **Build System Validation** - Ensure autotools work correctly
-2. **Qt5 Detection** - Verify Qt5 vs Qt6 compatibility
+1. **Build System Validation** - Ensure CMake configures and builds correctly
+2. **Qt6 Detection** - Verify `find_package(Qt6 …)` succeeds
 3. **Hardware Detection** - TrackIR device recognition
 4. **Permission Setup** - udev rules and user groups
 
@@ -81,12 +77,10 @@ This directory contains testing documentation for LinuxTrack. **New releases tar
 2. **Game Integration** - Wine compatibility testing
 3. **Advanced Features** - Plugin and extension testing
 
-## Automated Testing
-
-### Manual Checks
+## Manual Checks
 ```bash
 # Check the built GUI and TrackIR access
-./scripts/test/run_qt5_gui.sh
+./scripts/test/run_gui.sh
 lsusb | grep 131d
 groups "$USER"
 ```
@@ -106,8 +100,8 @@ ls -la src/wine_bridge/*/*.exe
 ## Troubleshooting Testing Issues
 
 ### Common Build Problems
-1. **Missing Dependencies** → Install required packages
-2. **Qt Version Conflicts** → Ensure Qt5 is detected, not Qt6
+1. **Missing Dependencies** → Install required packages (see `docs/readme/` for your distro)
+2. **Qt Version Conflicts** → Ensure Qt6 packages are installed
 3. **32-bit Library Issues** → Install multilib packages
 4. **Permission Errors** → Add user to plugdev group
 
@@ -117,9 +111,8 @@ ls -la src/wine_bridge/*/*.exe
 3. **No Tracking Data** → Check IR LED functionality and camera
 
 ### Display Issues
-1. **Wayland Compatibility** → Use X11 mode for optimal performance
-2. **GUI Not Launching** → Check Qt5 installation and library paths
-3. **Display Artifacts** → Verify OpenGL compatibility
+1. **Wayland Compatibility** → Use `run_gui_x11.sh` for optimal performance
+2. **GUI Not Launching** → Check Qt6 installation and library paths
 
 ## Contributing to Testing
 
@@ -137,4 +130,4 @@ ls -la src/wine_bridge/*/*.exe
 
 ---
 
-**Note**: The large testing files contain detailed logs and specific troubleshooting steps. Refer to them for comprehensive information about specific issues encountered during testing. 
+**Note**: Refer to `TESTING_GUIDE.md` for comprehensive procedural information.

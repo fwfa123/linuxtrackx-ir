@@ -275,7 +275,7 @@ sudo cp src/99-TIR.rules /lib/udev/rules.d/
 sudo udevadm control --reload-rules
 
 # 3. Launch (may fail due to missing resources)
-./run_qt5_gui.sh
+./run_gui.sh
 ```
 
 ### **Gap Analysis**: Missing Steps in Current System

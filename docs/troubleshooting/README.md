@@ -2,7 +2,7 @@
 
 ## Overview
 
-This directory contains comprehensive troubleshooting documentation for LinuxTrack Qt5 modernization. These guides help resolve common issues encountered during installation, configuration, and operation.
+This directory contains troubleshooting documentation for LinuxTrack. The current release stack is **Qt6 + CMake**.
 
 ## Quick Troubleshooting Reference
 
@@ -21,44 +21,25 @@ lsusb | grep 131d
 ```
 
 ### Most Common Issues
-1. **System upgrade broke LinuxTrack** → [QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)
-2. **TrackIR permission errors** → [TRACKIR_PERMISSION_TROUBLESHOOTING.md](TRACKIR_PERMISSION_TROUBLESHOOTING.md)
-3. **Firmware extraction fails** → [FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
-4. **ApplicationID shows ((null)) in gamedata.txt** → [APPLICATIONID_PARSING_ISSUE.md](APPLICATIONID_PARSING_ISSUE.md)
-5. **Application won't launch** → [QUICK_TROUBLESHOOTING_QT5.md](QUICK_TROUBLESHOOTING_QT5.md)
-6. **Display issues on Wayland** → [WAYLAND_COMPATIBILITY_ISSUE.md](WAYLAND_COMPATIBILITY_ISSUE.md)
-7. **Steam (Flatpak) no tracking / debug logs** → [STEAM_FLATPAK_DEBUG_LOGS.md](STEAM_FLATPAK_DEBUG_LOGS.md)
-8. **Per-game Wine/Proton workarounds** → [../GAME_WORKAROUNDS.md](../GAME_WORKAROUNDS.md)
+1. **TrackIR permission errors** → [TRACKIR_PERMISSION_TROUBLESHOOTING.md](TRACKIR_PERMISSION_TROUBLESHOOTING.md)
+2. **Firmware extraction fails** → [FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
+3. **ApplicationID shows `((null))` in gamedata.txt** → [APPLICATIONID_PARSING_ISSUE.md](APPLICATIONID_PARSING_ISSUE.md)
+4. **Application won't launch** → [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+5. **Display issues on Wayland** → [WAYLAND_COMPATIBILITY_ISSUE.md](WAYLAND_COMPATIBILITY_ISSUE.md)
+6. **Steam (Flatpak) no tracking / debug logs** → [STEAM_FLATPAK_DEBUG_LOGS.md](STEAM_FLATPAK_DEBUG_LOGS.md)
+7. **Per-game Wine/Proton workarounds** → [../GAME_WORKAROUNDS.md](../GAME_WORKAROUNDS.md)
 
 ## Troubleshooting Files
 
-### Current Troubleshooting Documentation
-- **`TROUBLESHOOTING.md`** - Comprehensive troubleshooting guide (14KB)
-- **`QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md`** - System upgrade conflicts (9KB)
-- **`TRACKIR_PERMISSION_TROUBLESHOOTING.md`** - Hardware permission issues (9KB)
-- **`FIRMWARE_EXTRACTION_TROUBLESHOOTING.md`** - TrackIR firmware extraction issues (8KB)
-- **`APPLICATIONID_PARSING_ISSUE.md`** - ApplicationID parsing bug causing ((null)) in gamedata.txt (12KB)
-- **`QUICK_TROUBLESHOOTING_QT5.md`** - Quick fixes for common issues (3KB)
-- **`WAYLAND_COMPATIBILITY_ISSUE.md`** - Display server compatibility (2KB)
+- **`TROUBLESHOOTING.md`** - Comprehensive troubleshooting guide
+- **`TRACKIR_PERMISSION_TROUBLESHOOTING.md`** - Hardware permission issues
+- **`FIRMWARE_EXTRACTION_TROUBLESHOOTING.md`** - TrackIR firmware extraction issues
+- **`APPLICATIONID_PARSING_ISSUE.md`** - ApplicationID parsing bug causing `((null))` in gamedata.txt
+- **`WAYLAND_COMPATIBILITY_ISSUE.md`** - Display server compatibility
 - **`STEAM_FLATPAK_DEBUG_LOGS.md`** - Flatpak Steam: Flatseal tracking fix, `/opt` notes, Proton logs
 - **[`../GAME_WORKAROUNDS.md`](../GAME_WORKAROUNDS.md)** - Per-title hints (e.g. Arma 2: omit FreeTrackClient.dll)
 
 ## Issue Categories
-
-### System Upgrade Issues
-**Primary File**: `QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md`
-
-**Common Problems:**
-- Qt5/Qt6 version conflicts after system updates
-- Library loading errors
-- Build system failures
-- GUI launch failures
-
-**Solutions:**
-- Rebuild Qt5 components
-- Fix library paths
-- Update udev rules
-- Reinstall dependencies
 
 ### Hardware Issues
 **Primary File**: `TRACKIR_PERMISSION_TROUBLESHOOTING.md`
@@ -80,22 +61,19 @@ lsusb | grep 131d
 
 **Common Problems:**
 - GUI not displaying on Wayland
-- Display artifacts
-- Performance issues
-- X11 compatibility problems
+- Display artifacts or blank windows
+- Performance issues on Wayland
 
 **Solutions:**
-- Use X11 mode: `./run_qt5_gui.sh --force-x11`
-- Set environment variables
-- Check display server compatibility
-- Verify OpenGL support
+- Use X11 mode: `./scripts/test/run_gui.sh --force-x11` or `./scripts/test/run_gui_x11.sh`
+- Set `QT_QPA_PLATFORM=xcb` to force XWayland
 
 ### Firmware and Game Data Issues
 **Primary Files**: `FIRMWARE_EXTRACTION_TROUBLESHOOTING.md`, `APPLICATIONID_PARSING_ISSUE.md`
 
 **Common Problems:**
 - Firmware extraction fails
-- ApplicationID shows ((null)) in gamedata.txt
+- ApplicationID shows `((null))` in gamedata.txt
 - Games don't get enhanced TrackIR support
 - Missing or corrupted firmware files
 
@@ -105,28 +83,25 @@ lsusb | grep 131d
 - Verify all required firmware files are present
 - Check gamedata.txt for correct ApplicationID entries
 
-### Build Issues
-**Primary File**: `QUICK_TROUBLESHOOTING_QT5.md`
+### Build / Launch Issues
+**Primary File**: `TROUBLESHOOTING.md`
 
 **Common Problems:**
-- Missing dependencies
-- Qt5 detection failures
+- Missing Qt6 or CMake dependencies
 - Compilation errors
 - Library linking issues
 
 **Solutions:**
-- Install required packages
-- Verify Qt5 installation
-- Check compiler compatibility
-- Fix library paths
+- See per-distro install guides in `docs/readme/`
+- Verify Qt6 development packages are installed
+- Check CMake output for missing `find_package` dependencies
 
 ## Diagnostic Commands
 
 ### System Information
 ```bash
-# Check Qt5 installation
-qmake-qt5 --version
-qt5-qmake --version
+# Check Qt6 installation
+qmake6 --version || qmake --version
 
 # Check hardware detection
 lsusb | grep 131d
@@ -143,7 +118,6 @@ ls -la /dev/bus/usb/
 
 ### Health Checks
 ```bash
-# Basic current checks
 ltr_gui
 lsusb | grep 131d
 groups "$USER"
@@ -169,16 +143,16 @@ sudo udevadm trigger
 
 ### Ubuntu/Debian
 - **32-bit library issues** → Install `gcc-multilib libc6-dev-i386`
-- **Qt5 detection problems** → Use `qt5-qmake` instead of `qmake-qt5`
+- **Qt6 detection problems** → Install `qt6-base-dev` and `libqt6*-dev`
 - **Wine bridge issues** → Install wine development packages
 
 ### Fedora/RHEL
-- **Library conflicts** → Use `dnf` instead of `yum`
-- **Qt5 packages** → Install `qt5-qtbase-devel` packages
+- **Library conflicts** → Use `dnf` for package management
+- **Qt6 packages** → Install `qt6-qtbase-devel` packages
 - **Development tools** → Install `mingw64-gcc` for Windows components
 
 ### Arch Linux
-- **Package names** → Use `qt5-base` instead of `qtbase5-dev`
+- **Package names** → Use `qt6-base` for Qt6 development
 - **Build tools** → Install `base-devel` group
 - **MinGW support** → Install `mingw-w64-gcc`
 
@@ -190,26 +164,6 @@ sudo udevadm trigger
 3. **Backup Configuration** - Preserve working settings
 4. **Monitor Logs** - Check for early warning signs
 
-### Best Practices
-1. **Test After Updates** - Verify functionality after system changes
-2. **Document Changes** - Keep track of modifications
-3. **Use Virtual Environments** - Isolate development work
-4. **Regular Backups** - Preserve working configurations
-
-## Getting Help
-
-### Self-Help Resources
-1. **Health Check Script** - Automated diagnostics
-2. **Quick Recovery Script** - Automatic problem resolution
-3. **Troubleshooting Guides** - Issue-specific solutions
-4. **Documentation Index** - Navigation to relevant resources
-
-### When to Seek External Help
-1. **Unusual Error Messages** - Not covered in existing guides
-2. **Hardware Compatibility** - New or unsupported devices
-3. **Distribution Issues** - Problems specific to your OS
-4. **Performance Problems** - Optimization and tuning
-
 ---
 
-**Note**: Start with the quick troubleshooting guide for immediate issues, then refer to specific guides for detailed solutions. The health check script provides automated diagnostics for most common problems. 
+**Note**: Start with the quick troubleshooting reference above, then follow links to issue-specific guides for detailed solutions.

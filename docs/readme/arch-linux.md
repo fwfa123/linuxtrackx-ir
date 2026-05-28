@@ -236,7 +236,7 @@ ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # built bridge payload (Level 
 
 ### 32-bit libraries (advanced)
 
-The default MinGW bridge build does not require old `lib32-mxml`, `lib32-liblo`, or Wine Unix library development paths. Historical lib32 notes live in [archive/ARCH_LINUX_32BIT_LIBRARIES.md](../archive/ARCH_LINUX_32BIT_LIBRARIES.md), and the old Arch wine32 walkthrough is archived in [archive/technical/ARCH_LINUX_LEGACY_WINE32_BUILD_WALKTHROUGH.md](../archive/technical/ARCH_LINUX_LEGACY_WINE32_BUILD_WALKTHROUGH.md).
+The default MinGW bridge build does not require old `lib32-mxml`, `lib32-liblo`, or Wine Unix library development paths. The legacy wine32 / winegcc approach has been superseded by the MinGW PE bridge.
 
 ### Qt6 tools PATH (rare)
 ```bash
@@ -259,6 +259,6 @@ See the main README for all CMake options.
 
 ---
 
-## Historical / archived notes
+## Notes
 
-Older Arch–Wine investigations, including the former AUR `wine32` / classic Wine Unix library walkthrough, live under **[docs/archive/technical/](../archive/technical/)**. **Current** instructions are only this file plus the main [README.md](../../README.md).
+The current MinGW PE bridge approach replaces all legacy `wine32` / `winegcc` build paths. Current instructions are this file plus the main [README.md](../../README.md).

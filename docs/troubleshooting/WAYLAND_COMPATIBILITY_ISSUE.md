@@ -14,7 +14,7 @@
 **Force X11 mode for full functionality:**
 
 ```bash
-XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_qt5_gui.sh
+XDG_SESSION_TYPE=x11 QT_QPA_PLATFORM=xcb ./run_gui.sh
 ```
 
 ### Evidence

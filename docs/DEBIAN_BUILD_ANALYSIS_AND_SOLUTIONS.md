@@ -200,7 +200,7 @@ sudo apt install -y wine wine-staging libwine-dev wine32-tools
 git clone <repository-url>
 cd linuxtrackx-ir
 
-# Historical note: the old winegcc setup helper now lives in docs/archive/scripts/dev/
+# Historical note: the old winegcc setup helper has been removed (superseded by MinGW PE bridge)
 
 # Generate build files
 autoreconf -fiv

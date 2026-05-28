@@ -1,112 +1,109 @@
 # LinuxTrack Documentation Index
 
-## 📚 Complete Documentation Guide
+## Complete Documentation Guide
 
-This index organizes LinuxTrack documentation. **The supported GUI/toolchain for new releases is Qt6 with CMake** (see [README.md](../README.md) and [readme/](readme/)). Files that refer to Qt5, qmake, or autotools are mostly **historical** migration or troubleshooting material.
+This index organizes LinuxTrack documentation. **The supported GUI/toolchain is Qt6 with CMake** (see [README.md](../README.md) and [readme/](readme/)). The project uses a MinGW PE Wine bridge and AppImage packaging.
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### New Users
-1. **[README.md](../README.md)** - Main project overview and quick start guide
+1. **[README.md](../README.md)** - Main project overview and quick start
 2. **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)** / **[readme/fedora-rhel.md](readme/fedora-rhel.md)** / **[readme/arch-linux.md](readme/arch-linux.md)** - Distribution-specific install (Qt6 / CMake)
 3. **[testing/README.md](testing/README.md)** - Testing overview
 
 ### Existing Users (After System Changes)
-1. **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - ⚠️ **CRITICAL** - System upgrade resolution
-2. **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)** - Quick fixes for common issues
-3. **[readme/troubleshooting.md](readme/troubleshooting.md)** - Current diagnostics and common fixes
+1. **[readme/troubleshooting.md](readme/troubleshooting.md)** - Current diagnostics and common fixes
+2. **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Comprehensive troubleshooting
 
 ---
 
-## 📁 Documentation Organization
+## Documentation Organization
 
-### 🛠️ User Guides (`guides/` + `readme/`)
+### User Guides (`guides/` + `readme/`)
 **For end users and system administrators**
 - **[guides/README.md](guides/README.md)** - Supplemental guide index and cross-links
 - **[guides/WINE_BRIDGE_MODERN.md](guides/WINE_BRIDGE_MODERN.md)** - Modern MinGW Wine bridge details
-- **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)**, **[readme/fedora-rhel.md](readme/fedora-rhel.md)**, **[readme/arch-linux.md](readme/arch-linux.md)** - Primary per-distro docs
-- **[archive/guides/](archive/guides/)** - Historical MX/Arch guide snapshots and `LEGACY_*` files only
+- **[readme/debian-ubuntu.md](readme/debian-ubuntu.md)**, **[readme/fedora-rhel.md](readme/fedora-rhel.md)**, **[readme/arch-linux.md](readme/arch-linux.md)** - Per-distro install docs
 
-### 🧪 Testing Documentation (`testing/`)
+### Testing Documentation (`testing/`)
 **For testing and validation procedures**
 - **[testing/README.md](testing/README.md)** - Testing guide overview
-- **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - General testing guidelines (13KB)
+- **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - General testing guidelines
 
-### Game workarounds
-
+### Game Workarounds
 - **[GAME_WORKAROUNDS.md](GAME_WORKAROUNDS.md)** - Per-title Wine/Proton/Lutris hints (community-tested)
 
-### 🔧 Troubleshooting (`troubleshooting/`)
+### Troubleshooting (`troubleshooting/`)
 **For problem resolution and diagnostics**
 - **[troubleshooting/README.md](troubleshooting/README.md)** - Troubleshooting guide overview
-- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Comprehensive troubleshooting guide (14KB)
-- **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - System upgrade conflicts (9KB)
-- **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Hardware permission issues (9KB)
-- **[troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)** - TrackIR firmware extraction issues (8KB)
-- **[troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)** - ApplicationID parsing bug causing ((null)) in gamedata.txt (12KB)
+- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Comprehensive troubleshooting guide
+- **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Hardware permission issues
+- **[troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)** - TrackIR firmware extraction issues
+- **[troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)** - ApplicationID parsing bug causing `((null))` in gamedata.txt
+- **[troubleshooting/STEAM_FLATPAK_DEBUG_LOGS.md](troubleshooting/STEAM_FLATPAK_DEBUG_LOGS.md)** - Steam Flatpak logging
+- **[troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)** - Wayland display issues
 
-### 🍷 Wine Support
+### Wine Support
 **For Wine compatibility and modern installation methods**
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)** - Modern Wine support installation guide
 - **[AppImage_WineBridge.md](AppImage_WineBridge.md)** - AppImage + Wine bridge
-- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)** - Packaging notes (archived)
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Wine troubleshooting section
-- **[scripts/wine_check.sh](../scripts/wine_check.sh)** - Wine compatibility checker script
 
-### 💻 Technical Documentation (`technical/`)
+### Technical Documentation (`technical/`)
 **For developers and technical implementation**
 - **[technical/README.md](technical/README.md)** - Technical documentation overview
-- **[technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)** - Implementation details (13KB)
-- **[technical/GAME_DATA_SYSTEM.md](technical/GAME_DATA_SYSTEM.md)** - Game data system architecture (15KB)
-- **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Historical Qt4→Qt5 migration (superseded by Qt6 stack; see [QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md))
-- **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Original modernization plan (7KB)
-- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)** - Wine bridge packaging and distribution plan (13KB, archived)
-- **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)** - AppImage packaging implementation plan (25KB)
-- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help bundling notes (filename legacy; verify against current Qt6 AppImage build)
+- **[technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)** - Implementation details
+- **[technical/GAME_DATA_SYSTEM.md](technical/GAME_DATA_SYSTEM.md)** - Game data system architecture
+- **[technical/WINE_VERSION_SELECTION_IMPLEMENTATION.md](technical/WINE_VERSION_SELECTION_IMPLEMENTATION.md)** - Wine version picker implementation
+- **[technical/TRACKIR_5.5.3_DLL_ARCHITECTURE_ANALYSIS.md](technical/TRACKIR_5.5.3_DLL_ARCHITECTURE_ANALYSIS.md)** - TrackIR DLL layout analysis
+- **[technical/TRACKIR_FIX_README.md](technical/TRACKIR_FIX_README.md)** - TrackIR fixes documentation
+- **[technical/MFC42_WINETRICKS_INSTALLATION_GUIDE.md](technical/MFC42_WINETRICKS_INSTALLATION_GUIDE.md)** - Winetricks MFC42 install
+- **[technical/MFC42_ALTERNATIVE_INSTALLATION_METHODS.md](technical/MFC42_ALTERNATIVE_INSTALLATION_METHODS.md)** - MFC42 fallback methods
+- **[technical/MFC42_ALTERNATIVE_INSTALLATION_SUMMARY.md](technical/MFC42_ALTERNATIVE_INSTALLATION_SUMMARY.md)** - MFC42 method summary
+- **[technical/OPENTRACK_PLUGIN_PLAN.md](technical/OPENTRACK_PLUGIN_PLAN.md)** - OpenTrack plugin plan
+- **[technical/ROBUST_HELP_SYSTEM.md](technical/ROBUST_HELP_SYSTEM.md)** - Qt help system design
+- **[technical/QT_HELP_SYSTEM_FIX.md](technical/QT_HELP_SYSTEM_FIX.md)** - Qt help system fixes
+- **[technical/ADVANCED_INSTALLATION_AND_DEPENDENCIES.md](technical/ADVANCED_INSTALLATION_AND_DEPENDENCIES.md)** - Deep install dependencies
+- **[technical/INSTALLATION_ANALYSIS_COMPREHENSIVE.md](technical/INSTALLATION_ANALYSIS_COMPREHENSIVE.md)** - Install path analysis
+- **[technical/TrackIR_MFC42_modern_windows_analysis.md](technical/TrackIR_MFC42_modern_windows_analysis.md)** - MFC42 on Windows analysis
 
 ---
 
-## 🎯 Quick Reference by Issue
+## Quick Reference by Issue
 
 ### Most Common Issues
-1. **System upgrade broke LinuxTrack** → [troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)
-2. **TrackIR permission errors** → [troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)
-3. **Firmware extraction fails** → [troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
-4. **ApplicationID shows ((null)) in gamedata.txt** → [troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)
-5. **Wine support installation fails** → [WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)
-6. **Application won't launch** → [troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)
-7. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
+1. **TrackIR permission errors** → [troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)
+2. **Firmware extraction fails** → [troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md](troubleshooting/FIRMWARE_EXTRACTION_TROUBLESHOOTING.md)
+3. **ApplicationID shows `((null))` in gamedata.txt** → [troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)
+4. **Wine support installation fails** → [WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)
+5. **Application won't launch** → [troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)
+6. **Display issues on Wayland** → [troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)
 
 ### AppImage-Specific Issues
-8. **Help system not working in AppImage** → [technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)
-9. **AppImage won't run on different distributions** → [technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)
+7. **Help system not working in AppImage** → [technical/ROBUST_HELP_SYSTEM.md](technical/ROBUST_HELP_SYSTEM.md) and [technical/QT_HELP_SYSTEM_FIX.md](technical/QT_HELP_SYSTEM_FIX.md)
+8. **AppImage Steam/Flatpak issues** → [troubleshooting/STEAM_FLATPAK_DEBUG_LOGS.md](troubleshooting/STEAM_FLATPAK_DEBUG_LOGS.md) and [readme/flatpak.md](readme/flatpak.md)
 
 ### Distribution-Specific Guides
-- **MX Linux** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md) for Debian-family package guidance; historical MX notes are archived under [archive/guides/](archive/guides/)
-- **Ubuntu/Debian** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md)
+- **Ubuntu/Debian / MX Linux** → [readme/debian-ubuntu.md](readme/debian-ubuntu.md)
 - **Fedora/RHEL** → [readme/fedora-rhel.md](readme/fedora-rhel.md)
-- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md) (CachyOS / AppImage vs source); historical Arch–Wine notes → [archive/technical/](archive/technical/) (`ISSUE_206_*`, `ARCH_LINUX_WINE_BRIDGE_*`)
+- **Arch Linux** → [readme/arch-linux.md](readme/arch-linux.md)
 
 ### Development Resources
-- **Qt / framework migration** → [technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md), [technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md) (older)
-- **Build System** → [technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)
-- **Project status / releases** → [../CHANGELOG.md](../CHANGELOG.md), [../README.md](../README.md)
+- **Build system** → [technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)
+- **Wine bridge** → [guides/WINE_BRIDGE_MODERN.md](guides/WINE_BRIDGE_MODERN.md), [src/wine_bridge/WINE_SETUP.md](../src/wine_bridge/WINE_SETUP.md)
+- **Project releases / changelog** → [../CHANGELOG.md](../CHANGELOG.md), [../README.md](../README.md)
+- **Wiki maintenance** → `tools/wiki/convert_help_to_wiki.py` (uses `LINUXTRACK_WIKI_ROOT` or `../linuxtrackx-ir.wiki`)
 
 ---
 
-## 🚨 Emergency Procedures
+## Emergency Procedures
 
 ### Quick Recovery (Immediate)
 1. **Run automated recovery**: `./scripts/install/linuxtrack_quick_recovery.sh`
 2. **Check status**: `ltr_gui`, `lsusb | grep 131d`, and `groups "$USER"`
 3. **If still broken**: See [troubleshooting/README.md](troubleshooting/README.md)
-
-### System Upgrade Recovery
-1. **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - Complete upgrade resolution
-2. **Emergency commands**: See "Emergency Recovery" sections
-3. **Manual recovery**: See step-by-step procedures
 
 ### Hardware Issues
 1. **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Hardware troubleshooting
@@ -115,78 +112,57 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 
 ---
 
-## 📋 Documentation by Audience
+## Documentation by Audience
 
 ### End Users
 - **[README.md](../README.md)** - Main overview
 - **[guides/README.md](guides/README.md)** - User guides
-- **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)** - Quick fixes
 - **[readme/troubleshooting.md](readme/troubleshooting.md)** - Health checks and common fixes
+- **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** - Full troubleshooting
 
 ### System Administrators
 - **[readme/troubleshooting.md](readme/troubleshooting.md)** - Common issues and maintenance hints
-- **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)** - Upgrade management
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)** - Permission management
 
 ### Developers
 - **[technical/README.md](technical/README.md)** - Technical documentation
-- **[technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md)** - Qt6 migration notes (current stack)
-- **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** - Technical architecture (partially historical)
-- **[technical/QT4_TO_QT5_MIGRATION.md](technical/QT4_TO_QT5_MIGRATION.md)** - Older Qt4→Qt5 details
-- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)** - AppImage help system fix
+- **[technical/TECHNICAL_IMPLEMENTATION_GUIDE.md](technical/TECHNICAL_IMPLEMENTATION_GUIDE.md)** - Implementation details
+- **[technical/GAME_DATA_SYSTEM.md](technical/GAME_DATA_SYSTEM.md)** - Game data system
 
 ### Testers
 - **[testing/README.md](testing/README.md)** - Testing procedures
 - **[testing/TESTING_GUIDE.md](testing/TESTING_GUIDE.md)** - Testing guidelines
-- **[testing/README.md](testing/README.md)** - Manual testing checks
 - **[README.md](../README.md)** - Expected install levels and behavior
 
 ---
 
-## 🔍 Search Guide
+## Search Guide
 
 ### By Keywords
-
-#### "Qt" framework (versions, upgrades)
-- **[technical/QT5_TO_QT6_MIGRATION.md](technical/QT5_TO_QT6_MIGRATION.md)** — Qt5→Qt6 (current direction for `main`)
-- **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
-- **[technical/QT5_MODERNIZATION_STATUS.md](technical/QT5_MODERNIZATION_STATUS.md)** (historical context)
-- **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)** (filename legacy; many items apply to Qt6 builds)
 
 #### "TrackIR" or "Hardware"
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)**
 - **[README.md](../README.md)**
 - **[guides/README.md](guides/README.md)**
 
-#### "System Upgrade" or "Broken"
-- **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
-- **[scripts/install/linuxtrack_quick_recovery.sh](../scripts/install/linuxtrack_quick_recovery.sh)**
-- **[readme/troubleshooting.md](readme/troubleshooting.md)**
-
 #### "Permission" or "Access Denied"
 - **[troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md](troubleshooting/TRACKIR_PERMISSION_TROUBLESHOOTING.md)**
 - **[readme/troubleshooting.md](readme/troubleshooting.md)**
 
-#### "Library" or "Loading"
-- **[troubleshooting/QUICK_TROUBLESHOOTING_QT5.md](troubleshooting/QUICK_TROUBLESHOOTING_QT5.md)**
-- **[troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md](troubleshooting/QT5_QT6_SYSTEM_UPGRADE_TROUBLESHOOTING.md)**
-
 #### "Wayland" or "Display"
 - **[troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md](troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**
-- **[run_qt5_gui_x11.sh](../scripts/test/run_qt5_gui_x11.sh)** (legacy script name; Qt6 build)
+- `scripts/test/run_gui_x11.sh` — force X11 mode on Wayland
 
 #### "Wine" or "Windows"
 - **[WINE_SUPPORT_MODERN.md](WINE_SUPPORT_MODERN.md)**
 - **[AppImage_WineBridge.md](AppImage_WineBridge.md)**
-- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)**
+- **[guides/WINE_BRIDGE_MODERN.md](guides/WINE_BRIDGE_MODERN.md)**
 - **[troubleshooting/TROUBLESHOOTING.md](troubleshooting/TROUBLESHOOTING.md)** (Wine section)
-- **[scripts/wine_check.sh](../scripts/wine_check.sh)**
 
 #### "AppImage" or "Packaging" or "Distribution"
-- **[technical/APPIMAGE_IMPLEMENTATION_PLAN.md](technical/APPIMAGE_IMPLEMENTATION_PLAN.md)**
-- **[technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md](technical/QT5_HELP_SYSTEM_APPIMAGE_FIX_PLAN.md)**
-- **[archive/WINE_BRIDGE_PACKAGING_PLAN.md](archive/WINE_BRIDGE_PACKAGING_PLAN.md)**
-- **[technical/MODERNIZATION_PLAN.md](technical/MODERNIZATION_PLAN.md)** (Packaging section)
+- **[AppImage_WineBridge.md](AppImage_WineBridge.md)**
+- **[technical/ROBUST_HELP_SYSTEM.md](technical/ROBUST_HELP_SYSTEM.md)**
+- `scripts/appimage/v2/` — AppImage build pipeline scripts
 
 #### "ApplicationID" or "gamedata.txt" or "((null))"
 - **[troubleshooting/APPLICATIONID_PARSING_ISSUE.md](troubleshooting/APPLICATIONID_PARSING_ISSUE.md)**
@@ -195,7 +171,7 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain for
 
 ---
 
-## 🎯 Quick Reference
+## Quick Reference
 
 ### Emergency Commands
 ```bash
@@ -208,8 +184,8 @@ mkdir -p build && cd build && cmake .. -DCMAKE_INSTALL_PREFIX=/opt && cmake --bu
 # Check TrackIR hardware
 lsusb | grep 131d
 
-# Launch application (example helper; from repo root; legacy script name)
-./scripts/test/run_qt5_gui.sh
+# Launch GUI helper (from repo root)
+./scripts/test/run_gui.sh
 ```
 
 ### Key File Locations
@@ -217,30 +193,23 @@ lsusb | grep 131d
 - **Libraries**: `src/.libs/lib*.so*`
 - **Configuration**: `~/.config/linuxtrack/linuxtrack1.conf`
 - **udev Rules**: `/lib/udev/rules.d/99-TIR.rules`
-- **Launch helpers**: `scripts/test/run_qt5_gui.sh` (legacy name; Qt6-built `ltr_gui`) or `ltr_gui` after install
+- **Launch helper**: `scripts/test/run_gui.sh` (sets library paths, launches `ltr_gui`)
 
 ---
 
-## 📞 Support Resources
+## Support Resources
 
 ### Self-Help (Recommended)
 1. **Health Check**: `ltr_gui`, `lsusb | grep 131d`, and `groups "$USER"`
 2. **Quick Recovery**: `./scripts/install/linuxtrack_quick_recovery.sh`
 3. **Troubleshooting Guides**: See issue-specific guides above
 
-### Documentation History
-- **Created**: June 2025 during Qt5 modernization
-- **Reorganized**: July 2025 with category-based structure
-- **2026**: Qt6 + CMake documented as current release stack; legacy Qt5/qmake references retained only where historically useful
-
 ### Contributing to Documentation
-- **Location**: All .md files in organized subdirectories
-- **Style**: Markdown with emoji indicators
+- **Location**: All `.md` files in organized subdirectories under `docs/`
+- **Style**: Markdown
 - **Testing**: Verify all commands and procedures before documenting
 
 ---
 
-**Documentation Status**: Actively maintained (see `readme/` and `guides/` for current install paths).  
+**Documentation Status**: Actively maintained (see `readme/` and `guides/` for current install paths).
 **Automation**: `scripts/install/linuxtrack_quick_recovery.sh`
-
-This documentation index provides complete navigation for all LinuxTrack resources, organized by category for easy access and maintenance. 

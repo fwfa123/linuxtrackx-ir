@@ -13,8 +13,8 @@ from pathlib import Path
 
 
 def repo_root() -> Path:
-    """linuxtrackx-ir repository root (parent of scripts/)."""
-    return Path(__file__).resolve().parent.parent
+    """linuxtrackx-ir repository root (parent of tools/)."""
+    return Path(__file__).resolve().parent.parent.parent
 
 
 def default_wiki_root() -> Path:
