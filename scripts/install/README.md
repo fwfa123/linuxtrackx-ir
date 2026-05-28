@@ -25,8 +25,6 @@ For normal source builds, use the distro guides under [`docs/readme/`](../../doc
 - [`docs/readme/troubleshooting.md`](../../docs/readme/troubleshooting.md)
 - [`docs/guides/WINE_BRIDGE_MODERN.md`](../../docs/guides/WINE_BRIDGE_MODERN.md)
 
-## Archived Legacy Helpers
+## Removed legacy helpers
 
-Older install-folder scripts that targeted the previous autotools, prebuilt bridge, Qt5, or winegcc-era workflows were moved to [`docs/archive/scripts/install/`](../../docs/archive/scripts/install/).
-
-That archive includes the old NSIS helpers (`install_nsis_arch.sh`), prebuilt Wine bridge package scripts, the deprecated Arch prebuilt installer, the autotools-style `linuxtrack_install.sh`, stale setup/post-install scripts, and the Qt5-era health/verification helpers.
+Older install scripts (autotools, prebuilt bridge, Qt5, winegcc, NSIS) were removed during the docs/scripts cleanup. See [`CHANGELOG.md`](../../CHANGELOG.md) and git history for prior versions.

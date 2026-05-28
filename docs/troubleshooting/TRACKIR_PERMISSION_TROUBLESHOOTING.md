@@ -71,7 +71,7 @@ getent group linuxtrack
 
 ```bash
 # Launch LinuxTrack and observe behavior
-./run_qt5_gui.sh
+./run_gui.sh
 # Observed: GUI launches but shows TrackIR permission error dialog
 # Unexpected: All system-level permissions were correct!
 ```
@@ -100,7 +100,7 @@ ls -la /usr/local/lib/linuxtrack/
 
 ```bash
 # Test library loading
-LD_DEBUG=libs ./run_qt5_gui.sh 2>&1 | grep -E "error|undefined"
+LD_DEBUG=libs ./run_gui.sh 2>&1 | grep -E "error|undefined"
 # Revealed: undefined symbol: v4l2_munmap in system libraries
 
 # Compare system vs local libraries
@@ -165,14 +165,14 @@ sed -i 's|^Prefix = .*|Prefix = "/path/to/project/root"|' ~/.config/linuxtrack/l
 
 ```bash
 # Create improved launch script with library path override
-cat > run_qt5_gui.sh << 'EOF'
+cat > run_gui.sh << 'EOF'
 #!/bin/bash
 export LD_LIBRARY_PATH="$(pwd)/src/.libs:$LD_LIBRARY_PATH"
 export QT_SELECT=qt5
 cd src/qt_gui
 ./ltr_gui
 EOF
-chmod +x run_qt5_gui.sh
+chmod +x run_gui.sh
 ```
 
 ---
@@ -189,7 +189,7 @@ ldd src/qt_gui/ltr_gui | grep -E "not found|error"
 ### Test 2: Application Launch
 ```bash
 # Launch application
-./run_qt5_gui.sh
+./run_gui.sh
 # Expected: No permission error dialogs
 ```
 
@@ -307,7 +307,7 @@ sudo mv /usr/local/lib/linuxtrack /usr/local/lib/linuxtrack.backup
 ./build.sh --clean --install
 
 # 4. Verify success
-./run_qt5_gui.sh
+./run_gui.sh
 ```
 
 The automated build and setup scripts in this repository now handle these complex interactions automatically, preventing this issue for future users. 

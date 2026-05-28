@@ -17,10 +17,6 @@ This directory holds focused supplemental guides. **Current releases use Qt6 and
 - **[`../AppImage_WineBridge.md`](../AppImage_WineBridge.md)** — AppImage + Wine bridge notes |
 - **[`../WINE_SUPPORT_MODERN.md`](../WINE_SUPPORT_MODERN.md)** — Wine support overview |
 
-## Legacy snapshots
-
-Older MX Linux and Arch redirect guides, along with `LEGACY_*` snapshots, were moved to **[`../archive/guides/`](../archive/guides/)** for historical reference only.
-
 ## Quick commands
 
 ```bash
@@ -31,4 +27,4 @@ sudo cmake --install .
 ltr_gui
 ```
 
-Use your install’s `ltr_gui` launcher or helper scripts under **`scripts/test/`** (e.g. `run_qt5_gui.sh` — **legacy filename**, built against Qt6) to start the GUI. For Wayland/X11 issues, see **[`../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md`](../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**.
+Use your install’s `ltr_gui` launcher, or `scripts/test/run_gui.sh` to launch from the source tree. For Wayland/X11 issues, see **[`../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md`](../troubleshooting/WAYLAND_COMPATIBILITY_ISSUE.md)**.

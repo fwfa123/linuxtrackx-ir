@@ -251,7 +251,8 @@ sudo apt update && sudo apt install winetricks
 **Solutions**:
 ```bash
 # Check available wine versions
-./scripts/wine_check.sh
+wine --version
+which wine wine-stable wine-staging 2>/dev/null
 
 # Install wine-staging if not available
 sudo apt install wine-staging  # Ubuntu/Debian/MX
