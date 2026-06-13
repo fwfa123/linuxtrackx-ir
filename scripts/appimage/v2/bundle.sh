@@ -91,6 +91,65 @@ bundle_recursive_deps() {
     print_success "Dependency closure complete after $round round(s)"
 }
 
+# Copy one versioned .so and refresh its usr/lib symlink (overwrite stale copies).
+copy_system_shared_lib() {
+    local libdir="$1"
+    local link_name="$2"
+    local d resolved base src=""
+
+    for d in /usr/lib /usr/lib64 /lib /lib64; do
+        [[ -e "$d/$link_name" ]] || continue
+        resolved=$(readlink -f "$d/$link_name")
+        [[ -f "$resolved" ]] || continue
+        src="$resolved"
+        break
+    done
+    [[ -n "$src" ]] || return 1
+
+    base=$(basename "$src")
+    cp -Lf "$src" "$libdir/$base"
+    ln -sfn "$base" "$libdir/$link_name"
+    return 0
+}
+
+# OpenCV expects a matched BLAS/LAPACK set. Recursive bundling can leave an
+# older libblas.so.3 in AppDir (ldd passes, dlopen fails on missing ssyrk_64_).
+sync_lapack_stack() {
+    local libdir="$1/usr/lib"
+    local name copied=0
+
+    mkdir -p "$libdir"
+    for name in libblas.so.3 libcblas.so.3 liblapack.so.3 libgfortran.so.5; do
+        if copy_system_shared_lib "$libdir" "$name"; then
+            copied=$((copied + 1))
+        fi
+    done
+    if [[ $copied -gt 0 ]]; then
+        print_success "Synced LAPACK/BLAS family ($copied libs) from builder system"
+    fi
+}
+
+verify_linuxtrack_dlopen() {
+    local appdir="$1"
+    local lp="$appdir/usr/lib"
+    local lib failed=0
+
+    [[ -d "$appdir/usr/lib/flexiblas" ]] && lp="$lp:$appdir/usr/lib/flexiblas"
+    lp="$lp:$appdir/usr/lib/linuxtrack"
+
+    for lib in libwc.so.0 libp3eft.so.0; do
+        [[ -e "$appdir/usr/lib/linuxtrack/$lib" ]] || continue
+        if LD_LIBRARY_PATH="$lp" python3 -c "import ctypes, os; ctypes.CDLL(os.path.join('${appdir}','usr/lib/linuxtrack','${lib}'))" 2>/dev/null; then
+            print_success "dlopen OK: usr/lib/linuxtrack/$lib"
+        else
+            print_error "dlopen failed: usr/lib/linuxtrack/$lib"
+            LD_LIBRARY_PATH="$lp" python3 -c "import ctypes, os; ctypes.CDLL(os.path.join('${appdir}','usr/lib/linuxtrack','${lib}'))" 2>&1 | head -3 || true
+            failed=1
+        fi
+    done
+    return $failed
+}
+
 # ============================================================================
 # Locate qmake for Qt path queries
 # ============================================================================
@@ -278,6 +337,8 @@ QTEOF
     _ltr_lp="$_ltr_lp:$(pwd)/usr/lib/linuxtrack"
     export LD_LIBRARY_PATH="${_ltr_lp}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
     bundle_recursive_deps "$(pwd)"
+    sync_lapack_stack "$(pwd)"
+    bundle_recursive_deps "$(pwd)"
 
     # ------------------------------------------------------------------
     # 9. Remove GPU/GL stacks (must come from host hardware drivers)
@@ -325,6 +386,14 @@ QTEOF
         print_success "rpaths set"
     else
         print_warning "patchelf not available; skipping rpath adjustments"
+    fi
+
+    # ------------------------------------------------------------------
+    # 10b. Verify webcam / face-track drivers actually dlopen
+    # ------------------------------------------------------------------
+    print_status "Verifying libwc / libp3eft dlopen under AppDir LD_LIBRARY_PATH"
+    if ! verify_linuxtrack_dlopen "$(pwd)"; then
+        die "libwc/libp3eft dlopen failed — face tracking / webcam will not load"
     fi
 
     # ------------------------------------------------------------------

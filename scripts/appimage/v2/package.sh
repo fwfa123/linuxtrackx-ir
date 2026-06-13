@@ -59,8 +59,8 @@ pushd "$PROJECT_ROOT" >/dev/null
     print_status "Verifying library dependency resolution after post-processing"
     if command -v ldd >/dev/null 2>&1; then
         # Check if critical libraries are linking to bundled versions
-        LIBUSB_BUNDLED=$(ldd "$APPDIR/usr/lib/linuxtrack/libltusb1.so.0.0.0" 2>/dev/null | grep "libusb-1.0.so.0" | grep "AppDir_v2" | wc -l)
-        LIBUDEV_BUNDLED=$(ldd "$APPDIR/usr/lib/linuxtrack/libltusb1.so.0.0.0" 2>/dev/null | grep "libudev.so.1" | grep "AppDir_v2" | wc -l)
+        LIBUSB_BUNDLED=$(ldd "$APPDIR/usr/lib/linuxtrack/libltusb1.so.0.0.0" 2>/dev/null | grep "libusb-1.0.so.0" | grep "AppDir_v2" | wc -l) || LIBUSB_BUNDLED=0
+        LIBUDEV_BUNDLED=$(ldd "$APPDIR/usr/lib/linuxtrack/libltusb1.so.0.0.0" 2>/dev/null | grep "libudev.so.1" | grep "AppDir_v2" | wc -l) || LIBUDEV_BUNDLED=0
 
         if [[ $LIBUSB_BUNDLED -gt 0 ]]; then
             print_success "libltusb1.so correctly links to bundled libusb"
