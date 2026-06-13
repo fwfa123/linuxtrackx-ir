@@ -44,7 +44,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
     && rm -rf /var/lib/apt/lists/*
 
-# Extract appimagetool (--appimage-extract works without FUSE)
+# Modern appimagetool + static type2-runtime (FUSE3-linked; no host libfuse2 on target systems).
+# continuous tags move; audit with: appimagetool --version && runtime-x86_64 --appimage-version
 RUN cd /tmp && \
     wget -q "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" \
          -O appimagetool.AppImage && \
@@ -52,7 +53,13 @@ RUN cd /tmp && \
     ./appimagetool.AppImage --appimage-extract && \
     mv squashfs-root /opt/appimagetool && \
     ln -s /opt/appimagetool/AppRun /usr/local/bin/appimagetool && \
-    rm appimagetool.AppImage
+    rm appimagetool.AppImage && \
+    mkdir -p /opt/appimage-runtime && \
+    wget -q "https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64" \
+         -O /opt/appimage-runtime/runtime-x86_64 && \
+    chmod +x /opt/appimage-runtime/runtime-x86_64
+
+ENV APPIMAGE_RUNTIME=/opt/appimage-runtime/runtime-x86_64
 
 # X-Plane SDK (headers only). Official archives: https://developer.x-plane.com/sdk/
 # Default URL is a public mirror with the same layout as the official SDK (CHeaders/XPLM/...).

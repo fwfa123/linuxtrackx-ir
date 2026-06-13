@@ -1,6 +1,6 @@
 # LinuxTrack X-IR
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
+[![Version](https://img.shields.io/badge/version-2.0.1-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
@@ -190,8 +190,9 @@ groups $USER
 | Wine bridge fails | Check Wine/Proton prefix, MinGW toolchain (build), and MFC42 setup |
 | Arma 2 crashes at startup with Wine bridge | Remove `FreeTrackClient.dll` from the prefix; see [Game workarounds](docs/GAME_WORKAROUNDS.md#arma-2-arma2exe--wine--lutris) |
 | Library not found when game launched from Lutris Flatpak | Use Flatseal to allow filesystem access; see [Flatpak doc](docs/readme/flatpak.md) |
-| AppImage: Steam/Lutris not found (Flatpak installed) | Use a V2 build with the Flatpak detection fix; confirm `~/.var/app/com.valvesoftware.Steam/data/Steam` exists after launching Flatpak Steam once |
-| AppImage build: `patchelf not available` | Install `patchelf` on the build machine, then rebuild |
+| AppImage: Steam/Lutris not found (Flatpak installed) | Use a V2 build with the Flatpak detection fix; confirm `~/.var/app/com.valvesoftware.Steam/data/Steam` exists after launching Flatpak Steam once. See [Fedora/RHEL](docs/readme/fedora-rhel.md) Lutris section. |
+| AppImage build: `patchelf not available` | Install `patchelf` on the **build** machine, then rebuild. See [AppImage Build](#appimage-build) and your distro guide. |
+| AppImage: `dlopen(): error loading libfuse.so.2` on Ubuntu 24.04+ / FUSE3-only distros | You have an **old-build AppImage**; download a rebuild with the modern runtime, or run with `--appimage-extract-and-run`, or (legacy workaround only) install `libfuse2t64` / `fuse2` — **never** install the `fuse` package on Ubuntu 22.04+. |
 
 **[Detailed troubleshooting guide](docs/readme/troubleshooting.md)**
 **[Game workarounds](docs/GAME_WORKAROUNDS.md)**

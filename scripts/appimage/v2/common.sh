@@ -19,6 +19,63 @@ die() { print_error "$*"; exit 1; }
 
 require_cmd() { command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"; }
 
+# Reject legacy AppImageKit appimagetool (embeds libfuse2-dependent runtime).
+reject_legacy_appimagetool() {
+    local tool="$1"
+    [[ -e "$tool" ]] || die "appimagetool not found: $tool"
+    chmod +x "$tool" 2>/dev/null || true
+    local ver
+    ver=$(APPIMAGE_EXTRACT_AND_RUN=1 "$tool" --version 2>/dev/null | head -1 || true)
+    if [[ "$ver" == *"5735cc5"* ]]; then
+        die "Legacy appimagetool ($ver). Run scripts/appimage/v2/fetch_toolchain.sh"
+    fi
+}
+
+ensure_appimage_toolchain() {
+    if [[ ! -f "$APPIMAGE_RUNTIME" ]] || [[ ! -e "$APPIMAGETOOL" ]]; then
+        "$SCRIPT_DIR/fetch_toolchain.sh"
+    fi
+    if [[ -z "$(command -v appimagetool 2>/dev/null || true)" && -e "$LOCAL_APPIMAGETOOL" ]]; then
+        APPIMAGETOOL="$LOCAL_APPIMAGETOOL"
+    fi
+    if [[ -f "$LOCAL_APPIMAGE_RUNTIME" && ! -f "${APPIMAGE_RUNTIME:-}" ]]; then
+        APPIMAGE_RUNTIME="$LOCAL_APPIMAGE_RUNTIME"
+    fi
+    reject_legacy_appimagetool "$APPIMAGETOOL"
+    [[ -f "$APPIMAGE_RUNTIME" ]] || die "type2 runtime not found: $APPIMAGE_RUNTIME (run fetch_toolchain.sh)"
+}
+
+# Fail if AppImage embeds legacy AppImageKit / libfuse.so.2 runtime.
+verify_appimage_runtime() {
+    local appimage="$1"
+    [[ -f "$appimage" ]] || die "AppImage not found: $appimage"
+
+    if strings "$appimage" 2>/dev/null | grep -q 'libfuse\.so\.2'; then
+        die "AppImage contains legacy libfuse.so.2 runtime marker"
+    fi
+
+    local ver=""
+    ver=$("$appimage" --appimage-version 2>/dev/null || true)
+
+    if [[ "$ver" == "5735cc5" || ( "$ver" == *"5735cc5"* && "$ver" != *"type2-runtime"* ) ]]; then
+        die "Legacy AppImageKit runtime embedded: $ver"
+    fi
+    if [[ "$ver" == *"type2-runtime"* ]]; then
+        print_success "AppImage runtime OK: $ver"
+        return 0
+    fi
+
+    # Fallback when AppImage cannot execute (e.g. sandbox without FUSE).
+    local embedded
+    embedded=$(strings "$appimage" 2>/dev/null | grep -m1 'type2-runtime/commit/' || true)
+    if [[ -n "$embedded" ]]; then
+        print_success "AppImage runtime OK: $embedded"
+        return 0
+    fi
+
+    die "Expected type2-runtime in AppImage, --appimage-version='${ver:-<empty>}'"
+}
+
 # Qt6 qhelpgenerator: often not on default PATH. Fedora installs it under
 # /usr/lib64/qt6/libexec/qhelpgenerator (package qt6-doctools), not always in .../bin/.
 find_qhelpgenerator_path() {
