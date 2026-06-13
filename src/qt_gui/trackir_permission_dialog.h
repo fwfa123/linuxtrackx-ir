@@ -33,6 +33,7 @@ public:
      * suppressed the dialog, and the plugin cannot access the device, show the permission wizard.
      */
     static void offerIfPs3EyeNeedsUdev(QWidget *parent, bool deviceAccessibleViaPlugin);
+    static bool checkIfUserInGroup(const QString &group);
 
 private slots:
     void onInstallRulesClicked();
@@ -44,7 +45,6 @@ private:
     bool installUdevRules();
     bool addUserToGroups();
     bool installUdevRulesAndGroups();
-    bool checkIfUserInGroup(const QString &group);
     void showInstallationResult(bool success, const QString &message);
     void showLogoutDialog();
     void updateStatus();

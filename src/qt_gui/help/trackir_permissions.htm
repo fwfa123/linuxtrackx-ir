@@ -115,7 +115,11 @@ Verify your user is in the required groups:
 groups $USER
 </pre>
 <p>
-You should see groups like <code>input</code>, <code>plugdev</code>, or similar hardware access groups.
+You should see groups like <code>input</code>, <code>plugdev</code>, <code>uinput</code>, and <code>video</code>.
+</p>
+<p>
+<strong>Webcams:</strong> Standard USB webcams need the <code>video</code> group (<code>/dev/video*</code>).
+Project udev rules do not apply to them. Use <code>sudo usermod -a -G video $USER</code> and re-login.
 </p>
 
 <h3>Step 3: Reboot System</h3>

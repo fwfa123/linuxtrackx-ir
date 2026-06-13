@@ -184,7 +184,8 @@ groups $USER
 | Problem | Solution |
 |---------|----------|
 | GUI not displaying | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
+| Permission denied | Add to groups: `sudo usermod -a -G plugdev,input,uinput,video $USER` (webcams need **`video`**) |
+| Webcam not listed | Device list empty despite **Webcam support: YES** | Add **`video`** group; see [troubleshooting guide](docs/readme/troubleshooting.md#webcam-not-listed-all-distros) |
 | Library not found | Run: `sudo ldconfig` |
 | TrackIR not detected | Check USB: `lsusb \| grep Track` |
 | Wine bridge fails | Check Wine/Proton prefix, MinGW toolchain (build), and MFC42 setup |

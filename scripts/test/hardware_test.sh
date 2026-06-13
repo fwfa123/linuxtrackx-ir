@@ -97,10 +97,12 @@ test_camera_integration() {
     
     # Test camera access permissions
     for device in "${video_devices[@]}"; do
-        if [ -r "$device" ]; then
-            print_success "Camera device $device is readable"
+        if [ -r "$device" ] && [ -w "$device" ]; then
+            print_success "Camera device $device is readable and writable"
+        elif [ -r "$device" ]; then
+            print_warning "Camera device $device is readable but not writable"
         else
-            print_warning "Camera device $device is not readable"
+            print_warning "Camera device $device is not accessible (add user to video group: sudo usermod -a -G video \$USER)"
         fi
     done
     
@@ -185,6 +187,12 @@ test_hardware_compatibility() {
         print_success "User in uinput group"
     else
         print_warning "User not in uinput group"
+    fi
+
+    if echo "$user_groups" | grep -q video; then
+        print_success "User in video group"
+    else
+        print_warning "User not in video group (required for /dev/video* webcams)"
     fi
     
     # Test hardware initialization error handling

@@ -214,7 +214,7 @@ sudo cmake --install .
 
 [`scripts/build_arch_linux.sh`](../../scripts/build_arch_linux.sh) installs dependencies, Wine runtime packages, MinGW-w64, **liblo** (OSC), checks the X-Plane SDK path, configures CMake, builds, and installs to `/opt` (NSIS is not required for the v2 Wine bridge). **Wiimote (AUR cwiid) is not installed** unless you pass **`--with-wiimote`** ([GitLab #8](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/8)).
 
-**CMake vs packages:** The script's `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. The script still installs **opencv**, **v4l-utils**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
+**CMake vs packages:** The script's `cmake ..` line matches roughly **README Level 2** (TrackIR + Wine bridge): it does **not** pass `-DENABLE_WEBCAM=ON`, `-DENABLE_XPLANE=ON`, etc. Defaults leave those **OFF**. Pass **`--with-webcam`** for Level 4 webcam support, or re-run CMake with `-DENABLE_WEBCAM=ON`. The script installs **opencv**, **v4l-utils**, **libv4l**, and **liblo** so you can re-run CMake with higher-level flags without reinstalling packages.
 
 **AUR helper:** If neither **yay** nor **paru** is installed, the script clones and builds **yay** from the AUR (needs **network**, uses **`sudo pacman`**, and implies the usual AUR trust model). Install **paru**/**yay** yourself first if you prefer.
 
@@ -229,6 +229,7 @@ sudo cmake --install .
 ./scripts/build_arch_linux.sh --build-only
 ./scripts/build_arch_linux.sh --install-only   # script runs sudo where needed for install
 ./scripts/build_arch_linux.sh --with-wiimote   # full run + try AUR cwiid
+./scripts/build_arch_linux.sh --with-webcam    # configure with -DENABLE_WEBCAM=ON
 ```
 
 Use `--help` for all flags.
@@ -259,7 +260,8 @@ Use `--help` for all flags.
 |---------|----------|
 | `Couldn't load library 'libwc.so.0'` | `sudo ldconfig` |
 | GUI not displaying on Wayland | `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied on device | `sudo usermod -a -G plugdev,input $USER` (re-login) |
+| Permission denied on device | `sudo usermod -a -G plugdev,input,uinput,video $USER` (re-login). Webcams need **`video`**; udev rules do not cover `/dev/video*`. |
+| Webcam not listed | **Webcam support: YES** in System tab but empty device list | Add **`video`** group; `v4l2-ctl --list-devices`; check System tab **libwc driver** line; `./scripts/build_arch_linux.sh --with-webcam` or `-DENABLE_WEBCAM=ON` |
 | Application not in launcher | `sudo update-desktop-database /opt/share/applications` |
 
 ### Camera view / 3D preview quirks

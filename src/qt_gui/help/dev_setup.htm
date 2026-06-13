@@ -149,7 +149,13 @@ Verify your user is in the required groups:
 groups $USER
 </pre>
 <p>
-You should see groups like <code>input</code>, <code>plugdev</code>, or similar hardware access groups.
+You should see groups like <code>input</code>, <code>plugdev</code>, <code>uinput</code>, and <code>video</code> for full device access.
+</p>
+<p>
+<strong>USB webcams</strong> use <code>/dev/video*</code> and the <code>video</code> group — they are
+<strong>not</strong> covered by the TrackIR/Mickey udev rules. If no webcam appears in the device list,
+run <code>sudo usermod -a -G video $USER</code>, log out and back in, then verify with
+<code>v4l2-ctl --list-devices</code>.
 </p>
 
 <h3>Step 3: Reboot System</h3>

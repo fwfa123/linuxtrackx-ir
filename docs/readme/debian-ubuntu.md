@@ -212,7 +212,8 @@ sudo cmake --install .
 | Wine bridge install fails in prefix | Verify prefix path, `wine` binary, and payload under `/opt/lib/linuxtrack/wine_bridge/`; try current Proton or Wine Staging if issues persist |
 | `Wine bridge: disabled (mingw-w64 toolchains not found)` | Install MinGW toolchain: `sudo apt install mingw-w64` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input $USER` |
+| Permission denied on device | Add user to groups: `sudo usermod -a -G plugdev,input,uinput,video $USER` (re-login). Webcams need **`video`**; udev rules do not cover `/dev/video*`. |
+| Webcam not listed | System tab **Webcam support: YES** is compile-time only | Add **`video`** group; run `v4l2-ctl --list-devices`; check System tab for **libwc driver** status; `sudo ldconfig` if `libwc.so.0` missing |
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
 | OpenCV detection failed | Facetrack / `libp3eft` missing; webcam without face mode may still work. On the **build** machine: `sudo apt install libopencv-dev` and configure with `-DENABLE_FACE_TRACKER=ON`. AppImage users should get OpenCV from the bundle, not the distro. |
 | AppImage build: `patchelf not available` | `sudo apt install patchelf`, then rebuild the AppImage |

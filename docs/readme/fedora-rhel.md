@@ -290,7 +290,8 @@ export PATH="/usr/lib64/qt6/bin:/usr/lib64/qt6/libexec:$PATH"
 | `Couldn't load library 'libwc.so.0'` | Update library cache: `sudo ldconfig` |
 | Wiimote build disabled (`pkg-config` cannot find `cwiid`) | Ensure `cwiid.pc` is installed, then set `PKG_CONFIG_PATH="/usr/local/lib64/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"` and rerun CMake with `-DENABLE_WIIMOTE=ON` |
 | GUI not displaying on Wayland | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied on device | Add to groups: `sudo usermod -a -G plugdev,input $USER` |
+| Permission denied on device | Add to groups: `sudo usermod -a -G plugdev,input,uinput,video $USER` (re-login). Webcams need **`video`**; udev rules do not cover `/dev/video*`. |
+| Webcam not listed | **Webcam support: YES** but no device in list | Add **`video`** group; `v4l2-ctl --list-devices`; check System tab **libwc driver**; `sudo ldconfig` if `libwc.so.0` missing |
 | Application not in launcher | Use `/usr/local` prefix instead of `/opt` |
 
 ### Lutris (Flatpak)

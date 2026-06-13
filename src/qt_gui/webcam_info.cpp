@@ -242,6 +242,27 @@ WebcamInfo::~WebcamInfo()
   enum_webcam_formats_cleanup_fun(&fmts);
 }
 
+bool WebcamInfo::isDriverLoaded()
+{
+  return webcamInfoOk;
+}
+
+int WebcamInfo::countEnumeratedWebcams()
+{
+  if(!webcamInfoOk){
+    return 0;
+  }
+  char **ids = NULL;
+  int count = 0;
+  if(enum_webcams_fun(&ids) > 0){
+    while((ids[count]) != NULL){
+      ++count;
+    }
+    ltr_int_array_cleanup(&ids);
+  }
+  return count;
+}
+
 QStringList& WebcamInfo::EnumerateWebcams()
 {
   QStringList *res = new QStringList();
