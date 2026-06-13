@@ -245,7 +245,11 @@ if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
         ${LIBV4L2_LIBRARY}
     )
     if(FACE_TRACKER_SUPPORT)
-        target_link_libraries(wc ${OPENCV_LIBRARIES})
+        # facetrack.cpp: CascadeClassifier only (core/imgproc/objdetect).
+        # ${OPENCV_LIBRARIES} from opencv4.pc lists every module (HDF5/VTK, etc.)
+        # and breaks AppImage dlopen when those optional libs are not bundled.
+        target_link_directories(wc PRIVATE ${OPENCV_LIBRARY_DIRS})
+        target_link_libraries(wc opencv_core opencv_imgproc opencv_objdetect)
     endif()
     
     # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/webcam_driver.sym)
@@ -297,7 +301,8 @@ if(NOT APPLE)
             ltr
             ${MATH_LIBRARY}
         )
-        target_link_libraries(p3eft ${OPENCV_LIBRARIES})
+        target_link_directories(p3eft PRIVATE ${OPENCV_LIBRARY_DIRS})
+        target_link_libraries(p3eft opencv_core opencv_imgproc opencv_objdetect)
     endif()
 endif()
 

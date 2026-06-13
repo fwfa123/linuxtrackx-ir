@@ -118,6 +118,21 @@ else
     failures=$((failures + 1))
 fi
 
+LIBWC="$ROOT/usr/lib/linuxtrack/libwc.so.0"
+if [[ -f "$LIBWC" || -L "$LIBWC" ]]; then
+    print_success "Webcam driver present: usr/lib/linuxtrack/libwc.so.0"
+    if ldd "$LIBWC" 2>/dev/null | grep -q 'not found'; then
+        print_error "libwc.so.0 has unresolved dependencies:"
+        ldd "$LIBWC" 2>/dev/null | grep 'not found' || true
+        failures=$((failures + 1))
+    else
+        print_success "libwc.so.0 dependencies resolve"
+    fi
+else
+    print_error "Missing webcam driver: usr/lib/linuxtrack/libwc.so.0"
+    failures=$((failures + 1))
+fi
+
 # --- Optional short launch (offscreen); does not require imageformat plugins for window chrome ---
 if [[ "${SMOKE_LAUNCH:-0}" == "1" ]]; then
     HOME_TMP=$(mktemp -d)

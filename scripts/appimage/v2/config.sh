@@ -71,6 +71,7 @@ WITH_HELP="1"
 WITH_ZSYNC="0"
 # Full bundle (README Level 7): face tracker + Wiimote; validate.sh enforces when 1
 EXPECT_LEVEL7="${EXPECT_LEVEL7:-1}"
+EXPECT_FACE_TRACKER="${EXPECT_FACE_TRACKER:-1}"
 
 # Build toggles
 CLEAN="0"

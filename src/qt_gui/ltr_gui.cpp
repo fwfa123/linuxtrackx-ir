@@ -1387,7 +1387,8 @@ QString LinuxtrackGui::getLinuxTrackInfo()
       info += QStringLiteral("V4L webcams enumerated: %1\n")
                   .arg(WebcamInfo::countEnumeratedWebcams());
     }else{
-      info += QStringLiteral("libwc driver: failed to load (check libwc.so, ldconfig, PREFIX)\n");
+      info += QStringLiteral("libwc driver: failed to load (see ~/.config/linuxtrack log; "
+                             "AppImage: bundled lib under usr/lib/linuxtrack)\n");
     }
     {
       int v4lNodes = 0;

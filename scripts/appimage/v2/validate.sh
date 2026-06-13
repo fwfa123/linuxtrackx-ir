@@ -56,18 +56,30 @@ fi
 
 # ---- Webcam driver ----
 if linuxtrack_lib_present wc; then
-    print_status "Found webcam driver library (libwc)"
+    print_success "Found webcam driver library (libwc)"
+    _libwc=$(find "$APPDIR/usr/lib/linuxtrack" -maxdepth 1 \( -name 'libwc.so.0' -o -name 'libwc.so.0.*' \) \( -type f -o -type l \) -print -quit 2>/dev/null)
+    if [[ -n "$_libwc" ]] && command -v ldd >/dev/null 2>&1; then
+        if ldd "$_libwc" 2>/dev/null | grep -q 'not found'; then
+            print_error "libwc.so.0 has unresolved dependencies (dlopen will fail):"
+            ldd "$_libwc" 2>/dev/null | grep 'not found' || true
+            failures=$((failures+1))
+        else
+            print_success "libwc.so.0 dependencies resolve (dlopen-ready)"
+        fi
+    fi
 else
     print_warning "libwc not in AppDir (webcam support may be disabled)"
 fi
 
 # ---- README Level 7: OpenCV face tracker + Wiimote ----
 if [[ "${EXPECT_LEVEL7:-1}" == "1" ]]; then
-    if linuxtrack_lib_present p3eft; then
-        print_success "Found face tracker library (libp3eft)"
-    else
-        print_error "Missing face tracker library: libp3eft (builder needs OpenCV; ENABLE_FACE_TRACKER=ON)"
-        failures=$((failures+1))
+    if [[ "${EXPECT_FACE_TRACKER:-1}" == "1" ]]; then
+        if linuxtrack_lib_present p3eft; then
+            print_success "Found face tracker library (libp3eft)"
+        else
+            print_error "Missing face tracker library: libp3eft (builder needs OpenCV; ENABLE_FACE_TRACKER=ON)"
+            failures=$((failures+1))
+        fi
     fi
     if [[ -x "$APPDIR/usr/bin/wii_server" ]]; then
         print_success "Wiimote UI present: usr/bin/wii_server"

@@ -326,6 +326,57 @@ char *ltr_int_get_data_path_prefix(const char *data, const char *prefix)
   return data_path;
 }
 
+#ifndef DARWIN
+static char *ltr_int_try_lib_at_dir(const char *lib_dir, const char *libname)
+{
+  char *lib_path1;
+  char *lib_path;
+  FILE *f;
+
+  if(lib_dir == NULL){
+    return NULL;
+  }
+  lib_path1 = ltr_int_my_strcat(lib_dir, libname);
+  if(lib_path1 == NULL){
+    return NULL;
+  }
+  lib_path = ltr_int_my_strcat(lib_path1, LIB_SUFFIX);
+  free(lib_path1);
+  if(lib_path == NULL){
+    return NULL;
+  }
+  f = fopen(lib_path, "rb");
+  if(f != NULL){
+    fclose(f);
+    return lib_path;
+  }
+  free(lib_path);
+  return NULL;
+}
+
+static char *ltr_int_prefix_to_lib_dir(const char *prefix)
+{
+  char *base;
+  char *lib_dir;
+  size_t len;
+
+  if(prefix == NULL || prefix[0] == '\0'){
+    return NULL;
+  }
+  base = ltr_int_my_strdup(prefix);
+  if(base == NULL){
+    return NULL;
+  }
+  len = strlen(base);
+  if(len > 4 && strcmp(base + len - 4, "/bin") == 0){
+    base[len - 4] = '\0';
+  }
+  lib_dir = ltr_int_my_strcat(base, "/lib/linuxtrack/");
+  free(base);
+  return lib_dir;
+}
+#endif
+
 char *ltr_int_get_lib_path(const char *libname)
 {
 #ifdef DARWIN
@@ -339,65 +390,58 @@ char *ltr_int_get_lib_path(const char *libname)
   free(lib_path1);
   return lib_path;
 #else
-  // On Linux, try to construct full path for file operations (like installer)
-  // First try to get prefix from config and construct path
-  char *lib_dir = ltr_int_get_app_path("/lib/linuxtrack/");
-  if(lib_dir != NULL){
-    // If prefix was something like "/usr/local/bin", normalize it
-    size_t dir_len = strlen(lib_dir);
-    if(dir_len > 4 && strcmp(lib_dir + dir_len - 4, "/bin") == 0){
-      // Replace /bin with /lib/linuxtrack/
-      lib_dir[dir_len - 4] = '\0';
-      char *normalized = ltr_int_my_strcat(lib_dir, "/lib/linuxtrack/");
+  char *prefix_path;
+  char *lib_dir;
+  char *lib_path;
+  const char *appdir;
+
+  prefix_path = ltr_int_get_app_path("");
+  if(prefix_path != NULL){
+    lib_dir = ltr_int_prefix_to_lib_dir(prefix_path);
+    free(prefix_path);
+    if(lib_dir != NULL){
+      lib_path = ltr_int_try_lib_at_dir(lib_dir, libname);
       free(lib_dir);
-      lib_dir = normalized;
-    }
-    
-    char *lib_path1 = ltr_int_my_strcat(lib_dir, libname);
-    char *lib_path = ltr_int_my_strcat(lib_path1, LIB_SUFFIX);
-    free(lib_dir);
-    free(lib_path1);
-    
-    // Verify file exists
-    FILE *f = fopen(lib_path, "rb");
-    if(f != NULL){
-      fclose(f);
-      return lib_path;
-    }
-    // File doesn't exist at that path, free and try fallback
-    free(lib_path);
-  }
-  
-  // Fallback: try standard installation paths
-  const char *standard_paths[] = {
-    "/opt/lib/linuxtrack/",
-    "/usr/local/lib/linuxtrack/",
-    "/usr/lib/linuxtrack/",
-    "/usr/lib64/linuxtrack/",
-    NULL
-  };
-  
-  for(int i = 0; standard_paths[i] != NULL; i++){
-    size_t len = strlen(standard_paths[i]) + strlen(libname) + strlen(LIB_SUFFIX) + 1;
-    char *lib_path = (char *)malloc(len);
-    if(lib_path){
-      snprintf(lib_path, len, "%s%s%s", standard_paths[i], libname, LIB_SUFFIX);
-      FILE *f = fopen(lib_path, "rb");
-      if(f != NULL){
-        fclose(f);
+      if(lib_path != NULL){
         return lib_path;
       }
-      free(lib_path);
     }
   }
-  
-  // Final fallback: return just library name for dlopen compatibility (runtime loading)
-  size_t len = strlen(libname) + strlen(LIB_SUFFIX) + 1;
-  char *lib_path = (char *)malloc(len);
-  if (lib_path) {
-    snprintf(lib_path, len, "%s%s", libname, LIB_SUFFIX);
+
+  appdir = getenv("APPDIR");
+  if(appdir != NULL && appdir[0] != '\0'){
+    lib_dir = NULL;
+    if(asprintf(&lib_dir, "%s/usr/lib/linuxtrack/", appdir) >= 0){
+      lib_path = ltr_int_try_lib_at_dir(lib_dir, libname);
+      free(lib_dir);
+      if(lib_path != NULL){
+        return lib_path;
+      }
+    }
   }
-  return lib_path;
+
+  if(appdir == NULL || appdir[0] == '\0'){
+    const char *standard_paths[] = {
+      "/opt/lib/linuxtrack/",
+      "/usr/local/lib/linuxtrack/",
+      "/usr/lib/linuxtrack/",
+      "/usr/lib64/linuxtrack/",
+      NULL
+    };
+
+    for(int i = 0; standard_paths[i] != NULL; i++){
+      lib_path = ltr_int_try_lib_at_dir(standard_paths[i], libname);
+      if(lib_path != NULL){
+        return lib_path;
+      }
+    }
+  }
+
+  lib_path = NULL;
+  if(asprintf(&lib_path, "%s%s", libname, LIB_SUFFIX) >= 0){
+    return lib_path;
+  }
+  return NULL;
 #endif
 }
 
