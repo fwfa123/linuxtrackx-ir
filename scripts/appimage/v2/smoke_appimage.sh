@@ -20,6 +20,8 @@ APPIMAGE="${1:-$PROJECT_ROOT/${APP_NAME}-${VERSION}-x86_64.AppImage}"
 
 print_status "Smoke test: $APPIMAGE"
 
+verify_appimage_runtime "$APPIMAGE"
+
 failures=0
 
 OFF=$("$APPIMAGE" --appimage-offset 2>/dev/null) || die "Failed to read --appimage-offset"

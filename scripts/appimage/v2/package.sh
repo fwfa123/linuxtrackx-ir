@@ -8,19 +8,28 @@ source "$SCRIPT_DIR/bundle_policy.sh"
 
 print_status "Package: creating AppImage"
 
+ensure_appimage_toolchain
+
 [[ -e "$APPIMAGETOOL" ]] || die "appimagetool not found at $APPIMAGETOOL"
 chmod +x "$APPIMAGETOOL" 2>/dev/null || true
 [[ -x "$APPIMAGETOOL" ]] || die "appimagetool not executable at $APPIMAGETOOL"
+[[ -f "$APPIMAGE_RUNTIME" ]] || die "type2 runtime not found at $APPIMAGE_RUNTIME"
 [[ -d "$APPDIR" ]] || die "AppDir not found: $APPDIR"
 
 pushd "$PROJECT_ROOT" >/dev/null
     OUT="${APP_NAME}-${VERSION}-x86_64.AppImage"
     OUT_PATH="$PROJECT_ROOT/$OUT"
     print_status "Building AppImage -> $OUT_PATH"
-    # Enable extract-and-run to avoid FUSE dependency issues on some distros
-    ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=${APPIMAGE_EXTRACT_AND_RUN:-1} "$APPIMAGETOOL" "$APPDIR" "$OUT_PATH" || die "appimagetool failed to create $OUT_PATH"
+    print_status "Using runtime: $APPIMAGE_RUNTIME"
+    # Enable extract-and-run to avoid FUSE dependency issues on some distros (appimagetool only)
+    RUNTIME_ARGS=(--runtime-file "$APPIMAGE_RUNTIME")
+    ARCH=x86_64 APPIMAGE_EXTRACT_AND_RUN=${APPIMAGE_EXTRACT_AND_RUN:-1} \
+        "$APPIMAGETOOL" "${RUNTIME_ARGS[@]}" "$APPDIR" "$OUT_PATH" \
+        || die "appimagetool failed to create $OUT_PATH"
 
     [[ -f "$OUT_PATH" ]] || die "Expected AppImage not created: $OUT_PATH"
+
+    verify_appimage_runtime "$OUT_PATH"
 
     if [[ "${WITH_ZSYNC}" = "1" ]]; then
         print_status "Generating zsync"

@@ -2,7 +2,12 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: **2.0.0** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
+> **Note**: **2.0.x** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
+
+## [2.0.1] - 2026-06-13
+
+### Fixed
+- **AppImage**: embed modern static `type2-runtime` (FUSE3) via updated `appimagetool`; no longer requires host `libfuse2` on FUSE3-only distros (Ubuntu 24.04+, Fedora Atomic, etc.). Build pipeline fetches/pins runtime, rejects legacy AppImageKit `5735cc5` runtime.
 
 ## [2.0.0] - 2026-05-24 — WOW64 rearchitecture (now on `main`)
 

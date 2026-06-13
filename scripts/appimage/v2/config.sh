@@ -52,8 +52,17 @@ extract_version() {
 # Extract version
 extract_version
 
-# Tools — prefer PATH (Docker container), fall back to local copies
-APPIMAGETOOL="${APPIMAGETOOL:-$(command -v appimagetool 2>/dev/null || echo "$APPSCRIPTS_DIR/appimagetool-x86_64.AppImage")}"
+# AppImage packaging toolchain (modern type2-runtime; not legacy AppImageKit 5735cc5)
+APPIMAGETOOL_URL="${APPIMAGETOOL_URL:-https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage}"
+APPIMAGE_RUNTIME_URL="${APPIMAGE_RUNTIME_URL:-https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64}"
+# continuous tags move; pin commits in Dockerfile comments when auditing reproducibility
+
+LOCAL_APPIMAGETOOL="$APPSCRIPTS_DIR/appimagetool-x86_64.AppImage"
+LOCAL_APPIMAGE_RUNTIME="$APPSCRIPTS_DIR/runtime-x86_64"
+
+# Tools — prefer PATH (Docker container), fall back to fetched local copies
+APPIMAGETOOL="${APPIMAGETOOL:-$(command -v appimagetool 2>/dev/null || echo "$LOCAL_APPIMAGETOOL")}"
+APPIMAGE_RUNTIME="${APPIMAGE_RUNTIME:-$LOCAL_APPIMAGE_RUNTIME}"
 
 # Feature toggles
 FORCE_XCB="1"              # default to xcb; can be overridden

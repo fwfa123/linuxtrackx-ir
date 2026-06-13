@@ -144,6 +144,7 @@ AppDir_*/
 build-appimage/
 squashfs-root/
 appimagetool-*
+scripts/appimage/runtime-x86_64
 linuxdeploy-*
 linuxdeploy-plugin-*
 scripts/appimage/v2/logs/

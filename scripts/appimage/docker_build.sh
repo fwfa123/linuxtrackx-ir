@@ -30,7 +30,7 @@ HOST_GID=$(id -g)
 
 # In-container defaults: require SDK when the image was built with WITH_XPLANE_SDK=1 so CMake always
 # produces the xlinuxtrack9 plugin for the AppImage.
-RUN_ENV=( -e APPIMAGE_EXTRACT_AND_RUN=1 )
+RUN_ENV=( -e APPIMAGE_EXTRACT_AND_RUN=1 -e APPIMAGE_RUNTIME=/opt/appimage-runtime/runtime-x86_64 )
 if [[ "$WITH_XPLANE_SDK" == "1" ]]; then
     RUN_ENV+=( -e XPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders )
     RUN_ENV+=( -e REQUIRE_XPLANE_SDK=1 )
