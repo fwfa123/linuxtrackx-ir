@@ -58,9 +58,11 @@ void TrackIRPermissionDialog::setupUI()
         "<p><b>What this will do:</b></p>"
         "<ul>"
         "<li>Install udev rules for TrackIR, PlayStation Eye (1415:2000), and Mickey/uinput</li>"
-        "<li>Add your user to the required groups (plugdev, input, uinput)</li>"
+        "<li>Add your user to the required groups (plugdev, input, uinput, video)</li>"
         "<li>Reload udev rules to apply changes</li>"
         "</ul>"
+        "<p><b>Webcam note:</b> Standard USB webcams use the <b>video</b> group and "
+        "<code>/dev/video*</code> — they are <b>not</b> covered by the udev rules above.</p>"
         "<p><b>Note:</b> You will need to <b>reboot your system</b> for group changes to take effect.</p>"
     ));
     messageLabel->setWordWrap(true);
@@ -159,7 +161,9 @@ void TrackIRPermissionDialog::onHelpClicked()
            "sudo cp /path/to/linuxtrack/src/99-Mickey.rules /lib/udev/rules.d/\n"
            "sudo udevadm control --reload-rules</pre>"
            "<p><b>2. Add user to required groups:</b></p>"
-           "<pre>sudo usermod -a -G plugdev,input,uinput $USER</pre>"
+           "<pre>sudo usermod -a -G plugdev,input,uinput,video $USER</pre>"
+           "<p>TrackIR / PS3 Eye: plugdev + udev rules. Mickey: uinput. "
+           "<b>Webcam: video group</b> (no project udev rule).</p>"
            "<p><b>3. Reboot your system</b></p>"
            "<p><b>4. Test devices:</b></p>"
            "<pre>lsusb | grep 131d   # TrackIR\n"
@@ -242,14 +246,15 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "USB tracking device setup:\n\n"
         "The automatic installation will:\n"
         "• Install udev rules for TrackIR, PlayStation Eye (1415:2000), and Mickey/uinput\n"
-        "• Add your user to required groups (plugdev, input, uinput)\n"
+        "• Add your user to required groups (plugdev, input, uinput, video)\n"
         "• Reload udev rules to apply changes\n\n"
+        "Standard USB webcams need the video group (/dev/video*), not udev rules.\n\n"
         "If you prefer to do this manually, you can:\n\n"
         "1. Install udev rules under /etc/udev/rules.d/:\n"
         "   sudo cp /path/to/linuxtrack/src/99-TIR.rules /path/to/linuxtrack/src/99-PS3Eye.rules /path/to/linuxtrack/src/99-Mickey.rules /etc/udev/rules.d/\n"
         "   sudo udevadm control --reload-rules\n\n"
         "2. Add user to groups:\n"
-        "   sudo usermod -a -G plugdev,input,uinput $USER\n\n"
+        "   sudo usermod -a -G plugdev,input,uinput,video $USER\n\n"
         "3. Reboot your system for changes to take effect\n\n"
         "4. Test: lsusb | grep 131d   # TrackIR\n"
         "   lsusb | grep 1415         # PlayStation Eye\n\n"
@@ -344,10 +349,10 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "# Add user to uinput group\n"
         "usermod -a -G uinput \"%2\"\n"
         "\n"
-        "# On Arch Linux, also try adding to video group for OpenGL access\n"
+        "# On Linux, add user to video group for V4L2 webcam access (/dev/video*)\n"
         "if getent group video > /dev/null 2>&1; then\n"
         "    usermod -a -G video \"%2\"\n"
-        "    echo \"Added user to video group for OpenGL access\"\n"
+        "    echo \"Added user to video group for webcam access\"\n"
         "fi\n"
         "\n"
         "# Reload udev rules\n"
@@ -438,9 +443,10 @@ bool TrackIRPermissionDialog::addUserToGroups()
         return false;
     }
     
-    // Add user to plugdev and input groups
+    // Add user to plugdev, input, uinput, and video groups
     QStringList arguments;
-    arguments << QString::fromUtf8("usermod") << QString::fromUtf8("-a") << QString::fromUtf8("-G") << QString::fromUtf8("plugdev,input") << currentUser;
+    arguments << QString::fromUtf8("usermod") << QString::fromUtf8("-a") << QString::fromUtf8("-G")
+              << QString::fromUtf8("plugdev,input,uinput,video") << currentUser;
     
     process.start(QString::fromUtf8("pkexec"), arguments);
     if (!process.waitForFinished(30000)) {
@@ -453,7 +459,7 @@ bool TrackIRPermissionDialog::addUserToGroups()
     }
     
     if (process.exitCode() != 0) {
-        qDebug() << "Failed to add user to plugdev and input groups:" << process.errorString();
+        qDebug() << "Failed to add user to plugdev, input, uinput, and video groups:" << process.errorString();
         return false;
     }
     

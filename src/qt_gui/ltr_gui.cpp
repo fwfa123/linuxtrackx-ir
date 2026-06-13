@@ -46,6 +46,9 @@
 #include "about_dialog.h"
 #include "extractor.h"
 #include "trackir_permission_dialog.h"
+#if defined(WEBCAM_SUPPORT) && WEBCAM_SUPPORT && !defined(DARWIN)
+#include "webcam_info.h"
+#endif
 #include <linuxtrack.h>
 #include <ltlib_int.h>
 
@@ -1378,6 +1381,25 @@ QString LinuxtrackGui::getLinuxTrackInfo()
     // Check LinuxTrack support status from actual build configuration
 #if defined(WEBCAM_SUPPORT) && WEBCAM_SUPPORT
     info += QStringLiteral("Webcam support: YES\n");
+#if !defined(DARWIN)
+    if(WebcamInfo::isDriverLoaded()){
+      info += QStringLiteral("libwc driver: loaded\n");
+      info += QStringLiteral("V4L webcams enumerated: %1\n")
+                  .arg(WebcamInfo::countEnumeratedWebcams());
+    }else{
+      info += QStringLiteral("libwc driver: failed to load (check libwc.so, ldconfig, PREFIX)\n");
+    }
+    {
+      int v4lNodes = 0;
+      const QStringList entries = QDir(QStringLiteral("/dev")).entryList(
+          QStringList() << QStringLiteral("video*"), QDir::System);
+      v4lNodes = entries.size();
+      info += QStringLiteral("V4L device nodes (/dev/video*): %1\n").arg(v4lNodes);
+    }
+    info += TrackIRPermissionDialog::checkIfUserInGroup(QStringLiteral("video"))
+                ? QStringLiteral("User in video group: YES\n")
+                : QStringLiteral("User in video group: NO (required for USB webcams)\n");
+#endif
 #else
     info += QStringLiteral("Webcam support: NO\n");
 #endif

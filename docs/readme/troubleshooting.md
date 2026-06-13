@@ -34,8 +34,33 @@ QT_QPA_PLATFORM=xcb ltr_gui
 groups $USER
 
 # Add if missing (logout/login required)
-sudo usermod -a -G plugdev,input $USER
+sudo usermod -a -G plugdev,input,uinput,video $USER
 ```
+
+**Group reference:** TrackIR / PS3 Eye → `plugdev` (+ udev rules). Mickey → `uinput`. **USB webcams → `video`** (`/dev/video*`; not covered by project udev rules).
+
+## Webcam not listed (all distros)
+
+**Symptom:** System tab shows **Webcam support: YES** but no webcam in the device list.
+
+That line is **compile-time** only. Runtime needs `libwc.so` loaded and permission to open `/dev/video*`.
+
+```bash
+groups $USER                    # should include video
+ls -l /dev/video*
+v4l2-ctl --list-devices
+ldconfig -p | grep libwc
+ldd /opt/lib/linuxtrack/libwc.so.0   # adjust prefix if not /opt
+```
+
+| Check | Fix |
+|-------|-----|
+| Not in `video` group | `sudo usermod -a -G video $USER`, re-login |
+| `libwc driver: failed to load` (System tab) | `sudo ldconfig`; reinstall build with `-DENABLE_WEBCAM=ON` |
+| Nodes exist but none usable | Use capture node from `v4l2-ctl --list-devices` (not metadata-only nodes) |
+| Installed udev rules only | udev rules are for TrackIR/PS3 Eye/Mickey — **not** generic webcams |
+
+Distro packages for a **source build** with webcam: `libv4l-dev` + `v4l-utils` (Debian/Ubuntu), `libv4l-devel` + `v4l-utils` (Fedora), `libv4l` + `v4l-utils` (Arch). See your [distribution guide](#distribution-specific-quick-fixes).
 
 ## Common Issues
 
@@ -61,7 +86,7 @@ sudo usermod -a -G plugdev,input $USER
 | Library not found | `Couldn't load library 'libwc.so.0'` | Run `sudo ldconfig` |
 | GUI not displaying | Window doesn't appear | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
 | Black/blank dialogs | Lutris/Steam game selection dialogs appear black | Force X11: `QT_QPA_PLATFORM=xcb ltr_gui` |
-| Permission denied | Device access error | Add user to `plugdev,input` groups |
+| Permission denied | Device access error | Add user to `plugdev,input,uinput,video` groups (webcams need `video`) |
 | TrackIR not detected | No tracking | Check USB device: `lsusb \| grep Track` |
 | Wine bridge fails | Windows games don't track | Check Wine installation and MFC42 setup |
 
@@ -78,6 +103,10 @@ sudo usermod -a -G plugdev,input $USER
 
 #### Debian/Ubuntu
 ```bash
+# Webcam not listed: video group + V4L check
+sudo usermod -a -G video $USER   # re-login
+v4l2-ctl --list-devices
+
 # MinGW bridge toolchain (NSIS not required for v2 native Wine bridge)
 sudo apt install mingw-w64
 
@@ -87,6 +116,10 @@ sudo apt install qt6-tools-dev-tools
 
 #### Arch Linux
 ```bash
+# Webcam not listed: video group + V4L check
+sudo usermod -a -G video $USER   # re-login
+v4l2-ctl --list-devices
+
 # MinGW bridge toolchain + Wine runtime
 sudo pacman -S mingw-w64-gcc wine wine-mono wine-gecko
 
@@ -97,6 +130,10 @@ The `build_32bit_libs.sh` script has been removed. Lib32-mxml and lib32-liblo ar
 
 #### Fedora/RHEL
 ```bash
+# Webcam not listed: video group + V4L check
+sudo usermod -a -G video $USER   # re-login
+v4l2-ctl --list-devices
+
 # Qt6 tools PATH (critical)
 export PATH="/usr/lib64/qt6/bin:$PATH"
 

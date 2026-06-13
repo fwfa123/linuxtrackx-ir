@@ -15,6 +15,7 @@
 /* PS3 Eye prefs UI (name says Mac; also used on Linux when libp3e/libp3eft are installed). */
 #include "macps3eye_prefs.h"
 #include "macps3eyeft_prefs.h"
+#include "webcam_info.h"
 #endif
 #include "tir_prefs.h"
 #include "tir_driver_prefs.h"
@@ -25,6 +26,11 @@
 #include "tracking.h"
 #include <iostream>
 #include <QTimer>
+#include <QMessageBox>
+#include <QDir>
+#include <QSettings>
+#include <QCheckBox>
+#include "trackir_permission_dialog.h"
 
 
 /* Coding:
@@ -311,7 +317,40 @@ void DeviceSetup::refresh()
   res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
   res |= MacP3eFtPrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
   res |= WebcamFtPrefs::AddAvailableDevices(*(ui.DeviceSelector));
+#if defined(WEBCAM_SUPPORT) && WEBCAM_SUPPORT
+  {
+    const int webcamCountBefore = WebcamInfo::countEnumeratedWebcams();
+    const int v4lNodes = QDir(QStringLiteral("/dev")).entryList(
+        QStringList() << QStringLiteral("video*"), QDir::System).size();
+    res |= WebcamPrefs::AddAvailableDevices(*(ui.DeviceSelector));
+    if(v4lNodes > 0 && webcamCountBefore == 0
+       && !TrackIRPermissionDialog::checkIfUserInGroup(QStringLiteral("video"))){
+      QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("webcam_permissions"));
+      if(!settings.value(QStringLiteral("dont_show_webcam_hint"), false).toBool()){
+        QMessageBox msgBox(this);
+        msgBox.setWindowTitle(tr("Webcam not detected"));
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setText(tr("LinuxTrack found V4L device nodes but no usable webcam in the list."));
+        msgBox.setInformativeText(
+            tr("Project udev rules (TrackIR, PS3 Eye, Mickey) do not grant access to standard "
+               "USB webcams.\n\n"
+               "Add your user to the video group, then log out and back in:\n"
+               "  sudo usermod -a -G video $USER\n\n"
+               "Verify with: v4l2-ctl --list-devices\n"
+               "Then click Refresh. See the System tab for libwc driver status."));
+        msgBox.setStandardButtons(QMessageBox::Ok);
+        QCheckBox *dontShow = new QCheckBox(tr("Don't show this again"), &msgBox);
+        msgBox.setCheckBox(dontShow);
+        msgBox.exec();
+        if(dontShow->isChecked()){
+          settings.setValue(QStringLiteral("dont_show_webcam_hint"), true);
+        }
+      }
+    }
+  }
+#else
   res |= WebcamPrefs::AddAvailableDevices(*(ui.DeviceSelector));
+#endif
   res |= JoyPrefs::AddAvailableDevices(*(ui.DeviceSelector));
 #endif
   if(!res){

@@ -87,7 +87,7 @@ install_dependencies() {
     sudo pacman -S --needed mingw-w64-gcc
     
     # Video4Linux
-    sudo pacman -S --needed v4l-utils
+    sudo pacman -S --needed v4l-utils libv4l
     
     print_success "Build dependencies installed"
 }
@@ -187,6 +187,9 @@ verify_wine_bridge_toolchain() {
     print_success "Wine + MinGW toolchains verified"
 }
 
+# Optional CMake flags (set before configure_build)
+CMAKE_EXTRA_FLAGS=""
+
 # Function to configure build
 configure_build() {
     print_status "Configuring build with CMake..."
@@ -197,7 +200,8 @@ configure_build() {
     
     # Configure with CMake
     cmake .. \
-        -DCMAKE_INSTALL_PREFIX=/opt
+        -DCMAKE_INSTALL_PREFIX=/opt \
+        $CMAKE_EXTRA_FLAGS
     
     # Verify config.h was generated (required for wine bridge components)
     if [ ! -f "config.h" ]; then
@@ -232,8 +236,8 @@ install_project() {
     sudo cmake --install .
     cd ..
     
-    # Add user to plugdev group
-    sudo usermod -a -G plugdev,input $USER
+    # Add user to device access groups (TrackIR, Mickey, webcams)
+    sudo usermod -a -G plugdev,input,uinput,video $USER
     
     print_success "Installation completed successfully"
 }
@@ -276,6 +280,7 @@ show_usage() {
     echo "  --install-only   Install only (assumes build completed)"
     echo "  --verify-only    Verify installation only"
     echo "  --with-wiimote   Try to install AUR cwiid (optional; often broken; see GitLab #8)"
+    echo "  --with-webcam    Configure with -DENABLE_WEBCAM=ON (Level 4 webcam support)"
     echo "  --test-wiimote   Test Wiimote support (pkg-config cwiid)"
     echo "  --test-osc       Test OSC support"
     echo "  --test-xplane    Test X-Plane SDK support"
@@ -300,6 +305,7 @@ main() {
     local test_osc=false
     local test_xplane=false
     local with_wiimote=false
+    local with_webcam=false
     
     while [[ $# -gt 0 ]]; do
         case $1 in
@@ -333,6 +339,10 @@ main() {
                 ;;
             --with-wiimote)
                 with_wiimote=true
+                shift
+                ;;
+            --with-webcam)
+                with_webcam=true
                 shift
                 ;;
             --test-wiimote)
@@ -439,6 +449,10 @@ main() {
     fi
     
     # Configure build
+    if [ "$with_webcam" = true ]; then
+        CMAKE_EXTRA_FLAGS="-DENABLE_WEBCAM=ON"
+        print_status "Webcam support enabled (-DENABLE_WEBCAM=ON)"
+    fi
     if [ "$configure_only" = true ]; then
         print_status "configure-only: ensuring liblo and Wine + MinGW (same as full run before cmake)..."
         install_osc_support

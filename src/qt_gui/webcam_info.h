@@ -22,6 +22,10 @@ class WebcamInfo{
   static bool decodeFps(const QString &fps, int &num, int &den);
   ~WebcamInfo();
   static QStringList& EnumerateWebcams();
+  /** True when libwc loaded at runtime (WEBCAM_SUPPORT build). */
+  static bool isDriverLoaded();
+  /** Number of V4L2 capture devices found (0 if driver not loaded). */
+  static int countEnumeratedWebcams();
  private:
   QString webcam_id;
   webcam_formats fmts;

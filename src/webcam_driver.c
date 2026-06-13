@@ -61,6 +61,7 @@ typedef struct{
   int max_blob_pixels;
   __u32 fourcc;
   bool flip;
+  bool facetrack_mode;
 } webcam_info;
 
 static webcam_info wc_info;
@@ -128,6 +129,9 @@ int ltr_int_enum_webcams(char **ids[])
   int counter = 1; //Already plus one!!!
   plist wc_list = ltr_int_create_list();
   char *id;
+  int nodes_scanned = 0;
+  int open_failed = 0;
+  int no_capture_caps = 0;
   DIR *dev = opendir("/dev");
   if(dev == NULL){
     ltr_int_log_message("Can't open /dev for reading!\n");
@@ -141,10 +145,12 @@ int ltr_int_enum_webcams(char **ids[])
       if(asprintf(&fname, "/dev/%s", de->d_name) < 0){
         continue;
       }
+      ++nodes_scanned;
 
       int fd = v4l2_open(fname, O_RDWR | O_NONBLOCK);
       if(fd == -1){
 	ltr_int_log_message("Can't open file '%s'!\n", fname);
+	++open_failed;
 	free(fname);
 	continue;
       }
@@ -156,12 +162,19 @@ int ltr_int_enum_webcams(char **ids[])
 	++counter;
 	ltr_int_add_element(wc_list, ltr_int_my_strdup(tmp));
 	free(id);
+      }else{
+        ++no_capture_caps;
       }
       v4l2_close(fd);
       free(fname);
     }
   }
   closedir(dev);
+  if(nodes_scanned > 0 && counter == 1){
+    ltr_int_log_message("V4L2 enum: scanned %d /dev/video* node(s), found 0 usable webcams "
+        "(%d open failed — try 'video' group; %d lacked capture+streaming — try v4l2-ctl)\n",
+        nodes_scanned, open_failed, no_capture_caps);
+  }
   //Convert list to array
   return ltr_int_list2string_list(wc_list, ids);
 }
@@ -585,7 +598,11 @@ static bool release_buffers()
 static bool read_img_processing_prefs()
 {
 #ifdef OPENCV
-  wc_info.threshold = 0;
+  if(wc_info.facetrack_mode){
+    wc_info.threshold = 0;
+  }else{
+    wc_info.threshold = ltr_int_wc_get_threshold();
+  }
 #else
   wc_info.threshold = ltr_int_wc_get_threshold();
 #endif
@@ -610,6 +627,7 @@ int ltr_int_tracker_init(struct camera_control_block *ccb)
   }
   wc_info.fd = fd;
   wc_info.expecting_blobs = MAX_BLOBS;
+  wc_info.facetrack_mode = (ccb->device.category == webcam_ft);
 
   if(set_capture_format(ccb) != true){
     ltr_int_log_message("Couldn't set capture format!\n");
@@ -638,10 +656,14 @@ int ltr_int_tracker_init(struct camera_control_block *ccb)
     return -1;
   }
 #ifdef OPENCV
-  if(!ltr_int_init_face_detect()){
-    ltr_int_log_message("Couldn't initialize facetracking!\n");
-    v4l2_close(fd);
-    return -1;
+  if(wc_info.facetrack_mode){
+    if(!ltr_int_init_face_detect()){
+      ltr_int_log_message("Couldn't initialize facetracking!\n");
+      ltr_int_tracker_pause();
+      release_buffers();
+      v4l2_close(fd);
+      return -1;
+    }
   }
 #endif
   ltr_int_log_message("Webcam initialized OK!\n");
@@ -655,7 +677,9 @@ int ltr_int_tracker_close()
   free(wc_info.bw_frame);
   v4l2_close(wc_info.fd);
 #ifdef OPENCV
-  ltr_int_stop_face_detect();
+  if(wc_info.facetrack_mode){
+    ltr_int_stop_face_detect();
+  }
 #endif
   ltr_int_log_message("Webcam shut down!\n");
   ltr_int_cleanup_after_processing();
@@ -854,7 +878,20 @@ int ltr_int_tracker_get_frame(struct camera_control_block *ccb, struct frame_typ
     }
   }
 #else
-  ltr_int_face_detect(&img, &(f->bloblist));
+  if(wc_info.facetrack_mode){
+    ltr_int_face_detect(&img, &(f->bloblist));
+  }else{
+    ltr_int_to_stripes(&img);
+    ltr_int_stripes_to_blobs(MAX_BLOBS, &(f->bloblist), wc_info.min_blob_pixels,
+		     wc_info.max_blob_pixels, &img);
+    if(wc_info.flip){
+      unsigned int tmp;
+      for(tmp = 0; tmp < f->bloblist.num_blobs; ++tmp){
+        f->bloblist.blobs[tmp].x *= -1;
+        f->bloblist.blobs[tmp].y *= -1;
+      }
+    }
+  }
 #endif
   *frame_acquired = true;
   return 0;
