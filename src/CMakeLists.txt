@@ -495,6 +495,29 @@ if(WEBCAM_SUPPORT)
         LIBRARY DESTINATION lib/linuxtrack
         ARCHIVE DESTINATION lib/linuxtrack
     )
+    if(FACE_TRACKER_SUPPORT)
+        # Autotools built libft.so separately; CMake unifies into libwc. Symlink for
+        # backward compatibility with docs/scripts that reference libft.so.0.
+        install(CODE "
+            set(LIB_DIR \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/linuxtrack\")
+            set(LIB_WC \"\${LIB_DIR}/libwc.so.0\")
+            set(SYMLINK \"\${LIB_DIR}/libft.so.0\")
+            if(EXISTS \"\${LIB_WC}\")
+                if(NOT EXISTS \"\${SYMLINK}\")
+                    execute_process(
+                        COMMAND \${CMAKE_COMMAND} -E create_symlink libwc.so.0 libft.so.0
+                        WORKING_DIRECTORY \"\${LIB_DIR}\"
+                        RESULT_VARIABLE SYMLINK_RESULT
+                    )
+                    if(SYMLINK_RESULT EQUAL 0)
+                        message(STATUS \"Created libft.so.0 -> libwc.so.0 symlink\")
+                    else()
+                        message(WARNING \"Failed to create libft.so.0 symlink\")
+                    endif()
+                endif()
+            endif()
+        ")
+    endif()
 endif()
 
 if(NOT APPLE)

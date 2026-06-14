@@ -42,6 +42,7 @@ static bool new_request_received = false;
 int ltr_int_cal_run(struct camera_control_block *ccb, frame_callback_fun cbk)
 {
   char *libname = NULL;
+  const char *load_hint = "";
   assert(ccb != NULL);
   ltr_int_cal_set_state(INITIALIZING);
   switch (ccb->device.category) {
@@ -69,7 +70,8 @@ int ltr_int_cal_run(struct camera_control_block *ccb, frame_callback_fun cbk)
       break;
     case webcam_ft:
 #ifdef WEBCAM_SUPPORT
-      libname = "libft";
+      libname = "libwc";
+      load_hint = " (face-track mode)";
 #else
       ltr_int_cal_set_state(ERROR);
       return LTR_ERROR;
@@ -100,7 +102,7 @@ int ltr_int_cal_run(struct camera_control_block *ccb, frame_callback_fun cbk)
       break;
   }
 
-  ltr_int_log_message("Loading library '%s'\n", libname);
+  ltr_int_log_message("Loading library '%s'%s\n", libname, load_hint);
   if((libhandle = ltr_int_load_library(libname, functions)) == NULL){
     return -1;
   }

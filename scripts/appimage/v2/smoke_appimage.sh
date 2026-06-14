@@ -133,6 +133,21 @@ else
     failures=$((failures + 1))
 fi
 
+LIBFT="$ROOT/usr/lib/linuxtrack/libft.so.0"
+if [[ -f "$LIBWC" || -L "$LIBWC" ]]; then
+    if [[ ! -e "$LIBFT" ]]; then
+        ln -sf libwc.so.0 "$LIBFT"
+    fi
+    if [[ -L "$LIBFT" ]] && [[ "$(readlink "$LIBFT")" == "libwc.so.0" ]]; then
+        print_success "Face-track compat symlink: libft.so.0 -> libwc.so.0"
+    elif [[ -e "$LIBFT" ]]; then
+        print_success "libft.so.0 present"
+    else
+        print_error "Missing libft.so.0 (face-track backward compat)"
+        failures=$((failures + 1))
+    fi
+fi
+
 # --- Optional short launch (offscreen); does not require imageformat plugins for window chrome ---
 if [[ "${SMOKE_LAUNCH:-0}" == "1" ]]; then
     HOME_TMP=$(mktemp -d)

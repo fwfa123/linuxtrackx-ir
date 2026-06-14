@@ -1383,11 +1383,14 @@ QString LinuxtrackGui::getLinuxTrackInfo()
     info += QStringLiteral("Webcam support: YES\n");
 #if !defined(DARWIN)
     if(WebcamInfo::isDriverLoaded()){
-      info += QStringLiteral("libwc driver: loaded\n");
+      info += QStringLiteral("libwc driver: loaded (webcam + face-track modes)\n");
       info += QStringLiteral("V4L webcams enumerated: %1\n")
                   .arg(WebcamInfo::countEnumeratedWebcams());
+#if defined(FACE_TRACKER_SUPPORT) && FACE_TRACKER_SUPPORT
+      info += QStringLiteral("Face track: select \"<cam> face tracker\" device + Face model\n");
+#endif
     }else{
-      info += QStringLiteral("libwc driver: failed to load (see ~/.config/linuxtrack log; "
+      info += QStringLiteral("libwc driver: failed to load (see /tmp/linuxtrack*.log; "
                              "AppImage: bundled lib under usr/lib/linuxtrack)\n");
     }
     {
