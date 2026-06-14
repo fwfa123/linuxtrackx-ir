@@ -67,6 +67,14 @@ if linuxtrack_lib_present wc; then
             print_success "libwc.so.0 dependencies resolve (dlopen-ready)"
         fi
     fi
+    if [[ "${EXPECT_FACE_TRACKER:-1}" == "1" ]]; then
+        _libft="$APPDIR/usr/lib/linuxtrack/libft.so.0"
+        if [[ -e "$_libft" ]]; then
+            print_success "Found face-track compat symlink (libft.so.0)"
+        elif [[ -n "$_libwc" ]]; then
+            print_warning "libft.so.0 missing (create libft -> libwc symlink for Autotools compat)"
+        fi
+    fi
 else
     print_warning "libwc not in AppDir (webcam support may be disabled)"
 fi

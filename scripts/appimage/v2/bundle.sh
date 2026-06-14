@@ -137,7 +137,7 @@ verify_linuxtrack_dlopen() {
     [[ -d "$appdir/usr/lib/flexiblas" ]] && lp="$lp:$appdir/usr/lib/flexiblas"
     lp="$lp:$appdir/usr/lib/linuxtrack"
 
-    for lib in libwc.so.0 libp3eft.so.0; do
+    for lib in libwc.so.0 libft.so.0 libp3eft.so.0; do
         [[ -e "$appdir/usr/lib/linuxtrack/$lib" ]] || continue
         if LD_LIBRARY_PATH="$lp" python3 -c "import ctypes, os; ctypes.CDLL(os.path.join('${appdir}','usr/lib/linuxtrack','${lib}'))" 2>/dev/null; then
             print_success "dlopen OK: usr/lib/linuxtrack/$lib"
@@ -148,6 +148,20 @@ verify_linuxtrack_dlopen() {
         fi
     done
     return $failed
+}
+
+ensure_libft_symlink() {
+    local appdir="$1"
+    local libdir="$appdir/usr/lib/linuxtrack"
+    local libwc="$libdir/libwc.so.0"
+    local libft="$libdir/libft.so.0"
+    [[ -e "$libwc" ]] || return 0
+    if [[ -e "$libft" ]]; then
+        print_success "libft.so.0 present (face-track compat symlink)"
+        return 0
+    fi
+    print_status "Creating libft.so.0 -> libwc.so.0 symlink (Autotools compat)"
+    ln -sf libwc.so.0 "$libft"
 }
 
 # ============================================================================
@@ -391,7 +405,8 @@ QTEOF
     # ------------------------------------------------------------------
     # 10b. Verify webcam / face-track drivers actually dlopen
     # ------------------------------------------------------------------
-    print_status "Verifying libwc / libp3eft dlopen under AppDir LD_LIBRARY_PATH"
+    ensure_libft_symlink "$(pwd)"
+    print_status "Verifying libwc / libft / libp3eft dlopen under AppDir LD_LIBRARY_PATH"
     if ! verify_linuxtrack_dlopen "$(pwd)"; then
         die "libwc/libp3eft dlopen failed — face tracking / webcam will not load"
     fi
