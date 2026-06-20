@@ -127,9 +127,9 @@ void SCView::paintEvent(QPaintEvent * /* event */)
   float uny = (max_f != 0.0) ? h - fabs(upx * (h / max_f)) : h;
   painter.drawLine(QLineF(nx, ny - 5, nx, ny + 5));
   painter.drawLine(QLineF(nx - 5, ny, nx + 5, ny));
-  painter.drawText(QPoint(100,10), QString::fromUtf8("Real: %1").arg(rx));
-  painter.drawText(QPoint(100,20), QString::fromUtf8("Raw: %1").arg(upx));
-  painter.drawText(QPoint(100,30), QString::fromUtf8("Simulated: %1").arg(px));
+  painter.drawText(QPoint(100, 10), QString::fromUtf8("Measured: %1").arg(rx, 0, 'f', 2));
+  painter.drawText(QPoint(100, 20), QString::fromUtf8("Curved: %1").arg(upx, 0, 'f', 2));
+  painter.drawText(QPoint(100, 30), QString::fromUtf8("Filtered: %1").arg(px, 0, 'f', 2));
   
   painter.setPen(Qt::blue);
   painter.drawLine(QLineF(unx, uny - 5, unx, uny + 5));

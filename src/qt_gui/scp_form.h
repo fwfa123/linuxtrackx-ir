@@ -5,6 +5,8 @@
 #include "ui_scp_form.h"
 #include "scurve.h"
 
+class PoseMonitorStrip;
+
 class ScpForm : public QWidget
 {
   Q_OBJECT
@@ -21,8 +23,10 @@ class ScpForm : public QWidget
 */
  private slots:
   void on_SCPCloseButton_pressed();
+  void on_SCPTab_currentChanged(int index);
  private:
   Ui::SCPForm ui;
+  PoseMonitorStrip *poseMonitor;
   SCurve *yaw, *pitch, *roll;
   SCurve *x, *y, *z;
 };

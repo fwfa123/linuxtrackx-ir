@@ -1,10 +1,29 @@
 #include "scp_form.h"
 #include <iostream>
 #include "ltr_profiles.h"
+#include "pose_monitor_strip.h"
 
-ScpForm::ScpForm(QWidget *parent) :QWidget(parent)
+namespace {
+axis_t axisForTabIndex(int index)
+{
+  switch(index){
+    case 0: return PITCH;
+    case 1: return YAW;
+    case 2: return ROLL;
+    case 3: return TX;
+    case 4: return TY;
+    case 5: return TZ;
+    default: return YAW;
+  }
+}
+}
+
+ScpForm::ScpForm(QWidget *parent) :QWidget(parent), poseMonitor(NULL)
 {
   ui.setupUi(this);
+  poseMonitor = new PoseMonitorStrip(this);
+  ui.verticalLayout_2->insertWidget(0, poseMonitor);
+
   pitch = new SCurve(PITCH, QString::fromUtf8("Pitch - looking down/up"), QString::fromUtf8("Down"), 
                      QString::fromUtf8("Up"), this);
   yaw = new SCurve(YAW, QString::fromUtf8("Yaw - looking left/right"), QString::fromUtf8("Right"), 
@@ -23,6 +42,16 @@ ScpForm::ScpForm(QWidget *parent) :QWidget(parent)
   ui.SCPX->addWidget(x);
   ui.SCPY->addWidget(y);
   ui.SCPZ->addWidget(z);
+
+  QObject::connect(ui.SCPTab, SIGNAL(currentChanged(int)), this, SLOT(on_SCPTab_currentChanged(int)));
+  on_SCPTab_currentChanged(ui.SCPTab->currentIndex());
+}
+
+void ScpForm::on_SCPTab_currentChanged(int index)
+{
+  if(poseMonitor != NULL){
+    poseMonitor->setActiveAxis(axisForTabIndex(index));
+  }
 }
 
 ScpForm::~ScpForm()

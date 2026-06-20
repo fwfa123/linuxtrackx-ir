@@ -37,6 +37,7 @@ set(LTR_GUI_HEADERS
     progress.h
     scurve.h
     scview.h
+    pose_monitor_strip.h
     wiimote_prefs.h
     tracker.h
     plugin_install.h
@@ -122,6 +123,7 @@ set(LTR_GUI_SOURCES
     guardian.cpp
     scurve.cpp
     scview.cpp
+    pose_monitor_strip.cpp
     wiimote_prefs.cpp
     ../ltr_srv_master.cpp
     device_setup.cpp
