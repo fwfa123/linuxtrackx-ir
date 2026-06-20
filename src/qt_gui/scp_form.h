@@ -6,6 +6,7 @@
 #include "scurve.h"
 
 class PoseMonitorStrip;
+class PoseCrosshairPanel;
 
 class ScpForm : public QWidget
 {
@@ -27,6 +28,7 @@ class ScpForm : public QWidget
  private:
   Ui::SCPForm ui;
   PoseMonitorStrip *poseMonitor;
+  PoseCrosshairPanel *poseCrosshairs;
   SCurve *yaw, *pitch, *roll;
   SCurve *x, *y, *z;
 };
