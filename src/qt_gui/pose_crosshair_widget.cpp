@@ -5,7 +5,7 @@
 #include <cmath>
 
 PoseCrosshairWidget::PoseCrosshairWidget(QWidget *parent)
-  : QWidget(parent), useDegrees(true), invertHorizontal(false), invertVertical(false),
+  : QWidget(parent), horizDegrees(true), vertDegrees(true), invertHorizontal(false), invertVertical(false),
     maxHorizontal(45.f), maxVertical(45.f), horizValue(0.f), vertValue(0.f)
 {
   setMinimumSize(200, 170);
@@ -28,9 +28,10 @@ void PoseCrosshairWidget::setEdgeLabels(const QString &left, const QString &righ
   update();
 }
 
-void PoseCrosshairWidget::setUnits(bool degrees)
+void PoseCrosshairWidget::setUnits(bool horizontalDegrees, bool verticalDegrees)
 {
-  useDegrees = degrees;
+  horizDegrees = horizontalDegrees;
+  vertDegrees = verticalDegrees;
   update();
 }
 
@@ -124,12 +125,13 @@ void PoseCrosshairWidget::paintEvent(QPaintEvent * /* event */)
     painter.drawEllipse(dotRect);
   }
 
-  const QString unitSuffix = useDegrees ? QString::fromUtf8("°") : QString::fromUtf8(" mm");
+  const QString horizSuffix = horizDegrees ? QString::fromUtf8("°") : QString::fromUtf8(" mm");
+  const QString vertSuffix = vertDegrees ? QString::fromUtf8("°") : QString::fromUtf8(" mm");
   const QString valueText = QString::fromUtf8("%1%2, %3%4")
                                 .arg(horizValue, 0, 'f', 1)
-                                .arg(unitSuffix)
+                                .arg(horizSuffix)
                                 .arg(vertValue, 0, 'f', 1)
-                                .arg(unitSuffix);
+                                .arg(vertSuffix);
 
   painter.setPen(textColor);
   painter.drawText(QRect(4, 4, width() - 8, lineHeight),

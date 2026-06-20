@@ -26,7 +26,7 @@ float axisSpan(axis_t axis)
 PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   : QWidget(parent), showMeasured(true)
 {
-  QGroupBox *box = new QGroupBox(tr("Look and lean map"), this);
+  QGroupBox *box = new QGroupBox(tr("Pose maps"), this);
   QVBoxLayout *boxLayout = new QVBoxLayout(box);
 
   sourceCombo = new QComboBox(box);
@@ -37,18 +37,25 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   lookWidget = new PoseCrosshairWidget(box);
   lookWidget->setTitle(tr("Look"));
   lookWidget->setEdgeLabels(tr("Left"), tr("Right"), tr("Up"), tr("Down"));
-  lookWidget->setUnits(true);
+  lookWidget->setUnits(true, true);
   lookWidget->setInvertHorizontal(true);
 
   leanWidget = new PoseCrosshairWidget(box);
   leanWidget->setTitle(tr("Lean"));
   leanWidget->setEdgeLabels(tr("Left"), tr("Right"), tr("Forth"), tr("Back"));
-  leanWidget->setUnits(false);
+  leanWidget->setUnits(false, false);
   leanWidget->setInvertVertical(true);
+
+  raiseWidget = new PoseCrosshairWidget(box);
+  raiseWidget->setTitle(tr("Raise"));
+  raiseWidget->setEdgeLabels(tr("Roll L"), tr("Roll R"), tr("Up"), tr("Down"));
+  raiseWidget->setUnits(true, false);
+  raiseWidget->setInvertHorizontal(true);
 
   QHBoxLayout *mapsLayout = new QHBoxLayout();
   mapsLayout->addWidget(lookWidget, 1);
   mapsLayout->addWidget(leanWidget, 1);
+  mapsLayout->addWidget(raiseWidget, 1);
   boxLayout->addLayout(mapsLayout, 1);
 
   QVBoxLayout *outer = new QVBoxLayout(this);
@@ -71,6 +78,7 @@ void PoseCrosshairPanel::updateRanges()
 {
   lookWidget->setRange(axisSpan(YAW), axisSpan(PITCH));
   leanWidget->setRange(axisSpan(TX), axisSpan(TZ));
+  raiseWidget->setRange(axisSpan(ROLL), axisSpan(TY));
 }
 
 void PoseCrosshairPanel::newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_pose_t *unfiltered,
@@ -86,8 +94,10 @@ void PoseCrosshairPanel::newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_po
   if(showMeasured){
     lookWidget->setPosition(raw_pose->pose.raw_yaw, raw_pose->pose.raw_pitch);
     leanWidget->setPosition(raw_pose->pose.raw_tx, raw_pose->pose.raw_tz);
+    raiseWidget->setPosition(raw_pose->pose.raw_roll, raw_pose->pose.raw_ty);
   }else{
     lookWidget->setPosition(pose->yaw, pose->pitch);
     leanWidget->setPosition(pose->tx, pose->tz);
+    raiseWidget->setPosition(pose->roll, pose->ty);
   }
 }
