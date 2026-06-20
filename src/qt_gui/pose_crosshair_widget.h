@@ -13,7 +13,7 @@ class PoseCrosshairWidget : public QWidget
   void setTitle(const QString &title);
   void setEdgeLabels(const QString &left, const QString &right,
                      const QString &up, const QString &down);
-  void setUnits(bool degrees);
+  void setUnits(bool horizontalDegrees, bool verticalDegrees);
   void setRange(float maxHorizontal, float maxVertical);
   void setInvertHorizontal(bool invert);
   void setInvertVertical(bool invert);
@@ -29,7 +29,8 @@ class PoseCrosshairWidget : public QWidget
   QString labelRight;
   QString labelUp;
   QString labelDown;
-  bool useDegrees;
+  bool horizDegrees;
+  bool vertDegrees;
   bool invertHorizontal;
   bool invertVertical;
   float maxHorizontal;

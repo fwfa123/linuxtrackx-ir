@@ -25,6 +25,7 @@ class PoseCrosshairPanel : public QWidget
 
   PoseCrosshairWidget *lookWidget;
   PoseCrosshairWidget *leanWidget;
+  PoseCrosshairWidget *raiseWidget;
   QComboBox *sourceCombo;
   bool showMeasured;
 };
