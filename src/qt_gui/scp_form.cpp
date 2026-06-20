@@ -2,6 +2,7 @@
 #include <iostream>
 #include "ltr_profiles.h"
 #include "pose_monitor_strip.h"
+#include "pose_crosshair_panel.h"
 
 namespace {
 axis_t axisForTabIndex(int index)
@@ -18,11 +19,13 @@ axis_t axisForTabIndex(int index)
 }
 }
 
-ScpForm::ScpForm(QWidget *parent) :QWidget(parent), poseMonitor(NULL)
+ScpForm::ScpForm(QWidget *parent) :QWidget(parent), poseMonitor(NULL), poseCrosshairs(NULL)
 {
   ui.setupUi(this);
   poseMonitor = new PoseMonitorStrip(this);
   ui.verticalLayout_2->insertWidget(0, poseMonitor);
+  poseCrosshairs = new PoseCrosshairPanel(this);
+  ui.verticalLayout_2->insertWidget(1, poseCrosshairs);
 
   pitch = new SCurve(PITCH, QString::fromUtf8("Pitch - looking down/up"), QString::fromUtf8("Down"), 
                      QString::fromUtf8("Up"), this);
@@ -48,7 +51,7 @@ ScpForm::ScpForm(QWidget *parent) :QWidget(parent), poseMonitor(NULL)
   ui.verticalLayout_6->setStretch(0, 1);
   ui.verticalLayout_7->setStretch(0, 1);
   ui.verticalLayout_8->setStretch(0, 1);
-  ui.verticalLayout_2->setStretch(1, 1);
+  ui.verticalLayout_2->setStretch(2, 1);
   ui.SCPTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   QObject::connect(ui.SCPTab, SIGNAL(currentChanged(int)), this, SLOT(on_SCPTab_currentChanged(int)));
