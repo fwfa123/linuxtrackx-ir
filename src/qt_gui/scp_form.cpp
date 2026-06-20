@@ -36,12 +36,20 @@ ScpForm::ScpForm(QWidget *parent) :QWidget(parent), poseMonitor(NULL)
                  QString::fromUtf8("Up"), this);
   z = new SCurve(TZ, QString::fromUtf8("Back/forth translation"), QString::fromUtf8("Forth"), 
                  QString::fromUtf8("Back"), this);
-  ui.SCPPitch->addWidget(pitch);
-  ui.SCPYaw->addWidget(yaw);
-  ui.SCPRoll->addWidget(roll);
-  ui.SCPX->addWidget(x);
-  ui.SCPY->addWidget(y);
-  ui.SCPZ->addWidget(z);
+  ui.SCPPitch->addWidget(pitch, 1);
+  ui.SCPYaw->addWidget(yaw, 1);
+  ui.SCPRoll->addWidget(roll, 1);
+  ui.SCPX->addWidget(x, 1);
+  ui.SCPY->addWidget(y, 1);
+  ui.SCPZ->addWidget(z, 1);
+  ui.verticalLayout_3->setStretch(0, 1);
+  ui.verticalLayout_4->setStretch(0, 1);
+  ui.verticalLayout_5->setStretch(0, 1);
+  ui.verticalLayout_6->setStretch(0, 1);
+  ui.verticalLayout_7->setStretch(0, 1);
+  ui.verticalLayout_8->setStretch(0, 1);
+  ui.verticalLayout_2->setStretch(1, 1);
+  ui.SCPTab->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
   QObject::connect(ui.SCPTab, SIGNAL(currentChanged(int)), this, SLOT(on_SCPTab_currentChanged(int)));
   on_SCPTab_currentChanged(ui.SCPTab->currentIndex());

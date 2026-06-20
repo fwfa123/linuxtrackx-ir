@@ -19,11 +19,9 @@ class PoseMonitorStrip : public QWidget
 
  private:
   void updateRow(int row, float measured, float curved, float filtered);
-  void updateCoupling(float yaw_deg, float tx_mm, float tz_mm);
 
   QLabel *headerLabels[4];
   QLabel *rowLabels[6][4];
-  QLabel *couplingLabel;
   axis_t activeAxis;
 };
 
