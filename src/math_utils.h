@@ -33,6 +33,9 @@ void ltr_int_transpose_in_place(double matrix[3][3]);
 double ltr_int_sqr(double f);
 void ltr_int_matrix_to_euler(double matrix[3][3], double *pitch, double *yaw, double *roll);
 void ltr_int_euler_to_matrix(double pitch, double yaw, double roll, double matrix[3][3]);
+bool ltr_int_align_translation(double pitch_deg, double yaw_deg, double roll_deg,
+                               const double displacement[3], double aligned[3],
+                               bool enable_align);
 void ltr_int_add_vecs(double vec1[3],double vec2[3],double res[3]);
 bool ltr_int_make_bez(double deadzone, double k, bez_def *b);
 double ltr_int_bezier(double x, bez_def *b);

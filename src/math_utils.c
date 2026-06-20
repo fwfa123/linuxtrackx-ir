@@ -170,6 +170,30 @@ void ltr_int_euler_to_matrix(double pitch, double yaw, double roll, double matri
   matrix[2][2] = cy * cp;
 }
 
+bool ltr_int_align_translation(double pitch_deg, double yaw_deg, double roll_deg,
+                               const double displacement[3], double aligned[3],
+                               bool enable_align)
+{
+  if(!ltr_int_is_vector_finite((double *)displacement)){
+    return false;
+  }
+  if(!enable_align){
+    aligned[0] = displacement[0];
+    aligned[1] = displacement[1];
+    aligned[2] = displacement[2];
+    return true;
+  }
+  double transform[3][3];
+  double tmp[3];
+  ltr_int_euler_to_matrix(pitch_deg / 180.0 * M_PI, yaw_deg / 180.0 * M_PI,
+                          roll_deg / 180.0 * M_PI, transform);
+  tmp[0] = displacement[0];
+  tmp[1] = displacement[1];
+  tmp[2] = displacement[2];
+  ltr_int_matrix_times_vec(transform, tmp, aligned);
+  return ltr_int_is_vector_finite(aligned);
+}
+
 
 void ltr_int_add_vecs(double vec1[3],double vec2[3],double res[3])
 {

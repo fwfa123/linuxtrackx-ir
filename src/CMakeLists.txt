@@ -410,6 +410,16 @@ if(LIBLO_FOUND)
     set_linuxtrack_rpath(osc_server)
 endif()
 
+option(LTR_BUILD_TESTS "Build unit tests" ON)
+if(LTR_BUILD_TESTS)
+    add_executable(test_align_translation
+        tests/align_translation_unit.c
+        math_utils.c
+    )
+    target_include_directories(test_align_translation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(test_align_translation PRIVATE m)
+endif()
+
 # ============================================================================
 # X-Plane Plugin (conditional)
 # ============================================================================

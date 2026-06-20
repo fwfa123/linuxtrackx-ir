@@ -44,6 +44,33 @@ More detail: [Steam (Flatpak) tracking and logs](troubleshooting/STEAM_FLATPAK_D
 
 ---
 
+## DCS World — Proton / Wine
+
+**Symptom:** Side or rear cockpit panels are hard to reach after turning your
+head; lateral lean does not follow head orientation (GitLab #60).
+
+**Cause (fixed in v2.0+):** The MinGW Wine bridge (`NPClient64.dll`) applied
+translation alignment with a transposed rotation matrix (`Rᵀ * t`) instead of
+matching the Linuxtrack server path (`R * t`). DCS on Linux always uses the Wine
+bridge (there is no native Linux DCS client).
+
+**Working setup:**
+
+1. Install the Wine bridge into the DCS Proton/Lutris prefix (`ltr_gui` Gaming
+   tab or `scripts/install/install_wine_bridge.sh`).
+2. Enable head tracking in DCS (Controls → Head Tracking).
+3. Use a DCS-specific profile in `ltr_gui` (auto-created on first launch).
+4. Set translation axis limits to **±500 mm** in Detailed Axes Setup (TrackIR
+   convention).
+
+**If translation still feels wrong:**
+
+- Toggle **System → Disable translation/rotation alignment** and compare
+  side-panel reach with the head turned ~45°.
+- Reinstall `NPClient64.dll` after updating Linuxtrack (WOW64/Proton prefixes).
+
+---
+
 ## Arma 2 (`arma2.exe`) — Wine / Lutris
 
 **Symptom:** Game crashes during startup when the Linuxtrack Wine bridge is

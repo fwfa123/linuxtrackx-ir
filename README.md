@@ -145,13 +145,13 @@ See the [Migration Guide](docs/readme/MIGRATION_GUIDE_USR_LOCAL_TO_OPT.md).
 ## Supported Games
 
 ### Native Linux Games
-- DCS World
 - War Thunder
 - Elite Dangerous
 - Euro Truck Simulator 2
 - American Truck Simulator
 
 ### Windows Games (via Wine/Steam Proton)
+- DCS World
 - Microsoft Flight Simulator
 - IL-2 Sturmovik series
 - Falcon 4

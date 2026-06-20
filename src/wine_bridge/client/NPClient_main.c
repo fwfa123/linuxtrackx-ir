@@ -12,6 +12,7 @@
 #ifdef __MINGW32__
 #include <axis.h>
 #include <math_utils.h>
+#include "mingw_axes_prefs.h"
 #endif
 #include "rest.h"
 //#include "config.h"
@@ -943,20 +944,19 @@ static bool mingw_postprocess_axes(linuxtrack_pose_t *pose, linuxtrack_pose_t *u
   pose->roll =
     clamp_angle(ltr_int_filter_axis(axes, ROLL, (float)raw_angles[2], &mingw_pose_processing.filtered_angles[2]));
 
-  double transform[3][3];
   double displacement[3];
+  double aligned[3];
   displacement[0] = ltr_int_val_on_axis(axes, TX, pose->raw_tx);
   displacement[1] = ltr_int_val_on_axis(axes, TY, pose->raw_ty);
   displacement[2] = ltr_int_val_on_axis(axes, TZ, pose->raw_tz);
 
-  /* Match pref_global.c's default: Align-translations is enabled unless prefs disable it. */
-  ltr_int_euler_to_matrix(pose->pitch / 180.0 * M_PI, pose->yaw / 180.0 * M_PI,
-                          pose->roll / 180.0 * M_PI, transform);
-  ltr_int_transpose_in_place(transform);
-  ltr_int_matrix_times_vec(transform, displacement, displacement);
-  unfiltered->tx = displacement[0];
-  unfiltered->ty = displacement[1];
-  unfiltered->tz = displacement[2];
+  if(!ltr_int_align_translation(pose->pitch, pose->yaw, pose->roll,
+                                displacement, aligned, ltr_int_do_tr_align())){
+    return false;
+  }
+  unfiltered->tx = aligned[0];
+  unfiltered->ty = aligned[1];
+  unfiltered->tz = aligned[2];
 
   pose->tx =
     ltr_int_filter_axis(axes, TX, unfiltered->tx, &mingw_pose_processing.filtered_translations[0]);
