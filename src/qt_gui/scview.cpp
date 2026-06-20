@@ -1,4 +1,5 @@
 #include <QPainter>
+#include <QFontMetrics>
 
 #include "scview.h"
 #include <math.h>
@@ -37,6 +38,14 @@ SCView::~SCView()
 void SCView::redraw()
 {
   update();
+}
+
+void SCView::changeEvent(QEvent *event)
+{
+  QWidget::changeEvent(event);
+  if(event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange){
+    update();
+  }
 }
 
 //QSize SCView::sizeHint() const
@@ -104,36 +113,51 @@ void SCView::paintEvent(QPaintEvent * /* event */)
     points[i].ry() = (max_f > 0.0) ? h - y * (h / max_f) : h;
   }
   QPainter painter(this);
-  painter.setPen(Qt::black);
+  painter.setRenderHint(QPainter::Antialiasing, true);
+
+  const QColor curveColor = palette().color(QPalette::WindowText);
+  const QColor filteredCrossColor(220, 72, 72);
+  const QColor curvedCrossColor(72, 145, 220);
+
+  painter.setPen(curveColor);
   painter.drawPolyline(points, spline_points);
-  painter.setPen(Qt::red);
-  
+
   float kl = (TRACKER.axisGet(axis, AXIS_MULT) != 0.0) ? 
         TRACKER.axisGet(axis, AXIS_LLIMIT) / TRACKER.axisGet(axis, AXIS_MULT) : 0.0;
   float kr = (TRACKER.axisGet(axis, AXIS_MULT) != 0.0) ? 
         TRACKER.axisGet(axis, AXIS_RLIMIT) / TRACKER.axisGet(axis, AXIS_MULT) : 0.0;
   float max_k = kl > kr ? kl : kr;
   
-  float trx = rx, tpx = px, tupx = upx;
+  float trx = rx;
   if(invert){
     trx *= -1;
-    tpx *= -1;
-    tupx *= -1;
-  }  
+  }
   //Draw cross with current position
   float nx = w + w * trx/max_k;
   float ny = (max_f != 0.0) ? h - fabs(px * (h / max_f)) : h;
   float unx = w + w * trx/max_k;
   float uny = (max_f != 0.0) ? h - fabs(upx * (h / max_f)) : h;
-  painter.drawLine(QLineF(nx, ny - 5, nx, ny + 5));
-  painter.drawLine(QLineF(nx - 5, ny, nx + 5, ny));
-  painter.drawText(QPoint(100, 10), QString::fromUtf8("Measured: %1").arg(rx, 0, 'f', 2));
-  painter.drawText(QPoint(100, 20), QString::fromUtf8("Curved: %1").arg(upx, 0, 'f', 2));
-  painter.drawText(QPoint(100, 30), QString::fromUtf8("Filtered: %1").arg(px, 0, 'f', 2));
-  
-  painter.setPen(Qt::blue);
-  painter.drawLine(QLineF(unx, uny - 5, unx, uny + 5));
-  painter.drawLine(QLineF(unx - 5, uny, unx + 5, uny));
+
+  const QFontMetrics fm(painter.font());
+  const int textX = 8;
+  int textY = fm.ascent() + 4;
+  const int lineHeight = fm.height();
+
+  painter.setPen(curveColor);
+  painter.drawText(textX, textY, QString::fromUtf8("Measured: %1").arg(rx, 0, 'f', 2));
+  textY += lineHeight;
+  painter.drawText(textX, textY, QString::fromUtf8("Curved: %1").arg(upx, 0, 'f', 2));
+  textY += lineHeight;
+  painter.drawText(textX, textY, QString::fromUtf8("Filtered: %1").arg(px, 0, 'f', 2));
+
+  painter.setPen(filteredCrossColor);
+  const float crossHalf = 10.0f;
+  painter.drawLine(QLineF(nx, ny - crossHalf, nx, ny + crossHalf));
+  painter.drawLine(QLineF(nx - crossHalf, ny, nx + crossHalf, ny));
+
+  painter.setPen(curvedCrossColor);
+  painter.drawLine(QLineF(unx, uny - crossHalf, unx, uny + crossHalf));
+  painter.drawLine(QLineF(unx - crossHalf, uny, unx + crossHalf, uny));
 
   painter.end();
 }
