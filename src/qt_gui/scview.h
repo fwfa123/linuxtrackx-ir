@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QTimer>
+#include <QEvent>
 #include <axis.h>
 #include <ltlib.h>
 
@@ -20,6 +21,7 @@ class SCView : public QWidget
   void newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_pose_t *unfiltered, linuxtrack_pose_t *pose);
  protected:
   void paintEvent(QPaintEvent *event);
+  void changeEvent(QEvent *event);
 
  private:
   int spline(QPointF points[], int num_points);
