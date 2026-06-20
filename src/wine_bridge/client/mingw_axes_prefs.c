@@ -5,8 +5,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "../unix_config_home.h"
+#include "mingw_axes_prefs.h"
 
 typedef struct {
   const char *key;
@@ -399,6 +401,23 @@ void ltr_int_prefs_changed(void) {}
 void ltr_int_get_section_list(void *sections_ptr)
 {
   (void)sections_ptr;
+}
+
+bool ltr_int_do_tr_align(void)
+{
+  static bool cached = false;
+  static bool initialized = false;
+  if(!initialized){
+    bool align = true;
+    char *tmp = ltr_int_get_key("Global", "Align-translations");
+    if(tmp != NULL){
+      align = (strcasecmp(tmp, "yes") == 0);
+      free(tmp);
+    }
+    cached = align;
+    initialized = true;
+  }
+  return cached;
 }
 
 #endif
