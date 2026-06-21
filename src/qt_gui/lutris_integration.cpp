@@ -11,6 +11,7 @@
 #include "../utils.h"
 #include "installer_paths.h"
 #include "wine_bridge_install.h"
+#include "wine_executable.h"
 #include <QTimer>
 #include <QDesktopServices>
 #include <QUrl>
@@ -1163,13 +1164,21 @@ bool LutrisIntegration::installToLutrisPrefix(const QString &prefixPath, const Q
 
 bool LutrisIntegration::runWineBridgeInstaller(const QString &prefixPath, const QString &winePath)
 {
+    const QString resolvedWine = resolveWineExecutable(winePath);
+    if (resolvedWine.isEmpty()) {
+        lastError = QString::fromUtf8("Wine binary not found or not executable: ") + winePath;
+        debugInfo += lastError + QString::fromUtf8("\n");
+        ltr_int_log_message("runWineBridgeInstaller: unresolved wine=%s\n", winePath.toUtf8().constData());
+        return false;
+    }
+
     debugInfo += QString::fromUtf8("Installing Wine bridge to prefix: ") + prefixPath + QString::fromUtf8("\n");
-    debugInfo += QString::fromUtf8("Wine binary: ") + winePath + QString::fromUtf8("\n");
+    debugInfo += QString::fromUtf8("Wine binary: ") + resolvedWine + QString::fromUtf8("\n");
     ltr_int_log_message("runWineBridgeInstaller: prefix=%s wine=%s\n", prefixPath.toUtf8().constData(),
-                        winePath.toUtf8().constData());
+                        resolvedWine.toUtf8().constData());
 
     QString installError;
-    const bool ok = WineBridgeInstall::installToPrefix(prefixPath, winePath, &installError, &debugInfo,
+    const bool ok = WineBridgeInstall::installToPrefix(prefixPath, resolvedWine, &installError, &debugInfo,
                                                        installPromptParent, &lastInstallOutcome);
     installPromptParent = nullptr;
     if (!ok) {
