@@ -47,7 +47,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   leanWidget->setInvertVertical(true);
 
   raiseWidget = new PoseCrosshairWidget(box);
-  raiseWidget->setTitle(tr("Raise"));
+  raiseWidget->setTitle(tr("Raise/Roll"));
   raiseWidget->setEdgeLabels(tr("Roll L"), tr("Roll R"), tr("Up"), tr("Down"));
   raiseWidget->setUnits(true, false);
   raiseWidget->setInvertHorizontal(true);

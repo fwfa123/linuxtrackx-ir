@@ -40,6 +40,7 @@ class Tracker : public QObject{
   float getCommonFilterFactor();
   int getTrackingRateFps();
   void setTrackingRateFps(int fps);
+  void schedulePrefsSave();
   void fromDefault();
   static buffering *getBuffers();
  private:
