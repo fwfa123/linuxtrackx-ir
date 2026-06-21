@@ -6,14 +6,8 @@
 #include "ui_scp_form.h"
 #include "scurve.h"
 
-class PoseMonitorStrip;
-class PoseCrosshairPanel;
-class QListWidget;
-class QStackedWidget;
-class QGroupBox;
-class QVBoxLayout;
 class QLabel;
-class QPushButton;
+class QWidget;
 
 class ScpForm : public QWidget
 {
@@ -32,20 +26,14 @@ class ScpForm : public QWidget
   void onHeadCenterChanged(const QString &section);
 
  private:
+  void setupCurves();
   void refreshPanTuning();
   void reloadPanTuningSliders();
 
   Ui::SCPForm ui;
-  PoseMonitorStrip *poseMonitor;
-  PoseCrosshairPanel *poseCrosshairs;
-  QListWidget *axisList;
-  QStackedWidget *curveStack;
-  QGroupBox *panTuningBox;
-  QVBoxLayout *panTuningLayout;
   QLabel *panTuningHint;
   QWidget *modelTweaker;
   QString panTuningSection;
-  QPushButton *recenterButton;
   SCurve *yaw, *pitch, *roll;
   SCurve *x, *y, *z;
 };
