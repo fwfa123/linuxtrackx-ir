@@ -30,7 +30,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   QVBoxLayout *boxLayout = new QVBoxLayout(box);
 
   sourceCombo = new QComboBox(box);
-  sourceCombo->addItem(tr("Measured (camera)"));
+  sourceCombo->addItem(tr("Measured (camera input)"));
   sourceCombo->addItem(tr("Filtered (game output)"));
   boxLayout->addWidget(sourceCombo);
 
