@@ -2,10 +2,29 @@
 #include "help_view.h"
 #include "ltr_gui_prefs.h"
 #include "guardian.h"
+#include "tracker.h"
 #include <iostream>
 #include <QRegularExpressionValidator>
 #include <QMessageBox>
+#include <QShowEvent>
 #include <cmath>
+
+static ModelTuningSync *modelTuningSync = NULL;
+
+ModelTuningSync *ModelTuningSync::inst()
+{
+  if(modelTuningSync == NULL){
+    modelTuningSync = new ModelTuningSync();
+  }
+  return modelTuningSync;
+}
+
+static void notifyHeadCenterTuned(const QString &section)
+{
+  PREF.announceModelChange();
+  TRACKER.schedulePrefsSave();
+  emit ModelTuningSync::inst()->headCenterChanged(section);
+}
 
 ModelCreate::ModelCreate(QWidget *parent) : QDialog(parent), validator(NULL), modelEditor(NULL)
 {
@@ -121,6 +140,8 @@ ModelEdit::ModelEdit(Guardian *grd, QWidget *parent) : QWidget(parent), modelTwe
   mcw = new ModelCreate(this);
   QObject::connect(mcw, SIGNAL(ModelCreated(const QString &)),
     this, SLOT(ModelCreated(const QString &)));
+  QObject::connect(ModelTuningSync::inst(), SIGNAL(headCenterChanged(const QString &)),
+    this, SLOT(onHeadCenterChanged(const QString &)));
   refresh();
 }
 
@@ -175,6 +196,36 @@ void ModelEdit::refresh()
   }
 
   initializing = false;
+}
+
+void ModelEdit::showEvent(QShowEvent *event)
+{
+  QWidget::showEvent(event);
+  reloadHeadCenterTuning();
+}
+
+void ModelEdit::reloadHeadCenterTuning()
+{
+  if(modelTweaker == NULL){
+    return;
+  }
+  ClipTweaking *clip = qobject_cast<ClipTweaking *>(modelTweaker);
+  if(clip != NULL){
+    clip->reloadFromPrefs();
+    return;
+  }
+  CapTweaking *cap = qobject_cast<CapTweaking *>(modelTweaker);
+  if(cap != NULL){
+    cap->reloadFromPrefs();
+  }
+}
+
+void ModelEdit::onHeadCenterChanged(const QString &section)
+{
+  if(section != currentSection){
+    return;
+  }
+  reloadHeadCenterTuning();
 }
 
 void ModelEdit::on_CreateModelButton_pressed()
@@ -364,11 +415,7 @@ CapTweaking::CapTweaking(const QString &section, QWidget *parent) : QWidget(pare
   initializing(true)
 {
   ui.setupUi(this);
-  QString val;
-  if(PREF.getKeyVal(currentSection, QString::fromUtf8("Head-Y"), val))
-    ui.CapHy->setValue(val.toFloat());
-  if(PREF.getKeyVal(currentSection, QString::fromUtf8("Head-Z"), val))
-    ui.CapHz->setValue(val.toFloat());
+  loadFromPrefs();
   initializing = false;
 }
 
@@ -376,24 +423,58 @@ CapTweaking::~CapTweaking()
 {
 }
 
+void CapTweaking::loadFromPrefs()
+{
+  QString val;
+  if(PREF.getKeyVal(currentSection, QString::fromUtf8("Head-Y"), val))
+    ui.CapHy->setValue(val.toFloat());
+  if(PREF.getKeyVal(currentSection, QString::fromUtf8("Head-Z"), val))
+    ui.CapHz->setValue(val.toFloat());
+}
+
+void CapTweaking::reloadFromPrefs()
+{
+  initializing = true;
+  loadFromPrefs();
+  initializing = false;
+}
+
+void CapTweaking::headCenterTuned()
+{
+  if(!initializing){
+    notifyHeadCenterTuned(currentSection);
+  }
+}
+
 void CapTweaking::on_CapHy_valueChanged(int val)
 {
   if(!initializing)
     PREF.setKeyVal(currentSection, QString::fromUtf8("Head-Y"), val);
-  PREF.announceModelChange();
+  headCenterTuned();
 }
 
 void CapTweaking::on_CapHz_valueChanged(int val)
 {
   if(!initializing)
     PREF.setKeyVal(currentSection, QString::fromUtf8("Head-Z"), val);
-  PREF.announceModelChange();
+  headCenterTuned();
 }
 
 ClipTweaking::ClipTweaking(const QString &section, QWidget *parent) : QWidget(parent), currentSection(section),
   initializing(true)
 {
   ui.setupUi(this);
+  loadFromPrefs();
+  initializing = false;
+}
+
+
+ClipTweaking::~ClipTweaking()
+{
+}
+
+void ClipTweaking::loadFromPrefs()
+{
   QString val;
   if(PREF.getKeyVal(currentSection, QString::fromUtf8("Head-X"), val)){
     float fval = val.toFloat();
@@ -408,12 +489,20 @@ ClipTweaking::ClipTweaking(const QString &section, QWidget *parent) : QWidget(pa
     ui.ClipHy->setValue(val.toFloat());
   if(PREF.getKeyVal(currentSection, QString::fromUtf8("Head-Z"), val))
     ui.ClipHz->setValue(val.toFloat());
+}
+
+void ClipTweaking::reloadFromPrefs()
+{
+  initializing = true;
+  loadFromPrefs();
   initializing = false;
 }
 
-
-ClipTweaking::~ClipTweaking()
+void ClipTweaking::headCenterTuned()
 {
+  if(!initializing){
+    notifyHeadCenterTuned(currentSection);
+  }
 }
 
 void ClipTweaking::tweakHx()
@@ -422,7 +511,7 @@ void ClipTweaking::tweakHx()
     int sign = (ui.ClipLeft->isChecked() ? 1 : -1);
     PREF.setKeyVal(currentSection, QString::fromUtf8("Head-X"), ui.ClipHx->value() * sign);
   }
-  PREF.announceModelChange();
+  headCenterTuned();
 }
 
 void ClipTweaking::on_ClipHx_valueChanged(int val)
@@ -435,14 +524,14 @@ void ClipTweaking::on_ClipHy_valueChanged(int val)
 {
   if(!initializing)
     PREF.setKeyVal(currentSection, QString::fromUtf8("Head-Y"), val);
-  PREF.announceModelChange();
+  headCenterTuned();
 }
 
 void ClipTweaking::on_ClipHz_valueChanged(int val)
 {
   if(!initializing)
     PREF.setKeyVal(currentSection, QString::fromUtf8("Head-Z"), val);
-  PREF.announceModelChange();
+  headCenterTuned();
 }
 
 void ClipTweaking::on_ClipLeft_toggled()

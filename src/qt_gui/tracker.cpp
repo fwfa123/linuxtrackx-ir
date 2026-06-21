@@ -109,6 +109,11 @@ void Tracker::performDeferredSave()
   }
 }
 
+void Tracker::schedulePrefsSave()
+{
+  saveDebounceTimer->start(800);
+}
+
 Tracker::~Tracker()
 {
   if(master->isRunning()){

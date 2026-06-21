@@ -451,6 +451,9 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
       break;
     case 1:
       HelpViewer::ChangePage(QStringLiteral("model_setup.htm"));
+      if (me != nullptr) {
+        me->reloadHeadCenterTuning();
+      }
       break;
     case 2:
       HelpViewer::ChangePage(QStringLiteral("axes_setup.htm"));
