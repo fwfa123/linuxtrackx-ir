@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>960</width>
-    <height>1228</height>
+    <height>1000</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>760</width>
+    <height>620</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Sensitivity curves setup</string>
@@ -19,81 +25,254 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QTabWidget" name="SCPTab">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="currentIndex">
+    <widget class="QScrollArea" name="diagnosticsScroll">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="diagnosticsWidget">
+      <layout class="QVBoxLayout" name="diagnosticsLayout">
+       <property name="leftMargin">
         <number>0</number>
        </property>
-       <widget class="QWidget" name="SCPPitch1">
-        <attribute name="title">
-         <string>Pitch</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <layout class="QVBoxLayout" name="SCPPitch"/>
-         </item>
-        </layout>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="PoseMonitorStrip" name="poseMonitor" native="true"/>
+       </item>
+       <item>
+        <widget class="PoseCrosshairPanel" name="poseCrosshairs" native="true"/>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QWidget" name="curveArea">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>3</verstretch>
+      </sizepolicy>
+     </property>
+     <layout class="QHBoxLayout" name="curveAreaLayout">
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QListWidget" name="AxisList">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>132</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="currentRow">
+         <number>1</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>Pitch</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Yaw</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Roll</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>X Translation</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Y Translation</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Z Translation</string>
+         </property>
+        </item>
        </widget>
-       <widget class="QWidget" name="SCPYaw1">
-        <attribute name="title">
-         <string>Yaw</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_4">
-         <item>
-          <layout class="QVBoxLayout" name="SCPYaw"/>
-         </item>
-        </layout>
+      </item>
+      <item>
+       <widget class="QStackedWidget" name="curveStack">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+          <horstretch>1</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <widget class="QWidget" name="curvePagePitch">
+         <layout class="QVBoxLayout" name="curvePagePitchLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="curvePageYaw">
+         <layout class="QVBoxLayout" name="curvePageYawLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="curvePageRoll">
+         <layout class="QVBoxLayout" name="curvePageRollLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="curvePageTx">
+         <layout class="QVBoxLayout" name="curvePageTxLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="curvePageTy">
+         <layout class="QVBoxLayout" name="curvePageTyLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="curvePageTz">
+         <layout class="QVBoxLayout" name="curvePageTzLayout">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+         </layout>
+        </widget>
        </widget>
-       <widget class="QWidget" name="SCPRoll1">
-        <attribute name="title">
-         <string>Roll</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <layout class="QVBoxLayout" name="SCPRoll"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="SCPX1">
-        <attribute name="title">
-         <string>X Translation</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_6">
-         <item>
-          <layout class="QVBoxLayout" name="SCPX"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="SCPY1">
-        <attribute name="title">
-         <string>Y Translation</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_7">
-         <item>
-          <layout class="QVBoxLayout" name="SCPY"/>
-         </item>
-        </layout>
-       </widget>
-       <widget class="QWidget" name="SCPZ1">
-        <attribute name="title">
-         <string>Z Translation</string>
-        </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_8">
-         <item>
-          <layout class="QVBoxLayout" name="SCPZ"/>
-         </item>
-        </layout>
-       </widget>
-      </widget>
-     </item>
-    </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="panTuningBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="title">
+      <string>Pan tuning (head center)</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+     <layout class="QVBoxLayout" name="panTuningLayout"/>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="SCPRecenterButton">
+       <property name="text">
+        <string>Recenter</string>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
@@ -118,6 +297,20 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PoseMonitorStrip</class>
+   <extends>QWidget</extends>
+   <header location="global">pose_monitor_strip.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>PoseCrosshairPanel</class>
+   <extends>QWidget</extends>
+   <header location="global">pose_crosshair_panel.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="ltr_rc.qrc"/>
  </resources>
