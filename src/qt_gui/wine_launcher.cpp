@@ -10,6 +10,7 @@
 #include <QRegularExpression>
 #include <QDebug>
 #include "wine_launcher.h"
+#include "wine_executable.h"
 #include "utils.h"
 
 void WineLauncher::envSet(const QString var, const QString val)
@@ -189,6 +190,16 @@ QString WineLauncher::selectBestWineVersion()
     }
   }
   
+  if (!bestWine.isEmpty()) {
+    const QString resolved = resolveWineExecutable(bestWine);
+    if (!resolved.isEmpty()) {
+      bestWine = resolved;
+    } else {
+      ltr_int_log_message("Could not resolve wine executable: %s\n", bestWine.toUtf8().constData());
+      bestWine.clear();
+    }
+  }
+
   if (!bestWine.isEmpty()) {
     s.str(std::string(""));
     s<<"Selected best wine version: "<<bestWine.toUtf8().constData()<<" (v"<<bestMajor<<"."<<bestMinor<<")\n";

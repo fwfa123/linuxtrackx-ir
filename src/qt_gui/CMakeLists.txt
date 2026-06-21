@@ -69,6 +69,8 @@ set(LTR_GUI_HEADERS
     flatpak_detector.h
     installer_paths.h
     wine_bridge_install.h
+    wine_executable.h
+    wine_prefix_resolver.h
     about_dialog.h
     ../mickey/hotkey.h
     ../mickey/hotkey_setup_dlg.h
@@ -159,6 +161,8 @@ set(LTR_GUI_SOURCES
     flatpak_detector.cpp
     installer_paths.cpp
     wine_bridge_install.cpp
+    wine_executable.cpp
+    wine_prefix_resolver.cpp
     about_dialog.cpp
     ../mickey/hotkey.cpp
     ../mickey/hotkey_setup_dlg.cpp
