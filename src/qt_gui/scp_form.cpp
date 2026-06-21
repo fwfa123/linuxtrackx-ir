@@ -88,7 +88,7 @@ ScpForm::ScpForm(QWidget *parent)
   ui.SCPTab->hide();
   ui.verticalLayout->addWidget(curveArea, 1);
 
-  panTuningBox = new QGroupBox(tr("Pan tuning (model hc)"), this);
+  panTuningBox = new QGroupBox(tr("Pan tuning (head center)"), this);
   panTuningBox->setCheckable(true);
   panTuningBox->setChecked(false);
   panTuningLayout = new QVBoxLayout(panTuningBox);
@@ -166,7 +166,7 @@ void ScpForm::refreshPanTuning()
   }
 
   panTuningHint = new QLabel(
-      tr("Pan tuning hc sliders are available for 3-point Clip or Cap models only."), panTuningBox);
+      tr("Pan tuning head center sliders are available for 3-point Clip or Cap models only."), panTuningBox);
   panTuningHint->setWordWrap(true);
   panTuningLayout->addWidget(panTuningHint);
 }
