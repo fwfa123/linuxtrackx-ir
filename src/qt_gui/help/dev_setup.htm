@@ -195,9 +195,18 @@ The TrackIR permission installation process:
 Once properly installed, you won't see the permission setup dialog again, and your TrackIR device will work seamlessly with LinuxTrack X-IR.
 </p>
 
-<h2>Video_on Delay Timing</h2>
+<h2>TrackIR troubleshooting on the System tab</h2>
 <p>
-The <strong>Video_on Delay Timing</strong> option on the <strong>System</strong> tab under <strong>Troubleshooting options</strong> allows you to configure a delay after the Video_on command is sent to the TrackIR device during initialization. This setting should be left at <strong>Default</strong> (0 microseconds) unless you are experiencing issues with TrackIR camera LEDs not turning on properly.
+Several TrackIR-specific troubleshooting controls live on the <strong>System</strong> tab under <strong>Troubleshooting options</strong>, not on Device Setup. See the <a href="misc.htm">System tab help</a> for the full list. Two settings are especially relevant during TrackIR setup:
+</p>
+<ul>
+  <li><strong>Do usbreset before start tracking</strong> — try this if the camera stays dark after Start or the log floods with <strong>"Data receive request timed out"</strong> (GitLab issue #51, common on TrackIR 5 v2). Off by default; check to enable.</li>
+  <li><strong>Video_on Delay Timing</strong> — try Manual mode if camera LEDs fail to activate properly (documented below with screenshots).</li>
+</ul>
+
+<h2><A name="Video_on_Delay">Video_on Delay Timing</A></h2>
+<p>
+The <strong>Video_on Delay Timing</strong> option on the <strong>System</strong> tab under <strong>Troubleshooting options</strong> allows you to configure a delay after the Video_on command is sent to the TrackIR device during initialization. Although the control is on the System tab, it is documented here in the TrackIR setup flow. This setting should be left at <strong>Default</strong> (0 microseconds) unless you are experiencing issues with TrackIR camera LEDs not turning on properly.
 </p>
 <p>
 <strong>Important:</strong> Only use the Manual delay setting if you are having specific LED issues where the green LEDs turn on but the red sensor LEDs do not activate, or if you see timeout errors in the logs.
@@ -210,7 +219,7 @@ In Default mode, no delay is applied after the Video_on command. This is the rec
 <table>
 <tr>
 <td>
-<img src="device_setup_delay1.png" alt="Video_on Delay Timing set to Default mode">
+<img src="device_setup_delay1.png" alt="System tab, Troubleshooting options: Video_on Delay Timing set to Default mode">
 </td>
 </tr>
 </table>
@@ -232,7 +241,7 @@ To use Manual mode:
 <table>
 <tr>
 <td>
-<img src="device_setup_delay2.png" alt="Video_on Delay Timing set to Manual mode with 120000 microseconds">
+<img src="device_setup_delay2.png" alt="System tab, Troubleshooting options: Video_on Delay Timing set to Manual mode with 120000 microseconds">
 </td>
 </tr>
 </table>
