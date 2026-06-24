@@ -18,7 +18,6 @@
 #include "webcam_info.h"
 #endif
 #include "tir_prefs.h"
-#include "tir_driver_prefs.h"
 #include "wiimote_prefs.h"
 #include "help_view.h"
 #include "ltr_gui_prefs.h"
@@ -74,8 +73,6 @@ DeviceSetup::DeviceSetup(Guardian *grd, QBoxLayout *tgt, QWidget *parent)
     on_RefreshDevices_pressed();
   });
   initOrientations();
-  initVideoOnDelay();
-  initUsbReset();
 }
 
 DeviceSetup::~DeviceSetup()
@@ -110,62 +107,6 @@ void DeviceSetup::initOrientations()
   }
 
   ui.CameraOrientation->setCurrentIndex(orientIndex);
-}
-
-void DeviceSetup::initVideoOnDelay()
-{
-  // Initialize the mode dropdown
-  ui.VideoOnDelayMode->clear();
-  ui.VideoOnDelayMode->addItem(QString::fromUtf8("Default"));
-  ui.VideoOnDelayMode->addItem(QString::fromUtf8("Manual"));
-  
-  // Load saved preference
-  QString sec;
-  int delay = 0;
-  bool isManual = false;
-  
-  if(PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
-    QString delayStr;
-    if(PREF.getKeyVal(sec, QString::fromUtf8("Video-on-delay"), delayStr)){
-      delay = delayStr.toInt();
-      isManual = (delay > 0);
-    }
-  }
-  
-  // Set UI state
-  if(isManual){
-    ui.VideoOnDelayMode->setCurrentIndex(1); // Manual
-    ui.VideoOnDelayValue->setValue(delay);
-    ui.VideoOnDelayValue->setVisible(true);
-  }else{
-    ui.VideoOnDelayMode->setCurrentIndex(0); // Default
-    ui.VideoOnDelayValue->setValue(120000); // Suggestion value
-    ui.VideoOnDelayValue->setVisible(false);
-  }
-}
-
-void DeviceSetup::initUsbReset()
-{
-  // Default is enabled (the fix for GitLab #51); only an explicit "No" disables it.
-  bool enabled = true;
-  QString sec;
-  if(PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
-    QString val;
-    if(PREF.getKeyVal(sec, QString::fromUtf8("Usb-reset-before-start"), val)){
-      enabled = (val.compare(QString::fromUtf8("No"), Qt::CaseInsensitive) != 0);
-    }
-  }
-  ui.UsbResetCheck->setChecked(enabled);
-}
-
-void DeviceSetup::on_UsbResetCheck_toggled(bool checked)
-{
-  QString sec;
-  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
-    // No TrackIR device section yet; nothing to save against.
-    return;
-  }
-  ltr_int_tir_set_usb_reset(checked);
 }
 
 void DeviceSetup::on_DeviceSelector_activated(int index)
@@ -247,10 +188,6 @@ void DeviceSetup::on_DeviceSelector_activated(int index)
     // Emit signal and initialize UI
     std::cout << "[DeviceSetup::on_DeviceSelector_activated] Emitting signal..." << std::endl;
     emit deviceTypeChanged(pl.deviceType, QString::fromUtf8("TrackIR"));
-    // Refresh VideoOnDelay UI when TrackIR is selected
-    std::cout << "[DeviceSetup::on_DeviceSelector_activated] Initializing VideoOnDelay..." << std::endl;
-    initVideoOnDelay();
-    std::cout << "[DeviceSetup::on_DeviceSelector_activated] All TrackIR initialization complete" << std::endl;
   }
   if(devPrefs != NULL && pl.deviceType != TIR){
     // For non-TrackIR devices, defer insertion (they don't have the same timing issues)
@@ -269,49 +206,6 @@ void DeviceSetup::on_CameraOrientation_activated(int index)
     return;
   }
   PREF.setKeyVal(QString::fromUtf8("Global"), QString::fromUtf8("Camera-orientation"), orientValues[index]);
-}
-
-void DeviceSetup::on_VideoOnDelayMode_activated(int index)
-{
-  if(index < 0){
-    return;
-  }
-  
-  QString sec;
-  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
-    // No TrackIR device section, create one if needed
-    return;
-  }
-  
-  if(index == 0){
-    // Default mode - set delay to 0 and hide spinbox
-    ui.VideoOnDelayValue->setVisible(false);
-    ltr_int_tir_set_video_on_delay(0);
-  }else{
-    // Manual mode - show spinbox and use current value
-    ui.VideoOnDelayValue->setVisible(true);
-    int delay = ui.VideoOnDelayValue->value();
-    // If value is 0 (default), set to suggestion value
-    if(delay == 0){
-      delay = 120000;
-      ui.VideoOnDelayValue->setValue(delay);
-    }
-    ltr_int_tir_set_video_on_delay(delay);
-  }
-}
-
-void DeviceSetup::on_VideoOnDelayValue_valueChanged(int value)
-{
-  QString sec;
-  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
-    // No TrackIR device section, don't save
-    return;
-  }
-  
-  // Only save if in Manual mode
-  if(ui.VideoOnDelayMode->currentIndex() == 1){
-    ltr_int_tir_set_video_on_delay(value);
-  }
 }
 
 void DeviceSetup::on_RefreshDevices_pressed()

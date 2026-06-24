@@ -1188,16 +1188,10 @@ bool ltr_int_open_tir(bool force_fw_load, bool switch_ir_on)
     out_ep = TIR_OUT_EP;
   }
 
-  // Optionally reset the USB device before claiming it. TrackIR 5 v2 (0x0158)
-  // can come up wedged - it never answers IN transfers until a bus reset
-  // re-enumerates it (GitLab #51), so reset is ON by default for that model.
-  // For other TrackIR models it only happens if the user enables it in the
-  // Device Setup "Troubleshooting" box. Reset must happen before prepare/claim
-  // so the following claim re-acquires the interface cleanly.
-  bool do_usb_reset = ltr_int_tir_usb_reset_is_set()
-                        ? ltr_int_tir_get_usb_reset()
-                        : (device == TIR5V2);
-  if(do_usb_reset){
+  // Optionally reset the USB device before claiming it when enabled in the
+  // System tab Troubleshooting options (GitLab #51). Reset must happen before
+  // prepare/claim so the following claim re-acquires the interface cleanly.
+  if(ltr_int_tir_get_usb_reset()){
     ltr_int_log_message("Resetting USB device before init (GitLab #51).\n");
     if(ltr_int_reset_device()){
       ltr_int_usleep(50000); // let the device settle after re-enumeration
