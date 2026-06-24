@@ -309,6 +309,31 @@ bool ltr_int_prepare_device(unsigned int config, unsigned int interface)
   return configure_tir(config) && claim_tir(config, interface);
 }
 
+// Issue an explicit USB port reset on the open (but not yet claimed) device.
+// Some TrackIR 5 v2 units come up wedged - they accept OUT transfers but never
+// answer IN transfers until a bus reset re-enumerates them (the same thing the
+// `usbreset` workaround does, and what the macOS openusb backend already does on
+// open). Must be called before claiming the interface so the subsequent claim
+// re-detaches the kernel driver and re-claims cleanly.
+bool ltr_int_reset_device(void)
+{
+  if(handle == NULL){
+    ltr_int_log_message("Can't reset USB device - no handle!\n");
+    return false;
+  }
+  ltr_int_log_message("Resetting USB device.\n");
+  int res = libusb_reset_device(handle);
+  if(res == 0){
+    ltr_int_log_message("USB device reset OK.\n");
+    return true;
+  }
+  // LIBUSB_ERROR_NOT_FOUND means the device re-enumerated and this handle is no
+  // longer valid; the caller will fail to prepare/claim and tracking won't start,
+  // but we avoid using a stale handle. Re-open-after-reset is a future enhancement.
+  ltr_int_log_message("USB device reset returned %d (%s).\n", res, libusb_error_name(res));
+  return false;
+}
+
 static bool ltr_int_log_packet(const char *dir, unsigned char data[], size_t size)
 {
   char *buffer = ltr_int_my_malloc(size * 3 + 1);

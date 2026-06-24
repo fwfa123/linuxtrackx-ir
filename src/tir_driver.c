@@ -17,6 +17,7 @@
 
 init_usb_fun *ltr_int_init_usb = NULL;
 find_tir_fun *ltr_int_find_tir = NULL;
+reset_device_fun *ltr_int_reset_device = NULL;
 prepare_device_fun *ltr_int_prepare_device = NULL;
 send_data_fun *ltr_int_send_data = NULL;
 receive_data_fun *ltr_int_receive_data = NULL;
@@ -25,6 +26,7 @@ finish_usb_fun *ltr_int_finish_usb = NULL;
 static lib_fun_def_t functions[] = {
   {(char *)"ltr_int_init_usb", (void*) &ltr_int_init_usb},
   {(char *)"ltr_int_find_tir", (void*) &ltr_int_find_tir},
+  {(char *)"ltr_int_reset_device", (void*) &ltr_int_reset_device},
   {(char *)"ltr_int_prepare_device", (void*) &ltr_int_prepare_device},
   {(char *)"ltr_int_send_data", (void*) &ltr_int_send_data},
   {(char *)"ltr_int_receive_data", (void*) &ltr_int_receive_data},
