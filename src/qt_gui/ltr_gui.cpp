@@ -24,6 +24,7 @@
 #include <iostream>
 #include "ltr_gui.h"
 #include "ltr_gui_prefs.h"
+#include "tir_driver_prefs.h"
 #include "prefs_link.h"
 #include "pathconfig.h"
 #include "ltr_state.h"
@@ -184,6 +185,11 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
   QObject::connect(ui.button_refresh_system_info, SIGNAL(pressed()), this, SLOT(on_button_refresh_system_info_pressed()));
 
+  // System tab troubleshooting (auto-connect broken due to custom central widget)
+  QObject::connect(ui.VideoOnDelayMode, SIGNAL(currentIndexChanged(int)), this, SLOT(on_VideoOnDelayMode_activated(int)));
+  QObject::connect(ui.VideoOnDelayValue, SIGNAL(valueChanged(int)), this, SLOT(on_VideoOnDelayValue_valueChanged(int)));
+  QObject::connect(ui.UsbResetCheck, SIGNAL(toggled(bool)), this, SLOT(on_UsbResetCheck_toggled(bool)));
+
   // Qt6: ModelEdit and ProfileSelector widgets are now created in showEvent()
   // to avoid Qt6 layout calculation crashes during window construction
 
@@ -224,6 +230,8 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   ui.LegacyRotation->setChecked(ltr_int_use_oldrot());
   ui.TransRotDisable->setChecked(!ltr_int_do_tr_align());
   ui.FocalLength->setValue(ltr_int_get_focal_length());
+  initVideoOnDelay();
+  initUsbReset();
   
   WineLauncher wl;
   if (!wl.wineAvailable() && showWineWarning) {
@@ -518,6 +526,106 @@ void LinuxtrackGui::on_TransRotDisable_stateChanged(int state)
   const bool enabled = (state == Qt::Checked);
   ltr_int_set_tr_align(!enabled);  // Note: inverted logic
   TRACKER.miscChange(MISC_ALIGN, !enabled);
+}
+
+void LinuxtrackGui::initVideoOnDelay()
+{
+  ui.VideoOnDelayMode->clear();
+  ui.VideoOnDelayMode->addItem(QString::fromUtf8("Default"));
+  ui.VideoOnDelayMode->addItem(QString::fromUtf8("Manual"));
+
+  QString sec;
+  int delay = 0;
+  bool isManual = false;
+
+  if(PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    QString delayStr;
+    if(PREF.getKeyVal(sec, QString::fromUtf8("Video-on-delay"), delayStr)){
+      delay = delayStr.toInt();
+      isManual = (delay > 0);
+    }
+  }
+
+  if(isManual){
+    ui.VideoOnDelayMode->setCurrentIndex(1);
+    ui.VideoOnDelayValue->setValue(delay);
+    ui.VideoOnDelayValue->setVisible(true);
+  }else{
+    ui.VideoOnDelayMode->setCurrentIndex(0);
+    ui.VideoOnDelayValue->setValue(120000);
+    ui.VideoOnDelayValue->setVisible(false);
+  }
+}
+
+void LinuxtrackGui::initUsbReset()
+{
+  bool enabled = false;
+  QString sec;
+  if(PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    QString val;
+    if(PREF.getKeyVal(sec, QString::fromUtf8("Usb-reset-before-start"), val)){
+      enabled = (val.compare(QString::fromUtf8("Yes"), Qt::CaseInsensitive) == 0);
+    }
+  }
+  ui.UsbResetCheck->setChecked(enabled);
+}
+
+void LinuxtrackGui::on_VideoOnDelayMode_activated(int index)
+{
+  if(guiInit || index < 0){
+    return;
+  }
+
+  if(index == 0){
+    ui.VideoOnDelayValue->setVisible(false);
+  }else{
+    ui.VideoOnDelayValue->setVisible(true);
+    int delay = ui.VideoOnDelayValue->value();
+    if(delay == 0){
+      delay = 120000;
+      ui.VideoOnDelayValue->setValue(delay);
+    }
+  }
+
+  QString sec;
+  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    return;
+  }
+
+  if(index == 0){
+    ltr_int_tir_set_video_on_delay(0);
+  }else{
+    ltr_int_tir_set_video_on_delay(ui.VideoOnDelayValue->value());
+  }
+}
+
+void LinuxtrackGui::on_VideoOnDelayValue_valueChanged(int value)
+{
+  if(guiInit){
+    return;
+  }
+
+  QString sec;
+  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    return;
+  }
+
+  if(ui.VideoOnDelayMode->currentIndex() == 1){
+    ltr_int_tir_set_video_on_delay(value);
+  }
+}
+
+void LinuxtrackGui::on_UsbResetCheck_toggled(bool checked)
+{
+  if(guiInit){
+    return;
+  }
+
+  QString sec;
+  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    return;
+  }
+  ltr_int_tir_set_usb_reset(checked);
 }
 
 void LinuxtrackGui::on_FocalLength_valueChanged(double val)
