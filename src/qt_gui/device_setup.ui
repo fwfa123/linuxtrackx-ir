@@ -119,6 +119,19 @@
           </item>
          </layout>
         </item>
+        <item row="3" column="1">
+         <widget class="QCheckBox" name="UsbResetCheck">
+          <property name="text">
+           <string>Reset USB device before tracking</string>
+          </property>
+          <property name="toolTip">
+           <string>Reset the TrackIR USB device before starting tracking. Fixes &quot;Data receive request timed out&quot; on some TrackIR 5 v2 units (GitLab #51). Leave enabled unless it causes problems.</string>
+          </property>
+          <property name="checked">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
         <item row="0" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
@@ -159,6 +172,7 @@
   <tabstop>CameraOrientation</tabstop>
   <tabstop>VideoOnDelayMode</tabstop>
   <tabstop>VideoOnDelayValue</tabstop>
+  <tabstop>UsbResetCheck</tabstop>
  </tabstops>
  <resources/>
  <connections/>
