@@ -127,6 +127,11 @@ bool ltr_int_prepare_device(unsigned int config, unsigned int interface)
   return true;
 }
 
+bool ltr_int_reset_device(void)
+{
+  return true;
+}
+
 static bool send_cfg = false;
 
 bool ltr_int_send_data(int out_ep, unsigned char data[], size_t size)

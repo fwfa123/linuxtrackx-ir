@@ -82,6 +82,13 @@ bool ltr_int_prepare_device(unsigned int config, unsigned int interface,
   return configure_tir(config) && claim_tir(interface);
 }
 
+bool ltr_int_reset_device(void)
+{
+  // macOS openusb backend already resets the device on open (openusb_reset in
+  // ltr_int_find_tir), so this is a no-op kept for interface compatibility.
+  return true;
+}
+
 bool ltr_int_send_data(unsigned char data[], size_t size)
 {
   int32_t res;

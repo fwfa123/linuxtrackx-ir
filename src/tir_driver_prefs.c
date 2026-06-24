@@ -12,6 +12,7 @@ static int threshold = 0;
 static bool status = false;
 static bool grayscale = false;
 static int video_on_delay = 0;
+static bool usb_reset = true;
 
 static char max_blob_key[] = "Max-blob";
 static char min_blob_key[] = "Min-blob";
@@ -21,6 +22,7 @@ static char threshold_key[] = "Threshold";
 static char status_key[] = "Status-signals";
 static char grayscale_key[] = "Grayscale";
 static char video_on_delay_key[] = "Video-on-delay";
+static char usb_reset_key[] = "Usb-reset-before-start";
 
 bool ltr_int_tir_init_prefs()
 {
@@ -59,6 +61,13 @@ bool ltr_int_tir_init_prefs()
   }
   if(!ltr_int_get_key_int(dev, video_on_delay_key, &video_on_delay)){
     video_on_delay = 0;
+  }
+  tmp = ltr_int_get_key(dev, usb_reset_key);
+  if(tmp != NULL){
+    usb_reset = (strcasecmp(tmp, "No") != 0);
+    free(tmp);
+  }else{
+    usb_reset = true;
   }
   return true;
 }
@@ -185,4 +194,18 @@ bool ltr_int_tir_set_video_on_delay(int val)
   }
   video_on_delay = val;
   return ltr_int_change_key_int(ltr_int_get_device_section(), video_on_delay_key, val);
+}
+
+bool ltr_int_tir_get_usb_reset()
+{
+  return usb_reset;
+}
+
+bool ltr_int_tir_set_usb_reset(bool val)
+{
+  char yes_val[] = "Yes";
+  char no_val[] = "No";
+  char *res = val ? yes_val : no_val;
+  usb_reset = val;
+  return ltr_int_change_key(ltr_int_get_device_section(), usb_reset_key, res);
 }

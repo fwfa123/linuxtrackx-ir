@@ -1188,6 +1188,13 @@ bool ltr_int_open_tir(bool force_fw_load, bool switch_ir_on)
     out_ep = TIR_OUT_EP;
   }
 
+  // TrackIR 5 v2 (0x0158) can come up wedged - it never answers IN transfers
+  // until a USB bus reset re-enumerates it (GitLab #51). Reset here, before
+  // claiming the interface, so the following prepare/claim re-acquires cleanly.
+  if((device == TIR5V2) && ltr_int_tir_get_usb_reset()){
+    ltr_int_log_message("[TIR5V2] Resetting USB device before init (GitLab #51 workaround).\n");
+    ltr_int_reset_device();
+  }
 
   if(!ltr_int_prepare_device(TIR_CONFIGURATION, TIR_INTERFACE)){
     ltr_int_log_message("Couldn't prepare!\n");
