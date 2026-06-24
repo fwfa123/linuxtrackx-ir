@@ -34,6 +34,7 @@ int ltr_int_tir_get_video_on_delay();
 bool ltr_int_tir_set_video_on_delay(int val);
 
 bool ltr_int_tir_get_usb_reset();
+bool ltr_int_tir_usb_reset_is_set();
 bool ltr_int_tir_set_usb_reset(bool val);
 
 #ifdef __cplusplus

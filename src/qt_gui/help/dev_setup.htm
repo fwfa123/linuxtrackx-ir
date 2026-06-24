@@ -239,15 +239,15 @@ To use Manual mode:
 <strong>Note:</strong> This setting applies to all TrackIR devices. If you only experience issues with a specific TrackIR model, you may need to adjust the delay value accordingly. Values can range from 0 to 500000 microseconds.
 </p>
 
-<h2>Reset USB device before tracking</h2>
+<h2>Do usbreset before start tracking</h2>
 <p>
-Some <strong>TrackIR 5 v2</strong> units (USB ID <code>131d:0158</code>) come up in a state where they accept commands but never return camera data, producing a flood of <strong>"Data receive request timed out"</strong> messages in the log and 0 FPS when you press Start (GitLab issue #51).
+Some <strong>TrackIR 5 v2</strong> units (USB ID <code>131d:0158</code>) come up in a state where they accept commands but never return camera data, producing a flood of <strong>"Data receive request timed out"</strong> messages in the log and 0 FPS when you press Start (GitLab issue #51). The camera typically stays dark.
 </p>
 <p>
-The <strong>Reset USB device before tracking</strong> checkbox (enabled by default) tells LinuxTrack to issue a USB reset to the TrackIR before initializing it, which clears this wedged state - the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually. This reset is only performed for TrackIR 5 v2 hardware; other TrackIR models are unaffected.
+The <strong>Do usbreset before start tracking</strong> checkbox in the Troubleshooting group tells LinuxTrack to issue a USB reset to the TrackIR before initializing it, which clears this wedged state - the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually.
 </p>
 <p>
-Leave this enabled unless you are debugging or it causes problems on your system. Note that adjusting the Video_on Delay does <em>not</em> fix this particular timeout - the USB reset does.
+This is <strong>enabled by default for TrackIR 5 v2</strong> hardware, so affected units work out of the box. For other TrackIR models the reset is off by default; if your camera remains dark after pressing Start, try enabling this checkbox. Note that adjusting the Video_on Delay does <em>not</em> fix this particular timeout - the USB reset does.
 </p>
 
 <A href="#StartTracking">Now you can try to start the tracking to verify the device is set up correctly.</A>

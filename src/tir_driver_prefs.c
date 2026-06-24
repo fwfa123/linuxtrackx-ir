@@ -13,6 +13,7 @@ static bool status = false;
 static bool grayscale = false;
 static int video_on_delay = 0;
 static bool usb_reset = true;
+static bool usb_reset_set = false;
 
 static char max_blob_key[] = "Max-blob";
 static char min_blob_key[] = "Min-blob";
@@ -65,9 +66,11 @@ bool ltr_int_tir_init_prefs()
   tmp = ltr_int_get_key(dev, usb_reset_key);
   if(tmp != NULL){
     usb_reset = (strcasecmp(tmp, "No") != 0);
+    usb_reset_set = true;
     free(tmp);
   }else{
     usb_reset = true;
+    usb_reset_set = false;
   }
   return true;
 }
@@ -201,11 +204,19 @@ bool ltr_int_tir_get_usb_reset()
   return usb_reset;
 }
 
+// Whether the user has explicitly chosen a value (vs relying on the default).
+// Lets callers apply a device-specific default: on for TIR5V2, off otherwise.
+bool ltr_int_tir_usb_reset_is_set()
+{
+  return usb_reset_set;
+}
+
 bool ltr_int_tir_set_usb_reset(bool val)
 {
   char yes_val[] = "Yes";
   char no_val[] = "No";
   char *res = val ? yes_val : no_val;
   usb_reset = val;
+  usb_reset_set = true;
   return ltr_int_change_key(ltr_int_get_device_section(), usb_reset_key, res);
 }
