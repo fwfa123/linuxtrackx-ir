@@ -4,7 +4,7 @@
 "dev_setup.htm" "Tracker Setup"
 "model_setup.htm" "Model Setup"
 "axes_setup.htm" "Tracking Setup"
-"misc.htm" "Miscelaneous"
+"misc.htm" "System"
 "extractor.htm" "NP Firmware Extractor"
 "xpl_setup.htm" "XPlane plugin setup"
 "mickey.htm" "Virtual mouse setup"
