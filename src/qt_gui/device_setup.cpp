@@ -75,6 +75,7 @@ DeviceSetup::DeviceSetup(Guardian *grd, QBoxLayout *tgt, QWidget *parent)
   });
   initOrientations();
   initVideoOnDelay();
+  initUsbReset();
 }
 
 DeviceSetup::~DeviceSetup()
@@ -141,6 +142,30 @@ void DeviceSetup::initVideoOnDelay()
     ui.VideoOnDelayValue->setValue(120000); // Suggestion value
     ui.VideoOnDelayValue->setVisible(false);
   }
+}
+
+void DeviceSetup::initUsbReset()
+{
+  // Default is enabled (the fix for GitLab #51); only an explicit "No" disables it.
+  bool enabled = true;
+  QString sec;
+  if(PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    QString val;
+    if(PREF.getKeyVal(sec, QString::fromUtf8("Usb-reset-before-start"), val)){
+      enabled = (val.compare(QString::fromUtf8("No"), Qt::CaseInsensitive) != 0);
+    }
+  }
+  ui.UsbResetCheck->setChecked(enabled);
+}
+
+void DeviceSetup::on_UsbResetCheck_toggled(bool checked)
+{
+  QString sec;
+  if(!PREF.getFirstDeviceSection(QString::fromUtf8("Tir"), sec)){
+    // No TrackIR device section yet; nothing to save against.
+    return;
+  }
+  ltr_int_tir_set_usb_reset(checked);
 }
 
 void DeviceSetup::on_DeviceSelector_activated(int index)

@@ -11,6 +11,7 @@ typedef enum {NOT_TIR = 0, TIR2, TIR3, TIR4, TIR5, TIR5V2, SMARTNAV3, SMARTNAV4,
 typedef bool (init_usb_fun)(void);
 typedef dev_found (find_tir_fun)(void);
 typedef bool (find_p3e_fun)(void);
+typedef bool (reset_device_fun)(void);
 typedef bool (prepare_device_fun)(unsigned int config, unsigned int interface);
 typedef bool (send_data_fun)(int out_ep, unsigned char data[], size_t size);
 typedef bool (receive_data_fun)(int in_ep, unsigned char data[], size_t size, size_t *transferred,
@@ -24,6 +25,7 @@ typedef bool (ctrl_data_fun)(uint8_t req_type, uint8_t req, uint16_t val, uint16
 extern init_usb_fun *ltr_int_init_usb;
 extern find_tir_fun *ltr_int_find_tir;
 extern find_p3e_fun *ltr_int_find_p3e;
+extern reset_device_fun *ltr_int_reset_device;
 extern prepare_device_fun *ltr_int_prepare_device;
 extern send_data_fun *ltr_int_send_data;
 extern receive_data_fun *ltr_int_receive_data;
@@ -42,6 +44,7 @@ void ltr_int_finish_usb(unsigned int interface);
 extern init_usb_fun ltr_int_init_usb;
 extern find_p3e_fun ltr_int_find_p3e;
 extern find_tir_fun ltr_int_find_tir;
+extern reset_device_fun ltr_int_reset_device;
 extern prepare_device_fun ltr_int_prepare_device;
 extern send_data_fun ltr_int_send_data;
 extern receive_data_fun ltr_int_receive_data;
