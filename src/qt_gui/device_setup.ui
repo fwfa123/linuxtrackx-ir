@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>527</width>
-    <height>130</height>
+    <height>170</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -64,74 +64,6 @@
           </property>
          </widget>
         </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="VideoOnDelayLabel">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="text">
-           <string>Video_on Delay Timing</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <layout class="QHBoxLayout" name="horizontalLayout_VideoOnDelay">
-          <item>
-           <widget class="QComboBox" name="VideoOnDelayMode">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QSpinBox" name="VideoOnDelayValue">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="visible">
-             <bool>false</bool>
-            </property>
-            <property name="minimum">
-             <number>0</number>
-            </property>
-            <property name="maximum">
-             <number>500000</number>
-            </property>
-            <property name="singleStep">
-             <number>1000</number>
-            </property>
-            <property name="value">
-             <number>120000</number>
-            </property>
-            <property name="suffix">
-             <string> μs</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="3" column="1">
-         <widget class="QCheckBox" name="UsbResetCheck">
-          <property name="text">
-           <string>Reset USB device before tracking</string>
-          </property>
-          <property name="toolTip">
-           <string>Reset the TrackIR USB device before starting tracking. Fixes &quot;Data receive request timed out&quot; on some TrackIR 5 v2 units (GitLab #51). Leave enabled unless it causes problems.</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
         <item row="0" column="1">
          <layout class="QHBoxLayout" name="horizontalLayout_11">
           <item>
@@ -160,6 +92,80 @@
          </layout>
         </item>
        </layout>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="TroubleshootingGroup">
+        <property name="title">
+         <string>Troubleshooting</string>
+        </property>
+        <layout class="QGridLayout" name="gridLayout_ts">
+         <item row="0" column="0">
+          <widget class="QLabel" name="VideoOnDelayLabel">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="text">
+            <string>Video_on Delay Timing</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="1">
+          <layout class="QHBoxLayout" name="horizontalLayout_VideoOnDelay">
+           <item>
+            <widget class="QComboBox" name="VideoOnDelayMode">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSpinBox" name="VideoOnDelayValue">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="visible">
+              <bool>false</bool>
+             </property>
+             <property name="minimum">
+              <number>0</number>
+             </property>
+             <property name="maximum">
+              <number>500000</number>
+             </property>
+             <property name="singleStep">
+              <number>1000</number>
+             </property>
+             <property name="value">
+              <number>120000</number>
+             </property>
+             <property name="suffix">
+              <string> μs</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item row="1" column="0" colspan="2">
+          <widget class="QCheckBox" name="UsbResetCheck">
+           <property name="text">
+            <string>Do usbreset before start tracking</string>
+           </property>
+           <property name="toolTip">
+            <string>Try this if your camera remains dark after pressing Start. Resets the TrackIR USB device before tracking. On by default for TrackIR 5 v2 (GitLab #51); enable for other models if needed.</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </item>
      </layout>
     </widget>
