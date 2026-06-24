@@ -60,6 +60,9 @@ class LinuxtrackGui : public QMainWindow
   void on_LegacyRotation_stateChanged(int state);
   void on_FocalLength_valueChanged(double val);
   void on_TransRotDisable_stateChanged(int state);
+  void on_VideoOnDelayMode_activated(int index);
+  void on_VideoOnDelayValue_valueChanged(int value);
+  void on_UsbResetCheck_toggled(bool checked);
   void on_ViewLogButton_pressed();
   void on_XplanePluginButton_pressed();
   void on_PackageLogsButton_pressed();
@@ -163,6 +166,8 @@ class LinuxtrackGui : public QMainWindow
   void resumeLtrPipeProcess();
   void cleanupUinputDevices();
   void initializeLtrPipeInterface();
+  void initVideoOnDelay();
+  void initUsbReset();
   
   // ltr_pipe state management
   bool ltrPipePaused = false;

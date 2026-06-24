@@ -20,19 +20,13 @@ class DeviceSetup : public QWidget
   QWidget *devPrefs;
   bool initialized;
   void initOrientations();
-  void initVideoOnDelay();
-  void initUsbReset();
   QBoxLayout *target;
  private slots:
   void on_DeviceSelector_activated(int index);
   void on_CameraOrientation_activated(int index);
   void on_RefreshDevices_pressed();
-  void on_VideoOnDelayMode_activated(int index);
-  void on_VideoOnDelayValue_valueChanged(int value);
-  void on_UsbResetCheck_toggled(bool checked);
  signals:
   void deviceTypeChanged(int deviceType, const QString &desc);
 };
 
 #endif
-
