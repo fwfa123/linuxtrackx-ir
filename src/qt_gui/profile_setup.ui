@@ -493,6 +493,20 @@
       </spacer>
      </item>
      <item>
+      <widget class="QPushButton" name="RestoreAxisDefaults">
+       <property name="text">
+        <string>Restore Axis Defaults</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="SaveAxisDefaults">
+       <property name="text">
+        <string>Save as Axis Defaults</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="DetailedAxisSetup">
        <property name="text">
         <string>Detailed Axes Setup</string>
@@ -518,6 +532,8 @@
   <tabstop>TzSens</tabstop>
   <tabstop>Smoothing</tabstop>
   <tabstop>TrackingRate</tabstop>
+  <tabstop>RestoreAxisDefaults</tabstop>
+  <tabstop>SaveAxisDefaults</tabstop>
   <tabstop>DetailedAxisSetup</tabstop>
  </tabstops>
  <resources/>

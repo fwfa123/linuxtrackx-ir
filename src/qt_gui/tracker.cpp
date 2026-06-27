@@ -109,6 +109,11 @@ void Tracker::performDeferredSave()
   }
 }
 
+void Tracker::schedulePrefsSave()
+{
+  saveDebounceTimer->start(800);
+}
+
 Tracker::~Tracker()
 {
   if(master->isRunning()){
@@ -179,6 +184,81 @@ void Tracker::signalNewSlave(const char *name)
   ltr_int_close_axes(&tmp_axes);
 }
 
+static float limit_ff(float val)
+{
+  if(val < 0.0) return 0.0;
+  if(val > LTR_AXIS_FILTER_MAX) return LTR_AXIS_FILTER_MAX;
+  return val;
+}
+
+void Tracker::broadcastAxesToSlaves()
+{
+  const QByteArray sec = profileSection.toUtf8();
+  const char *profile = sec.constData();
+  for(int i = PITCH; i <= TZ; ++i){
+    ltr_int_change(profile, i, AXIS_ENABLED,
+      ltr_int_get_axis_bool_param(axes, (axis_t)i, AXIS_ENABLED) ? 1.0 : 0.0);
+    ltr_int_change(profile, i, AXIS_INVERTED,
+      ltr_int_get_axis_bool_param(axes, (axis_t)i, AXIS_INVERTED) ? 1.0 : 0.0);
+    for(int j = AXIS_DEADZONE; j <= AXIS_FILTER; ++j){
+      float val = ltr_int_get_axis_param(axes, (axis_t)i, (axis_param_t)j);
+      if((axis_param_t)j == AXIS_FILTER){
+        val = limit_ff(ffs[i] + common_ff);
+      }
+      ltr_int_change(profile, i, j, val);
+    }
+  }
+}
+
+void Tracker::reloadAxesState()
+{
+  ltr_int_close_axes(&axes);
+  ltr_int_init_axes(&axes, currentProfile.toUtf8().constData());
+  const char *sec = ltr_int_axes_get_section(axes);
+  if(sec != NULL){
+    profileSection = QString::fromUtf8(sec);
+  }
+
+  common_ff = 1.0;
+  int i;
+  for(i = PITCH; i <= TZ; ++i){
+    ffs[i] = ltr_int_get_axis_param(axes, (axis_t)i, AXIS_FILTER);
+    if(common_ff > ffs[i]){
+      common_ff = ffs[i];
+    }
+  }
+  for(i = PITCH; i <= TZ; ++i){
+    ffs[i] -= common_ff;
+  }
+
+  axes_valid = true;
+  emit setCommonFF(common_ff);
+  emit initAxes();
+}
+
+void Tracker::restoreAxisDefaults()
+{
+  ltr_int_ensure_axis_baseline();
+  if(!ltr_int_axes_copy_profile_keys(LTR_AXIS_BASELINE_PROFILE,
+                                     currentProfile.toUtf8().constData())){
+    return;
+  }
+  reloadAxesState();
+  broadcastAxesToSlaves();
+  ltr_int_prefs_changed();
+  ltr_int_save_prefs(NULL);
+}
+
+void Tracker::saveAxisDefaults()
+{
+  ltr_int_ensure_axis_baseline();
+  if(!ltr_int_axes_persist_state_to_profile(axes, LTR_AXIS_BASELINE_PROFILE)){
+    return;
+  }
+  ltr_int_prefs_changed();
+  ltr_int_save_prefs(NULL);
+}
+
 
 void Tracker::setProfile(QString p)
 {
@@ -227,8 +307,13 @@ void Tracker::setProfile(QString p)
 
 void Tracker::fromDefault()
 {
-  ltr_int_axes_from_default(&axes);
-  emit initAxes();
+  if(!ltr_int_axes_copy_profile_keys("Default", currentProfile.toUtf8().constData())){
+    return;
+  }
+  reloadAxesState();
+  broadcastAxesToSlaves();
+  ltr_int_prefs_changed();
+  ltr_int_save_prefs(NULL);
 }
 
 void Tracker::start(QString &section)
@@ -287,13 +372,6 @@ bool Tracker::miscChange(axis_param_t elem, float val)
   ltr_int_prefs_changed();
   saveDebounceTimer->start(800);
   return true;
-}
-
-static float limit_ff(float val)
-{
-  if(val < 0.0) return 0.0;
-  if(val > LTR_AXIS_FILTER_MAX) return LTR_AXIS_FILTER_MAX;
-  return val;
 }
 
 bool Tracker::axisChange(axis_t axis, axis_param_t elem, float val)

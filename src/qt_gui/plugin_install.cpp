@@ -7,6 +7,8 @@
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QAbstractButton>
+#include <QPushButton>
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <zlib.h>
@@ -14,6 +16,8 @@
 #include "utils.h"
 #include "installer_paths.h"
 #include "wine_bridge_install.h"
+#include "wine_executable.h"
+#include "wine_prefix_resolver.h"
 #include "lutris_path_config_dialog.h"
 #include "tracker.h"
 
@@ -43,6 +47,108 @@ void reportWineBridgeInstallOutcome(QWidget *parent, WineBridgeInstall::InstallO
         QMessageBox::information(parent, QObject::tr("Installation Completed"),
                                QObject::tr("Linuxtrack Wine bridge installed to:\n%1").arg(installedPath));
     }
+}
+
+enum class WineBinaryChoice {
+    Cancelled,
+    UseDetected,
+    ChooseManual,
+    UseSystem,
+};
+
+WineBinaryChoice promptWineBinaryForPrefix(QWidget *parent, const QList<WineCandidate> &candidates)
+{
+    if (!candidates.isEmpty()) {
+        const WineCandidate &detected = candidates.first();
+        QString versionText = detected.version.isEmpty() ? QObject::tr("unknown version")
+                                                         : detected.version;
+        QString message = QObject::tr(
+            "A Wine binary was detected near this prefix:\n\n"
+            "  %1\n"
+            "  (%2 from %3)\n\n"
+            "Which Wine should be used to install the bridge?")
+                              .arg(detected.path, versionText, detected.source);
+
+        QMessageBox box(QMessageBox::Question, QObject::tr("Select Wine Binary"), message,
+                        QMessageBox::NoButton, parent);
+        QPushButton *useDetectedBtn =
+            box.addButton(QObject::tr("Use detected Wine"), QMessageBox::YesRole);
+        QPushButton *chooseBtn = box.addButton(QObject::tr("Choose Wine binary…"), QMessageBox::ActionRole);
+        QPushButton *systemBtn = box.addButton(QObject::tr("Use system Wine"), QMessageBox::NoRole);
+        QAbstractButton *cancelBtn = box.addButton(QMessageBox::Cancel);
+        box.setDefaultButton(useDetectedBtn);
+        box.exec();
+
+        QAbstractButton *clicked = box.clickedButton();
+        if (!clicked || clicked == cancelBtn)
+            return WineBinaryChoice::Cancelled;
+        if (clicked == useDetectedBtn)
+            return WineBinaryChoice::UseDetected;
+        if (clicked == chooseBtn)
+            return WineBinaryChoice::ChooseManual;
+        if (clicked == systemBtn)
+            return WineBinaryChoice::UseSystem;
+        return WineBinaryChoice::Cancelled;
+    }
+
+    const QString message = QObject::tr(
+        "No Wine binary was detected near this prefix.\n\n"
+        "Choose a Wine binary manually or use the system Wine fallback.");
+
+    QMessageBox box(QMessageBox::Question, QObject::tr("Select Wine Binary"), message,
+                    QMessageBox::NoButton, parent);
+    QPushButton *chooseBtn = box.addButton(QObject::tr("Choose Wine binary…"), QMessageBox::YesRole);
+    QPushButton *systemBtn = box.addButton(QObject::tr("Use system Wine"), QMessageBox::NoRole);
+    QAbstractButton *cancelBtn = box.addButton(QMessageBox::Cancel);
+    box.setDefaultButton(chooseBtn);
+    box.exec();
+
+    QAbstractButton *clicked = box.clickedButton();
+    if (!clicked || clicked == cancelBtn)
+        return WineBinaryChoice::Cancelled;
+    if (clicked == chooseBtn)
+        return WineBinaryChoice::ChooseManual;
+    if (clicked == systemBtn)
+        return WineBinaryChoice::UseSystem;
+    return WineBinaryChoice::Cancelled;
+}
+
+QString resolveWineForCustomPrefixInstall(QWidget *parent, WineLauncher *wineLauncher,
+                                          const QList<WineCandidate> &candidates)
+{
+    const WineBinaryChoice choice = promptWineBinaryForPrefix(parent, candidates);
+    if (choice == WineBinaryChoice::Cancelled)
+        return QString();
+
+    if (choice == WineBinaryChoice::UseDetected && !candidates.isEmpty())
+        return candidates.first().path;
+
+    if (choice == WineBinaryChoice::ChooseManual) {
+        const QString picked = QFileDialog::getOpenFileName(parent, QObject::tr("Select Wine binary…"),
+                                                            QStringLiteral("/usr/bin"),
+                                                            QObject::tr("Wine (wine)"));
+        if (picked.isEmpty())
+            return QString();
+        const QString resolved = resolveWineExecutable(picked);
+        if (resolved.isEmpty()) {
+            QMessageBox::warning(parent, QObject::tr("Invalid Wine Binary"),
+                                 QObject::tr("The selected file is not an executable Wine binary."));
+        }
+        return resolved;
+    }
+
+    if (choice == WineBinaryChoice::UseSystem) {
+        const QString selected = wineLauncher ? wineLauncher->selectBestWineVersion() : QString();
+        const QString resolved = resolveWineExecutable(selected);
+        if (resolved.isEmpty()) {
+            QMessageBox::warning(
+                parent, QObject::tr("System Wine Not Found"),
+                QObject::tr("No compatible system Wine binary was found. Install Wine 9.0+ or choose a binary manually."));
+        }
+        return resolved;
+    }
+
+    return QString();
 }
 
 } // namespace
@@ -197,19 +303,7 @@ void PluginInstall::installLinuxtrackWine()
   }
   
 #ifndef DARWIN
-  // Get the main window by finding the top-level widget
-  QWidget *parentWidget = nullptr;
-  QObject *obj = parent();
-  while (obj && !parentWidget) {
-    parentWidget = qobject_cast<QWidget*>(obj);
-    if (parentWidget && parentWidget->isWindow()) {
-      break; // Found the main window
-    }
-    obj = obj->parent();
-  }
-  if (!parentWidget) {
-    parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
-  }
+  QWidget *parentWidget = getParentWidget();
   QString prefix = QFileDialog::getExistingDirectory(parentWidget, QObject::tr("Select Wine Prefix..."),
                      QDir::homePath(), QFileDialog::ShowDirsOnly);
 
@@ -225,6 +319,13 @@ void PluginInstall::installLinuxtrackWine()
       QObject::tr("The selected directory does not exist."));
     return;
   }
+
+  if (!isValidWinePrefixPath(prefix)) {
+    QMessageBox::warning(parentWidget, QObject::tr("Invalid Wine Prefix"),
+      QObject::tr("The selected folder does not look like a Wine prefix.\n"
+                    "Expected drive_c/windows under the prefix directory."));
+    return;
+  }
   
   if (InstallerPaths::resolveWineBridgePayloadDir().isEmpty()) {
     QMessageBox::critical(parentWidget, QObject::tr("Wine Bridge Not Found"),
@@ -233,13 +334,10 @@ void PluginInstall::installLinuxtrackWine()
     return;
   }
 
-  QString winePath = inst ? inst->selectBestWineVersion() : QString();
-  if (winePath.isEmpty()) {
-    winePath = QFileDialog::getOpenFileName(parentWidget, QObject::tr("Select Wine binary..."),
-                                            QStringLiteral("/usr/bin"), QObject::tr("Wine (wine)"));
-    if (winePath.isEmpty())
-      return;
-  }
+  const QList<WineCandidate> detectedCandidates = detectWineFromPrefix(prefix);
+  const QString winePath = resolveWineForCustomPrefixInstall(parentWidget, inst, detectedCandidates);
+  if (winePath.isEmpty())
+    return;
 
   QString installError;
   QString debugInfo;

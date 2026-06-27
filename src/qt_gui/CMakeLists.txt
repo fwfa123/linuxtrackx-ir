@@ -37,6 +37,9 @@ set(LTR_GUI_HEADERS
     progress.h
     scurve.h
     scview.h
+    pose_monitor_strip.h
+    pose_crosshair_widget.h
+    pose_crosshair_panel.h
     wiimote_prefs.h
     tracker.h
     plugin_install.h
@@ -66,6 +69,8 @@ set(LTR_GUI_HEADERS
     flatpak_detector.h
     installer_paths.h
     wine_bridge_install.h
+    wine_executable.h
+    wine_prefix_resolver.h
     about_dialog.h
     ../mickey/hotkey.h
     ../mickey/hotkey_setup_dlg.h
@@ -122,6 +127,9 @@ set(LTR_GUI_SOURCES
     guardian.cpp
     scurve.cpp
     scview.cpp
+    pose_monitor_strip.cpp
+    pose_crosshair_widget.cpp
+    pose_crosshair_panel.cpp
     wiimote_prefs.cpp
     ../ltr_srv_master.cpp
     device_setup.cpp
@@ -153,6 +161,8 @@ set(LTR_GUI_SOURCES
     flatpak_detector.cpp
     installer_paths.cpp
     wine_bridge_install.cpp
+    wine_executable.cpp
+    wine_prefix_resolver.cpp
     about_dialog.cpp
     ../mickey/hotkey.cpp
     ../mickey/hotkey_setup_dlg.cpp

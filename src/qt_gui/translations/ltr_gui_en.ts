@@ -1560,6 +1560,29 @@ unpacked</source>
         <source>Detailed Axes Setup</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <location filename="../profile_setup.ui" line="0"/>
+        <source>Restore Axis Defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../profile_setup.ui" line="0"/>
+        <source>Save as Axis Defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>ProfileSetup</name>
+    <message>
+        <location filename="../profile_setup.cpp" line="0"/>
+        <source>Restore all axis settings on the current profile from your saved axis baseline?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../profile_setup.cpp" line="0"/>
+        <source>Save the current profile's axis settings as the rollback baseline? This does not change the Default profile used for new games.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>

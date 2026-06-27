@@ -1,4 +1,5 @@
 #include "wine_bridge_install.h"
+#include "wine_executable.h"
 #include "installer_paths.h"
 
 #include "../utils.h"
@@ -211,8 +212,8 @@ bool removeFromPrefix(const QString &prefixPath, const QString &wineBinaryPath,
                       const QProcessEnvironment &extraEnv, const QStringList &installDirs,
                       QString *lastError)
 {
-    const QFileInfo wineInfo(wineBinaryPath);
-    if (!wineInfo.exists() || !wineInfo.isExecutable()) {
+    const QString resolvedWine = resolveWineExecutable(wineBinaryPath);
+    if (resolvedWine.isEmpty()) {
         if (lastError)
             *lastError = QString::fromUtf8("Wine binary not found or not executable: ") + wineBinaryPath;
         return false;
@@ -228,7 +229,7 @@ bool removeFromPrefix(const QString &prefixPath, const QString &wineBinaryPath,
         }
     }
 
-    removeBridgeRegistry(wineBinaryPath, prefixPath, extraEnv);
+    removeBridgeRegistry(resolvedWine, prefixPath, extraEnv);
 
     ltr_int_log_message("WineBridgeInstall: removed existing install from prefix %s\n",
                         prefixPath.toUtf8().constData());
@@ -397,8 +398,8 @@ bool installToPrefix(const QString &prefixPath, const QString &wineBinaryPath,
 
     setOutcome(InstallOutcome::Failed);
 
-    const QFileInfo wineInfo(wineBinaryPath);
-    if (!wineInfo.exists() || !wineInfo.isExecutable()) {
+    const QString resolvedWine = resolveWineExecutable(wineBinaryPath);
+    if (resolvedWine.isEmpty()) {
         if (lastError)
             *lastError = QString::fromUtf8("Wine binary not found or not executable: ") + wineBinaryPath;
         return false;
@@ -412,7 +413,7 @@ bool installToPrefix(const QString &prefixPath, const QString &wineBinaryPath,
         return false;
     }
 
-    switch (promptExistingInstall(promptParent, prefixPath, wineBinaryPath, extraEnv, lastError)) {
+    switch (promptExistingInstall(promptParent, prefixPath, resolvedWine, extraEnv, lastError)) {
     case ExistingInstallPromptResult::ProceedWithInstall:
     case ExistingInstallPromptResult::RemoveThenInstall:
         break;
@@ -493,14 +494,14 @@ bool installToPrefix(const QString &prefixPath, const QString &wineBinaryPath,
     }
 
     const QString installDirWin = regPath.endsWith(QLatin1Char('\\')) ? regPath.chopped(1) : regPath;
-    if (!wineRegAddString(wineBinaryPath, prefixPath, extraEnv,
+    if (!wineRegAddString(resolvedWine, prefixPath, extraEnv,
                           QStringLiteral("HKLM\\SOFTWARE\\Linuxtrack"), QStringLiteral("Install_dir"),
                           installDirWin)) {
         if (lastError)
             *lastError = QString::fromUtf8("Failed to write HKLM\\SOFTWARE\\Linuxtrack registry keys.");
         return false;
     }
-    if (!wineRegAddString(wineBinaryPath, prefixPath, extraEnv,
+    if (!wineRegAddString(resolvedWine, prefixPath, extraEnv,
                           QStringLiteral("HKCU\\Software\\NaturalPoint\\NATURALPOINT\\NPClient Location"),
                           QStringLiteral("Path"), regPath)) {
         if (lastError)
@@ -508,14 +509,14 @@ bool installToPrefix(const QString &prefixPath, const QString &wineBinaryPath,
                 QString::fromUtf8("Failed to write NaturalPoint NPClient Location registry key.");
         return false;
     }
-    if (!wineRegAddString(wineBinaryPath, prefixPath, extraEnv,
+    if (!wineRegAddString(resolvedWine, prefixPath, extraEnv,
                           QStringLiteral("HKCU\\Software\\Freetrack\\FreetrackClient"),
                           QStringLiteral("Path"), regPath)) {
         ltr_int_log_message("WineBridgeInstall: Freetrack registry optional write failed\n");
     }
 
     applyFirmwareLinks(installDir);
-    runCheckDataOptional(wineBinaryPath, prefixPath, extraEnv, installDir);
+    runCheckDataOptional(resolvedWine, prefixPath, extraEnv, installDir);
 
     appendDebug(QString::fromUtf8("Installed Wine bridge to: ") + installDir + QString::fromUtf8("\n"));
     appendDebug(QString::fromUtf8("Registry path: ") + regPath + QString::fromUtf8("\n"));
