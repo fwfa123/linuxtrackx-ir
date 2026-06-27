@@ -39,18 +39,21 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   lookWidget->setEdgeLabels(tr("Left"), tr("Right"), tr("Up"), tr("Down"));
   lookWidget->setUnits(true, true);
   lookWidget->setInvertHorizontal(true);
+  lookWidget->setDeadzoneStyle(PoseCrosshairWidget::CircleDeadzone);
 
   leanWidget = new PoseCrosshairWidget(box);
   leanWidget->setTitle(tr("Lean"));
   leanWidget->setEdgeLabels(tr("Left"), tr("Right"), tr("Forth"), tr("Back"));
   leanWidget->setUnits(false, false);
   leanWidget->setInvertVertical(true);
+  leanWidget->setDeadzoneStyle(PoseCrosshairWidget::SquareDeadzone);
 
   raiseWidget = new PoseCrosshairWidget(box);
   raiseWidget->setTitle(tr("Raise/Roll"));
   raiseWidget->setEdgeLabels(tr("Roll L"), tr("Roll R"), tr("Up"), tr("Down"));
   raiseWidget->setUnits(true, false);
   raiseWidget->setInvertHorizontal(true);
+  raiseWidget->setDeadzoneStyle(PoseCrosshairWidget::SquareDeadzone);
 
   QHBoxLayout *mapsLayout = new QHBoxLayout();
   mapsLayout->addWidget(lookWidget, 1);
@@ -65,8 +68,11 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   connect(sourceCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(onSourceChanged(int)));
   connect(&TRACKER, SIGNAL(newPose(linuxtrack_full_pose_t *, linuxtrack_pose_t *, linuxtrack_pose_t *)),
           this, SLOT(newPose(linuxtrack_full_pose_t *, linuxtrack_pose_t *, linuxtrack_pose_t *)));
+  connect(&TRACKER, SIGNAL(axisChanged(int, int)), this, SLOT(axisChanged(int, int)));
+  connect(&TRACKER, SIGNAL(initAxes(void)), this, SLOT(initAxes()));
 
   updateRanges();
+  updateDeadzones();
 }
 
 void PoseCrosshairPanel::onSourceChanged(int index)
@@ -81,6 +87,32 @@ void PoseCrosshairPanel::updateRanges()
   raiseWidget->setRange(axisSpan(ROLL), axisSpan(TY));
 }
 
+void PoseCrosshairPanel::updateDeadzones()
+{
+  lookWidget->setDeadzone(TRACKER.axisGet(YAW, AXIS_DEADZONE),
+                          TRACKER.axisGet(PITCH, AXIS_DEADZONE));
+  leanWidget->setDeadzone(TRACKER.axisGet(TX, AXIS_DEADZONE),
+                          TRACKER.axisGet(TZ, AXIS_DEADZONE));
+  raiseWidget->setDeadzone(TRACKER.axisGet(ROLL, AXIS_DEADZONE),
+                           TRACKER.axisGet(TY, AXIS_DEADZONE));
+}
+
+void PoseCrosshairPanel::axisChanged(int axis, int elem)
+{
+  (void) axis;
+  if(elem == AXIS_DEADZONE || elem == AXIS_LLIMIT || elem == AXIS_RLIMIT
+     || elem == AXIS_MULT){
+    updateRanges();
+    updateDeadzones();
+  }
+}
+
+void PoseCrosshairPanel::initAxes()
+{
+  updateRanges();
+  updateDeadzones();
+}
+
 void PoseCrosshairPanel::newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_pose_t *unfiltered,
                                  linuxtrack_pose_t *pose)
 {
@@ -90,6 +122,7 @@ void PoseCrosshairPanel::newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_po
   }
 
   updateRanges();
+  updateDeadzones();
 
   if(showMeasured){
     lookWidget->setPosition(raw_pose->pose.raw_yaw, raw_pose->pose.raw_pitch);

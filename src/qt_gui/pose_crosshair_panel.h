@@ -16,12 +16,15 @@ class PoseCrosshairPanel : public QWidget
  public slots:
   void newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_pose_t *unfiltered,
                linuxtrack_pose_t *pose);
+  void axisChanged(int axis, int elem);
+  void initAxes();
 
  private slots:
   void onSourceChanged(int index);
 
  private:
   void updateRanges();
+  void updateDeadzones();
 
   PoseCrosshairWidget *lookWidget;
   PoseCrosshairWidget *leanWidget;
