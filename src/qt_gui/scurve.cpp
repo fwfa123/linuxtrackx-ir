@@ -22,8 +22,13 @@ SCurve::SCurve(axis_t a, QString axis_name, QString left_label, QString right_la
   
   first = false;
   view = new SCView(axis, this);
-  //ui.SCView->removeItem(ui.SCViewSpacer);
-  ui.SCView->addWidget(view);
+  ui.SCView->addWidget(view, 1);
+  ui.horizontalLayout_2->setStretch(0, 1);
+  ui.horizontalLayout_2->setStretch(1, 0);
+  ui.verticalLayout_4->setStretch(0, 0);
+  ui.verticalLayout_4->setStretch(1, 1);
+  ui.verticalLayout_4->setStretch(2, 0);
+  setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
   QObject::connect(this, SIGNAL(changed()), view, SLOT(update()));
   initAxes();
 }

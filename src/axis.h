@@ -41,7 +41,15 @@ bool ltr_int_get_axes_ff(ltr_axes_t axes, double ffs[]);
 const char *ltr_int_axis_get_desc(enum axis_t id);
 const char *ltr_int_axis_param_get_desc(enum axis_param_t id);
 
+#define LTR_AXIS_BASELINE_PROFILE "AxisBaseline"
+
 void ltr_int_axes_from_default(ltr_axes_t *axes);
+
+void ltr_int_ensure_axis_baseline(void);
+bool ltr_int_axes_copy_profile_keys(const char *from_profile_title,
+                                    const char *to_profile_title);
+bool ltr_int_axes_persist_state_to_profile(ltr_axes_t axes,
+                                           const char *profile_title);
 
 #ifdef __cplusplus
 }

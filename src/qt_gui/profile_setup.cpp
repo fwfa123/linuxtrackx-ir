@@ -68,9 +68,8 @@ void ProfileSetup::connect()
   
   // Tracking Rate slider
   QObject::connect(ui.TrackingRate, SIGNAL(valueChanged(int)), this, SLOT(on_TrackingRate_valueChanged(int)));
-  
-  // Detailed Axis Setup button
-  QObject::connect(ui.DetailedAxisSetup, SIGNAL(pressed()), this, SLOT(on_DetailedAxisSetup_pressed()));
+
+  // Restore/Save/Detailed buttons use Qt auto-connect (on_<object>_<signal> via clicked())
 }
 
 bool ProfileSetup::close()
@@ -79,9 +78,44 @@ bool ProfileSetup::close()
   return QWidget::close();
 }
 
-void ProfileSetup::on_DetailedAxisSetup_pressed()
+void ProfileSetup::on_DetailedAxisSetup_clicked()
 {
   sc->show();
+}
+
+void ProfileSetup::on_RestoreAxisDefaults_clicked()
+{
+  restoreAxisDefaults();
+}
+
+void ProfileSetup::on_SaveAxisDefaults_clicked()
+{
+  saveAxisDefaults();
+}
+
+void ProfileSetup::restoreAxisDefaults()
+{
+  if(QMessageBox::warning(this, tr("Warning:"),
+        tr("Restore all axis settings on the current profile from your saved axis baseline?"),
+        QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Ok){
+    return;
+  }
+  initializing = true;
+  TRACKER.restoreAxisDefaults();
+  initializing = false;
+}
+
+void ProfileSetup::saveAxisDefaults()
+{
+  if(QMessageBox::warning(this, tr("Warning:"),
+        tr("Save the current profile's axis settings as the rollback baseline? "
+           "This does not change the Default profile used for new games."),
+        QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Ok){
+    return;
+  }
+  initializing = true;
+  TRACKER.saveAxisDefaults();
+  initializing = false;
 }
 
 void ProfileSetup::copyFromDefault()
@@ -91,11 +125,33 @@ void ProfileSetup::copyFromDefault()
         QMessageBox::Ok | QMessageBox::Cancel, QMessageBox::Cancel) != QMessageBox::Ok){
     return;
   }
+  initializing = true;
   TRACKER.fromDefault();
+  initializing = false;
 }
 
 void ProfileSetup::initAxes()
 {
+  const QSignalBlocker blockPitchEnable(ui.PitchEnable);
+  const QSignalBlocker blockYawEnable(ui.YawEnable);
+  const QSignalBlocker blockRollEnable(ui.RollEnable);
+  const QSignalBlocker blockTxEnable(ui.TxEnable);
+  const QSignalBlocker blockTyEnable(ui.TyEnable);
+  const QSignalBlocker blockTzEnable(ui.TzEnable);
+  const QSignalBlocker blockPitchInvert(ui.PitchInvert);
+  const QSignalBlocker blockYawInvert(ui.YawInvert);
+  const QSignalBlocker blockRollInvert(ui.RollInvert);
+  const QSignalBlocker blockTxInvert(ui.TxInvert);
+  const QSignalBlocker blockTyInvert(ui.TyInvert);
+  const QSignalBlocker blockTzInvert(ui.TzInvert);
+  const QSignalBlocker blockPitchSens(ui.PitchSens);
+  const QSignalBlocker blockYawSens(ui.YawSens);
+  const QSignalBlocker blockRollSens(ui.RollSens);
+  const QSignalBlocker blockTxSens(ui.TxSens);
+  const QSignalBlocker blockTySens(ui.TySens);
+  const QSignalBlocker blockTzSens(ui.TzSens);
+  const QSignalBlocker blockSmoothing(ui.Smoothing);
+
   ui.PitchEnable->setCheckState(TRACKER.axisGetBool(PITCH, AXIS_ENABLED)?Qt::Checked:Qt::Unchecked);
   ui.YawEnable->setCheckState(TRACKER.axisGetBool(YAW, AXIS_ENABLED)?Qt::Checked:Qt::Unchecked);
   ui.RollEnable->setCheckState(TRACKER.axisGetBool(ROLL, AXIS_ENABLED)?Qt::Checked:Qt::Unchecked);
@@ -154,6 +210,7 @@ void ProfileSetup::axisChanged(int axis, int elem)
 
 void ProfileSetup::setCommonFF(float val)
 {
+  const QSignalBlocker blockSmoothing(ui.Smoothing);
   ui.Smoothing->setValue(val * ui.Smoothing->maximum());
 }
 

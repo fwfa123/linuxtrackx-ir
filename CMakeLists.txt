@@ -112,6 +112,7 @@ find_package(PkgConfig REQUIRED)
 include(CheckFunctionExists)
 include(CheckIncludeFile)
 include(CheckLibraryExists)
+include(CheckCSourceCompiles)
 
 # Required libraries via pkg-config
 pkg_check_modules(MXML REQUIRED mxml)
@@ -297,20 +298,16 @@ endif()
 
 # 32-bit library support
 if(X64 AND ENABLE_LTR_32LIB_ON_X64)
-    # Check for 32-bit development headers
-    set(HAS_32BIT_HEADERS FALSE)
-    foreach(header_path
-        "/usr/include/i386-linux-gnu/bits/libc-header-start.h"
-        "/usr/include/bits/libc-header-start.h"
-        "/usr/include/i386-linux-gnu/stdlib.h"
-        "/usr/include/stdlib.h"
-    )
-        if(EXISTS "${header_path}")
-            set(HAS_32BIT_HEADERS TRUE)
-            break()
-        endif()
-    endforeach()
-    
+    # Probe with -m32 compile, not header file presence alone: on Debian/Ubuntu
+    # amd64, /usr/include/stdlib.h exists without libc6-dev-i386 and would false-positive.
+    set(_ltr_saved_required_flags "${CMAKE_REQUIRED_FLAGS}")
+    set(CMAKE_REQUIRED_FLAGS "-m32")
+    check_c_source_compiles("
+#include <stdlib.h>
+int main(void) { return 0; }
+" HAS_32BIT_HEADERS)
+    set(CMAKE_REQUIRED_FLAGS "${_ltr_saved_required_flags}")
+
     if(HAS_32BIT_HEADERS)
         set(LTR32ON64 TRUE)
         message(STATUS "32-bit library on 64-bit host: enabled")

@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QShowEvent>
 #include "ui_model_creation.h"
 #include "ui_model_edit.h"
 #include "ui_cap_edit.h"
@@ -13,6 +14,15 @@
 
 typedef enum {MDL_1PT, MDL_3PT_CLIP, MDL_3PT_CAP, MDL_FACE, MDL_ABSOLUTE} modelType_t;
 class Guardian;
+
+class ModelTuningSync : public QObject
+{
+  Q_OBJECT
+ public:
+  static ModelTuningSync *inst();
+ signals:
+  void headCenterChanged(const QString &section);
+};
 
 class ModelCreate : public QDialog
 {
@@ -46,11 +56,14 @@ class ModelEdit : public QWidget
   ModelEdit(Guardian *grd, QWidget *parent = 0);
   ~ModelEdit();
   void refresh();
+  void reloadHeadCenterTuning();
  protected:
+  void showEvent(QShowEvent *event);
  private slots:
   void on_CreateModelButton_pressed();
   void ModelCreated(const QString &section);
   void modelSelectorActivated(const QString &text);
+  void onHeadCenterChanged(const QString &section);
  signals:
   void modelSelected(int modelType);
  private:
@@ -106,6 +119,8 @@ class ClipTweaking : public QWidget
  public:
   ClipTweaking(const QString &section, QWidget *parent = 0);
   ~ClipTweaking();
+  void reloadFromPrefs();
+  const QString &section() const { return currentSection; }
  public slots:
   void on_ClipHx_valueChanged(int val);
   void on_ClipHy_valueChanged(int val);
@@ -116,7 +131,9 @@ class ClipTweaking : public QWidget
   Ui::ClipTweakingForm ui;
   QString currentSection;
   bool initializing;
+  void loadFromPrefs();
   void tweakHx();
+  void headCenterTuned();
 };
 
 class CapTweaking : public QWidget
@@ -125,6 +142,8 @@ class CapTweaking : public QWidget
  public:
   CapTweaking(const QString &section, QWidget *parent = 0);
   ~CapTweaking();
+  void reloadFromPrefs();
+  const QString &section() const { return currentSection; }
  public slots:
   void on_CapHy_valueChanged(int val);
   void on_CapHz_valueChanged(int val);
@@ -132,6 +151,8 @@ class CapTweaking : public QWidget
   Ui::CapTweakingForm ui;
   QString currentSection;
   bool initializing;
+  void loadFromPrefs();
+  void headCenterTuned();
 };
 
 #endif
