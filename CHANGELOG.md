@@ -4,6 +4,17 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: **2.0.x** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
+## [2.1.0] - 2026-06-27
+
+### Added
+- **Detailed Axes Setup** overhaul: live pose strip, resizable response graph with coordinate grid, pan tuning sync, and **Pose maps** (Look, Lean, Raise/Roll) with mapper-style teal guide rings, live red dead-zone overlay, and green position dot (measured or filtered source).
+- **Tracking Setup**: **Restore axis defaults** and **Save as axis defaults** using a separate `AxisBaseline` profile section (distinct from the Default profile used for new games).
+
+### Fixed
+- Pose map dead-zone overlay now uses normalized `AXIS_DEADZONE` fraction (0–1), matching the axis sliders.
+- Wine bridge install path resolution for custom Wine prefixes.
+- **Build**: CMake `-m32` compile probe for 32-bit `linuxtrack32` headers; Debian/Ubuntu multilib packages documented in `docs/readme/debian-ubuntu.md`.
+
 ## [2.0.1] - 2026-06-13
 
 ### Fixed
