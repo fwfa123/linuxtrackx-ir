@@ -29,13 +29,23 @@ sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
 sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev
 sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
 
+# 32-bit native library (liblinuxtrack32.so) — host GCC -m32, not MinGW
+# Required on amd64 for 32-bit Wine/Proton; build-essential alone is not enough.
+sudo dpkg --add-architecture i386   # safe to repeat if already enabled
+sudo apt update
+sudo apt install gcc-multilib g++-multilib libc6-dev-i386
+
 # Wine bridge (MinGW cross-compiler builds the PE DLLs; Wine provides the runtime prefix)
 sudo apt install wine wine-staging mingw-w64 winetricks cabextract wget
 ```
 
 > NSIS is **not** required. The bridge builds with MinGW-w64 only (`makensis` and `linuxtrack-wine.exe` are legacy).
+>
+> **MinGW vs multilib:** `mingw-w64` builds the Windows PE DLLs/EXEs. `gcc-multilib` / `libc6-dev-i386` build the native 32-bit `liblinuxtrack32.so` that 32-bit Wine processes load. Both are needed for a full Level 2 install on amd64.
 
 ### Step 2: Clone and build
+
+Always configure from a dedicated `build/` directory (never the repo root). If you copied a tree from another machine or an old build failed partway, remove `build/` and reconfigure after installing dependencies.
 
 ```bash
 git clone https://gitlab.com/fwfa123/linuxtrackx-ir.git
@@ -62,6 +72,7 @@ QT_QPA_PLATFORM=xcb ltr_gui
 ```bash
 ldconfig -p | grep linuxtrack
 ltr_server1 --help
+ls /opt/lib/linuxtrack/liblinuxtrack32.so.0      # 32-bit native shim (amd64 builds)
 ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # Level 2+ Wine bridge
 ```
 
@@ -77,6 +88,11 @@ sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
 sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools
 sudo apt install libqt6opengl6-dev  # Required for Qt6OpenGL CMake config
 sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
+
+# amd64 only: native 32-bit liblinuxtrack32.so (ENABLE_LTR_32LIB_ON_X64, on by default)
+sudo dpkg --add-architecture i386
+sudo apt update
+sudo apt install gcc-multilib g++-multilib libc6-dev-i386
 ```
 
 ### WineBridge Support (Level 2+)
@@ -207,6 +223,7 @@ sudo cmake --install .
 
 | Problem | Solution |
 |---------|----------|
+| `bits/libc-header-start.h: No such file or directory` on `linuxtrack32` / `ltlib.c` | Install multilib: `sudo apt install gcc-multilib libc6-dev-i386` (run `sudo dpkg --add-architecture i386` first if needed). MinGW/Wine bridge targets may still compile; this failure is the separate native 32-bit library. Wipe `build/` and reconfigure after installing. |
 | `Could not find a package configuration file provided by "Qt6"` | **REQUIRED**: Install Qt6 development packages: `sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev` |
 | `x86_64-w64-mingw32-gcc: command not found` | Install MinGW toolchain: `sudo apt install mingw-w64` |
 | Wine bridge install fails in prefix | Verify prefix path, `wine` binary, and payload under `/opt/lib/linuxtrack/wine_bridge/`; try current Proton or Wine Staging if issues persist |
@@ -217,6 +234,8 @@ sudo cmake --install .
 | `qmake: command not found` | Install Qt6 tools: `sudo apt install qt6-tools-dev-tools` |
 | OpenCV detection failed | Facetrack / `libp3eft` missing; webcam without face mode may still work. On the **build** machine: `sudo apt install libopencv-dev` and configure with `-DENABLE_FACE_TRACKER=ON`. AppImage users should get OpenCV from the bundle, not the distro. |
 | AppImage build: `patchelf not available` | `sudo apt install patchelf`, then rebuild the AppImage |
+| Stale Qt/autotools files in source tree after moving machines | Remove gitignored artifacts, then fresh `build/`: `rm -f src/pathconfig.h src/qt_gui/ui_*.h config.h`; `rm -rf build/` |
+| Skip native 32-bit library (not recommended for Wine) | `cmake .. -DENABLE_LTR_32LIB_ON_X64=OFF` |
 
 ### Qt6 Tools PATH (Rare)
 If Qt6 tools aren't found, they should be in `/usr/lib/x86_64-linux-gnu/qt6/bin/`. Add to PATH if needed:
