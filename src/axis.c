@@ -698,4 +698,164 @@ void ltr_int_axes_from_default(ltr_axes_t *axes)
   (*axes)->section = profile;
 }
 
+static bool copy_axis_key_between_sections(const char *from_sec, const char *to_sec,
+                                           enum axis_t id, axis_fields field)
+{
+  char *prefix = get_axis_prefix(id);
+  char *field_name = ltr_int_my_strcat(prefix, fields[field]);
+  bool ok = false;
+
+  if(field == ENABLED || field == INVERTED){
+    char *val = ltr_int_get_key(from_sec, field_name);
+    if(val != NULL){
+      ok = ltr_int_change_key(to_sec, field_name, val);
+      free(val);
+    }
+  }else if(field != LMULT && field != RMULT && field != LIMITS){
+    float val;
+    if(ltr_int_get_key_flt(from_sec, field_name, &val)){
+      ok = ltr_int_change_key_flt(to_sec, field_name, val);
+    }
+  }
+  free(field_name);
+  return ok;
+}
+
+bool ltr_int_axes_copy_profile_keys(const char *from_profile_title,
+                                    const char *to_profile_title)
+{
+  int field;
+  enum axis_t id;
+
+  if(from_profile_title == NULL || to_profile_title == NULL){
+    return false;
+  }
+
+  if(ltr_int_find_section("Title", "Default") == NULL){
+    ltr_int_create_default();
+  }
+
+  char *from_sec = ltr_int_find_section("Title", from_profile_title);
+  if(from_sec == NULL){
+    return false;
+  }
+
+  char *to_sec = ltr_int_find_section("Title", to_profile_title);
+  if(to_sec == NULL){
+    free(from_sec);
+    return false;
+  }
+
+  pthread_mutex_lock(&axes_mutex);
+  for(id = PITCH; id <= TZ; id = (enum axis_t)(id + 1)){
+    for(field = DEADZONE; field <= ENABLED; ++field){
+      copy_axis_key_between_sections(from_sec, to_sec, id, (axis_fields)field);
+    }
+  }
+  pthread_mutex_unlock(&axes_mutex);
+
+  free(from_sec);
+  free(to_sec);
+  return true;
+}
+
+void ltr_int_ensure_axis_baseline(void)
+{
+  int i;
+
+  if(ltr_int_find_section("Title", LTR_AXIS_BASELINE_PROFILE) != NULL){
+    return;
+  }
+
+  char *sec = ltr_int_add_unique_section("AxisBaseline");
+  if(sec == NULL){
+    return;
+  }
+  ltr_int_change_key(sec, "Title", LTR_AXIS_BASELINE_PROFILE);
+  i = 0;
+  while(def_section[i][0] != NULL){
+    if(strcmp(def_section[i][0], "Title") != 0){
+      ltr_int_change_key(sec, def_section[i][0], def_section[i][1]);
+    }
+    ++i;
+  }
+  free(sec);
+}
+
+static bool write_axis_state_to_section(struct axis_def *axis, enum axis_t id,
+                                       const char *dest_sec)
+{
+  char *prefix = get_axis_prefix(id);
+  char *field_name;
+  bool ok = true;
+
+  field_name = ltr_int_my_strcat(prefix, fields[ENABLED]);
+  ok &= ltr_int_change_key(dest_sec, field_name, axis->enabled ? "Yes" : "No");
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[INVERTED]);
+  ok &= ltr_int_change_key(dest_sec, field_name, axis->inverted ? "Yes" : "No");
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[DEADZONE]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->curve_defs.dead_zone);
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[LCURV]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->curve_defs.l_curvature);
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[RCURV]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->curve_defs.r_curvature);
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[MULT]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->factor);
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[LLIMIT]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->l_limit);
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[RLIMIT]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->r_limit);
+  free(field_name);
+
+  field_name = ltr_int_my_strcat(prefix, fields[FILTER]);
+  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->filter_factor);
+  free(field_name);
+
+  return ok;
+}
+
+bool ltr_int_axes_persist_state_to_profile(ltr_axes_t axes, const char *profile_title)
+{
+  char *dest_sec;
+
+  if(axes == NULL || profile_title == NULL || !axes->initialized){
+    return false;
+  }
+
+  if(ltr_int_find_section("Title", "Default") == NULL){
+    ltr_int_create_default();
+  }
+
+  dest_sec = ltr_int_find_section("Title", profile_title);
+  if(dest_sec == NULL){
+    return false;
+  }
+
+  pthread_mutex_lock(&axes_mutex);
+  write_axis_state_to_section(&(axes->pitch_axis), PITCH, dest_sec);
+  write_axis_state_to_section(&(axes->yaw_axis), YAW, dest_sec);
+  write_axis_state_to_section(&(axes->roll_axis), ROLL, dest_sec);
+  write_axis_state_to_section(&(axes->tx_axis), TX, dest_sec);
+  write_axis_state_to_section(&(axes->ty_axis), TY, dest_sec);
+  write_axis_state_to_section(&(axes->tz_axis), TZ, dest_sec);
+  pthread_mutex_unlock(&axes_mutex);
+
+  free(dest_sec);
+  return true;
+}
+
 

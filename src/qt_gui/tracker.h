@@ -42,9 +42,13 @@ class Tracker : public QObject{
   void setTrackingRateFps(int fps);
   void schedulePrefsSave();
   void fromDefault();
+  void restoreAxisDefaults();
+  void saveAxisDefaults();
   static buffering *getBuffers();
  private:
   bool trackingRateGateOpen();
+  void reloadAxesState();
+  void broadcastAxesToSlaves();
   Tracker();
   ~Tracker();
   static Tracker *trr;

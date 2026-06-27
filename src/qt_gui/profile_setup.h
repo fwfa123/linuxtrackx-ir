@@ -16,6 +16,8 @@ class ProfileSetup : public QWidget
   // instead of deleting/recreating the widget (which was crashing inside Qt layouts).
   void loadProfile(const QString &name);
    void copyFromDefault();
+   void restoreAxisDefaults();
+   void saveAxisDefaults();
    void importProfile(QTextStream &tf);
    void exportProfile(QTextStream &tf);
  private:
@@ -27,7 +29,9 @@ class ProfileSetup : public QWidget
  public slots:
    bool close();
  private slots:
-   void on_DetailedAxisSetup_pressed();
+   void on_DetailedAxisSetup_clicked();
+   void on_RestoreAxisDefaults_clicked();
+   void on_SaveAxisDefaults_clicked();
    void on_PitchEnable_stateChanged(int state);
    void on_YawEnable_stateChanged(int state);
    void on_RollEnable_stateChanged(int state);
