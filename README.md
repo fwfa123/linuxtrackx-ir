@@ -1,6 +1,6 @@
 # LinuxTrack X-IR
 
-[![Version](https://img.shields.io/badge/version-2.0.1-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
