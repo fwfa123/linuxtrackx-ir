@@ -18,8 +18,8 @@ linuxtrack_lib_present() {
     [[ -n "$(find "$APPDIR/usr/lib/linuxtrack" -maxdepth 1 \( -name "lib${stem}.so" -o -name "lib${stem}.so.*" \) \( -type f -o -type l \) -print -quit 2>/dev/null)" ]]
 }
 
-# ---- X-Plane plugin (optional; expected in Docker AppImage when EXPECT_XPLANE_PLUGIN=1) ----
-if [[ "${EXPECT_XPLANE_PLUGIN:-0}" == "1" ]]; then
+# ---- X-Plane plugin ----
+if [[ "${EXPECT_XPLANE_PLUGIN:-1}" == "1" ]]; then
     if [[ -f "$APPDIR/usr/lib/linuxtrack/xlinuxtrack9.so" ]] || [[ -L "$APPDIR/usr/lib/linuxtrack/xlinuxtrack9.so" ]]; then
         print_success "X-Plane plugin present: usr/lib/linuxtrack/xlinuxtrack9.so"
     else
@@ -76,7 +76,28 @@ if linuxtrack_lib_present wc; then
         fi
     fi
 else
-    print_warning "libwc not in AppDir (webcam support may be disabled)"
+    if [[ "${EXPECT_LEVEL7:-1}" == "1" ]]; then
+        print_error "Missing webcam library: libwc.so* (builder needs libv4l-dev; ENABLE_WEBCAM=ON)"
+        failures=$((failures+1))
+    else
+        print_warning "libwc not in AppDir (webcam support may be disabled)"
+    fi
+fi
+
+# ---- OSC (Level 5+) ----
+if [[ "${EXPECT_OSC:-1}" == "1" ]]; then
+    if [[ -x "$APPDIR/usr/bin/osc_server" ]]; then
+        print_success "OSC server present: usr/bin/osc_server"
+    else
+        print_error "Missing or non-executable: usr/bin/osc_server (builder needs liblo-dev; ENABLE_OSC=ON)"
+        failures=$((failures+1))
+    fi
+    if [[ -n "$(find "$APPDIR/usr/lib" -maxdepth 1 \( -type f -o -type l \) -name 'liblo.so*' -print -quit 2>/dev/null)" ]]; then
+        print_success "Bundled: liblo.so"
+    else
+        print_error "Missing bundled library: liblo.so*"
+        failures=$((failures+1))
+    fi
 fi
 
 # ---- README Level 7: OpenCV face tracker + Wiimote ----

@@ -214,9 +214,9 @@ The maintained pipeline is under `scripts/appimage/v2/`:
 ./scripts/appimage/docker_build.sh
 ```
 
-The v2 `prepare.sh` configure line targets Level 7: `ENABLE_WEBCAM=ON`, `ENABLE_OSC=ON`, `ENABLE_FACE_TRACKER=ON`, `ENABLE_XPLANE=ON` (when SDK present), and Wiimote when libcwiid is available. Install the matching Level 4–7 development packages on the build host. The `scripts/appimage/Dockerfile` includes OpenCV and libcwiid.
+`config.sh` defaults to full **Level 7**: webcam, OSC, face track, Wiimote, Wine bridge, and X-Plane (SDK required at `/opt/xplane-sdk/CHeaders`). `prepare.sh` runs a preflight that fails if builder packages are missing (`libv4l-dev`, `liblo-dev`, `libopencv-dev`, `libcwiid-dev`, X-Plane SDK) instead of silently omitting features.
 
-Validation (`validate.sh`) defaults to `EXPECT_LEVEL7=1` — export `EXPECT_LEVEL7=0` for a slim tree. `ci_build.sh` runs the full sequence with `CLEAN=1`.
+Validation (`validate.sh`) matches those defaults (`EXPECT_LEVEL7=1`, `EXPECT_OSC=1`, `EXPECT_XPLANE_PLUGIN=1`). For a slim AppImage, export matching `ENABLE_*=0` and `EXPECT_*=0` before `ci_build.sh`. `docker_build.sh` with `WITH_XPLANE_SDK=0` disables only X-Plane. The `scripts/appimage/Dockerfile` installs all Level 4–7 deps.
 
 **End users** running the published AppImage do not need OpenCV or libcwiid on the system.
 

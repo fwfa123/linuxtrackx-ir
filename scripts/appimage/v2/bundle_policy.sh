@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # AppImage v2 — standard bundle expectations and path constants (single source of truth).
-# prepare.sh uses README Level 7: ENABLE_FACE_TRACKER=ON, DISABLE_WIIMOTE=OFF (needs OpenCV + libcwiid on the builder).
+# Defaults in config.sh: full Level 7 (webcam, OSC, face track, Wiimote, X-Plane when SDK present).
+# validate.sh enforces EXPECT_LEVEL7, EXPECT_OSC, EXPECT_XPLANE_PLUGIN unless opted out.
 # shellcheck disable=SC2034
 # Paths are relative to AppDir root or to squashfs-root when validating a packaged AppImage.
 

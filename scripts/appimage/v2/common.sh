@@ -19,6 +19,57 @@ die() { print_error "$*"; exit 1; }
 
 require_cmd() { command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"; }
 
+require_pkg_config() {
+    local pc_name="$1"
+    local hint="$2"
+    require_cmd pkg-config
+    if ! pkg-config --exists "$pc_name"; then
+        die "pkg-config module '$pc_name' not found ($hint)"
+    fi
+    print_success "Build dependency: $pc_name $(pkg-config --modversion "$pc_name")"
+}
+
+# Fail early when a requested Level 7 feature would be silently dropped by CMake.
+check_appimage_build_deps() {
+    print_status "Preflight: AppImage build dependencies (Level 7 defaults)"
+
+    if [[ "${ENABLE_OSC:-1}" == "1" ]]; then
+        require_pkg_config liblo "install liblo-dev — README Level 5+"
+    fi
+
+    if [[ "${ENABLE_FACE_TRACKER:-1}" == "1" ]]; then
+        if pkg-config --exists opencv4 2>/dev/null; then
+            print_success "Build dependency: opencv4 $(pkg-config --modversion opencv4)"
+        elif pkg-config --exists opencv 2>/dev/null; then
+            print_success "Build dependency: opencv $(pkg-config --modversion opencv)"
+        else
+            die "OpenCV not found via pkg-config (install libopencv-dev — README Level 6+)"
+        fi
+    fi
+
+    if [[ "${ENABLE_WIIMOTE:-1}" == "1" ]]; then
+        require_pkg_config cwiid "install libcwiid-dev — README Level 7+"
+    fi
+
+    if [[ "${ENABLE_WEBCAM:-1}" == "1" ]]; then
+        if [[ -f /usr/include/linux/videodev2.h ]]; then
+            print_success "Build dependency: V4L2 headers present"
+        else
+            die "linux/videodev2.h not found (install libv4l-dev — README Level 4+)"
+        fi
+    fi
+
+    if [[ "${ENABLE_XPLANE:-1}" == "1" && "${REQUIRE_XPLANE_SDK:-1}" == "1" ]]; then
+        if [[ ! -d "$XPLANE_SDK_PATH" ]]; then
+            die "X-Plane SDK required but not found at $XPLANE_SDK_PATH (install headers under CHeaders/XPLM or use docker_build.sh)"
+        fi
+        if [[ ! -f "$XPLANE_SDK_PATH/XPLM/XPLMPlugin.h" ]]; then
+            die "Invalid X-Plane SDK at $XPLANE_SDK_PATH (missing XPLM/XPLMPlugin.h)"
+        fi
+        print_success "X-Plane SDK present: $XPLANE_SDK_PATH"
+    fi
+}
+
 # Reject legacy AppImageKit appimagetool (embeds libfuse2-dependent runtime).
 reject_legacy_appimagetool() {
     local tool="$1"

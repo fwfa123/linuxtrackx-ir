@@ -41,9 +41,12 @@ else
 fi
 
 if unsquashfs -l -o "$OFF" "$APPIMAGE" 2>/dev/null | grep -q 'usr/bin/wii_server'; then
-    print_status "Wiimote: wii_server is present (non-standard build; standard AppImage uses -DDISABLE_WIIMOTE=ON)"
+    print_success "Wiimote: wii_server present"
+elif [[ "${EXPECT_LEVEL7:-1}" == "1" ]]; then
+    print_error "Wiimote: wii_server missing (Level 7 AppImage expected)"
+    failures=$((failures+1))
 else
-    print_status "Standard AppImage: Wiimote / wii_server not bundled (expected)"
+    print_status "Wiimote: wii_server not bundled (slim build)"
 fi
 
 # --- Extract to a temp dir for file and sqlite checks ---
