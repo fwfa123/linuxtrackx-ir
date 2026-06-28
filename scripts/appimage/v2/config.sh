@@ -64,14 +64,30 @@ LOCAL_APPIMAGE_RUNTIME="$APPSCRIPTS_DIR/runtime-x86_64"
 APPIMAGETOOL="${APPIMAGETOOL:-$(command -v appimagetool 2>/dev/null || echo "$LOCAL_APPIMAGETOOL")}"
 APPIMAGE_RUNTIME="${APPIMAGE_RUNTIME:-$LOCAL_APPIMAGE_RUNTIME}"
 
-# Feature toggles
-FORCE_XCB="1"              # default to xcb; can be overridden
-WITH_WINE_BRIDGE="1"
-WITH_HELP="1"
-WITH_ZSYNC="0"
-# Full bundle (README Level 7): face tracker + Wiimote; validate.sh enforces when 1
+# Feature toggles — full README Level 7 AppImage is the default.
+# Opt out per feature: export ENABLE_OSC=0, EXPECT_OSC=0, etc. before ci_build.sh.
+FORCE_XCB="${FORCE_XCB:-1}"
+WITH_WINE_BRIDGE="${WITH_WINE_BRIDGE:-1}"
+WITH_HELP="${WITH_HELP:-1}"
+WITH_ZSYNC="${WITH_ZSYNC:-0}"
+
+# CMake build features (prepare.sh)
+ENABLE_WEBCAM="${ENABLE_WEBCAM:-1}"
+ENABLE_OSC="${ENABLE_OSC:-1}"
+ENABLE_FACE_TRACKER="${ENABLE_FACE_TRACKER:-1}"
+ENABLE_XPLANE="${ENABLE_XPLANE:-1}"
+ENABLE_WIIMOTE="${ENABLE_WIIMOTE:-1}"
+ENABLE_LTR_32LIB_ON_X64="${ENABLE_LTR_32LIB_ON_X64:-1}"
+
+# X-Plane SDK (required when ENABLE_XPLANE=1 unless REQUIRE_XPLANE_SDK=0)
+XPLANE_SDK_PATH="${XPLANE_SDK_PATH:-/opt/xplane-sdk/CHeaders}"
+REQUIRE_XPLANE_SDK="${REQUIRE_XPLANE_SDK:-1}"
+
+# Post-build validation (validate.sh) — defaults match build features above
 EXPECT_LEVEL7="${EXPECT_LEVEL7:-1}"
 EXPECT_FACE_TRACKER="${EXPECT_FACE_TRACKER:-1}"
+EXPECT_OSC="${EXPECT_OSC:-1}"
+EXPECT_XPLANE_PLUGIN="${EXPECT_XPLANE_PLUGIN:-1}"
 
 # Build toggles
 CLEAN="0"

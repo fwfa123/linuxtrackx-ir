@@ -22,28 +22,39 @@ pushd "$PROJECT_ROOT" >/dev/null
     rm -rf build
     mkdir -p build
 
-    : "${XPLANE_SDK_PATH:=/opt/xplane-sdk/CHeaders}"
-    if [[ "${REQUIRE_XPLANE_SDK:-0}" == "1" && ! -d "$XPLANE_SDK_PATH" ]]; then
-        die "X-Plane SDK required but not found at $XPLANE_SDK_PATH (install headers under CHeaders/XPLM or rebuild the Docker image with WITH_XPLANE_SDK=1)"
-    fi
-    _xplane_flag="-DENABLE_XPLANE=ON"
-    if [[ ! -d "$XPLANE_SDK_PATH" ]]; then
-        print_warning "X-Plane SDK not found at $XPLANE_SDK_PATH; disabling X-Plane plugin"
-        _xplane_flag="-DENABLE_XPLANE=OFF"
+    check_appimage_build_deps
+
+    _cmake_on_off() { [[ "$1" == "1" ]] && echo ON || echo OFF; }
+
+    _xplane_flag="-DENABLE_XPLANE=OFF"
+    if [[ "${ENABLE_XPLANE:-1}" == "1" ]]; then
+        if [[ -d "$XPLANE_SDK_PATH" ]]; then
+            _xplane_flag="-DENABLE_XPLANE=ON"
+        elif [[ "${REQUIRE_XPLANE_SDK:-1}" == "1" ]]; then
+            die "X-Plane SDK required but not found at $XPLANE_SDK_PATH"
+        else
+            print_warning "X-Plane SDK not found at $XPLANE_SDK_PATH; disabling X-Plane plugin"
+        fi
     fi
 
-    print_status "Configuring with CMake (README Level 7: LTR32 + webcam + OSC + face tracker + Wiimote + X-Plane when SDK present)"
+    _disable_wiimote=OFF
+    [[ "${ENABLE_WIIMOTE:-1}" == "1" ]] || _disable_wiimote=ON
+
+    _ltr32_flag=OFF
+    [[ "${ENABLE_LTR_32LIB_ON_X64:-1}" == "1" ]] && _ltr32_flag=ON
+
+    print_status "Configuring with CMake (Level 7 defaults from config.sh; override with ENABLE_*=0)"
     cd build
     cmake .. \
         -DCMAKE_INSTALL_PREFIX=/usr \
         -DENABLE_LDCONFIG=OFF \
-        -DENABLE_LTR_32LIB_ON_X64=ON \
+        -DENABLE_LTR_32LIB_ON_X64="$_ltr32_flag" \
         -DLIB32DIR=i386-linux-gnu \
-        -DENABLE_WEBCAM=ON \
-        -DENABLE_OSC=ON \
-        -DENABLE_FACE_TRACKER=ON \
+        -DENABLE_WEBCAM="$(_cmake_on_off "${ENABLE_WEBCAM:-1}")" \
+        -DENABLE_OSC="$(_cmake_on_off "${ENABLE_OSC:-1}")" \
+        -DENABLE_FACE_TRACKER="$(_cmake_on_off "${ENABLE_FACE_TRACKER:-1}")" \
         "$_xplane_flag" \
-        -DDISABLE_WIIMOTE=OFF \
+        -DDISABLE_WIIMOTE="$_disable_wiimote" \
         "-DXPLANE_SDK_PATH=${XPLANE_SDK_PATH}"
 
     print_status "Building"

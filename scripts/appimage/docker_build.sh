@@ -33,8 +33,8 @@ HOST_GID=$(id -g)
 RUN_ENV=( -e APPIMAGE_EXTRACT_AND_RUN=1 -e APPIMAGE_RUNTIME=/opt/appimage-runtime/runtime-x86_64 )
 if [[ "$WITH_XPLANE_SDK" == "1" ]]; then
     RUN_ENV+=( -e XPLANE_SDK_PATH=/opt/xplane-sdk/CHeaders )
-    RUN_ENV+=( -e REQUIRE_XPLANE_SDK=1 )
-    RUN_ENV+=( -e EXPECT_XPLANE_PLUGIN=1 )
+else
+    RUN_ENV+=( -e ENABLE_XPLANE=0 -e REQUIRE_XPLANE_SDK=0 -e EXPECT_XPLANE_PLUGIN=0 )
 fi
 
 echo "[INFO] Running AppImage build inside container"
