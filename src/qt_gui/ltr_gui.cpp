@@ -1796,39 +1796,21 @@ static QString findExecutable(const QString &name)
     return QString(); // Not found
 }
 
-QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
+QString LinuxtrackGui::findLinuxtrackLibPath(const QString &binaryPath)
 {
-    if (ltrPipePath.isEmpty()) {
+    if (binaryPath.isEmpty()) {
         return QString();
     }
     
-    QFileInfo pipeInfo(ltrPipePath);
-    QString pipeDir = pipeInfo.absolutePath();
-    
-    // For dev/build-local binaries, try relative paths
-    if (pipeDir.contains(QStringLiteral(".libs")) || pipeDir.contains(QStringLiteral("src"))) {
-        QStringList devLibPaths = {
-            pipeDir + QStringLiteral("/../.libs"),
-            pipeDir + QStringLiteral("/../../.libs"),
-            pipeDir + QStringLiteral("/../lib/.libs"),
-            QStringLiteral("./.libs"),
-            QStringLiteral("../.libs")
-        };
-        for (const QString &libPath : devLibPaths) {
-            QFileInfo libFi(libPath + QStringLiteral("/liblinuxtrack.so.0"));
-            if (libFi.exists()) {
-                return libPath;
-            }
-        }
-    }
-    
+    QString binaryDir = QFileInfo(binaryPath).absolutePath();
+
     // For installed binaries, determine library path based on install prefix
-    if (pipeDir == QStringLiteral("/opt/bin")) {
+    if (binaryDir == QStringLiteral("/opt/bin")) {
         QString libPath = QStringLiteral("/opt/lib/linuxtrack");
         if (QFile::exists(libPath + QStringLiteral("/liblinuxtrack.so.0"))) {
             return libPath;
         }
-    } else if (pipeDir == QStringLiteral("/usr/local/bin")) {
+    } else if (binaryDir == QStringLiteral("/usr/local/bin")) {
         QStringList localLibPaths = {
             QStringLiteral("/usr/local/lib/linuxtrack"),
             QStringLiteral("/usr/local/lib64/linuxtrack")
@@ -1838,7 +1820,7 @@ QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
                 return libPath;
             }
         }
-    } else if (pipeDir == QStringLiteral("/usr/bin")) {
+    } else if (binaryDir == QStringLiteral("/usr/bin")) {
         QStringList systemLibPaths = {
             QStringLiteral("/usr/lib/linuxtrack"),
             QStringLiteral("/usr/lib64/linuxtrack"),
@@ -1852,7 +1834,7 @@ QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
         }
     }
     
-    // Fallback: try common locations
+    // Fallback (1): try common locations
     QStringList fallbackPaths = {
         QStringLiteral("/opt/lib/linuxtrack"),
         QStringLiteral("/opt/linuxtrack/lib/linuxtrack"),
@@ -1862,6 +1844,18 @@ QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
     };
     for (const QString &libPath : fallbackPaths) {
         if (QFile::exists(libPath + QStringLiteral("/liblinuxtrack.so.0"))) {
+            return libPath;
+        }
+    }
+
+    // Fallback (2): try relative paths (this will also find installments in $HOME/.local)
+    QStringList relPaths = {
+        binaryDir + QStringLiteral("/../lib/linuxtrack"),
+        binaryDir + QStringLiteral("/../lib64/linuxtrack")
+    };
+    for (const QString& libPath : relPaths) {
+        QFileInfo libFi(libPath + QStringLiteral("/liblinuxtrack.so.0"));
+        if (libFi.exists()) {
             return libPath;
         }
     }

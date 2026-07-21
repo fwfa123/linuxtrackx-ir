@@ -169,7 +169,7 @@ class LinuxtrackGui : public QMainWindow
   void initUsbReset();
 
   // helper function to find the linuxtrack library path for sub-processes
-  QString findLinuxtrackLibPath(const QString &ltrPipePath);
+  QString findLinuxtrackLibPath(const QString &binaryPath);
   
   // ltr_pipe helper functions
   QString findLtrPipeExecutable();
