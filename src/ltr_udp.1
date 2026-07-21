@@ -1,0 +1,87 @@
+.TH ltr_udp 1 "21 July 2026"
+.IX ltr_udp
+.SH NAME
+ltr_udp - send LinuxTrack pose data to an OpenTrack or FreeTrack UDP receiver.
+.SH SYNOPSYS
+.B ltr_udp
+.RI [--proto=freetrack]
+.RI [--ip=HOST]
+.RI [--port=PORT]
+.RI [--profile=PROFILE]
+.RI [PORT]
+.SH DESCRIPTION
+ltr_udp is a LinuxTrack client executable that sends head tracking pose data
+over UDP to a local or remote receiver.
+
+By default, ltr_udp sends OpenTrack-compatible UDP packets to
+.B 127.0.0.1:4242.
+
+The default OpenTrack packet consists of six little-endian double precision
+floating point values in the following order:
+.BR X ,
+.BR Y ,
+.BR Z ,
+.BR Yaw ,
+.BR Pitch ,
+.BR Roll .
+Translation values are sent in centimeters. Rotation values are sent in
+degrees.
+
+ltr_udp can also send an alternative FreeTrack-style UDP packet when requested.
+.SH OPTIONS
+.TP
+.B Network options:
+.TP
+.B --ip=HOST
+Destination IPv4 address (default: 127.0.0.1).
+.TP
+.B --port=PORT
+Destination UDP port (default: 4242).
+.TP
+.B PORT
+If an argument is not recognized as an option and is a number greater than 1024,
+it is treated as the destination UDP port.
+.TP
+.B Protocol options:
+.TP
+.B --proto=freetrack
+Send FreeTrack-style UDP packets instead of the default OpenTrack packet format.
+.TP
+.B LinuxTrack options:
+.TP
+.B --profile=PROFILE
+LinuxTrack profile name. If omitted, the default LinuxTrack profile is used.
+.SH EXAMPLES
+.TP
+Send OpenTrack-compatible UDP data to the default receiver:
+.B ltr_udp
+.TP
+Send OpenTrack-compatible UDP data to another port:
+.B ltr_udp --port=4243
+.TP
+Equivalent shorthand using a positional port:
+.B ltr_udp 4243
+.TP
+Send UDP data to another host:
+.B ltr_udp --ip=192.168.1.50 --port=4242
+.TP
+Use a specific LinuxTrack profile:
+.B ltr_udp --profile=MyProfile1
+.TP
+Send FreeTrack-style UDP packets:
+.B ltr_udp --proto=freetrack
+.SH SIGNALS
+.TP
+.B SIGINT
+Stop ltr_udp and shut down LinuxTrack cleanly. This is normally sent by pressing
+Ctrl+C.
+.TP
+.B SIGTERM
+Stop ltr_udp and shut down LinuxTrack cleanly.
+.SH NOTES
+ltr_udp requires a working LinuxTrack setup. The LinuxTrack server must be
+available and tracking must reach the RUNNING or PAUSED state before packets are
+sent.
+
+If tracking does not start, check that the LinuxTrack server is running and that
+the selected profile is valid.
