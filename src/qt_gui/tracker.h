@@ -24,6 +24,7 @@ class Tracker : public QObject{
   void signalNewSlave(const char *name);
   //Profile related stuff
   void setProfile(QString p);
+  const QString& getProfile();
 
   bool axisChange(axis_t axis, axis_param_t elem, bool enabled);
   bool axisChange(axis_t axis, axis_param_t elem, float val);
