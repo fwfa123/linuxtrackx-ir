@@ -1328,10 +1328,9 @@ void LinuxtrackGui::on_StopLtrUdpButton_pressed()
     ui.StartLtrUdpButton->setEnabled(trackerState != STOPPED);
     ui.StopLtrUdpButton->setEnabled(false);
 
-
     // Inform about stopped tracker
     QMessageBox::information(this, tr("Tracker Stopped"),
-      tr("Please note that stopping ltr_udp also stops the tracker. You can restart it any time."));
+      tr("Please note that stopping ltr_udp might also stop the tracker. You can restart it any time."));
 }
 
 void LinuxtrackGui::on_LtrUdpProtocolComboBox_currentTextChanged(const QString &text)
@@ -2036,12 +2035,12 @@ void LinuxtrackGui::stopLtrUdpProcess()
 
   // Find and stop ltr_udp processes
   QProcess pkill;
-  pkill.start(QStringLiteral("pkill"), QStringList() << QStringLiteral("ltr_udp"));
+  pkill.start(QStringLiteral("pkill"), {QStringLiteral("ltr_udp")});
   pkill.waitForFinished();
 
   // Wait a moment for processes to terminate
   QThread::msleep(100);
 
   // Update status label
-  ui.LtrPipeStatusLabel->setText(tr("Stopped"));
+  ui.LtrUdpStatusLabel->setText(tr("Stopped"));
 }
