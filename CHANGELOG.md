@@ -4,6 +4,12 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: **2.0.x** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
+## [2.X.Y] - 2026-MM-DD
+
+### Added
+
+- **OpenTrack / FreeTrack UDP Bridge**: allows sending tracking data via UDP in an OpenTrack or FreeTrack compatible format.
+
 ## [2.1.0] - 2026-06-27
 
 ### Added
