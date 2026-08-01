@@ -74,7 +74,7 @@ class LtrGuiForm : public QWidget
    void hotKey_activated(int id, bool pressed);
    void updateHotKey(const QString &prefId, const QString &hk);
    void clearHotkeys();
-   void syncJoyHotkeys();
+   void syncJoyHotkeys(bool warnIfMissing = false);
    
   protected:
    void closeEvent(QCloseEvent *event);
