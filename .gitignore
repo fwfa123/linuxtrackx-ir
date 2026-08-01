@@ -61,6 +61,7 @@ ltr_server1
 ltr_extractor
 ltr_pipe
 ltr_recenter
+ltr_udp
 osc_server
 test_*
 src/mickey/mickey

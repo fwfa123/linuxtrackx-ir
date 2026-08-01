@@ -121,6 +121,7 @@ See the [Migration Guide](docs/readme/MIGRATION_GUIDE_USR_LOCAL_TO_OPT.md).
 - **AntiMicro joystick detection** - Convert head tracking to joystick input
 - **Server approach** - Use LinuxTrack server for Wine games
 - **OSC network** - External application integration via liblo; see [docs/osc.md](docs/osc.md). Build with `-DENABLE_OSC=ON` (Level 5).
+- **OpenTrack / FreeTrack UDP bridge** - Send tracking data via UDP in an OpenTrack or FreeTrack compatible format
 
 ### Companion Applications
 - **[LinuxTrack Mapper](https://gitlab.com/open-source4661535/linuxtrack-mapper)** - Map head tracking zones to keyboard inputs for games that support keyboard look controls.
@@ -149,6 +150,7 @@ See the [Migration Guide](docs/readme/MIGRATION_GUIDE_USR_LOCAL_TO_OPT.md).
 - Elite Dangerous
 - Euro Truck Simulator 2
 - American Truck Simulator
+- X4 Foundations (via OpenTrack UDP Bridge)
 
 ### Windows Games (via Wine/Steam Proton)
 - DCS World

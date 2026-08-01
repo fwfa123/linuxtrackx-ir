@@ -305,6 +305,11 @@ void Tracker::setProfile(QString p)
   emit initAxes();
 }
 
+const QString& Tracker::getProfile()
+{
+  return currentProfile;
+}
+
 void Tracker::fromDefault()
 {
   if(!ltr_int_axes_copy_profile_keys("Default", currentProfile.toUtf8().constData())){

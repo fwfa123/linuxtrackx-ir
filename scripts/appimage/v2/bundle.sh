@@ -462,6 +462,7 @@ WEOF
     create_cli_wrapper "ltr_extractor"
     create_cli_wrapper "ltr_recenter"
     create_cli_wrapper "ltr_server1"
+    create_cli_wrapper "ltr_udp"
 
     # ------------------------------------------------------------------
     # 13. Verify key libraries are bundled

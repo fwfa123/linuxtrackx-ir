@@ -145,6 +145,13 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.PauseLtrPipeButton, SIGNAL(pressed()), this, SLOT(on_PauseLtrPipeButton_pressed()));
   QObject::connect(ui.DeviceNameEdit, SIGNAL(textChanged(QString)), this, SLOT(on_DeviceNameEdit_textChanged(QString)));
 
+  // Connect ltr_udp control interface
+  QObject::connect(ui.StartLtrUdpButton, SIGNAL(pressed()), this, SLOT(on_StartLtrUdpButton_pressed()));
+  QObject::connect(ui.StopLtrUdpButton, SIGNAL(pressed()), this, SLOT(on_StopLtrUdpButton_pressed()));
+  QObject::connect(ui.LtrUdpProtocolComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_LtrUdpProtocolComboBox_currentTextChanged(QString)));
+  QObject::connect(ui.LtrUdpIpEdit, SIGNAL(textChanged(QString)), this, SLOT(on_LtrUdpIpEdit_textChanged(QString)));
+  QObject::connect(ui.LtrUdpPortSpinBox, SIGNAL(valueChanged(int)), this, SLOT(on_LtrUdpPortSpinBox_valueChanged(int)));
+
   // Wire prereq status changes to UI gating
   connect(pi, &PluginInstall::prereqStatusChanged, this, [this](bool ready){
     setGamingControlsEnabled(ready);
@@ -223,8 +230,9 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   
   HelpViewer::LoadPrefs(*gui_settings);
 
-  // Initialize ltr_pipe control interface
+  // Initialize ltr_pipe and ltr_udp control interfaces
   initializeLtrPipeInterface();
+  initializeLtrUdpInterface();
 
   ui.LegacyPose->setChecked(ltr_int_use_alter());
   ui.LegacyRotation->setChecked(ltr_int_use_oldrot());
@@ -338,7 +346,9 @@ void LinuxtrackGui::closeEvent(QCloseEvent *event)
     return;
   }
   invokedAlready = true;
-  
+
+  stopLtrUdpProcess();
+  stopLtrPipeProcess();
   TRACKER.stop();
   PREF.SavePrefsOnExit();
   HelpViewer::CloseWindow();
@@ -487,9 +497,18 @@ void LinuxtrackGui::on_LtrTab_currentChanged(int index)
 
 void LinuxtrackGui::trackerStateHandler(linuxtrack_state_type current_state)
 {
+  trackerState = current_state;
+
   const bool isActive = (current_state == INITIALIZING || 
                         current_state == RUNNING || 
                         current_state == PAUSED);
+
+  if (isActive) {
+    ui.StartLtrUdpButton->setEnabled(true);
+  } else {
+    if (ltrUdpRunning) stopLtrUdpProcess();
+    ui.StartLtrUdpButton->setEnabled(false);
+  }
   
   ui.DefaultsButton->setDisabled(isActive);
   ui.DiscardChangesButton->setDisabled(isActive);
@@ -1177,6 +1196,168 @@ void LinuxtrackGui::on_DeviceNameEdit_textChanged(const QString &text)
     settings.endGroup();
 }
 
+void LinuxtrackGui::on_StartLtrUdpButton_pressed()
+{
+    // Check if tracker is running
+    if (trackerState != RUNNING
+        && trackerState != INITIALIZING
+        && trackerState != PAUSED)
+    {
+        // should never happen when button state handling is correct, but just in case
+        QMessageBox::warning(this, tr("Tracker not Running"),
+            tr("Please start the tracker first, before starting ltr_udp."));
+        return;
+    }
+
+    // Get selected protocol, IP, and port
+    QString protocol = ui.LtrUdpProtocolComboBox->currentText();
+    QString ip = ui.LtrUdpIpEdit->text().trimmed();
+    int port = ui.LtrUdpPortSpinBox->value();
+
+    // Get current profile from Tracker
+    QString profile = TRACKER.getProfile();
+
+    // Validate IP and port
+    {
+        auto parts = ip.split(QStringLiteral("."));
+        bool ipok = parts.size() == 4;
+        for (const auto& part : parts) {
+            int value = part.toInt(&ipok);
+            if (value < 0 || value > 255) {
+                ipok = false;
+                break;
+            }
+        }
+        if (!ipok) {
+            QMessageBox::critical(this, tr("Invalid IP"),
+                tr("The IP address must be a valid IPv4 address."));
+            return;
+        }
+    }
+    if (port < 1025 || port > 65535) {
+        QMessageBox::critical(this, tr("Invalid Port"),
+            tr("The UDP port must range from 1025 to 65535."));
+        return;
+    }
+
+    // Find ltr_udp executable
+    QString ltrUdpPath = findLtrUdpExecutable();
+    if (ltrUdpPath.isEmpty()) {
+        QMessageBox::critical(this, tr("ltr_udp Not Found"),
+            tr("Could not find ltr_udp executable. Please ensure LinuxTrack is properly installed."));
+        return;
+    }
+
+    // Map UI labels to CLI protocol tokens; use --key=value form for ltr_udp
+    QString protoArg = QStringLiteral("opentrack");
+    if (protocol.compare(QStringLiteral("FreeTrack"), Qt::CaseInsensitive) == 0) {
+        protoArg = QStringLiteral("freetrack");
+    }
+    QStringList arguments{
+        QStringLiteral("--proto=") + protoArg,
+        QStringLiteral("--ip=") + ip,
+        QStringLiteral("--port=") + QString::number(port),
+        QStringLiteral("--profile=") + profile,
+    };
+
+    // Find library path and set LD_LIBRARY_PATH
+    QString libPath = findLinuxtrackLibPath(ltrUdpPath);
+
+    // Launch ltr_udp with modified environment
+    // Note: QProcess::startDetached() static method doesn't support QProcessEnvironment directly.
+    // We use a shell command with env as a portable workaround for both Qt5 and Qt6.
+    bool success = false;
+    if (!libPath.isEmpty()) {
+        // Get current LD_LIBRARY_PATH from environment
+        QProcessEnvironment sysEnv = QProcessEnvironment::systemEnvironment();
+        QString currentLdPath = sysEnv.value(QStringLiteral("LD_LIBRARY_PATH"));
+        QString ldLibraryPath = currentLdPath.isEmpty() ? libPath : (libPath + QStringLiteral(":") + currentLdPath);
+
+        // Build shell command: env LD_LIBRARY_PATH=... /opt/bin/ltr_udp [args...]
+        QString command = QStringLiteral("env");
+        QStringList envArgs;
+        envArgs << QStringLiteral("LD_LIBRARY_PATH=") + ldLibraryPath;
+        envArgs << ltrUdpPath;
+        envArgs << arguments;
+
+        success = QProcess::startDetached(command, envArgs);
+    } else {
+        // If library path not found, try launching without setting LD_LIBRARY_PATH
+        // (might work if library is in standard system paths)
+        success = QProcess::startDetached(ltrUdpPath, arguments);
+    }
+
+    if (success) {
+        // Update UI state
+        ui.StartLtrUdpButton->setEnabled(false);
+        ui.StopLtrUdpButton->setEnabled(true);
+        ui.LtrUdpStatusLabel->setText(tr("Sending %1 data to %2:%3").arg(protocol).arg(ip).arg(port));
+
+        // Store settings
+        QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+        settings.beginGroup(QStringLiteral("ltr_udp"));
+        settings.setValue(QStringLiteral("protocol"), protocol);
+        settings.setValue(QStringLiteral("ip"), ip);
+        settings.setValue(QStringLiteral("port"), port);
+        settings.endGroup();
+
+        // Verify process actually started and tracking state after a short delay
+        QTimer::singleShot(1000, this, [this]() {
+            QProcess checkProcess;
+            checkProcess.start(QStringLiteral("pgrep"), QStringList() << QStringLiteral("ltr_udp"));
+            if (checkProcess.waitForFinished() && checkProcess.exitCode() == 0) {
+                ltrUdpRunning = true;
+            } else {
+                // Process failed to start, reset UI
+                ui.StartLtrUdpButton->setEnabled(true);
+                ui.StopLtrUdpButton->setEnabled(false);
+                ui.LtrUdpStatusLabel->setText(tr("Launch Failed"));
+                QMessageBox::warning(this, tr("Process Not Found"),
+                    tr("ltr_udp process could not be found running. The launch may have failed."));
+            }
+        });
+
+    } else {
+        ui.LtrUdpStatusLabel->setText(tr("Launch Failed"));
+        QMessageBox::critical(this, tr("Launch Failed"),
+            tr("Failed to launch ltr_udp. Please check the executable and try again."));
+    }
+}
+
+void LinuxtrackGui::on_StopLtrUdpButton_pressed()
+{
+    stopLtrUdpProcess();
+
+    // Update UI state
+    ui.StartLtrUdpButton->setEnabled(trackerState != STOPPED);
+    ui.StopLtrUdpButton->setEnabled(false);
+    ui.LtrUdpStatusLabel->setText(tr("Stopped"));
+}
+
+void LinuxtrackGui::on_LtrUdpProtocolComboBox_currentTextChanged(const QString &text)
+{
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_udp"));
+    settings.setValue(QStringLiteral("protocol"), text);
+    settings.endGroup();
+}
+
+void LinuxtrackGui::on_LtrUdpIpEdit_textChanged(const QString &text)
+{
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_udp"));
+    settings.setValue(QStringLiteral("ip"), text);
+    settings.endGroup();
+}
+
+void LinuxtrackGui::on_LtrUdpPortSpinBox_valueChanged(int value)
+{
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_udp"));
+    settings.setValue(QStringLiteral("port"), value);
+    settings.endGroup();
+}
+
 // Testing section slot implementations
 void LinuxtrackGui::on_TesterExeRadioButton_toggled(bool checked)
 {
@@ -1574,19 +1755,18 @@ QString LinuxtrackGui::getLinuxTrackInfo()
     return info;
 }
 
-// ltr_pipe helper function implementations
-QString LinuxtrackGui::findLtrPipeExecutable()
+static QString findExecutable(const QString &name)
 {
     // Prefer dev/build-local binaries first
     QString appDir = QCoreApplication::applicationDirPath();
     QStringList devCandidates = {
-        appDir + QStringLiteral("/ltr_pipe"),        // Same directory as GUI (AppImage support)
-        appDir + QStringLiteral("/../ltr_pipe"),
-        appDir + QStringLiteral("/../../ltr_pipe"),
-        appDir + QStringLiteral("/../src/ltr_pipe"),
-        appDir + QStringLiteral("/../../src/ltr_pipe"),
-        QStringLiteral("./ltr_pipe"),
-        QStringLiteral("./.libs/ltr_pipe")
+        appDir + QStringLiteral("/") + name,        // Same directory as GUI (AppImage support)
+        appDir + QStringLiteral("/../") + name,
+        appDir + QStringLiteral("/../../") + name,
+        appDir + QStringLiteral("/../src/") + name,
+        appDir + QStringLiteral("/../../src/") + name,
+        QStringLiteral("./") + name,
+        QStringLiteral("./.libs/") + name
     };
     for (const QString &cand : devCandidates) {
         QFileInfo fi(cand);
@@ -1597,9 +1777,9 @@ QString LinuxtrackGui::findLtrPipeExecutable()
 
     // Then check common installation paths
     QStringList systemPaths = {
-        QStringLiteral("/opt/bin/ltr_pipe"),
-        QStringLiteral("/usr/local/bin/ltr_pipe"),
-        QStringLiteral("/usr/bin/ltr_pipe")
+        QStringLiteral("/opt/bin/") + name,
+        QStringLiteral("/usr/local/bin/") + name,
+        QStringLiteral("/usr/bin/") + name
     };
     for (const QString &path : systemPaths) {
         if (QFile::exists(path)) {
@@ -1608,7 +1788,7 @@ QString LinuxtrackGui::findLtrPipeExecutable()
     }
 
     // Finally check PATH
-    QString pathResult = QStandardPaths::findExecutable(QStringLiteral("ltr_pipe"));
+    QString pathResult = QStandardPaths::findExecutable(name);
     if (!pathResult.isEmpty()) {
         return pathResult;
     }
@@ -1616,39 +1796,21 @@ QString LinuxtrackGui::findLtrPipeExecutable()
     return QString(); // Not found
 }
 
-QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
+QString LinuxtrackGui::findLinuxtrackLibPath(const QString &binaryPath)
 {
-    if (ltrPipePath.isEmpty()) {
+    if (binaryPath.isEmpty()) {
         return QString();
     }
     
-    QFileInfo pipeInfo(ltrPipePath);
-    QString pipeDir = pipeInfo.absolutePath();
-    
-    // For dev/build-local binaries, try relative paths
-    if (pipeDir.contains(QStringLiteral(".libs")) || pipeDir.contains(QStringLiteral("src"))) {
-        QStringList devLibPaths = {
-            pipeDir + QStringLiteral("/../.libs"),
-            pipeDir + QStringLiteral("/../../.libs"),
-            pipeDir + QStringLiteral("/../lib/.libs"),
-            QStringLiteral("./.libs"),
-            QStringLiteral("../.libs")
-        };
-        for (const QString &libPath : devLibPaths) {
-            QFileInfo libFi(libPath + QStringLiteral("/liblinuxtrack.so.0"));
-            if (libFi.exists()) {
-                return libPath;
-            }
-        }
-    }
-    
+    QString binaryDir = QFileInfo(binaryPath).absolutePath();
+
     // For installed binaries, determine library path based on install prefix
-    if (pipeDir == QStringLiteral("/opt/bin")) {
+    if (binaryDir == QStringLiteral("/opt/bin")) {
         QString libPath = QStringLiteral("/opt/lib/linuxtrack");
         if (QFile::exists(libPath + QStringLiteral("/liblinuxtrack.so.0"))) {
             return libPath;
         }
-    } else if (pipeDir == QStringLiteral("/usr/local/bin")) {
+    } else if (binaryDir == QStringLiteral("/usr/local/bin")) {
         QStringList localLibPaths = {
             QStringLiteral("/usr/local/lib/linuxtrack"),
             QStringLiteral("/usr/local/lib64/linuxtrack")
@@ -1658,7 +1820,7 @@ QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
                 return libPath;
             }
         }
-    } else if (pipeDir == QStringLiteral("/usr/bin")) {
+    } else if (binaryDir == QStringLiteral("/usr/bin")) {
         QStringList systemLibPaths = {
             QStringLiteral("/usr/lib/linuxtrack"),
             QStringLiteral("/usr/lib64/linuxtrack"),
@@ -1672,7 +1834,7 @@ QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
         }
     }
     
-    // Fallback: try common locations
+    // Fallback (1): try common locations
     QStringList fallbackPaths = {
         QStringLiteral("/opt/lib/linuxtrack"),
         QStringLiteral("/opt/linuxtrack/lib/linuxtrack"),
@@ -1685,8 +1847,26 @@ QString LinuxtrackGui::findLinuxtrackLibPath(const QString &ltrPipePath)
             return libPath;
         }
     }
+
+    // Fallback (2): try relative paths (this will also find installments in $HOME/.local)
+    QStringList relPaths = {
+        binaryDir + QStringLiteral("/../lib/linuxtrack"),
+        binaryDir + QStringLiteral("/../lib64/linuxtrack")
+    };
+    for (const QString& libPath : relPaths) {
+        QFileInfo libFi(libPath + QStringLiteral("/liblinuxtrack.so.0"));
+        if (libFi.exists()) {
+            return libPath;
+        }
+    }
     
     return QString(); // Not found
+}
+
+// ltr_pipe helper function implementations
+QString LinuxtrackGui::findLtrPipeExecutable()
+{
+  return findExecutable(QStringLiteral("ltr_pipe"));
 }
 
 QStringList LinuxtrackGui::buildLtrPipeArguments(const QString &format, const QString &)
@@ -1822,4 +2002,46 @@ void LinuxtrackGui::initializeLtrPipeInterface()
     ui.FormatComboBox->setEnabled(true);
     ui.DeviceNameEdit->setEnabled(true);
     ui.LtrPipeStatusLabel->setText(tr("Ready"));
+}
+
+void LinuxtrackGui::initializeLtrUdpInterface()
+{
+    // Load saved settings for ltr_udp interface
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("ltr_udp"));
+
+    // Restore last used protocol
+    QString lastProto = settings.value(QStringLiteral("protocol"), QStringLiteral("OpenTrack")).toString();
+    int protoIndex = ui.LtrUdpProtocolComboBox->findText(lastProto);
+    if (protoIndex >= 0) {
+        ui.LtrUdpProtocolComboBox->setCurrentIndex(protoIndex);
+    }
+
+    // Restore last used IP address and port
+    ui.LtrUdpIpEdit->setText(settings.value(QStringLiteral("ip"), QStringLiteral("127.0.0.1")).toString());
+    ui.LtrUdpPortSpinBox->setValue(settings.value(QStringLiteral("port"), 4242).toInt());
+
+    settings.endGroup();
+}
+
+QString LinuxtrackGui::findLtrUdpExecutable()
+{
+    return findExecutable(QStringLiteral("ltr_udp"));
+}
+
+void LinuxtrackGui::stopLtrUdpProcess()
+{
+  // we optimistically assume that this will work
+  ltrUdpRunning = false;
+
+  // Find and stop ltr_udp processes
+  QProcess pkill;
+  pkill.start(QStringLiteral("pkill"), {QStringLiteral("ltr_udp")});
+  pkill.waitForFinished();
+
+  // Wait a moment for processes to terminate
+  QThread::msleep(100);
+
+  // Update status label
+  ui.LtrUdpStatusLabel->setText(tr("Stopped"));
 }
