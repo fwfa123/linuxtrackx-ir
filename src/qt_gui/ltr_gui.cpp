@@ -1248,12 +1248,16 @@ void LinuxtrackGui::on_StartLtrUdpButton_pressed()
         return;
     }
 
-    // Build command line arguments
+    // Map UI labels to CLI protocol tokens; use --key=value form for ltr_udp
+    QString protoArg = QStringLiteral("opentrack");
+    if (protocol.compare(QStringLiteral("FreeTrack"), Qt::CaseInsensitive) == 0) {
+        protoArg = QStringLiteral("freetrack");
+    }
     QStringList arguments{
-        QStringLiteral("--proto"), protocol,
-        QStringLiteral("--ip"), ip,
-        QStringLiteral("--port"), QString::number(port),
-        QStringLiteral("--profile"), profile,
+        QStringLiteral("--proto=") + protoArg,
+        QStringLiteral("--ip=") + ip,
+        QStringLiteral("--port=") + QString::number(port),
+        QStringLiteral("--profile=") + profile,
     };
 
     // Find library path and set LD_LIBRARY_PATH
@@ -1327,10 +1331,7 @@ void LinuxtrackGui::on_StopLtrUdpButton_pressed()
     // Update UI state
     ui.StartLtrUdpButton->setEnabled(trackerState != STOPPED);
     ui.StopLtrUdpButton->setEnabled(false);
-
-    // Inform about stopped tracker
-    QMessageBox::information(this, tr("Tracker Stopped"),
-      tr("Please note that stopping ltr_udp might also stop the tracker. You can restart it any time."));
+    ui.LtrUdpStatusLabel->setText(tr("Stopped"));
 }
 
 void LinuxtrackGui::on_LtrUdpProtocolComboBox_currentTextChanged(const QString &text)

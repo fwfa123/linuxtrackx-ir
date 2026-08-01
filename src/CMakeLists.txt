@@ -392,6 +392,10 @@ set_linuxtrack_rpath(ltr_recenter)
 add_executable(ltr_udp ltr_udp.c linuxtrack.c)
 target_include_directories(ltr_udp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ..)
 target_link_libraries(ltr_udp linuxtrack pthread dl)
+set_linuxtrack_rpath(ltr_udp)
+
+# Man page for ltr_udp (other tools ship .1 sources; wire this one into install)
+install(FILES ltr_udp.1 DESTINATION share/man/man1)
 
 # OSC sender (liblo) — upstream discussion: https://github.com/uglyDwarf/linuxtrack/issues/80
 if(LIBLO_FOUND)
