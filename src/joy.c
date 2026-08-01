@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include <utils.h>
 #include <cal.h>
@@ -240,9 +241,9 @@ static bool isJoyName(ifc_type_t ifc, int fd, void *param)
       }
       break;
   }
-  //printf("Received name '%s'.\n", name);
-  size_t max_len = (strlen(joystickName) < NAME_LENGTH) ? strlen(joystickName) : NAME_LENGTH;
-  if(strncmp(name, joystickName, max_len) == 0){
+  /* Exact match only. Prefix match wrongly opens sibling nodes such as
+   * "Wireless Controller Touchpad" when looking for "Wireless Controller". */
+  if(strcmp(name, joystickName) == 0){
     return true;
   }
   return false;
@@ -297,7 +298,9 @@ static bool isJoystickDevice(const char *name)
     "naga", "imperator", "taipan", "ouroboros", "adder", "copperhead", "krait",
     "g502", "g402", "g602", "g700", "g900", "g903", "g pro", "g305", "g403",
     "mx master", "mx anywhere", "mx ergo", "m705", "m510", "m525", "m325",
-    "k400", "k600", "k780", "mk520", "mk550", "mk710", "mk850"
+    "k400", "k600", "k780", "mk520", "mk550", "mk710", "mk850",
+    /* Sibling HID nodes on DualShock / DualSense / similar pads */
+    "motion sensors", "motion sensor", "accelerometer", "gyro", "gyroscope"
   };
   
   const int numExcludeKeywords = sizeof(excludeKeywords) / sizeof(excludeKeywords[0]);
@@ -439,6 +442,56 @@ int enumerateJoyFiles(ifc_type_t ifc, const char *path, procFunc *fun, void *par
 static int findJoystick(ifc_type_t ifc, const char *joystickName)
 {
       return enumerateJoyFiles(ifc, "/dev/input", isJoyName, (void *)joystickName);
+}
+
+int ltr_int_joy_open_by_name(const char *name)
+{
+  if(name == NULL || name[0] == '\0'){
+    return -1;
+  }
+  return findJoystick(e_EVDEV, name);
+}
+
+void ltr_int_joy_close(int joy_fd)
+{
+  if(joy_fd >= 0){
+    close(joy_fd);
+  }
+}
+
+int ltr_int_joy_read_buttons(int joy_fd, joy_button_event_t *out, int max_events)
+{
+  struct input_event event[32];
+  ssize_t res;
+  int filled = 0;
+  size_t i;
+
+  if(joy_fd < 0 || out == NULL || max_events <= 0){
+    return -1;
+  }
+
+  res = read(joy_fd, event, sizeof(event));
+  if(res < 0){
+    if(errno == EAGAIN || errno == EWOULDBLOCK){
+      return 0;
+    }
+    ltr_int_my_perror("read");
+    return -1;
+  }
+  if(res == 0 || (res % (ssize_t)sizeof(struct input_event)) != 0){
+    return -1;
+  }
+
+  for(i = 0; i < (size_t)res / sizeof(struct input_event) && filled < max_events; ++i){
+    /* Joystick/gamepad buttons live at BTN_MISC (0x100) and above; skip keys/axes. */
+    if(event[i].type == EV_KEY && event[i].code >= BTN_MISC &&
+       (event[i].value == 0 || event[i].value == 1)){
+      out[filled].code = event[i].code;
+      out[filled].value = event[i].value;
+      ++filled;
+    }
+  }
+  return filled;
 }
 
 joystickNames_t *ltr_int_joy_enum_joysticks(ifc_type_t ifc)

@@ -405,6 +405,12 @@ void* ltr_int_load_library(char *lib_name, lib_fun_def_t *func_defs) {
                         *(void **)(func_defs->ref) = (void*)ltr_int_joy_enum_axes;
                     } else if (strcmp(func_defs->name, "ltr_int_joy_free_axes") == 0) {
                         *(void **)(func_defs->ref) = (void*)ltr_int_joy_free_axes;
+                    } else if (strcmp(func_defs->name, "ltr_int_joy_open_by_name") == 0) {
+                        *(void **)(func_defs->ref) = (void*)ltr_int_joy_open_by_name;
+                    } else if (strcmp(func_defs->name, "ltr_int_joy_close") == 0) {
+                        *(void **)(func_defs->ref) = (void*)ltr_int_joy_close;
+                    } else if (strcmp(func_defs->name, "ltr_int_joy_read_buttons") == 0) {
+                        *(void **)(func_defs->ref) = (void*)ltr_int_joy_read_buttons;
                     } else {
                         printf("[STUB LOG] Unknown joystick function: %s\n", func_defs->name);
                         *(void **)(func_defs->ref) = NULL;
@@ -712,6 +718,22 @@ void ltr_int_joy_free_axes(axes_t axes) {
     printf("[STUB] ltr_int_joy_free_axes called\n");
     // Safe to do nothing - our stub doesn't allocate anything
     (void)axes;
+}
+
+int ltr_int_joy_open_by_name(const char *name) {
+    printf("[STUB] ltr_int_joy_open_by_name: %s\n", name ? name : "NULL");
+    return -1;
+}
+
+void ltr_int_joy_close(int fd) {
+    printf("[STUB] ltr_int_joy_close: %d\n", fd);
+}
+
+int ltr_int_joy_read_buttons(int fd, joy_button_event_t *out, int max_events) {
+    (void)fd;
+    (void)out;
+    (void)max_events;
+    return 0;
 }
 
 // TrackIR detection function for GUI
