@@ -2,12 +2,13 @@
 .IX ltr_udp
 .SH NAME
 ltr_udp - send LinuxTrack pose data to an OpenTrack or FreeTrack UDP receiver.
-.SH SYNOPSYS
+.SH SYNOPSIS
 .B ltr_udp
-.RI [--proto=freetrack]
+.RI [--proto=opentrack|freetrack]
 .RI [--ip=HOST]
 .RI [--port=PORT]
 .RI [--profile=PROFILE]
+.RI [--verbose]
 .RI [PORT]
 .SH DESCRIPTION
 ltr_udp is a LinuxTrack client executable that sends head tracking pose data
@@ -44,13 +45,35 @@ it is treated as the destination UDP port.
 .TP
 .B Protocol options:
 .TP
-.B --proto=freetrack
-Send FreeTrack-style UDP packets instead of the default OpenTrack packet format.
+.B --proto=opentrack|freetrack
+Select packet format (default: opentrack). Values are case-insensitive.
+Both
+.B --proto=VALUE
+and
+.B --proto VALUE
+are accepted.
+.TP
+.B --verbose
+Print periodic pose debug lines. Also enabled when
+.B LTR_UDP_VERBOSE
+is set or
+.B LINUXTRACK_DBG
+contains
+.BR u .
 .TP
 .B LinuxTrack options:
 .TP
 .B --profile=PROFILE
 LinuxTrack profile name. If omitted, the default LinuxTrack profile is used.
+Both
+.B --key=VALUE
+and
+.B --key VALUE
+forms are accepted for
+.BR --ip ,
+.BR --port ,
+and
+.BR --profile .
 .SH EXAMPLES
 .TP
 Send OpenTrack-compatible UDP data to the default receiver:
