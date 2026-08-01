@@ -16,7 +16,9 @@
 
 - New **`ltr_udp`** tool and **Advanced** tab controls send head tracking over UDP in OpenTrack or FreeTrack format (default `127.0.0.1:4242`).
 - Useful for titles such as X4 Foundations that wait for an OpenTrack connection.
-- Resolves [#62](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/62) (MR !12). Credits: Mike Becker (uap-universe), based on StarTuz’s `ltr_udp` work.
+- Resolves [#62](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/62) ([MR !12](https://gitlab.com/fwfa123/linuxtrackx-ir/-/merge_requests/12)).
+
+**Credits:** Thanks to **Mike Becker** ([uap-universe](https://gitlab.com/uap-universe)) for contributing the OpenTrack / FreeTrack UDP integration, based on **StarTuz**’s [linuxtrack-Qt6-Wayland](https://github.com/StarTuz/linuxtrack-Qt6-Wayland) `ltr_udp` work.
 
 ### Controller / HOTAS global hotkeys
 
@@ -25,12 +27,24 @@
 - Bind **Pause/Resume** and **Recenter** to a keyboard key or joystick/HOTAS button via host **evdev** (no AntimicroX).
 - Short display labels (for example `PS4 A`) with full device name in the tooltip.
 - Bindings stay saved when the stick is unplugged and reopen automatically when it returns.
+- Membership in the `input` group is typically required to read controller devices.
 - Resolves [#63](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/63).
+
+### AppImage
+
+- **`LinuxTrack-X-IR-2.2.0-x86_64.AppImage`** is available on the [GitHub mirror release](https://github.com/fwfa123/linuxtrackx-ir/releases/tag/v2.2.0).
+- Full **Level 7** maintainer build: TrackIR, 32-bit Wine bridge, Wine bridge payload, X-Plane plugin, webcam, OSC, face tracking, Wiimote, and `ltr_udp`.
+- Inherits v2.0.1 **type2-runtime** (FUSE3-friendly); no host `libfuse2` required on Ubuntu 24.04+, Fedora Atomic, and similar distros.
 
 ## Fixed and improved (since v2.1.0)
 
 - Exact joystick device name matching so DualShock sibling nodes (Touchpad / Motion Sensors) are not opened by mistake.
 - Missing-controller dialog only after Assign (not cold start or Clear).
+- `ltr_udp` CLI/GUI argv alignment and status labeling polish before merge.
+
+## Docs and wiki
+
+- In-app help and GitHub/GitLab wikis updated for v2.2.0 (What’s new, Tracking window hotkey screenshots, Advanced / Gaming notes).
 
 ## Upgrade from v2.1.0
 
@@ -59,9 +73,18 @@ sudo cmake --install .
 
 Distribution packages and build levels: [`docs/readme/`](https://gitlab.com/fwfa123/linuxtrackx-ir/-/tree/v2.2.0/docs/readme).
 
+Maintainer AppImage rebuild:
+
+```bash
+git checkout v2.2.0
+./scripts/appimage/docker_build.sh
+```
+
 ## Links
 
 - [CHANGELOG.md](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/v2.2.0/CHANGELOG.md)
 - [GitHub mirror release + AppImage download](https://github.com/fwfa123/linuxtrackx-ir/releases/tag/v2.2.0)
 - [Wiki — Device / Tracking setup](https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/dev_setup)
 - [Wiki — Advanced tab (UDP)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/wikis/advanced_tab)
+- [Issue #62 — OpenTrack UDP](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/62)
+- [Issue #63 — HOTAS hotkeys](https://gitlab.com/fwfa123/linuxtrackx-ir/-/issues/63)
