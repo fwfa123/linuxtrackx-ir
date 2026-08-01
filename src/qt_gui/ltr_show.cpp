@@ -589,8 +589,10 @@ void LtrGuiForm::updateHotKey(const QString &prefId, const QString &hk)
   hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
   hotkeySettings->setValue(prefId, hk);
   hotkeySettings->endGroup();
-  /* After init, this is a user Assign/Clear — warn if the device cannot open. */
-  syncJoyHotkeys(hotkeysInitialized);
+  /* Warn only when the user just assigned a controller binding that cannot open.
+   * Clearing to None (or keyboard) must stay silent — including mid-Clear while
+   * the other slot still holds a joy bind and the stick is unplugged. */
+  syncJoyHotkeys(hotkeysInitialized && JoyHotkey::isJoyBinding(hk));
 }
 
 void LtrGuiForm::clearHotkeys()
