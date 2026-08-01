@@ -13,12 +13,12 @@
 <strong>This tab is for special uses of Linuxtrack.</strong> Most users should use the <strong>Tracking Window</strong> for starting Linuxtrack. Use the Start/Stop buttons in the Tracking Window to run head tracking for normal use.
 </p>
 <p>
-The Advanced tab provides the Linuxtrack Server (<code>ltr_pipe</code>) controls for special output formats such as uinput-abs for AntiMicroX, FlightGear, IL-2 Shturmovik, and Silent Wings. It also provides the <strong>OpenTrack / FreeTrack UDP Bridge</strong> (<code>ltr_udp</code>) for games that speak the OpenTrack UDP protocol (for example X4 Foundations). Use this tab when you need one of these specific output modes.
+The Advanced tab provides the Linuxtrack Server (<code>ltr_pipe</code>) controls for special output formats such as uinput-abs for AntiMicroX, FlightGear, IL-2 Shturmovik, and Silent Wings. It also provides the <strong>OpenTrack / FreeTrack UDP</strong> section (<code>ltr_udp</code>) for games that speak the OpenTrack UDP protocol (for example X4 Foundations). Use this tab when you need one of these specific output modes.
 
 <table>
 <tr>
 <td>
-<img src="Advanced tab.png" alt="Advanced tab offering specialized servers for tracking output">
+<img src="Advanced tab.png" alt="Advanced tab with Linuxtrack Server and OpenTrack / FreeTrack UDP controls">
 </td>
 </tr>
 </table>
@@ -71,9 +71,9 @@ The Linuxtrack Server section controls the head tracking data output format and 
 <strong>Purpose:</strong> Provides real-time feedback about the Linuxtrack server state.
 </p>
 
-<h2>OpenTrack / FreeTrack UDP Bridge</h2>
+<h2>OpenTrack / FreeTrack UDP</h2>
 <p>
-The UDP Bridge section runs <code>ltr_udp</code>, which sends head-tracking pose data over UDP in an OpenTrack-compatible or FreeTrack-compatible packet format.
+The <strong>OpenTrack / FreeTrack UDP</strong> section runs <code>ltr_udp</code>, which sends head-tracking pose data over UDP in an OpenTrack-compatible or FreeTrack-compatible packet format.
 </p>
 <p>
 <strong>Typical use:</strong> native Linux games that wait for an OpenTrack UDP connection (default destination <code>127.0.0.1:4242</code>), such as X4 Foundations with head tracking enabled.
@@ -89,11 +89,14 @@ The UDP Bridge section runs <code>ltr_udp</code>, which sends head-tracking pose
 Translation values are sent in centimeters for OpenTrack packets. Rotation values are degrees. Prefer localhost unless you intentionally stream pose data to another machine on your network.
 </p>
 
-<h3>UDP Bridge controls</h3>
+<h3>UDP controls</h3>
 <ul>
-  <li><strong>Start</strong> — starts <code>ltr_udp</code> (tracking must already be running)</li>
+  <li><strong>Start</strong> — starts <code>ltr_udp</code> (enabled only when tracking is already running)</li>
   <li><strong>Stop</strong> — stops <code>ltr_udp</code></li>
 </ul>
+<p>
+Status text shows whether packets are being sent (for example <code>Sending OpenTrack data to 127.0.0.1:4242</code>) or <code>Stopped</code>.
+</p>
 <p>
 You can also run the same tool from a terminal: <code>ltr_udp --ip=127.0.0.1 --port=4242</code>. See <code>man ltr_udp</code> after install.
 </p>
@@ -179,6 +182,10 @@ LinuxTrack includes a powerful feature that allows you to use head tracking with
 <strong>If the Linuxtrack server fails to start:</strong> Ensure tracking is working in the Tracking Window first. The server uses the same tracking pipeline.</p>
 <p>
 <strong>If the correct output format is not selected:</strong> Choose the format before clicking Start. Format cannot be changed while the server is running.</p>
+<p>
+<strong>If OpenTrack / FreeTrack UDP Start is disabled:</strong> Start tracking in the Tracking Window first. <code>ltr_udp</code> requires an active tracker.</p>
+<p>
+<strong>If a game does not receive OpenTrack data:</strong> Confirm the destination is <code>127.0.0.1:4242</code> (or the IP/port the game expects), that status shows sending, and that no other local listener is bound exclusively to that port while the game needs it.</p>
 <p>
 For Wine Bridge, prerequisites, and game integration, see the <a href="gaming_tab.htm">Gaming Tab</a> and <a href="extractor.htm">TrackIR Firmware/Wine Integration Setup</a> guide.</p>
 
