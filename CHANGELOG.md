@@ -9,7 +9,12 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 ### Added
 
 - **OpenTrack / FreeTrack UDP Bridge** (`ltr_udp`): send tracking data via UDP in an OpenTrack or FreeTrack compatible format (GUI Advanced tab + CLI). Resolves #62 (MR !12).
+- **Controller / HOTAS global hotkeys** (#63): Pause/Resume and Recenter in the Tracking window accept joystick/gamepad buttons via evdev (no AntimicroX). Short device/button labels with full-name tooltips; bindings kept when the stick is unplugged and reopen automatically.
 
+### Fixed
+
+- Exact joystick device name matching so DualShock sibling nodes (Touchpad / Motion Sensors) are not opened by mistake.
+- Missing-controller dialog only after Assign (not cold start or Clear).
 ## [2.1.0] - 2026-06-27
 
 ### Added
