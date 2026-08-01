@@ -529,7 +529,7 @@ void LtrGuiForm::hotKey_activated(int id, bool pressed)
   }
 }
 
-void LtrGuiForm::syncJoyHotkeys()
+void LtrGuiForm::syncJoyHotkeys(bool warnIfMissing)
 {
   static bool syncing = false;
   if(syncing || !joyHotkeyMonitor){
@@ -567,9 +567,9 @@ void LtrGuiForm::syncJoyHotkeys()
     }
   }
 
-  /* Keep bindings in UI/prefs when the stick is unplugged or still enumerating.
-   * Warn once; monitor will retry opens in the background. */
-  if(!missing.isEmpty()){
+  /* Keep bindings when the stick is missing; retry in the background.
+   * Only warn after an interactive Assign — not on every cold start. */
+  if(warnIfMissing && !missing.isEmpty()){
     const QString roles = missing.join(QString::fromUtf8(" and "));
     QTimer::singleShot(0, this, [this, roles]() {
       QMessageBox::information(this, QString::fromUtf8("Controller binding"),
@@ -589,7 +589,8 @@ void LtrGuiForm::updateHotKey(const QString &prefId, const QString &hk)
   hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
   hotkeySettings->setValue(prefId, hk);
   hotkeySettings->endGroup();
-  syncJoyHotkeys();
+  /* After init, this is a user Assign/Clear — warn if the device cannot open. */
+  syncJoyHotkeys(hotkeysInitialized);
 }
 
 void LtrGuiForm::clearHotkeys()
@@ -607,7 +608,7 @@ void LtrGuiForm::clearHotkeys()
   hotkeySettings->setValue(QString::fromUtf8("tracking_toggle"), noneStr);
   hotkeySettings->setValue(QString::fromUtf8("quick_recenter"), noneStr);
   hotkeySettings->endGroup();
-  syncJoyHotkeys();
+  syncJoyHotkeys(false);
 }
 
 // Check for hotkey conflicts between ltr_gui and mickey
