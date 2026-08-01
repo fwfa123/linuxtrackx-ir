@@ -868,6 +868,12 @@
        </item>
        <item>
         <widget class="QGroupBox" name="LtrPipeControlGroupBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="title">
           <string>Linuxtrack Server</string>
          </property>
@@ -952,7 +958,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="controlButtonsLayout">
+           <layout class="QHBoxLayout" name="ltrPipeControlButtonsLayout">
             <item>
              <widget class="QPushButton" name="StartLtrPipeButton">
               <property name="toolTip">
@@ -1016,6 +1022,171 @@
            <widget class="QLabel" name="LtrPipeStatusLabel">
             <property name="accessibleName">
              <string>ltr_pipe Status</string>
+            </property>
+            <property name="text">
+             <string>Ready</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="LtrUdpControlGroupBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>OpenTrack / FreeTrack UDP</string>
+         </property>
+         <layout class="QVBoxLayout" name="ltrUdpControlLayout">
+          <item>
+           <layout class="QHBoxLayout" name="ltrUdpProtocolLayout">
+            <item>
+             <widget class="QLabel" name="LtrUdpProtocolLabel">
+              <property name="accessibleName">
+               <string>ltr_udp Protocol Label</string>
+              </property>
+              <property name="text">
+               <string>Protocol:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="LtrUdpProtocolComboBox">
+              <property name="toolTip">
+               <string>Select the UDP protocol used by ltr_udp</string>
+              </property>
+              <property name="accessibleName">
+               <string>ltr_udp Protocol Selection</string>
+              </property>
+              <item>
+               <property name="text">
+                <string>OpenTrack</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>FreeTrack</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="ltrUdpNetworkLayout">
+            <item>
+             <widget class="QLabel" name="LtrUdpIpLabel">
+              <property name="accessibleName">
+               <string>ltr_udp IP Address Label</string>
+              </property>
+              <property name="text">
+               <string>IP Address:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="LtrUdpIpEdit">
+              <property name="toolTip">
+               <string>Destination IP address for ltr_udp</string>
+              </property>
+              <property name="accessibleName">
+               <string>ltr_udp IP Address Input</string>
+              </property>
+              <property name="text">
+               <string>127.0.0.1</string>
+              </property>
+              <property name="placeholderText">
+               <string>127.0.0.1</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="LtrUdpPortLabel">
+              <property name="accessibleName">
+               <string>ltr_udp Port Label</string>
+              </property>
+              <property name="text">
+               <string>Port:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="LtrUdpPortSpinBox">
+              <property name="toolTip">
+               <string>Destination UDP port for ltr_udp</string>
+              </property>
+              <property name="accessibleName">
+               <string>ltr_udp Port Input</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+              <property name="minimum">
+               <number>1025</number>
+              </property>
+              <property name="maximum">
+               <number>65535</number>
+              </property>
+              <property name="value">
+               <number>4242</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="ltrUdpControlButtonsLayout">
+            <item>
+             <widget class="QPushButton" name="StartLtrUdpButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Start ltr_udp with the selected protocol (tracking must be started, first)</string>
+              </property>
+              <property name="accessibleName">
+               <string>Start ltr_udp</string>
+              </property>
+              <property name="text">
+               <string>Start</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ltr_rc.qrc">
+                <normaloff>:/ltr/icons/play.svg</normaloff>:/ltr/icons/play.svg</iconset>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="StopLtrUdpButton">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="toolTip">
+               <string>Stop ltr_udp</string>
+              </property>
+              <property name="accessibleName">
+               <string>Stop ltr_udp</string>
+              </property>
+              <property name="text">
+               <string>Stop</string>
+              </property>
+              <property name="icon">
+               <iconset resource="ltr_rc.qrc">
+                <normaloff>:/ltr/icons/stop.svg</normaloff>:/ltr/icons/stop.svg</iconset>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="LtrUdpStatusLabel">
+            <property name="accessibleName">
+             <string>ltr_udp Status</string>
             </property>
             <property name="text">
              <string>Ready</string>

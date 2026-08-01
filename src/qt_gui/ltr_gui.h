@@ -85,6 +85,13 @@ class LinuxtrackGui : public QMainWindow
   void on_StopLtrPipeButton_pressed();
   void on_PauseLtrPipeButton_pressed();
   void on_DeviceNameEdit_textChanged(const QString &text);
+
+  // ltr_udp control slots
+  void on_StartLtrUdpButton_pressed();
+  void on_StopLtrUdpButton_pressed();
+  void on_LtrUdpProtocolComboBox_currentTextChanged(const QString &text);
+  void on_LtrUdpIpEdit_textChanged(const QString &text);
+  void on_LtrUdpPortSpinBox_valueChanged(int value);
   
   // Testing section slots
   void on_TesterExeRadioButton_toggled(bool checked);
@@ -156,21 +163,36 @@ class LinuxtrackGui : public QMainWindow
   // Gaming prerequisites helpers
   void refreshGamingPrereqStatus();
   void setGamingControlsEnabled(bool enabled);
+
+  // general init functions
+  void initVideoOnDelay();
+  void initUsbReset();
+
+  // helper function to find the linuxtrack library path for sub-processes
+  QString findLinuxtrackLibPath(const QString &binaryPath);
   
   // ltr_pipe helper functions
   QString findLtrPipeExecutable();
-  QString findLinuxtrackLibPath(const QString &ltrPipePath);
   QStringList buildLtrPipeArguments(const QString &format, const QString &deviceName);
   void stopLtrPipeProcess();
   void pauseLtrPipeProcess();
   void resumeLtrPipeProcess();
   void cleanupUinputDevices();
   void initializeLtrPipeInterface();
-  void initVideoOnDelay();
-  void initUsbReset();
+
+  // ltr_udp helper functions
+  QString findLtrUdpExecutable();
+  void initializeLtrUdpInterface();
+  void stopLtrUdpProcess();
+
+  // keep track of tracker state
+  linuxtrack_state_type trackerState = STOPPED;
   
   // ltr_pipe state management
   bool ltrPipePaused = false;
+
+  // ltr_udp state management
+  bool ltrUdpRunning = false;
 };
 
 #endif

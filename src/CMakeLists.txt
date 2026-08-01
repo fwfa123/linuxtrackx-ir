@@ -388,6 +388,15 @@ target_link_libraries(ltr_recenter
 # Set RPATH so ltr_recenter can find liblinuxtrack.so.0 at runtime
 set_linuxtrack_rpath(ltr_recenter)
 
+# ltr_udp (Bridge for X4: Foundations / OpenTrack games)
+add_executable(ltr_udp ltr_udp.c linuxtrack.c)
+target_include_directories(ltr_udp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ..)
+target_link_libraries(ltr_udp linuxtrack pthread dl)
+set_linuxtrack_rpath(ltr_udp)
+
+# Man page for ltr_udp (other tools ship .1 sources; wire this one into install)
+install(FILES ltr_udp.1 DESTINATION share/man/man1)
+
 # OSC sender (liblo) — upstream discussion: https://github.com/uglyDwarf/linuxtrack/issues/80
 if(LIBLO_FOUND)
     add_executable(osc_server
@@ -489,6 +498,7 @@ install(TARGETS
     ltr_pipe
     ltr_extractor
     ltr_recenter
+    ltr_udp
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib/linuxtrack
     ARCHIVE DESTINATION lib/linuxtrack
@@ -773,7 +783,7 @@ if(CMAKE_INSTALL_PREFIX STREQUAL "/opt")
         endif()
         
         # List of binaries to symlink (/usr/local/bin is on typical PATH; /opt/bin often is not)
-        set(BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter)
+        set(BINARIES ltr_gui ltr_server1 ltr_pipe ltr_extractor ltr_recenter ltr_udp)
         if(EXISTS \"\${BIN_DIR}/mickey\")
             list(APPEND BINARIES mickey)
         endif()
