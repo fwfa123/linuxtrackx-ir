@@ -1,4 +1,4 @@
-#define NEWS_SERIAL 2
+#define NEWS_SERIAL 3
 
 #ifdef HAVE_CONFIG_H
   #include "config.h"
