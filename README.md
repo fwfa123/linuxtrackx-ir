@@ -1,6 +1,6 @@
 # LinuxTrack X-IR
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![Build Status](https://img.shields.io/badge/build-passing-brightgreen)](https://gitlab.com/fwfa123/linuxtrackx-ir)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://gitlab.com/fwfa123/linuxtrackx-ir/-/blob/main/LICENSE.md)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey)](https://gitlab.com/fwfa123/linuxtrackx-ir)
@@ -118,6 +118,7 @@ See the [Migration Guide](docs/readme/MIGRATION_GUIDE_USR_LOCAL_TO_OPT.md).
 4. **Test tracking functionality** before gaming
 
 ### Alternative Tracking Methods
+- **Controller / HOTAS hotkeys** - Bind Pause/Resume and Recenter to joystick buttons in the Tracking window (no AntimicroX)
 - **AntiMicro joystick detection** - Convert head tracking to joystick input
 - **Server approach** - Use LinuxTrack server for Wine games
 - **OSC network** - External application integration via liblo; see [docs/osc.md](docs/osc.md). Build with `-DENABLE_OSC=ON` (Level 5).
