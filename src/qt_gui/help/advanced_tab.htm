@@ -13,7 +13,7 @@
 <strong>This tab is for special uses of Linuxtrack.</strong> Most users should use the <strong>Tracking Window</strong> for starting Linuxtrack. Use the Start/Stop buttons in the Tracking Window to run head tracking for normal use.
 </p>
 <p>
-The Advanced tab provides the Linuxtrack Server (ltr_pipe) controls for special output formats such as uinput-abs for AntiMicroX, FlightGear, IL-2 Shturmovik, and Silent Wings. Use this tab only when you need one of these specific output modes.
+The Advanced tab provides the Linuxtrack Server (<code>ltr_pipe</code>) controls for special output formats such as uinput-abs for AntiMicroX, FlightGear, IL-2 Shturmovik, and Silent Wings. It also provides the <strong>OpenTrack / FreeTrack UDP Bridge</strong> (<code>ltr_udp</code>) for games that speak the OpenTrack UDP protocol (for example X4 Foundations). Use this tab when you need one of these specific output modes.
 
 <table>
 <tr>
@@ -69,6 +69,33 @@ The Linuxtrack Server section controls the head tracking data output format and 
 </p>
 <p>
 <strong>Purpose:</strong> Provides real-time feedback about the Linuxtrack server state.
+</p>
+
+<h2>OpenTrack / FreeTrack UDP Bridge</h2>
+<p>
+The UDP Bridge section runs <code>ltr_udp</code>, which sends head-tracking pose data over UDP in an OpenTrack-compatible or FreeTrack-compatible packet format.
+</p>
+<p>
+<strong>Typical use:</strong> native Linux games that wait for an OpenTrack UDP connection (default destination <code>127.0.0.1:4242</code>), such as X4 Foundations with head tracking enabled.
+</p>
+
+<h3>Protocol and destination</h3>
+<ul>
+  <li><strong>Protocol:</strong> OpenTrack (six little-endian doubles: X, Y, Z, Yaw, Pitch, Roll) or FreeTrack</li>
+  <li><strong>IP Address:</strong> destination IPv4 address (default <code>127.0.0.1</code>)</li>
+  <li><strong>Port:</strong> destination UDP port (default <code>4242</code>)</li>
+</ul>
+<p>
+Translation values are sent in centimeters for OpenTrack packets. Rotation values are degrees. Prefer localhost unless you intentionally stream pose data to another machine on your network.
+</p>
+
+<h3>UDP Bridge controls</h3>
+<ul>
+  <li><strong>Start</strong> — starts <code>ltr_udp</code> (tracking must already be running)</li>
+  <li><strong>Stop</strong> — stops <code>ltr_udp</code></li>
+</ul>
+<p>
+You can also run the same tool from a terminal: <code>ltr_udp --ip=127.0.0.1 --port=4242</code>. See <code>man ltr_udp</code> after install.
 </p>
 
 <h2>Server Workflow Example</h2>
