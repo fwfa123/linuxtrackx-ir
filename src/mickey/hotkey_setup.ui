@@ -22,7 +22,7 @@
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
-        <string>Press the desired hotkey:</string>
+        <string>Press a key or controller button:</string>
        </property>
       </widget>
      </item>

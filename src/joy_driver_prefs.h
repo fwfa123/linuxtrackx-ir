@@ -56,6 +56,17 @@ void ltr_int_joy_free_axes(axes_t axes);
 joystickNames_t *ltr_int_joy_enum_joysticks(ifc_type_t ifc);
 void ltr_int_joy_free_joysticks(joystickNames_t *nl);
 
+/* Button monitoring (evdev). Non-exclusive open for hotkey use. */
+typedef struct {
+  uint16_t code;
+  int32_t value; /* 1 = pressed, 0 = released */
+} joy_button_event_t;
+
+int ltr_int_joy_open_by_name(const char *name);
+void ltr_int_joy_close(int fd);
+/* Returns number of button events written to out, 0 if none, -1 on error. */
+int ltr_int_joy_read_buttons(int fd, joy_button_event_t *out, int max_events);
+
 #ifdef __cplusplus
 }
 #endif

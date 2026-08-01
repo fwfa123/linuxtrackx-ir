@@ -76,6 +76,7 @@ set(LTR_GUI_HEADERS
     ../mickey/hotkey_setup_dlg.h
     ../mickey/my_line_edit.h
     ../mickey/keyb.h
+    joy_hotkey_monitor.h
 )
 
 set(LTR_GUI_FORMS
@@ -168,6 +169,7 @@ set(LTR_GUI_SOURCES
     ../mickey/hotkey_setup_dlg.cpp
     ../mickey/my_line_edit.cpp
     ../mickey/keyb.cpp
+    joy_hotkey_monitor.cpp
 )
 
 # Platform-specific files
@@ -260,6 +262,7 @@ target_compile_definitions(ltr_gui PRIVATE
     QT6_OVERRIDES
     HAVE_CONFIG_H
     HELP_BASE="ltr_gui/"
+    LTR_GUI_JOY_HOTKEYS
 )
 # Match root WEBCAM_SUPPORT so the GUI always sees WEBCAM_SUPPORT even if the wrong config.h is picked up.
 if(WEBCAM_SUPPORT)

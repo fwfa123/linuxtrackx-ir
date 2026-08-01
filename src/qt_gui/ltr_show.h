@@ -24,6 +24,7 @@
 class LtrGuiForm;
 class QSettings;
 class HotKey;
+class JoyButtonMonitor;
 
 class CameraView : public QWidget
 {
@@ -73,6 +74,7 @@ class LtrGuiForm : public QWidget
    void hotKey_activated(int id, bool pressed);
    void updateHotKey(const QString &prefId, const QString &hk);
    void clearHotkeys();
+   void syncJoyHotkeys();
    
   protected:
    void closeEvent(QCloseEvent *event);
@@ -102,6 +104,7 @@ class LtrGuiForm : public QWidget
    // Hotkeys
    HotKey *toggleHotKey;
    HotKey *recenterHotKey;
+   JoyButtonMonitor *joyHotkeyMonitor;
    QSettings *hotkeySettings;
    bool hotkeysInitialized;
    void initHotkeys();

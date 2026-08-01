@@ -29,6 +29,7 @@
 #include <QApplication>
 #include "ltr_gui.h"
 #include "../mickey/hotkey.h"
+#include "joy_hotkey_monitor.h"
 #include <QGridLayout>
 #include <QLabel>
 #include <QPushButton>
@@ -53,8 +54,8 @@ static const int HOTKEY_QUICK_RECENTER = 1;
 LtrGuiForm::LtrGuiForm(const Ui::LinuxtrackMainForm &tmp_gui, QSettings &settings)
               : glw(NULL), cv(NULL), allowClose(false), main_gui(tmp_gui),
                 contextMenu(nullptr), dockAction(nullptr), undockAction(nullptr),
-                toggleHotKey(nullptr), recenterHotKey(nullptr), hotkeySettings(&settings),
-                hotkeysInitialized(false)
+                toggleHotKey(nullptr), recenterHotKey(nullptr), joyHotkeyMonitor(nullptr),
+                hotkeySettings(&settings), hotkeysInitialized(false)
 {
   ui.setupUi(this);
   cv = new CameraView(label);
@@ -127,6 +128,10 @@ LtrGuiForm::~LtrGuiForm()
   }
 
   // Clean up hotkeys
+  if(joyHotkeyMonitor){
+    delete joyHotkeyMonitor;
+    joyHotkeyMonitor = nullptr;
+  }
   if(toggleHotKey){
     delete toggleHotKey;
   }
@@ -452,7 +457,10 @@ void LtrGuiForm::initHotkeys()
 
   // Add compact informational label with tooltip
   QLabel *infoLabel = new QLabel(QString::fromUtf8("⚠️ Global Hotkeys:"));
-  QString tooltipText = QString::fromUtf8("These hotkeys work system-wide. For per-game hotkeys, use controller.exe installed via Wine Bridge in each game prefix.\n\nWarning: Do not run both global hotkeys and controller.exe simultaneously - they will conflict!");
+  QString tooltipText = QString::fromUtf8(
+    "These hotkeys work system-wide and accept keyboard keys or joystick/HOTAS buttons.\n"
+    "For per-game keyboard hotkeys, use controller.exe installed via Wine Bridge in each game prefix.\n\n"
+    "Warning: Do not run both global hotkeys and controller.exe simultaneously - they will conflict!");
   infoLabel->setToolTip(tooltipText);
   infoLabel->setSizePolicy(QSizePolicy::Maximum, QSizePolicy::Preferred);
   hotkeyHBox->addWidget(infoLabel);
@@ -473,6 +481,10 @@ void LtrGuiForm::initHotkeys()
 			   HOTKEY_QUICK_RECENTER, this, this, hotkeyLayout, 0, 1);
 
   hotkeySettings->endGroup();
+
+  joyHotkeyMonitor = new JoyButtonMonitor(this);
+  connect(joyHotkeyMonitor, SIGNAL(activated(int, bool)),
+          this, SLOT(hotKey_activated(int, bool)));
 
   hotkeyHBox->addLayout(hotkeyLayout);
 
@@ -517,11 +529,67 @@ void LtrGuiForm::hotKey_activated(int id, bool pressed)
   }
 }
 
+void LtrGuiForm::syncJoyHotkeys()
+{
+  static bool syncing = false;
+  if(syncing || !joyHotkeyMonitor){
+    return;
+  }
+  syncing = true;
+
+  joyHotkeyMonitor->clearBindings();
+  if(!toggleHotKey || !recenterHotKey){
+    syncing = false;
+    return;
+  }
+  QString toggleHk;
+  QString recenterHk;
+  toggleHotKey->getHotKey(toggleHk);
+  recenterHotKey->getHotKey(recenterHk);
+
+  if(JoyHotkey::isJoyBinding(toggleHk) && JoyHotkey::isJoyBinding(recenterHk) &&
+     toggleHk == recenterHk){
+    QMessageBox::warning(this, QString::fromUtf8("Controller binding"),
+      QString::fromUtf8("Pause/Resume and Recenter cannot use the same controller button."));
+    recenterHotKey->setHotKey(QString::fromUtf8("None"));
+    recenterHotKey->getHotKey(recenterHk);
+  }
+
+  QStringList missing;
+  if(JoyHotkey::isJoyBinding(toggleHk)){
+    if(!joyHotkeyMonitor->setBinding(HOTKEY_TOGGLE_TRACKING, toggleHk)){
+      missing << QString::fromUtf8("Pause/Resume");
+    }
+  }
+  if(JoyHotkey::isJoyBinding(recenterHk)){
+    if(!joyHotkeyMonitor->setBinding(HOTKEY_QUICK_RECENTER, recenterHk)){
+      missing << QString::fromUtf8("Recenter");
+    }
+  }
+
+  /* Keep bindings in UI/prefs when the stick is unplugged or still enumerating.
+   * Warn once; monitor will retry opens in the background. */
+  if(!missing.isEmpty()){
+    const QString roles = missing.join(QString::fromUtf8(" and "));
+    QTimer::singleShot(0, this, [this, roles]() {
+      QMessageBox::information(this, QString::fromUtf8("Controller binding"),
+        QString::fromUtf8(
+          "Could not open the controller for %1.\n\n"
+          "The binding was kept. Plug the controller in (or wait a moment after "
+          "plugging it in) and it should become active automatically.\n\n"
+          "If the device is connected and this persists, ensure your user is in "
+          "the 'input' group, then log out and back in.").arg(roles));
+    });
+  }
+  syncing = false;
+}
+
 void LtrGuiForm::updateHotKey(const QString &prefId, const QString &hk)
 {
   hotkeySettings->beginGroup(QString::fromUtf8("HotKeys"));
   hotkeySettings->setValue(prefId, hk);
   hotkeySettings->endGroup();
+  syncJoyHotkeys();
 }
 
 void LtrGuiForm::clearHotkeys()
@@ -539,6 +607,7 @@ void LtrGuiForm::clearHotkeys()
   hotkeySettings->setValue(QString::fromUtf8("tracking_toggle"), noneStr);
   hotkeySettings->setValue(QString::fromUtf8("quick_recenter"), noneStr);
   hotkeySettings->endGroup();
+  syncJoyHotkeys();
 }
 
 // Check for hotkey conflicts between ltr_gui and mickey
@@ -625,6 +694,7 @@ void LtrGuiForm::showEvent(QShowEvent *event)
     }
     
     hotkeySettings->endGroup();
+    syncJoyHotkeys();
     hotkeysInitialized = true;
     
     // Check for conflicts with mickey after hotkeys are registered
