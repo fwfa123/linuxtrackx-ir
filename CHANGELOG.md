@@ -15,6 +15,10 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 - Exact joystick device name matching so DualShock sibling nodes (Touchpad / Motion Sensors) are not opened by mistake.
 - Missing-controller dialog only after Assign (not cold start or Clear).
+
+### Removed
+
+- Stale root `linuxtrack.spec` (Qt5/Autotools RPM packaging at 2.0.0); packaging is CMake/AppImage-first now (#62 follow-up).
 ## [2.1.0] - 2026-06-27
 
 ### Added
