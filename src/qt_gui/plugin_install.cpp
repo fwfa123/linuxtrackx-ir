@@ -211,18 +211,9 @@ void PluginInstall::Connect()
 {
   // Note: LinuxtrackWineButton moved to Gaming tab as CustomPrefixButton
   // Connection handled in ltr_gui.cpp
-  QObject::connect(gui.TIRFWButton, SIGNAL(pressed()),
-    this, SLOT(on_TIRFWButton_pressed()));
-//  QObject::connect(gui.TIRViewsButton, SIGNAL(pressed()),
-//    this, SLOT(on_TIRViewsButton_pressed()));
+  // Firmware Install/Repair is on Gaming tab (FirmwareActionButton / MfcActionButton)
   QObject::connect(inst, SIGNAL(finished(bool)),
     this, SLOT(finished(bool)));
-}
-
-void PluginInstall::on_TIRFWButton_pressed()
-{
-  state = TIR_FW;
-  tirFirmwareInstall();
 }
 
 /*
@@ -364,7 +355,7 @@ void PluginInstall::installLinuxtrackWine()
     if (!parentWidget) {
       parentWidget = qobject_cast<QWidget*>(parent()); // Fallback
     }
-    QMessageBox::information(parentWidget, QObject::tr("Firmware extraction successfull"),
+    QMessageBox::information(parentWidget, QObject::tr("Firmware extraction successful"),
       QObject::tr("Firmware extraction finished successfully!"
       "\nUse Install to Wine Prefix on the Gaming tab to copy the bridge into a prefix.")
     );
@@ -562,10 +553,9 @@ void PluginInstall::finished(bool ok)
 
 void PluginInstall::enableButtons(bool ena)
 {
-  // Note: LinuxtrackWineButton moved to Gaming tab as CustomPrefixButton
-  // Button state managed in ltr_gui.cpp
-  gui.TIRFWButton->setEnabled(ena);
-  //gui.TIRViewsButton->setEnabled(ena);
+  // Gaming tab Install/Repair buttons; Wine Bridge gating stays in ltr_gui.cpp
+  gui.FirmwareActionButton->setEnabled(ena);
+  gui.MfcActionButton->setEnabled(ena);
 }
 
 // Helper method to get parent widget

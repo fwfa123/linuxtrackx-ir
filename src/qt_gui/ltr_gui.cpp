@@ -136,7 +136,6 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.LutrisButton, SIGNAL(pressed()), this, SLOT(on_LutrisButton_pressed()));
   QObject::connect(ui.CustomPrefixButton, SIGNAL(pressed()), this, SLOT(on_CustomPrefixButton_pressed()));
   QObject::connect(ui.UpdateGamesButton, SIGNAL(pressed()), this, SLOT(on_UpdateGamesButton_pressed()));
-  // QObject::connect(ui.BatchInstallButton, SIGNAL(pressed()), this, SLOT(on_BatchInstallButton_pressed()));
 
   // Connect ltr_pipe control interface
   QObject::connect(ui.FormatComboBox, SIGNAL(currentTextChanged(QString)), this, SLOT(on_FormatComboBox_currentTextChanged(QString)));
@@ -932,6 +931,28 @@ void LinuxtrackGui::refreshGamingPrereqStatus()
   ui.FirmwareStatusLabel->setText(firmware ? tr("Installed") : tr("Not installed"));
   ui.MfcStatusLabel->setText(mfc ? tr("Installed") : tr("Not installed"));
   setGamingControlsEnabled(firmware && mfc);
+
+  QString hint;
+  if (!firmware && !mfc) {
+    hint = tr("Install TrackIR firmware and MFC42 libraries above to enable Wine Bridge installation and prefix testing.");
+  } else if (!firmware) {
+    hint = tr("Install TrackIR firmware above to continue.");
+  } else if (!mfc) {
+    hint = tr("Install MFC42 libraries above to continue.");
+  }
+  const bool showHint = !hint.isEmpty();
+  ui.GamingPrereqHintLabel->setVisible(showHint);
+  if (showHint) {
+    ui.GamingPrereqHintLabel->setText(hint);
+  }
+  const QString tip = showHint ? hint : QString();
+  ui.SteamProtonButton->setToolTip(showHint ? tip
+      : tr("Install Linuxtrack Wine Bridge to a Steam (Proton) game"));
+  ui.LutrisButton->setToolTip(showHint ? tip
+      : tr("Install Linuxtrack Wine Bridge to a Lutris game"));
+  ui.CustomPrefixButton->setToolTip(showHint ? tip
+      : tr("Install Linuxtrack Wine Bridge to a custom Wine prefix"));
+  ui.TestingGroupBox->setToolTip(tip);
 }
 
 void LinuxtrackGui::setGamingControlsEnabled(bool enabled)
@@ -949,14 +970,6 @@ void LinuxtrackGui::on_LutrisButton_pressed()
         if (showWindow) { showWindow->startTimersOnly(); }
         pi->installLutrisWineBridge();
     }
-}
-
-void LinuxtrackGui::on_OtherPlatformButton_pressed()
-{
-    // TODO: Implement other platform installation
-  QMessageBox::information(this, tr("Other Platform"),
-      tr("Other platform installation will be implemented in Phase 2."));
-    // Do not auto-start tracking from install buttons
 }
 
 void LinuxtrackGui::on_CustomPrefixButton_pressed()
@@ -977,23 +990,6 @@ void LinuxtrackGui::on_UpdateGamesButton_pressed()
     updateGamesExtractor->show();
     updateGamesExtractor->raise();
     updateGamesExtractor->activateWindow();
-}
-
-/*
-void LinuxtrackGui::on_BatchInstallButton_pressed()
-{
-    // TODO: Implement batch installation
-    QMessageBox::information(this, QString::fromUtf8("Batch Install"),
-        QString::fromUtf8("Batch installation will be implemented in Phase 2."));
-}
-*/
-
-void LinuxtrackGui::on_WinePrefixButton_pressed()
-{
-    // TODO: Implement direct wine prefix installation
-  QMessageBox::information(this, tr("Wine Prefix"),
-      tr("Direct wine prefix installation will be implemented in Phase 2."));
-    // Do not auto-start tracking from install buttons
 }
 
 // ltr_pipe control slot implementations

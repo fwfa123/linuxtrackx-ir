@@ -21,7 +21,6 @@ class PluginInstall : public QObject
   void installWinePlugin();
   void tirFirmwareInstall();
   void installLinuxtrackWine();
-  void on_TIRFWButton_pressed();
   //void on_TIRViewsButton_pressed();
   void finished(bool ok);
   

@@ -203,6 +203,22 @@
         </layout>
        </item>
        <item>
+        <widget class="QLabel" name="GamingPrereqHintLabel">
+         <property name="styleSheet">
+          <string>font-weight: bold; color: #c0392b;</string>
+         </property>
+         <property name="text">
+          <string>Install TrackIR firmware and MFC42 libraries above to enable Wine Bridge installation and prefix testing.</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+         <property name="accessibleName">
+          <string>Gaming prerequisites hint</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <spacer name="verticalSpacer_4">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
@@ -272,7 +288,7 @@
           <string>X-Plane Plugin Install Button</string>
          </property>
          <property name="text">
-          <string>Install Xplane plugin...</string>
+          <string>Install X-Plane plugin...</string>
          </property>
         </widget>
        </item>
@@ -595,22 +611,38 @@
             </item>
            </layout>
           </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="LogsSupportGroupBox">
+         <property name="title">
+          <string>Logs &amp; Support</string>
+         </property>
+         <layout class="QHBoxLayout" name="logsSupportLayout">
           <item>
-           <widget class="QPushButton" name="CopySystemInfoButton">
+           <widget class="QPushButton" name="ViewLogButton">
             <property name="text">
-             <string>Copy system info to Clipboard</string>
+             <string>View logfile</string>
             </property>
            </widget>
           </item>
           <item>
-           <spacer name="verticalSpacer_2">
+           <widget class="QPushButton" name="PackageLogsButton">
+            <property name="text">
+             <string>Package logs...</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_logs">
             <property name="orientation">
-             <enum>Qt::Vertical</enum>
+             <enum>Qt::Horizontal</enum>
             </property>
             <property name="sizeHint" stdset="0">
              <size>
-              <width>20</width>
-              <height>40</height>
+              <width>40</width>
+              <height>20</height>
              </size>
             </property>
            </spacer>
@@ -619,210 +651,153 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_7">
-         <item>
-          <widget class="QFrame" name="frame_7">
-           <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_23">
+        <widget class="QGroupBox" name="TroubleshootingGroupBox">
+         <property name="title">
+          <string>Troubleshooting</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2">
+          <item row="0" column="0">
+           <widget class="QCheckBox" name="DisableCamView">
+            <property name="text">
+             <string>Disable camera view</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="Disable3DView">
+            <property name="text">
+             <string>Disable 3D tracking preview</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QCheckBox" name="LegacyPose">
+            <property name="text">
+             <string>Use legacy pose computation method
+  (weak perspective/Alter)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QCheckBox" name="LegacyRotation">
+            <property name="text">
+             <string>Use legacy rotation computation method</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QCheckBox" name="TransRotDisable">
+            <property name="text">
+             <string>Disable translation/rotation alignment </string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
             <item>
-             <layout class="QGridLayout" name="gridLayout">
-              <item row="1" column="0">
-               <widget class="QPushButton" name="TIRFWButton">
-                <property name="text">
-                 <string>Reinstall TrackIR firmware</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QPushButton" name="PackageLogsButton">
-                <property name="text">
-                 <string>Package logs...</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QPushButton" name="ViewLogButton">
-                <property name="text">
-                 <string>View logfile</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <widget class="QLabel" name="label_2">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Focal length (pixels)</string>
+              </property>
+             </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label">
+             <widget class="QDoubleSpinBox" name="FocalLength">
+              <property name="alignment">
+               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+              </property>
+              <property name="buttonSymbols">
+               <enum>QAbstractSpinBox::UpDownArrows</enum>
+              </property>
+              <property name="decimals">
+               <number>1</number>
+              </property>
+              <property name="minimum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>10000.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>660.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="VideoOnDelayLabel">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>Video_on Delay Timing</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_VideoOnDelay">
+            <item>
+             <widget class="QComboBox" name="VideoOnDelayMode">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                 <horstretch>0</horstretch>
                 <verstretch>0</verstretch>
                </sizepolicy>
               </property>
-              <property name="font">
-               <font>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="text">
-               <string>Troubleshooting options</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
              </widget>
             </item>
             <item>
-             <layout class="QGridLayout" name="gridLayout_2">
-              <item row="0" column="0">
-               <widget class="QCheckBox" name="DisableCamView">
-                <property name="text">
-                 <string>Disable camera view</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QCheckBox" name="LegacyRotation">
-                <property name="text">
-                 <string>Use legacy rotation computation method</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QCheckBox" name="LegacyPose">
-                <property name="text">
-                 <string>Use legacy pose computation method
-  (weak perspective/Alter)</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QCheckBox" name="Disable3DView">
-                <property name="text">
-                 <string>Disable 3D tracking preview</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QCheckBox" name="TransRotDisable">
-                <property name="text">
-                 <string>Disable translation/rotation alignment </string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <layout class="QHBoxLayout" name="horizontalLayout_2">
-                <item>
-                 <widget class="QLabel" name="label_2">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="text">
-                   <string>Focal length (pixels)</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QDoubleSpinBox" name="FocalLength">
-                  <property name="alignment">
-                   <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                  </property>
-                  <property name="buttonSymbols">
-                   <enum>QAbstractSpinBox::UpDownArrows</enum>
-                  </property>
-                  <property name="decimals">
-                   <number>1</number>
-                  </property>
-                  <property name="minimum">
-                   <double>1.000000000000000</double>
-                  </property>
-                  <property name="maximum">
-                   <double>10000.000000000000000</double>
-                  </property>
-                  <property name="value">
-                   <double>660.000000000000000</double>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item row="3" column="0">
-               <widget class="QLabel" name="VideoOnDelayLabel">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Video_on Delay Timing</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <layout class="QHBoxLayout" name="horizontalLayout_VideoOnDelay">
-                <item>
-                 <widget class="QComboBox" name="VideoOnDelayMode">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QSpinBox" name="VideoOnDelayValue">
-                  <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-                    <horstretch>0</horstretch>
-                    <verstretch>0</verstretch>
-                   </sizepolicy>
-                  </property>
-                  <property name="visible">
-                   <bool>false</bool>
-                  </property>
-                  <property name="minimum">
-                   <number>0</number>
-                  </property>
-                  <property name="maximum">
-                   <number>500000</number>
-                  </property>
-                  <property name="singleStep">
-                   <number>1000</number>
-                  </property>
-                  <property name="value">
-                   <number>120000</number>
-                  </property>
-                  <property name="suffix">
-                   <string> μs</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item row="4" column="0" colspan="2">
-               <widget class="QCheckBox" name="UsbResetCheck">
-                <property name="text">
-                 <string>Do usbreset before start tracking</string>
-                </property>
-                <property name="toolTip">
-                 <string>Try this if your camera remains dark after pressing Start. Resets the TrackIR USB device before tracking (GitLab #51).</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <widget class="QSpinBox" name="VideoOnDelayValue">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="visible">
+               <bool>false</bool>
+              </property>
+              <property name="minimum">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <number>500000</number>
+              </property>
+              <property name="singleStep">
+               <number>1000</number>
+              </property>
+              <property name="value">
+               <number>120000</number>
+              </property>
+              <property name="suffix">
+               <string> μs</string>
+              </property>
+             </widget>
             </item>
            </layout>
-          </widget>
-         </item>
-        </layout>
+          </item>
+          <item row="4" column="0" colspan="2">
+           <widget class="QCheckBox" name="UsbResetCheck">
+            <property name="text">
+             <string>Do usbreset before start tracking</string>
+            </property>
+            <property name="toolTip">
+             <string>Try this if your camera remains dark after pressing Start. Resets the TrackIR USB device before tracking (GitLab #51).</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="UtilitiesGroupBox">

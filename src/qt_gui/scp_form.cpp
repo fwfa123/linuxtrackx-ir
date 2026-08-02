@@ -59,7 +59,7 @@ void ScpForm::setupCurves()
                  QString::fromUtf8("Up"), ui.curvePageTy);
   ui.curvePageTyLayout->addWidget(y, 1);
 
-  z = new SCurve(TZ, QString::fromUtf8("Back/forth translation"), QString::fromUtf8("Forth"),
+  z = new SCurve(TZ, QString::fromUtf8("Back/forth translation"), QString::fromUtf8("Forward"),
                  QString::fromUtf8("Back"), ui.curvePageTz);
   ui.curvePageTzLayout->addWidget(z, 1);
 }
