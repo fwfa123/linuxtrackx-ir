@@ -127,6 +127,9 @@ sample_data/
 doc/html/
 doc/latex/
 *.pdf
+
+# Local archived release notes (kept out of the main tree)
+docs/archive/
 *.ps
 BUILD_OPTIONS.md
 
