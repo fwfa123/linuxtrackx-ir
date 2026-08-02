@@ -11,7 +11,7 @@
 <table>
 <tr>
 <td>
-<img src="system.png" alt="System tab showing system information, Troubleshooting options (including Video_on Delay Timing and Do usbreset before start tracking), and Utilities.">
+<img src="system.png" alt="System tab showing System Information, Logs &amp; Support, Troubleshooting (including Video_on Delay Timing and Do usbreset before start tracking), and Utilities.">
 </td>
 </tr>
 </table>
@@ -37,17 +37,16 @@
 <li><strong>Refresh:</strong> Updates the system information display with current data</li>
 </ul>
 
-<h2>Maintenance Options</h2>
-<p>These options allow you to reinstall components and access logs for troubleshooting.</p>
+<h2>Logs &amp; Support</h2>
+<p>Use these controls when collecting diagnostics for bug reports or local troubleshooting.</p>
 
-<h3>Component Management</h3>
 <ul>
-<li><strong>Reinstall TrackIR firmware:</strong> Reinstalls TrackIR firmware components if they become corrupted</li>
 <li><strong>View logfile:</strong> Opens the LinuxTrack log file for debugging purposes</li>
-<li><strong>Package logs:</strong> Access package installation logs for troubleshooting build issues</li>
+<li><strong>Package logs:</strong> Packages logs and related files for sharing when reporting issues</li>
 </ul>
+<p>To install or repair TrackIR firmware and MFC42 libraries, use the <strong>Prerequisites</strong> section on the <a href="gaming_tab.htm">Gaming</a> tab.</p>
 
-<h2>Troubleshooting Options</h2>
+<h2>Troubleshooting</h2>
 <p>Advanced options for troubleshooting tracking and performance issues.</p>
 
 <h3>Display Options</h3>
@@ -70,7 +69,7 @@
 
 <h3>TrackIR Initialization</h3>
 <ul>
-<li><strong><a href="dev_setup.htm#Video_on_Delay">Video_on Delay Timing</a>:</strong> On the <strong>System</strong> tab under <strong>Troubleshooting options</strong>, choose <strong>Default</strong> (no delay) for most TrackIR devices. Select <strong>Manual</strong> to expose a microseconds spinbox if camera LEDs fail to activate properly after Start. See the <a href="dev_setup.htm#Video_on_Delay">TrackIR setup guide</a> for screenshots and suggested values.</li>
+<li><strong><a href="dev_setup.htm#Video_on_Delay">Video_on Delay Timing</a>:</strong> On the <strong>System</strong> tab under <strong>Troubleshooting</strong>, choose <strong>Default</strong> (no delay) for most TrackIR devices. Select <strong>Manual</strong> to expose a microseconds spinbox if camera LEDs fail to activate properly after Start. See the <a href="dev_setup.htm#Video_on_Delay">TrackIR setup guide</a> for screenshots and suggested values.</li>
 <li><strong>Do usbreset before start tracking:</strong> Opt-in checkbox (unchecked by default). Enable this if your TrackIR camera stays dark after pressing <strong>Start</strong>, or the log shows repeated <strong>"Data receive request timed out"</strong> messages (GitLab issue #51, especially TrackIR 5 v2, USB ID <code>131d:0158</code>). LinuxTrack issues a USB bus reset before TrackIR initialization — the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually. Check the box to enable; uncheck to disable. This addresses a wedged USB state and is <em>not</em> the same fix as Video_on Delay timing (LED activation); you may need one or both depending on your symptoms.</li>
 </ul>
 
@@ -119,7 +118,7 @@
 <li>Use legacy computation methods if experiencing issues with newer algorithms</li>
 <li>Lower <strong>Tracking rate (FPS)</strong> on the Tracking setup tab if you want fewer pose/preview updates and less CPU use</li>
 <li>Disable preview windows if you don't need them</li>
-<li>On the <strong>System</strong> tab, enable <strong>Do usbreset before start tracking</strong> if the TrackIR camera preview stays dark after Start (see Troubleshooting options above)</li>
+<li>On the <strong>System</strong> tab, enable <strong>Do usbreset before start tracking</strong> if the TrackIR camera preview stays dark after Start (see Troubleshooting above)</li>
 </ul>
 
 <h2>Log Files</h2>

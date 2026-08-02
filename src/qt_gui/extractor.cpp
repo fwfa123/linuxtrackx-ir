@@ -511,7 +511,7 @@ void TirFwExtractor::threadFinished()
   if(everything){
     linkResult(destPath);
   }else{
-    QMessageBox::warning(this, tr("Firmware extraction unsuccessfull"),
+    QMessageBox::warning(this, tr("Firmware extraction unsuccessful"),
       tr("Some of the files needed to fully utilize TrackIR were not "
       "found! Please see the log for more details.")
     );

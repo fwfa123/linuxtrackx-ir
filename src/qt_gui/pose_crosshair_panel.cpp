@@ -43,7 +43,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
 
   leanWidget = new PoseCrosshairWidget(box);
   leanWidget->setTitle(tr("Lean"));
-  leanWidget->setEdgeLabels(tr("Left"), tr("Right"), tr("Forth"), tr("Back"));
+  leanWidget->setEdgeLabels(tr("Left"), tr("Right"), tr("Forward"), tr("Back"));
   leanWidget->setUnits(false, false);
   leanWidget->setInvertVertical(true);
   leanWidget->setDeadzoneStyle(PoseCrosshairWidget::SquareDeadzone);
