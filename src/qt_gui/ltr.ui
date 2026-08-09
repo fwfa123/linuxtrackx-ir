@@ -615,6 +615,96 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="AppearanceGroupBox">
+         <property name="title">
+          <string>Appearance</string>
+         </property>
+         <layout class="QVBoxLayout" name="appearanceGroupLayout">
+          <item>
+           <layout class="QHBoxLayout" name="appearanceSkinRow">
+            <item>
+             <widget class="QLabel" name="SkinLabel">
+              <property name="text">
+               <string>Appearance skin:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="SkinComboBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="accessibleName">
+               <string>Appearance skin selector</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SkinPreviewButton">
+              <property name="text">
+               <string>Preview</string>
+              </property>
+              <property name="toolTip">
+               <string>Apply the selected skin temporarily without saving</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SkinApplyButton">
+              <property name="text">
+               <string>Apply</string>
+              </property>
+              <property name="toolTip">
+               <string>Save and apply the selected skin</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SkinCancelButton">
+              <property name="text">
+               <string>Cancel</string>
+              </property>
+              <property name="toolTip">
+               <string>Restore the previously saved skin</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="appearanceFolderRow">
+            <item>
+             <widget class="QPushButton" name="OpenSkinsFolderButton">
+              <property name="text">
+               <string>Open Skins Folder</string>
+              </property>
+              <property name="toolTip">
+               <string>Open ~/.config/linuxtrack/skins/ in the file manager</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="appearanceFolderSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="LogsSupportGroupBox">
          <property name="title">
           <string>Logs &amp; Support</string>

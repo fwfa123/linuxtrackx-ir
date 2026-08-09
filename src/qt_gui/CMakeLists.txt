@@ -72,6 +72,7 @@ set(LTR_GUI_HEADERS
     wine_executable.h
     wine_prefix_resolver.h
     about_dialog.h
+    skin_manager.h
     ../mickey/hotkey.h
     ../mickey/hotkey_setup_dlg.h
     ../mickey/my_line_edit.h
@@ -165,6 +166,7 @@ set(LTR_GUI_SOURCES
     wine_executable.cpp
     wine_prefix_resolver.cpp
     about_dialog.cpp
+    skin_manager.cpp
     ../mickey/hotkey.cpp
     ../mickey/hotkey_setup_dlg.cpp
     ../mickey/my_line_edit.cpp

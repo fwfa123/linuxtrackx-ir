@@ -21,5 +21,7 @@
     <file>translations/ltr_gui_en.qm</file>
     <file>translations/ltr_gui_cs.qm</file>
     <file>translations/ltr_gui_de.qm</file>
+    <file>skins/default/skin.qss</file>
+    <file>skins/default/skin.ini</file>
   </qresource>
 </RCC>
