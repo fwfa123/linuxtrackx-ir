@@ -23,5 +23,6 @@
     <file>translations/ltr_gui_de.qm</file>
     <file>skins/default/skin.qss</file>
     <file>skins/default/skin.ini</file>
+    <file>skins/README.md</file>
   </qresource>
 </RCC>

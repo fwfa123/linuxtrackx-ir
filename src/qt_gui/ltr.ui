@@ -682,7 +682,7 @@
                <string>Open Skins Folder</string>
               </property>
               <property name="toolTip">
-               <string>Open ~/.config/linuxtrack/skins/ in the file manager</string>
+               <string>Open ~/.config/linuxtrack/skins/ (creates it and a README.md how-to if needed)</string>
               </property>
              </widget>
             </item>
@@ -700,6 +700,19 @@
              </spacer>
             </item>
            </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="SkinHelpHintLabel">
+            <property name="text">
+             <string>Custom skins: open the skins folder and read README.md for install steps (Qt Style Sheets).</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="accessibleName">
+             <string>Skin authoring hint</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </widget>

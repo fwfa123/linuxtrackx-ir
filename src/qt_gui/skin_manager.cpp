@@ -39,8 +39,28 @@ QString SkinManager::userSkinsDir(bool create) const
   QString dir = PrefProxy::getRsrcDirPath() + QStringLiteral("skins");
   if (create) {
     QDir().mkpath(dir);
+    ensureUserSkinsGuide();
   }
   return dir;
+}
+
+void SkinManager::ensureUserSkinsGuide() const
+{
+  const QString destDir = PrefProxy::getRsrcDirPath() + QStringLiteral("skins");
+  QDir().mkpath(destDir);
+  const QString dest = destDir + QStringLiteral("/README.md");
+  if (QFile::exists(dest)) {
+    return;
+  }
+  QFile src(QStringLiteral(":/ltr/skins/README.md"));
+  if (!src.open(QIODevice::ReadOnly)) {
+    return;
+  }
+  QFile out(dest);
+  if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    return;
+  }
+  out.write(src.readAll());
 }
 
 QString SkinManager::currentSkin() const
