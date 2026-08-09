@@ -21,6 +21,7 @@ public:
   static constexpr const char *kDefaultSkin = "default";
   static constexpr const char *kExampleSkin = "example";
   static constexpr const char *kF35Skin = "f35";
+  static constexpr const char *kXWingSkin = "xwing";
 
   static SkinManager &instance();
 

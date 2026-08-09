@@ -1438,6 +1438,8 @@ void LinuxtrackGui::initAppearanceSkinUi()
       label = tr("Example (Apache cockpit)");
     } else if (name == QLatin1String(SkinManager::kF35Skin)) {
       label = tr("Example (F-35 glass)");
+    } else if (name == QLatin1String(SkinManager::kXWingSkin)) {
+      label = tr("Example (X-wing cockpit)");
     }
     ui.SkinComboBox->addItem(label, name);
   }

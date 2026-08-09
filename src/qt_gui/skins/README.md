@@ -14,7 +14,7 @@ This file (and the `example/` starter skin) are created when you use **Open Skin
 
 ## Quick start
 
-1. Copy `example/` (Apache) or `f35/` (glass cockpit) to a new name, e.g. `my-skin/`.
+1. Copy `example/` (Apache), `f35/` (glass), or `xwing/` (Rebel fighter) to a new name, e.g. `my-skin/`.
 2. Edit `my-skin/skin.qss` (and optionally `skin.ini`). Files include NOTES comments.
 3. In the GUI, select **my-skin**, click **Preview**, then **Apply**.
 
@@ -26,8 +26,9 @@ This file (and the `example/` starter skin) are created when you use **Open Skin
 | Default | Sparse Fusion + palette-aware accent/warning tweaks |
 | Example (Apache) | Demo attack-heli HUD (dark olive / amber) — copy `example/` |
 | Example (F-35) | Demo glass cockpit (charcoal / cyan) — copy `f35/` |
+| Example (X-wing) | Demo starfighter panel (gunmetal / Rebel red / amber) — copy `xwing/` |
 
-A user folder named `default`, `example`, or `f35` overrides the matching bundled skin.
+A user folder named `default`, `example`, `f35`, or `xwing` overrides the matching bundled skin.
 
 ## `skin.ini` tokens (optional)
 
