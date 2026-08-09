@@ -45,9 +45,13 @@ public:
 
   /**
    * Path to ~/.config/linuxtrack/skins/.
-   * When create is true, the directory is created (e.g. Open Skins Folder).
+   * When create is true, the directory is created and a README.md guide is
+   * seeded there if missing (e.g. Open Skins Folder).
    */
   QString userSkinsDir(bool create = false) const;
+
+  /** Copy the bundled skins README into the user skins dir if absent. */
+  void ensureUserSkinsGuide() const;
 
   /** True for the built-in "native" choice (no QSS, platform style). */
   static bool isNativeSkin(const QString &name);
