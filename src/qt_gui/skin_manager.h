@@ -20,10 +20,11 @@ public:
   static constexpr const char *kNativeSkin = "native";
   static constexpr const char *kDefaultSkin = "default";
   static constexpr const char *kExampleSkin = "example";
+  static constexpr const char *kF35Skin = "f35";
 
   static SkinManager &instance();
 
-  /** "native", then "default", then "example", then other skins (sorted). */
+  /** "native", then "default", demo skins, then other skins (sorted). */
   QStringList availableSkins() const;
 
   /** Currently applied skin name (may be a preview). */

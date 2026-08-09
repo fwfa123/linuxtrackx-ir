@@ -22,6 +22,7 @@ constexpr auto kSkinKey = "appearance/skin";
 const QStringList kKnownBundledSkins = {
   QStringLiteral("default"),
   QStringLiteral("example"),
+  QStringLiteral("f35"),
 };
 
 constexpr auto kBundledReadme = ":/ltr/skins/README.md";
@@ -75,11 +76,7 @@ void SkinManager::ensureUserSkinsGuide() const
   copyResourceFile(QString::fromUtf8(kBundledReadme),
                    destDir + QStringLiteral("/README.md"));
 
-  // Refresh the official example starter from the bundle (safe: users should
-  // copy example/ to a new name before customizing).
-  const QString exampleDir =
-      destDir + QLatin1Char('/') + QLatin1String(SkinManager::kExampleSkin);
-  QDir().mkpath(exampleDir);
+  // Refresh official demo skins from the bundle (copy away before editing).
   auto forceCopy = [](const QString &resourcePath, const QString &destPath) {
     QFile src(resourcePath);
     if (!src.open(QIODevice::ReadOnly)) {
@@ -91,10 +88,18 @@ void SkinManager::ensureUserSkinsGuide() const
     }
     out.write(src.readAll());
   };
-  forceCopy(QStringLiteral(":/ltr/skins/example/skin.qss"),
-            exampleDir + QStringLiteral("/skin.qss"));
-  forceCopy(QStringLiteral(":/ltr/skins/example/skin.ini"),
-            exampleDir + QStringLiteral("/skin.ini"));
+  auto refreshDemoSkin = [&](const char *name) {
+    const QString dir = destDir + QLatin1Char('/') + QLatin1String(name);
+    QDir().mkpath(dir);
+    forceCopy(QStringLiteral(":/ltr/skins/") + QLatin1String(name) +
+                  QStringLiteral("/skin.qss"),
+              dir + QStringLiteral("/skin.qss"));
+    forceCopy(QStringLiteral(":/ltr/skins/") + QLatin1String(name) +
+                  QStringLiteral("/skin.ini"),
+              dir + QStringLiteral("/skin.ini"));
+  };
+  refreshDemoSkin(SkinManager::kExampleSkin);
+  refreshDemoSkin(SkinManager::kF35Skin);
 }
 
 QString SkinManager::currentSkin() const
@@ -220,12 +225,13 @@ QStringList SkinManager::availableSkins() const
     }
   }
 
-  // Keep native first, default second, example third, then locale-sorted remainder
+  // Keep native, default, example, f35 first; then locale-sorted remainder
   QStringList rest;
   for (const QString &name : names) {
     if (!isNativeSkin(name) &&
         name != QLatin1String(kDefaultSkin) &&
-        name != QLatin1String(kExampleSkin)) {
+        name != QLatin1String(kExampleSkin) &&
+        name != QLatin1String(kF35Skin)) {
       rest.append(name);
     }
   }
@@ -241,6 +247,9 @@ QStringList SkinManager::availableSkins() const
   }
   if (names.contains(QLatin1String(kExampleSkin))) {
     ordered.append(QString::fromUtf8(kExampleSkin));
+  }
+  if (names.contains(QLatin1String(kF35Skin))) {
+    ordered.append(QString::fromUtf8(kF35Skin));
   }
   ordered.append(rest);
   return ordered;
