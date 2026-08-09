@@ -704,7 +704,7 @@
           <item>
            <widget class="QLabel" name="SkinHelpHintLabel">
             <property name="text">
-             <string>Custom skins: open the skins folder, copy example/ (Apache cockpit demo) to a new name, edit NOTES in skin.qss / skin.ini, then Preview/Apply.</string>
+             <string>Custom skins: open the skins folder, copy example/ (Apache) or f35/ (glass) to a new name, edit NOTES in skin.qss / skin.ini, then Preview/Apply.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>
