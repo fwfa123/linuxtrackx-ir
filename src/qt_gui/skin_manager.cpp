@@ -27,24 +27,6 @@ const QStringList kKnownBundledSkins = {
 };
 
 constexpr auto kBundledReadme = ":/ltr/skins/README.md";
-
-static bool copyResourceFile(const QString &resourcePath, const QString &destPath)
-{
-  if (QFile::exists(destPath)) {
-    return true;
-  }
-  QFile src(resourcePath);
-  if (!src.open(QIODevice::ReadOnly)) {
-    return false;
-  }
-  QFileInfo fi(destPath);
-  QDir().mkpath(fi.absolutePath());
-  QFile out(destPath);
-  if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    return false;
-  }
-  return out.write(src.readAll()) >= 0;
-}
 }
 
 SkinManager &SkinManager::instance()
@@ -73,22 +55,23 @@ void SkinManager::ensureUserSkinsGuide() const
   const QString destDir = PrefProxy::getRsrcDirPath() + QStringLiteral("skins");
   QDir().mkpath(destDir);
 
-  // Seed README if missing (do not overwrite user edits)
-  copyResourceFile(QString::fromUtf8(kBundledReadme),
-                   destDir + QStringLiteral("/README.md"));
-
-  // Refresh official demo skins from the bundle (copy away before editing).
+  // Refresh README and official demo skins from the bundle.
   auto forceCopy = [](const QString &resourcePath, const QString &destPath) {
     QFile src(resourcePath);
     if (!src.open(QIODevice::ReadOnly)) {
       return;
     }
+    QFileInfo fi(destPath);
+    QDir().mkpath(fi.absolutePath());
     QFile out(destPath);
     if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
       return;
     }
     out.write(src.readAll());
   };
+  forceCopy(QString::fromUtf8(kBundledReadme),
+            destDir + QStringLiteral("/README.md"));
+
   auto refreshDemoSkin = [&](const char *name) {
     const QString dir = destDir + QLatin1Char('/') + QLatin1String(name);
     QDir().mkpath(dir);

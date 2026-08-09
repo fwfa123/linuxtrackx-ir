@@ -53,7 +53,7 @@ public:
    */
   QString userSkinsDir(bool create = false) const;
 
-  /** Copy the bundled skins README into the user skins dir if absent. */
+  /** Copy/refresh the skins README and demo skins into the user skins dir. */
   void ensureUserSkinsGuide() const;
 
   /** True for the built-in "native" choice (no QSS, platform style). */
