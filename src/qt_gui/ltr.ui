@@ -205,7 +205,7 @@
        <item>
         <widget class="QLabel" name="GamingPrereqHintLabel">
          <property name="styleSheet">
-          <string>font-weight: bold; color: #c0392b;</string>
+          <string>font-weight: bold; color: palette(highlight);</string>
          </property>
          <property name="text">
           <string>Install TrackIR firmware and MFC42 libraries above to enable Wine Bridge installation and prefix testing.</string>
@@ -831,7 +831,7 @@
        <item>
         <widget class="QLabel" name="AdvancedWarningLabel">
          <property name="styleSheet">
-          <string>font-weight: bold; color: #c0392b;</string>
+          <string>font-weight: bold; color: palette(highlight);</string>
          </property>
          <property name="text">
           <string>This tab is for special uses of Linuxtrack. Most users should use the Tracking Window for starting Linuxtrack.</string>
