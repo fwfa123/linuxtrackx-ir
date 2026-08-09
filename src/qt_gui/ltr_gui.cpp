@@ -1434,6 +1434,8 @@ void LinuxtrackGui::initAppearanceSkinUi()
       label = tr("System (native)");
     } else if (name == QLatin1String(SkinManager::kDefaultSkin)) {
       label = tr("Default");
+    } else if (name == QLatin1String(SkinManager::kExampleSkin)) {
+      label = tr("Example (starter)");
     }
     ui.SkinComboBox->addItem(label, name);
   }

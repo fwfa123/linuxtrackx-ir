@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QDirIterator>
 #include <QFile>
+#include <QFileInfo>
 #include <QMap>
 #include <QSettings>
 #include <QStyle>
@@ -20,7 +21,28 @@ constexpr auto kSkinKey = "appearance/skin";
 /** Bundled skins always advertised even if QRC dir listing fails. */
 const QStringList kKnownBundledSkins = {
   QStringLiteral("default"),
+  QStringLiteral("example"),
 };
+
+constexpr auto kBundledReadme = ":/ltr/skins/README.md";
+
+static bool copyResourceFile(const QString &resourcePath, const QString &destPath)
+{
+  if (QFile::exists(destPath)) {
+    return true;
+  }
+  QFile src(resourcePath);
+  if (!src.open(QIODevice::ReadOnly)) {
+    return false;
+  }
+  QFileInfo fi(destPath);
+  QDir().mkpath(fi.absolutePath());
+  QFile out(destPath);
+  if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    return false;
+  }
+  return out.write(src.readAll()) >= 0;
+}
 }
 
 SkinManager &SkinManager::instance()
@@ -48,19 +70,20 @@ void SkinManager::ensureUserSkinsGuide() const
 {
   const QString destDir = PrefProxy::getRsrcDirPath() + QStringLiteral("skins");
   QDir().mkpath(destDir);
-  const QString dest = destDir + QStringLiteral("/README.md");
-  if (QFile::exists(dest)) {
-    return;
+
+  // Seed README if missing (do not overwrite user edits)
+  copyResourceFile(QString::fromUtf8(kBundledReadme),
+                   destDir + QStringLiteral("/README.md"));
+
+  // Seed example starter skin if the folder is absent
+  const QString exampleDir =
+      destDir + QLatin1Char('/') + QLatin1String(SkinManager::kExampleSkin);
+  if (!QDir(exampleDir).exists()) {
+    copyResourceFile(QStringLiteral(":/ltr/skins/example/skin.qss"),
+                     exampleDir + QStringLiteral("/skin.qss"));
+    copyResourceFile(QStringLiteral(":/ltr/skins/example/skin.ini"),
+                     exampleDir + QStringLiteral("/skin.ini"));
   }
-  QFile src(QStringLiteral(":/ltr/skins/README.md"));
-  if (!src.open(QIODevice::ReadOnly)) {
-    return;
-  }
-  QFile out(dest);
-  if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
-    return;
-  }
-  out.write(src.readAll());
 }
 
 QString SkinManager::currentSkin() const
@@ -186,10 +209,12 @@ QStringList SkinManager::availableSkins() const
     }
   }
 
-  // Keep native first, default second, then locale-sorted remainder
+  // Keep native first, default second, example third, then locale-sorted remainder
   QStringList rest;
   for (const QString &name : names) {
-    if (!isNativeSkin(name) && name != QLatin1String(kDefaultSkin)) {
+    if (!isNativeSkin(name) &&
+        name != QLatin1String(kDefaultSkin) &&
+        name != QLatin1String(kExampleSkin)) {
       rest.append(name);
     }
   }
@@ -202,6 +227,9 @@ QStringList SkinManager::availableSkins() const
   ordered.append(QString::fromUtf8(kNativeSkin));
   if (names.contains(QLatin1String(kDefaultSkin))) {
     ordered.append(QString::fromUtf8(kDefaultSkin));
+  }
+  if (names.contains(QLatin1String(kExampleSkin))) {
+    ordered.append(QString::fromUtf8(kExampleSkin));
   }
   ordered.append(rest);
   return ordered;

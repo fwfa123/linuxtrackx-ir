@@ -19,10 +19,11 @@ class SkinManager
 public:
   static constexpr const char *kNativeSkin = "native";
   static constexpr const char *kDefaultSkin = "default";
+  static constexpr const char *kExampleSkin = "example";
 
   static SkinManager &instance();
 
-  /** "native", then "default", then other user/bundled skins (sorted). */
+  /** "native", then "default", then "example", then other skins (sorted). */
   QStringList availableSkins() const;
 
   /** Currently applied skin name (may be a preview). */

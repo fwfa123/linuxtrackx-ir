@@ -1,0 +1,76 @@
+/*
+ * =============================================================================
+ * EXAMPLE / STARTER SKIN — Linuxtrack X-IR
+ * =============================================================================
+ * NOTES for authors:
+ *
+ * 1. Easiest start: copy this whole folder:
+ *      ~/.config/linuxtrack/skins/example/   →   ~/.config/linuxtrack/skins/my-skin/
+ *    then edit the copy. Keep the folder name as the skin id shown in the combo.
+ *
+ * 2. Required file: skin.qss   Optional: skin.ini (for @token substitution)
+ *
+ * 3. In the GUI: System → Appearance → pick your skin → Preview → Apply
+ *
+ * 4. Prefer palette(...) so light/dark OS themes keep working.
+ *    Use @tokens from skin.ini only when you want a fixed accent palette.
+ *
+ * 5. Keep rules sparse. Over-styling every widget fights the desktop theme.
+ *
+ * 6. Qt Style Sheets: https://doc.qt.io/qt-6/stylesheet-reference.html
+ * =============================================================================
+ */
+
+/* --- Tooltips ---------------------------------------------------------------
+ * Uncomment to theme tooltips with tokens from skin.ini:
+ *
+ * QToolTip {
+ *   background-color: @primary_bg;
+ *   color: @primary_fg;
+ *   border: 1px solid @accent;
+ * }
+ */
+
+/* --- Default / primary buttons ---------------------------------------------
+ * palette(highlight) follows the OS accent. Or use @accent from skin.ini.
+ */
+QPushButton:default {
+  border: 1px solid palette(highlight);
+  /* border: 1px solid @accent; */
+}
+
+/* --- Tab pane (subtle) -----------------------------------------------------
+ * QTabWidget::pane {
+ *   border: 1px solid palette(mid);
+ * }
+ */
+
+/* --- Known object names in ltr_gui -----------------------------------------
+ * These match widgets in the main UI. Safe starting points for accents.
+ */
+QLabel#GamingPrereqHintLabel,
+QLabel#AdvancedWarningLabel {
+  font-weight: bold;
+  color: palette(highlight);
+  /* color: @warning; */
+}
+
+QLabel#label_system_info_title {
+  color: palette(highlight);
+  /* color: @accent; */
+}
+
+/* --- Group boxes / frames (optional examples) ------------------------------
+ * QGroupBox {
+ *   font-weight: bold;
+ *   border: 1px solid palette(mid);
+ *   margin-top: 0.6em;
+ *   padding-top: 0.4em;
+ * }
+ *
+ * QGroupBox::title {
+ *   subcontrol-origin: margin;
+ *   left: 8px;
+ *   padding: 0 4px;
+ * }
+ */

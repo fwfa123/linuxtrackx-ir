@@ -704,7 +704,7 @@
           <item>
            <widget class="QLabel" name="SkinHelpHintLabel">
             <property name="text">
-             <string>Custom skins: open the skins folder and read README.md for install steps (Qt Style Sheets).</string>
+             <string>Custom skins: open the skins folder, copy example/ to a new name, edit the NOTES in skin.qss, then Preview/Apply.</string>
             </property>
             <property name="wordWrap">
              <bool>true</bool>

@@ -10,7 +10,13 @@ Place custom skins in this folder. Each skin is a subdirectory:
 
 Then open **System → Appearance**, choose the skin, click **Preview**, then **Apply**.
 
-This file is created automatically when you use **Open Skins Folder**. Full authoring notes are below.
+This file (and the `example/` starter skin) are created when you use **Open Skins Folder**.
+
+## Quick start
+
+1. Copy `example/` to a new name, e.g. `my-skin/`.
+2. Edit `my-skin/skin.qss` (and optionally `skin.ini`). Files include NOTES comments.
+3. In the GUI, select **my-skin**, click **Preview**, then **Apply**.
 
 ## Built-in choices
 
@@ -18,8 +24,9 @@ This file is created automatically when you use **Open Skins Folder**. Full auth
 |-------------------|--------|
 | System (native) | Platform widget style, no stylesheet (default for new installs) |
 | Default | Sparse Fusion + palette-aware accent/warning tweaks |
+| Example | Starter skin with commented NOTES — copy it to make your own |
 
-A user folder named `default` overrides the bundled Default skin.
+A user folder named `default` or `example` overrides the matching bundled skin.
 
 ## `skin.ini` tokens (optional)
 
