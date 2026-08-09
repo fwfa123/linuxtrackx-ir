@@ -4,6 +4,7 @@
 
 #include <QtWidgets/QWidget>
 #include <QOpenGLWidget>
+#include <QPalette>
 #include <QImage>
 #include <QtCore/qglobal.h>
 #ifndef DARWIN
@@ -88,7 +89,6 @@ GLWidget::GLWidget(QWidget *parent)
      xTrans = 0;
      yTrans = 0;
      zTrans = 0;
-     trolltechPurple = QColor::fromCmykF(0.0, 0.0, 0.0, 0.0);
      
      connect(rt, SIGNAL(done()), this, SLOT(objectsRead()));
      rt->start();
@@ -172,7 +172,7 @@ GLWidget::GLWidget(QWidget *parent)
      if (!isValid()) {
        return;
      }
-     QColor bgColor = trolltechPurple.darker();
+     QColor bgColor = palette().color(QPalette::Base);
      glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), bgColor.alphaF());
      makeObjects();
      glShadeModel(GL_FLAT);
@@ -186,6 +186,8 @@ void GLWidget::paintGL()
      if (!isValid()) {
        return;
      }
+     QColor bgColor = palette().color(QPalette::Base);
+     glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), bgColor.alphaF());
      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
      glLoadIdentity();
      

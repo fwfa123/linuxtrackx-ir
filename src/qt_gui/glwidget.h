@@ -56,8 +56,6 @@ class ReaderThread : public QThread
      float yTrans;
      float zTrans;
      
-     QColor trolltechPurple;
-     
      ReaderThread *rt;
      bool contextUsable_;
  };
