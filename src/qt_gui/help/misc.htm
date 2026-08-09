@@ -11,7 +11,7 @@
 <table>
 <tr>
 <td>
-<img src="system.png" alt="System tab showing System Information, Logs &amp; Support, Troubleshooting (including Video_on Delay Timing and Do usbreset before start tracking), and Utilities.">
+<img src="system.png" alt="System tab showing System Information, Logs &amp; Support, Troubleshooting (including Video_on Delay Timing and Reset USB device before starting tracking), and Utilities.">
 </td>
 </tr>
 </table>
@@ -70,7 +70,7 @@
 <h3>TrackIR Initialization</h3>
 <ul>
 <li><strong><a href="dev_setup.htm#Video_on_Delay">Video_on Delay Timing</a>:</strong> On the <strong>System</strong> tab under <strong>Troubleshooting</strong>, choose <strong>Default</strong> (no delay) for most TrackIR devices. Select <strong>Manual</strong> to expose a microseconds spinbox if camera LEDs fail to activate properly after Start. See the <a href="dev_setup.htm#Video_on_Delay">TrackIR setup guide</a> for screenshots and suggested values.</li>
-<li><strong>Do usbreset before start tracking:</strong> Opt-in checkbox (unchecked by default). Enable this if your TrackIR camera stays dark after pressing <strong>Start</strong>, or the log shows repeated <strong>"Data receive request timed out"</strong> messages (GitLab issue #51, especially TrackIR 5 v2, USB ID <code>131d:0158</code>). LinuxTrack issues a USB bus reset before TrackIR initialization — the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually. Check the box to enable; uncheck to disable. This addresses a wedged USB state and is <em>not</em> the same fix as Video_on Delay timing (LED activation); you may need one or both depending on your symptoms.</li>
+<li><strong>Reset USB device before starting tracking:</strong> Opt-in checkbox (unchecked by default). Enable this if your TrackIR camera stays dark after pressing <strong>Start</strong>, or the log shows repeated <strong>"Data receive request timed out"</strong> messages (GitLab issue #51, especially TrackIR 5 v2, USB ID <code>131d:0158</code>). LinuxTrack issues a USB bus reset before TrackIR initialization — the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually. Check the box to enable; uncheck to disable. This addresses a wedged USB state and is <em>not</em> the same fix as Video_on Delay timing (LED activation); you may need one or both depending on your symptoms.</li>
 </ul>
 
 <h2>Utilities</h2>
@@ -118,7 +118,7 @@
 <li>Use legacy computation methods if experiencing issues with newer algorithms</li>
 <li>Lower <strong>Tracking rate (FPS)</strong> on the Tracking setup tab if you want fewer pose/preview updates and less CPU use</li>
 <li>Disable preview windows if you don't need them</li>
-<li>On the <strong>System</strong> tab, enable <strong>Do usbreset before start tracking</strong> if the TrackIR camera preview stays dark after Start (see Troubleshooting above)</li>
+<li>On the <strong>System</strong> tab, enable <strong>Reset USB device before starting tracking</strong> if the TrackIR camera preview stays dark after Start (see Troubleshooting above)</li>
 </ul>
 
 <h2>Log Files</h2>

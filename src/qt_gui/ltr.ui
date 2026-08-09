@@ -879,7 +879,7 @@
           <item row="4" column="0" colspan="2">
            <widget class="QCheckBox" name="UsbResetCheck">
             <property name="text">
-             <string>Do usbreset before start tracking</string>
+             <string>Reset USB device before starting tracking</string>
             </property>
             <property name="toolTip">
              <string>Try this if your camera remains dark after pressing Start. Resets the TrackIR USB device before tracking (GitLab #51).</string>
