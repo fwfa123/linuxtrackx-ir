@@ -23,6 +23,7 @@ const QStringList kKnownBundledSkins = {
   QStringLiteral("default"),
   QStringLiteral("example"),
   QStringLiteral("f35"),
+  QStringLiteral("xwing"),
 };
 
 constexpr auto kBundledReadme = ":/ltr/skins/README.md";
@@ -100,6 +101,7 @@ void SkinManager::ensureUserSkinsGuide() const
   };
   refreshDemoSkin(SkinManager::kExampleSkin);
   refreshDemoSkin(SkinManager::kF35Skin);
+  refreshDemoSkin(SkinManager::kXWingSkin);
 }
 
 QString SkinManager::currentSkin() const
@@ -225,13 +227,14 @@ QStringList SkinManager::availableSkins() const
     }
   }
 
-  // Keep native, default, example, f35 first; then locale-sorted remainder
+  // Keep native, default, demos first; then locale-sorted remainder
   QStringList rest;
   for (const QString &name : names) {
     if (!isNativeSkin(name) &&
         name != QLatin1String(kDefaultSkin) &&
         name != QLatin1String(kExampleSkin) &&
-        name != QLatin1String(kF35Skin)) {
+        name != QLatin1String(kF35Skin) &&
+        name != QLatin1String(kXWingSkin)) {
       rest.append(name);
     }
   }
@@ -250,6 +253,9 @@ QStringList SkinManager::availableSkins() const
   }
   if (names.contains(QLatin1String(kF35Skin))) {
     ordered.append(QString::fromUtf8(kF35Skin));
+  }
+  if (names.contains(QLatin1String(kXWingSkin))) {
+    ordered.append(QString::fromUtf8(kXWingSkin));
   }
   ordered.append(rest);
   return ordered;

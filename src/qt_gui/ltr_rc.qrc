@@ -27,6 +27,8 @@
     <file>skins/example/skin.ini</file>
     <file>skins/f35/skin.qss</file>
     <file>skins/f35/skin.ini</file>
+    <file>skins/xwing/skin.qss</file>
+    <file>skins/xwing/skin.ini</file>
     <file>skins/README.md</file>
   </qresource>
 </RCC>
