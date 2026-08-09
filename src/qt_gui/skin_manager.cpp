@@ -75,15 +75,26 @@ void SkinManager::ensureUserSkinsGuide() const
   copyResourceFile(QString::fromUtf8(kBundledReadme),
                    destDir + QStringLiteral("/README.md"));
 
-  // Seed example starter skin if the folder is absent
+  // Refresh the official example starter from the bundle (safe: users should
+  // copy example/ to a new name before customizing).
   const QString exampleDir =
       destDir + QLatin1Char('/') + QLatin1String(SkinManager::kExampleSkin);
-  if (!QDir(exampleDir).exists()) {
-    copyResourceFile(QStringLiteral(":/ltr/skins/example/skin.qss"),
-                     exampleDir + QStringLiteral("/skin.qss"));
-    copyResourceFile(QStringLiteral(":/ltr/skins/example/skin.ini"),
-                     exampleDir + QStringLiteral("/skin.ini"));
-  }
+  QDir().mkpath(exampleDir);
+  auto forceCopy = [](const QString &resourcePath, const QString &destPath) {
+    QFile src(resourcePath);
+    if (!src.open(QIODevice::ReadOnly)) {
+      return;
+    }
+    QFile out(destPath);
+    if (!out.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+      return;
+    }
+    out.write(src.readAll());
+  };
+  forceCopy(QStringLiteral(":/ltr/skins/example/skin.qss"),
+            exampleDir + QStringLiteral("/skin.qss"));
+  forceCopy(QStringLiteral(":/ltr/skins/example/skin.ini"),
+            exampleDir + QStringLiteral("/skin.ini"));
 }
 
 QString SkinManager::currentSkin() const

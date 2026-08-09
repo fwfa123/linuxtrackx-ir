@@ -1435,7 +1435,7 @@ void LinuxtrackGui::initAppearanceSkinUi()
     } else if (name == QLatin1String(SkinManager::kDefaultSkin)) {
       label = tr("Default");
     } else if (name == QLatin1String(SkinManager::kExampleSkin)) {
-      label = tr("Example (starter)");
+      label = tr("Example (Apache cockpit)");
     }
     ui.SkinComboBox->addItem(label, name);
   }
