@@ -24,7 +24,7 @@ This file (and the `example/` starter skin) are created when you use **Open Skin
 |-------------------|--------|
 | System (native) | Platform widget style, no stylesheet (default for new installs) |
 | Default | Sparse Fusion + palette-aware accent/warning tweaks |
-| Example | Starter skin with commented NOTES — copy it to make your own |
+| Example | Demo “Apache cockpit” look (amber HUD on dark olive) — copy it to make your own |
 
 A user folder named `default` or `example` overrides the matching bundled skin.
 
