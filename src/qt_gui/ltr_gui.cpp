@@ -1420,13 +1420,26 @@ void LinuxtrackGui::initAppearanceSkinUi()
 {
   SkinManager &skins = SkinManager::instance();
   const QStringList names = skins.availableSkins();
+  // Prefer keeping the combo selection across refreshes when it is still valid
+  const QString previousSelection = ui.SkinComboBox->currentData().toString();
+  QString selectId = previousSelection;
+  if (selectId.isEmpty() || !names.contains(selectId)) {
+    selectId = skins.currentSkin();
+  }
   ui.SkinComboBox->blockSignals(true);
   ui.SkinComboBox->clear();
-  ui.SkinComboBox->addItems(names);
-  const QString current = skins.savedSkin();
-  int idx = ui.SkinComboBox->findText(current);
+  for (const QString &name : names) {
+    QString label = name;
+    if (SkinManager::isNativeSkin(name)) {
+      label = tr("System (native)");
+    } else if (name == QLatin1String(SkinManager::kDefaultSkin)) {
+      label = tr("Default");
+    }
+    ui.SkinComboBox->addItem(label, name);
+  }
+  int idx = ui.SkinComboBox->findData(selectId);
   if (idx < 0) {
-    idx = ui.SkinComboBox->findText(QStringLiteral("default"));
+    idx = ui.SkinComboBox->findData(QString::fromUtf8(SkinManager::kNativeSkin));
   }
   if (idx >= 0) {
     ui.SkinComboBox->setCurrentIndex(idx);
@@ -1436,7 +1449,7 @@ void LinuxtrackGui::initAppearanceSkinUi()
 
 void LinuxtrackGui::on_SkinPreviewButton_pressed()
 {
-  const QString name = ui.SkinComboBox->currentText();
+  const QString name = ui.SkinComboBox->currentData().toString();
   if (name.isEmpty()) {
     return;
   }
@@ -1448,7 +1461,7 @@ void LinuxtrackGui::on_SkinPreviewButton_pressed()
 
 void LinuxtrackGui::on_SkinApplyButton_pressed()
 {
-  const QString name = ui.SkinComboBox->currentText();
+  const QString name = ui.SkinComboBox->currentData().toString();
   if (name.isEmpty()) {
     return;
   }
@@ -1460,21 +1473,17 @@ void LinuxtrackGui::on_SkinApplyButton_pressed()
 
 void LinuxtrackGui::on_SkinCancelButton_pressed()
 {
-  SkinManager &skins = SkinManager::instance();
-  skins.revert();
-  const QString saved = skins.savedSkin();
-  const int idx = ui.SkinComboBox->findText(saved);
-  if (idx >= 0) {
-    ui.SkinComboBox->blockSignals(true);
-    ui.SkinComboBox->setCurrentIndex(idx);
-    ui.SkinComboBox->blockSignals(false);
-  }
+  SkinManager::instance().revert();
+  // Force combo back to the saved skin (drop in-progress selection)
+  ui.SkinComboBox->setCurrentIndex(-1);
+  initAppearanceSkinUi();
 }
 
 void LinuxtrackGui::on_OpenSkinsFolderButton_pressed()
 {
-  const QString dir = SkinManager::instance().userSkinsDir();
+  const QString dir = SkinManager::instance().userSkinsDir(true);
   QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+  initAppearanceSkinUi(); // pick up skins already present
 }
 
 void LinuxtrackGui::on_button_copy_system_info_pressed()

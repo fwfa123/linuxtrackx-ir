@@ -7,30 +7,34 @@
 /**
  * Loads and applies Qt Style Sheets (skins) for ltr_gui.
  *
- * Search order for a skin named <name>:
+ * Special skin name "native": clear stylesheet and keep the platform style.
+ * Other skins search order:
  *   1. ~/.config/linuxtrack/skins/<name>/skin.qss  (user override)
  *   2. :/ltr/skins/<name>/skin.qss                 (bundled)
  *
- * Preference is stored in QSettings("linuxtrack","gui") under appearance/skin.
+ * Preference is stored in QSettings("linuxtrack","ltr_gui") under appearance/skin.
  */
 class SkinManager
 {
 public:
+  static constexpr const char *kNativeSkin = "native";
+  static constexpr const char *kDefaultSkin = "default";
+
   static SkinManager &instance();
 
-  /** Merge user + bundled skin names (sorted, "default" first when present). */
+  /** "native", then "default", then other user/bundled skins (sorted). */
   QStringList availableSkins() const;
 
   /** Currently applied skin name (may be a preview). */
   QString currentSkin() const;
 
-  /** Skin name persisted in QSettings (empty means "default"). */
+  /** Skin name persisted in QSettings (empty means "native"). */
   QString savedSkin() const;
 
-  /** Apply a skin without writing QSettings. Returns false if QSS not found. */
+  /** Apply a skin without writing QSettings. */
   bool load(const QString &name);
 
-  /** Load and apply the saved skin (or "default"). */
+  /** Load and apply the saved skin. */
   bool loadSaved();
 
   /** Persist name to QSettings and apply it. */
@@ -39,20 +43,32 @@ public:
   /** Revert the applied stylesheet to the saved skin. */
   bool revert();
 
-  /** Absolute path to ~/.config/linuxtrack/skins/ (created if missing). */
-  QString userSkinsDir() const;
+  /**
+   * Path to ~/.config/linuxtrack/skins/.
+   * When create is true, the directory is created (e.g. Open Skins Folder).
+   */
+  QString userSkinsDir(bool create = false) const;
+
+  /** True for the built-in "native" choice (no QSS, platform style). */
+  static bool isNativeSkin(const QString &name);
 
 private:
   SkinManager() = default;
   SkinManager(const SkinManager &) = delete;
   SkinManager &operator=(const SkinManager &) = delete;
 
+  void capturePlatformStyle();
+  void applyPlatformStyle();
+  void applyFusionStyle();
   QString resolveSkinDir(const QString &name) const;
-  QString resolveSkinQssPath(const QString &name) const;
   QString readAndSubstitute(const QString &qssPath, const QString &skinDir) const;
   bool applyFromName(const QString &name);
+  QStringList bundledSkinNames() const;
+  QStringList userSkinNames() const;
 
   QString current_;
+  QString platformStyleName_;
+  bool capturedPlatformStyle_ = false;
 };
 
 #endif

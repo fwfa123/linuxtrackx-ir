@@ -2,17 +2,25 @@
 
 Custom skins let you restyle `ltr_gui` with Qt Style Sheets (QSS).
 
-## Install a skin
+## Built-in choices
+
+| Skin | Effect |
+|------|--------|
+| `native` | Platform widget style, no stylesheet (default for new installs) |
+| `default` | Sparse Fusion + palette-aware accent/warning tweaks |
+
+## Install a custom skin
 
 1. Create a folder under `~/.config/linuxtrack/skins/<skin-name>/`.
 2. Add `skin.qss` (required) and optionally `skin.ini` (color tokens).
 3. Open **System → Appearance**, pick the skin, click **Preview**, then **Apply**.
 
-Bundled skins (for example `default`) are shipped inside the application and can be overridden by a user folder with the same name.
+A user folder with the same name as a bundled skin overrides the bundled copy.
 
 ## `skin.ini` tokens
 
-Optional companion file with a `[colors]` section. Values replace `@token` placeholders in `skin.qss` before the stylesheet is applied.
+Optional companion file with a `[colors]` section. Values replace `@token`
+placeholders in `skin.qss` before the stylesheet is applied.
 
 ```ini
 [colors]
@@ -23,17 +31,12 @@ warning    = #f38ba8
 muted      = #a6adc8
 ```
 
-Supported tokens in the default skin:
+Use `@accent`, `@warning`, etc. in your QSS. Longer token names are substituted
+before shorter ones (so `@primary_bg` wins over `@primary` if both exist).
 
-| Token | Typical use |
-|-------|-------------|
-| `@primary_bg` | Tooltip / panel backgrounds |
-| `@primary_fg` | Primary text on those panels |
-| `@accent` | Highlights, default-button border, section titles |
-| `@warning` | Warning / prerequisite hint labels |
-| `@muted` | Secondary / diagnostic text (available for custom QSS) |
-
-Longer token names are substituted before shorter ones (so `@primary_bg` wins over `@primary` if both exist).
+The bundled `default` skin uses Qt `palette(...)` instead of fixed hex colors so
+OS light/dark themes keep working. Prefer that approach unless you are shipping
+an intentionally fixed look.
 
 ## Safe QSS selectors
 
@@ -41,10 +44,12 @@ Prefer sparse rules on top of Fusion + the system `QPalette`:
 
 - Global widget types: `QToolTip`, `QPushButton:default`, `QTabWidget::pane`
 - Object names for one-off widgets: `QLabel#GamingPrereqHintLabel`
-- Avoid hardcoding every widget color; leave most chrome to the palette so dark/light OS themes still work
+- Prefer `palette(highlight)`, `palette(base)`, `palette(text)` over hex
+- Avoid painting every widget; leave most chrome to the palette
 
 ## Tips
 
 - Click **Cancel** to restore the last **Apply**’d skin.
+- **Open Skins Folder** creates `~/.config/linuxtrack/skins/` if needed.
 - Keep a backup of working skins before experimenting.
-- If a skin fails to load, the UI falls back to an empty stylesheet and the saved preference is unchanged until you successfully **Apply** again.
+- Preference is stored in `~/.config/linuxtrack/ltr_gui.conf` under `appearance/skin`.
