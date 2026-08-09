@@ -1,7 +1,10 @@
 #include <QApplication>
+#include <QLocale>
+#include <QStyleFactory>
 #include <QTranslator>
 
 #include "ltr_gui.h"
+#include "skin_manager.h"
 #include <utils.h>
 #include <locale.h>
 #include <stdlib.h>
@@ -26,6 +29,12 @@ static void catch_sigpipe(int sig)
      setenv("LC_ALL", "C", 1);
      setlocale(LC_ALL, "C");
      QApplication app(argc, argv);
+
+     // Fusion gives QSS a consistent baseline across desktop environments
+     if (QStyleFactory::keys().contains(QStringLiteral("Fusion"))) {
+         QApplication::setStyle(QStringLiteral("Fusion"));
+     }
+     SkinManager::instance().loadSaved();
 
      // Load UI translations if available (embedded in resources)
      QTranslator appTranslator;

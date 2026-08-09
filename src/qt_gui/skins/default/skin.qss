@@ -1,0 +1,30 @@
+/*
+ * Linuxtrack X-IR — default skin
+ *
+ * Tokens from skin.ini (substituted before apply):
+ *   @primary_bg  @primary_fg  @accent  @warning  @muted
+ *
+ * Leave selectors sparse so the Fusion style + system palette remain the base.
+ */
+
+QToolTip {
+  background-color: @primary_bg;
+  color: @primary_fg;
+  border: 1px solid @accent;
+}
+
+QPushButton:default {
+  border: 1px solid @accent;
+}
+
+/* Warning / hint labels that opt into the "warning" objectName */
+QLabel#warning,
+QLabel#GamingPrereqHintLabel,
+QLabel#AdvancedWarningLabel {
+  font-weight: bold;
+  color: @warning;
+}
+
+QLabel#label_system_info_title {
+  color: @accent;
+}
