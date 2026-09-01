@@ -55,15 +55,15 @@ Because this source repository is not named `homebrew-*`, add it as a tap with
 its explicit Git URL:
 
 ```sh
-brew tap wilmai/linuxtrackx-ir https://github.com/wilmai/linuxtrackx-ir.git
-brew install wilmai/linuxtrackx-ir/linuxtrackx-ir
+brew tap linuxtrackx-ir https://gitlab.com/fwfa123/linuxtrackx-ir.git
+brew install linuxtrackx-ir/linuxtrackx-ir
 ```
 
 The formula pins normal installs to the current `main` revision. To build the
 latest commit from that branch instead, use:
 
 ```sh
-brew install --HEAD wilmai/linuxtrackx-ir/linuxtrackx-ir
+brew install --HEAD linuxtrackx-ir/linuxtrackx-ir
 ```
 
 After installation, run `ltr_gui` for the GUI or `ltr_server1` for the

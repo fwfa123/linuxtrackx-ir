@@ -1,13 +1,13 @@
 class LinuxtrackXIr < Formula
   desc "Head-tracking client and TrackIR driver for macOS"
-  homepage "https://github.com/wilmai/linuxtrackx-ir"
-  url "https://github.com/wilmai/linuxtrackx-ir.git",
+  homepage "https://gitlab.com/fwfa123/linuxtrackx-ir"
+  url "https://gitlab.com/fwfa123/linuxtrackx-ir.git",
       using: :git,
-      revision: "e92345481509fa825ddc42c119b854d9fe636b8d"
+      revision: "<update this on release>"
   version "2.2.0"
   license "MIT"
   revision 1
-  head "https://github.com/wilmai/linuxtrackx-ir.git", branch: "main"
+  head "https://gitlab.com/fwfa123/linuxtrackx-ir.git", branch: "main"
 
   depends_on "bison" => :build
   depends_on "cmake" => :build
