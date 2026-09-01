@@ -1598,6 +1598,12 @@ QString LinuxtrackGui::getMemoryInfo()
 QString LinuxtrackGui::getGraphicsInfo()
 {
     QString info = QStringLiteral("=== Graphics ===\n");
+
+#ifdef DARWIN
+    // lspci and glxinfo are Linux/X11 diagnostics, not macOS runtime dependencies.
+    info += QStringLiteral("Graphics information: unavailable on macOS\n\n");
+    return info;
+#endif
     
     // Get graphics information from system commands instead of OpenGL context
     // This is safer and doesn't require an active OpenGL context

@@ -4,6 +4,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(LinuxTrack VERSION 2.2.0 LANGUAGES C CXX)
 
+if(APPLE)
+    enable_language(OBJCXX)
+endif()
+
 # Set default installation prefix to /opt (matching Autotools)
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "/opt" CACHE PATH "Installation prefix" FORCE)
@@ -34,6 +38,8 @@ option(DISABLE_WIIMOTE "Force-disable Wiimote even if libcwiid is found" OFF)
 option(ENABLE_XPLANE "Enable X-Plane plugin" OFF)
 option(ENABLE_FACE_TRACKER "Enable face tracker (requires OpenCV and webcam support)" OFF)
 
+option(ENABLE_GUI "Build the Qt GUI" ON)
+
 # Path options
 set(XPLANE_SDK_PATH "/opt/xplane-sdk/CHeaders" CACHE PATH "Path to X-Plane SDK")
 set(LIB32DIR "lib32" CACHE STRING "32-bit library directory (usually needed only on amd64 arch)")
@@ -62,9 +68,15 @@ else()
     message(STATUS "AddressSanitizer: disabled (ENABLE_ASAN=OFF)")
 endif()
 
-# Security flags (matching configure.ac)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1")
+# Security flags (matching configure.ac on Linux).  Apple Clang does not
+# implement GCC's --param option.
+if(APPLE)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector -D_FORTIFY_SOURCE=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fstack-protector -D_FORTIFY_SOURCE=1")
+else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --param ssp-buffer-size=4 -fstack-protector -D_FORTIFY_SOURCE=1")
+endif()
 
 # PIE support
 if(ENABLE_PIE)
@@ -80,9 +92,11 @@ endif()
 if(APPLE)
     set(DARWIN TRUE)
     add_definitions(-DDARWIN)
+    set(DARWIN_DEFINE "#define DARWIN 1")
     set(SYSFLAGS "-DIBM=0 -DAPL=1 -DLIN=0")
 else()
     set(DARWIN FALSE)
+    set(DARWIN_DEFINE "/* #undef DARWIN */")
     set(SYSFLAGS "-DIBM=0 -DAPL=0 -DLIN=1")
 endif()
 
@@ -93,6 +107,9 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "i[3456]86")
     set(X64 FALSE)
     set(WITH_64_BIT FALSE)
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+    set(X64 TRUE)
+    set(WITH_64_BIT TRUE)
 else()
     message(FATAL_ERROR "Unsupported CPU type: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
@@ -103,7 +120,8 @@ find_program(FLEX_EXECUTABLE flex REQUIRED)
 
 # Required libraries
 find_library(MATH_LIBRARY m REQUIRED)
-find_library(PTHREAD_LIBRARY pthread REQUIRED)
+find_package(Threads REQUIRED)
+set(PTHREAD_LIBRARY Threads::Threads)
 
 # pkg-config for library detection
 find_package(PkgConfig REQUIRED)
@@ -115,9 +133,27 @@ include(CheckLibraryExists)
 include(CheckCSourceCompiles)
 
 # Required libraries via pkg-config
-pkg_check_modules(MXML REQUIRED mxml)
 pkg_check_modules(ZLIB REQUIRED zlib)
-pkg_check_modules(USB REQUIRED libusb-1.0)
+if(APPLE)
+    pkg_check_modules(MXML mxml4)
+    if(NOT MXML_FOUND)
+        pkg_check_modules(MXML mxml)
+    endif()
+    if(NOT MXML_FOUND)
+        message(STATUS "Mini-XML not found; ltr_extractor will not be built")
+    endif()
+else()
+    pkg_check_modules(MXML REQUIRED mxml)
+endif()
+if(APPLE)
+    # TrackIR uses the native IOUSBHost backend on macOS.  Do not require or
+    # link libusb there; the Linux backend remains available on non-Apple
+    # platforms below.
+    set(USB_FOUND TRUE)
+    set(USB_LIBRARIES "")
+else()
+    pkg_check_modules(USB REQUIRED libusb-1.0)
+endif()
 
 # Optional libraries
 pkg_check_modules(CWIID cwiid)
@@ -235,22 +271,26 @@ else()
 endif()
 
 # Qt6 detection
-# Require Qt6.2 or higher (Qt6.5 LTS recommended for stability and best compatibility)
-# Note: OpenGLWidgets requires OpenGL as a dependency
-# Qt6.2+ requires C++17 (already set above)
-# The fixes in this codebase are compatible with Qt6.2+, but Qt6.5 is recommended
-find_package(Qt6 6.2 COMPONENTS Core Widgets OpenGL OpenGLWidgets REQUIRED)
-find_package(Qt6 QUIET COMPONENTS Concurrent Network Sql)
+if(ENABLE_GUI)
+    # Require Qt6.2 or higher (Qt6.5 LTS recommended for stability and best compatibility)
+    # Note: OpenGLWidgets requires OpenGL as a dependency
+    # Qt6.2+ requires C++17 (already set above)
+    # The fixes in this codebase are compatible with Qt6.2+, but Qt6.5 is recommended
+    find_package(Qt6 6.2 COMPONENTS Core Widgets OpenGL OpenGLWidgets REQUIRED)
+    find_package(Qt6 QUIET COMPONENTS Concurrent Network Sql)
 
-# Get Qt6 version and provide compatibility information
-if(Qt6Core_VERSION)
-    if(Qt6Core_VERSION VERSION_LESS "6.5.0")
-        message(STATUS "Qt6 version: ${Qt6Core_VERSION} (Qt6.5+ recommended for best compatibility)")
+    # Get Qt6 version and provide compatibility information
+    if(Qt6Core_VERSION)
+        if(Qt6Core_VERSION VERSION_LESS "6.5.0")
+            message(STATUS "Qt6 version: ${Qt6Core_VERSION} (Qt6.5+ recommended for best compatibility)")
+        else()
+            message(STATUS "Qt6 version: ${Qt6Core_VERSION} (Qt6.5 or higher compatibility confirmed)")
+        endif()
     else()
-        message(STATUS "Qt6 version: ${Qt6Core_VERSION} (Qt6.5 or higher compatibility confirmed)")
+        message(WARNING "Qt6 version could not be determined")
     endif()
 else()
-    message(WARNING "Qt6 version could not be determined")
+    message(STATUS "Qt6 GUI: disabled (ENABLE_GUI=OFF)")
 endif()
 
 # Wine bridge detection (MinGW-w64 cross-compilers only; no NSIS installer)
@@ -297,7 +337,7 @@ if(ENABLE_XPLANE)
 endif()
 
 # 32-bit library support
-if(X64 AND ENABLE_LTR_32LIB_ON_X64)
+if(X64 AND NOT APPLE AND ENABLE_LTR_32LIB_ON_X64)
     # Probe with -m32 compile, not header file presence alone: on Debian/Ubuntu
     # amd64, /usr/include/stdlib.h exists without libc6-dev-i386 and would false-positive.
     set(_ltr_saved_required_flags "${CMAKE_REQUIRED_FLAGS}")
@@ -346,7 +386,8 @@ else()
     set(TRACKIR_SUPPORT "/* #undef TRACKIR_SUPPORT */")
 endif()
 
-# Use separate variable to avoid overwriting boolean WIIMOTE_SUPPORT used in conditions
+# Use separate variables to avoid overwriting booleans used in conditions
+set(MICKEY_SUPPORT_BOOL ${MICKEY_SUPPORT})
 if(WIIMOTE_SUPPORT)
     set(WIIMOTE_SUPPORT_DEFINE "#define WIIMOTE_SUPPORT 1")
 else()
@@ -427,6 +468,7 @@ configure_file(
 set(WEBCAM_SUPPORT ${WEBCAM_SUPPORT_BOOL})
 set(WIIMOTE_SUPPORT ${WIIMOTE_SUPPORT_BOOL})
 set(FACE_TRACKER_SUPPORT ${FACE_TRACKER_SUPPORT_BOOL})
+set(MICKEY_SUPPORT ${MICKEY_SUPPORT_BOOL})
 
 # Set library path define
 set(LIB_PATH "${CMAKE_INSTALL_PREFIX}/lib/linuxtrack")
@@ -478,4 +520,3 @@ message(STATUS "Wine bridge: ${WINE_PLUGIN}")
 message(STATUS "OSC support: ${OSC_SUPPORT}")
 message(STATUS "PIE support for native builds: ${ENABLE_PIE}")
 message(STATUS "===============================================================")
-

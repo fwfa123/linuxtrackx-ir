@@ -19,6 +19,7 @@ CMakeFiles/
 cmake_install.cmake
 install_manifest.txt
 Makefile
+!src/native_extractor/Makefile
 *.cmake
 !CMakeLists.txt
 !*.cmake.in
@@ -59,6 +60,7 @@ ltr_gui_qt5_standalone_debug
 ltr_server
 ltr_server1
 ltr_extractor
+src/native_extractor/ltr_installer_extractor
 ltr_pipe
 ltr_recenter
 ltr_udp
@@ -279,4 +281,3 @@ coverage/
 
 # Downloaded AppImage helper tools
 scripts/appimage/*-x86_64.AppImage
-

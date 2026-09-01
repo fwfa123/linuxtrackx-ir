@@ -20,18 +20,32 @@ shortcut::shortcut()
 
 shortcut::~shortcut()
 {
+#ifndef DARWIN
   unsetShortcut(this);
+#endif
 }
 
 bool shortcut::setShortcut(const QKeySequence &s)
 {
   //printf("Setting shortcut!\n");
+#ifdef DARWIN
+  /* The historical implementation uses X11 grabs on Linux.  macOS needs a
+   * native global-hotkey backend; do not silently claim that registration
+   * succeeded until one is available. */
+  (void)s;
+  return false;
+#else
   return setShortCut(s, this);
+#endif
 }
 
 bool shortcut::resetShortcut()
 {
+#ifdef DARWIN
+  return true;
+#else
   return unsetShortcut(this);
+#endif
 }
 
 void shortcut::activate(bool pressed)
