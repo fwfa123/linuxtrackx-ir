@@ -362,12 +362,32 @@ add_executable(ltr_extractor
     game_data.c game_data.h
     extract.c extract.h
     digest.c digest.h
+    native_extractor/native_installer.c native_extractor/native_installer.h
+    native_extractor/cfb.c native_extractor/cfb.h
+    native_extractor/sha256.c native_extractor/sha256.h
+    native_extractor/third_party/libmspack/system.c
+    native_extractor/third_party/libmspack/cabd.c
+    native_extractor/third_party/libmspack/lzxd.c
+    native_extractor/third_party/libmspack/mszipd.c
+    native_extractor/third_party/libmspack/qtmd.c
+)
+
+target_include_directories(ltr_extractor PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/native_extractor
+    ${CMAKE_CURRENT_SOURCE_DIR}/native_extractor/third_party/libmspack
+)
+
+target_compile_definitions(ltr_extractor PRIVATE
+    _FILE_OFFSET_BITS=64
+    _POSIX_C_SOURCE=200809L
+    HAVE_FSEEKO=1
 )
 
 target_link_libraries(ltr_extractor
     linuxtrack
     ltr
     ${MXML_LIBRARIES}
+    ${ZLIB_LIBRARIES}
 )
 
 # Set RPATH so ltr_extractor can find liblinuxtrack.so.0 at runtime
@@ -1039,4 +1059,3 @@ if(ENABLE_LDCONFIG)
         endif()
     ")
 endif()
-
