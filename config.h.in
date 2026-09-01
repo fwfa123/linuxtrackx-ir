@@ -1,7 +1,7 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
 /* We are on Darwin */
-#undef DARWIN
+@DARWIN_DEFINE@
 
 /* Face tracker support enabled */
 @FACE_TRACKER_SUPPORT@

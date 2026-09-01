@@ -10,7 +10,7 @@
 #ifndef DARWIN
 #include <GL/glu.h>
 #else
-#include <glu.h>
+#include <OpenGL/glu.h>
 #endif
 #include <map>
 #include <set>
@@ -330,3 +330,4 @@ bool GLWidget::makeObjects()
  }
 
 
+ 
