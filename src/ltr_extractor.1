@@ -1,13 +1,16 @@
-.TH ltr_extractor 1 "23 July 2014"
+.TH ltr_extractor 1 "31 August 2026"
 .IX ltr_extractor
 .SH NAME
 ltr_extractor - extracts TrackIR/SmartNav firmware files and other necessary informations needed by Linuxtrack
 .SH SYNOPSYS
 .B ltr_extractor --extract | --update-games | --create [--blob] [--installer file] [--destination directory] [--spec file] file1 [file2 ... ]
+.br
+.B ltr_extractor --extract --installer file [--destination directory]
 .SH DESCRIPTION
-ltr_extractor allows user to extract files necessary for Linuxtrack to utilize TrackIR/SmartNav devices.
-These files are extracted from NaturalPoint's TrackIR software; the software itself can be installed using 
-Wine (however it will not run), or can be copied from a Windows machine.
+ltr_extractor allows a user to extract files necessary for Linuxtrack to use
+TrackIR and SmartNav devices. A known, hash-pinned TrackIR installer can be
+read directly on Linux without executing vendor code or using Wine. Legacy
+extraction from an unpacked installation and blobs remains available.
 .SH COMMANDS
 .TP
 .B --extract
@@ -31,7 +34,9 @@ instead of the default one. When used with --create, the data are written to the
 Instruct the extractor to create a blob or extract using it. Requires the installer argument.
 .TP
 .B --installer file
-Instructs the extractor to use a particular installer
+With --extract and without --blob, read a supported TrackIR installer directly
+and extract the complete tir_firmware set using the native CAB/MSI path. With --blob,
+instructs the legacy extractor to use a particular installer
 .B file
 to create/unpack a blob.
 .TP
@@ -43,6 +48,15 @@ to store the extracted files.
 
 .SH Example of the recommended firmware extraction procedure
 Download a TrackIR software installer and use the following command to extract the firmware:
+
+.B ltr_extractor --extract --installer ~/Downloads/TrackIR_5.5.3.exe
+
+The installer must match a version known by the extractor. Hash, container,
+payload, and all output checks fail closed. Existing firmware files are not
+overwritten. Native extraction writes the complete tir_firmware set.
+
+.SH Legacy extraction procedure
+For an installer with a matching legacy blob, use:
 
 .B ltr_extractor -e -b -i ~/Downloads/TrackIR_5.4.2.exe
 
@@ -121,4 +135,3 @@ the appropriate installer contains no usefull information. That way the original
 is respected (as they provide the installer), while having the benefit of needing no user interaction
 and no Wine. The downside is that the blobs are roughly 250kB big and they need to be created for each
 installer available.
-

@@ -23,6 +23,7 @@
 #include "game_data.h"
 #include "utils.h"
 #include "extract.h"
+#include "native_extractor/native_installer.h"
 
 typedef struct{
   off_t length;
@@ -719,6 +720,8 @@ static char* get_update_dir(const char* dirname, bool* is_link)
 void print_help()
 {
   printf("ltr_extractor --extract | --create | --update-games [--spec file] file1 [file2 ...]\n");
+  printf("ltr_extractor --extract --installer TrackIR_SETUP.exe [--destination directory]\n");
+  printf("Direct installer extraction is native and does not use Wine.\n");
   printf("NOTE: --update flag is no longer supported. Use --update-games instead.\n");
 }
 
@@ -854,6 +857,19 @@ int main(int argc, char *argv[])
     free(destination);
     return res;
   }else if(extract){
+    if(installer && !blob){
+      if(!destination){
+        destination = ltr_int_get_default_file_name("tir_firmware");
+        if(!destination){
+          printf("Can't determine destination directory.\n");
+          return -1;
+        }
+      }
+      int native_res = ltr_native_extract_installer(installer_name, destination,
+                                                    false);
+      free(destination);
+      return native_res;
+    }
     bool is_link = false;
     if(!destination){
       char *fw_dir = ltr_int_get_default_file_name("tir_firmware");
@@ -910,4 +926,3 @@ Add directory/link to tir_firmware creation.
 Create man page and add integrated help (with examples).
 Add checksums to blob records.
 */
-
