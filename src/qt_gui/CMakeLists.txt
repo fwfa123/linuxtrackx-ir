@@ -233,6 +233,12 @@ target_link_libraries(ltr_gui
     ${MATH_LIBRARY}
 )
 
+if(MXML_FOUND)
+    target_include_directories(ltr_gui PRIVATE ${MXML_INCLUDE_DIRS})
+    target_link_directories(ltr_gui PRIVATE ${MXML_LIBRARY_DIRS})
+    target_compile_options(ltr_gui PRIVATE ${MXML_CFLAGS_OTHER})
+endif()
+
 # Link OpenGL and GLU libraries (for OpenGL utilities)
 find_library(OPENGL_LIBRARY OpenGL)
 find_library(GLU_LIBRARY GLU)

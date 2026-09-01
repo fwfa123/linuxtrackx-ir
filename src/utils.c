@@ -377,18 +377,74 @@ static char *ltr_int_prefix_to_lib_dir(const char *prefix)
 }
 #endif
 
+#ifdef DARWIN
+static char *ltr_int_try_darwin_lib_at_dir(const char *lib_dir,
+                                            const char *libname)
+{
+  if(lib_dir == NULL || lib_dir[0] == '\0' || libname == NULL){
+    return NULL;
+  }
+
+  char *lib_path = NULL;
+  if(asprintf(&lib_path, "%s/%s%s", lib_dir, libname, LIB_SUFFIX) < 0){
+    return NULL;
+  }
+  FILE *f = fopen(lib_path, "rb");
+  if(f != NULL){
+    fclose(f);
+    return lib_path;
+  }
+  free(lib_path);
+  return NULL;
+}
+#endif
+
 char *ltr_int_get_lib_path(const char *libname)
 {
 #ifdef DARWIN
-  char *app_path = ltr_int_get_app_path(LIB_PATH);
-  if(app_path == NULL){
-    return NULL;
+  char *lib_path;
+  const char *override = getenv("LINUXTRACK_LIBRARY_PATH");
+  if(override != NULL){
+    lib_path = ltr_int_try_darwin_lib_at_dir(override, libname);
+    if(lib_path != NULL){
+      return lib_path;
+    }
   }
-  char *lib_path1 = ltr_int_my_strcat(app_path, libname);
-  char *lib_path = ltr_int_my_strcat(lib_path1, LIB_SUFFIX);
-  free(app_path);
-  free(lib_path1);
-  return lib_path;
+
+#ifdef LINUXTRACK_INSTALL_LIB_PATH
+  lib_path = ltr_int_try_darwin_lib_at_dir(LINUXTRACK_INSTALL_LIB_PATH,
+                                           libname);
+  if(lib_path != NULL){
+    return lib_path;
+  }
+#endif
+
+  char *app_path = ltr_int_get_app_path(LIB_PATH);
+  if(app_path != NULL){
+    lib_path = ltr_int_try_darwin_lib_at_dir(app_path, libname);
+    free(app_path);
+    if(lib_path != NULL){
+      return lib_path;
+    }
+  }
+
+  static const char *standard_paths[] = {
+    "/opt/lib/linuxtrack",
+    "/usr/local/lib/linuxtrack",
+    "/usr/lib/linuxtrack",
+    NULL
+  };
+  for(int i = 0; standard_paths[i] != NULL; ++i){
+    lib_path = ltr_int_try_darwin_lib_at_dir(standard_paths[i], libname);
+    if(lib_path != NULL){
+      return lib_path;
+    }
+  }
+
+  if(asprintf(&lib_path, "%s%s", libname, LIB_SUFFIX) >= 0){
+    return lib_path;
+  }
+  return NULL;
 #else
   char *prefix_path;
   char *lib_dir;

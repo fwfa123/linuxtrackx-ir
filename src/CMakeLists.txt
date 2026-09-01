@@ -16,6 +16,9 @@ include_directories(${CMAKE_BINARY_DIR})
 
 # Library path define
 add_definitions(-DLIB_PATH="${CMAKE_INSTALL_PREFIX}/lib/linuxtrack/")
+if(APPLE)
+    add_definitions(-DLINUXTRACK_INSTALL_LIB_PATH="${CMAKE_INSTALL_PREFIX}/lib/linuxtrack/")
+endif()
 
 # Flex/Bison integration for preferences parser
 set(BISON_OUTPUT_DIR ${CMAKE_BINARY_DIR}/src)
@@ -150,7 +153,7 @@ set_target_properties(ltr PROPERTIES
 target_link_libraries(ltr
     ${MATH_LIBRARY}
     ${PTHREAD_LIBRARY}
-    dl
+    ${CMAKE_DL_LIBS}
 )
 
 # Export symbols matching '^ltr_int'
@@ -165,6 +168,8 @@ target_link_libraries(ltr
 add_library(tir SHARED
     tir_hw.c
     tir_img.c
+    tir_protocol.c
+    tir_transport.c
     tir_driver.c
     runloop.c
 )
@@ -186,28 +191,48 @@ target_link_libraries(tir
 #     )
 # endif()
 
-# libjoy: Joystick helper
-add_library(joy SHARED
-    runloop.c
-    joy.c
-)
+# libjoy: Joystick helper (Linux input API only)
+if(NOT APPLE)
+    add_library(joy SHARED
+        runloop.c
+        joy.c
+    )
 
-set_target_properties(joy PROPERTIES
-    VERSION 0.0.0
-    SOVERSION 0
-    OUTPUT_NAME "joy"
-)
+    set_target_properties(joy PROPERTIES
+        VERSION 0.0.0
+        SOVERSION 0
+        OUTPUT_NAME "joy"
+    )
 
-# if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/joy_driver.sym)
-#     target_link_options(joy PRIVATE
-#         -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/joy_driver.sym
-#     )
-# endif()
+    # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/joy_driver.sym)
+    #     target_link_options(joy PRIVATE
+    #         -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/joy_driver.sym
+    #     )
+    # endif()
+endif()
 
 # libltusb1: USB interface helper used by TrackIR driver
-add_library(ltusb1 SHARED
-    libusb_ifc.c
-)
+if(APPLE)
+    find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+    find_library(IOKIT_FRAMEWORK IOKit REQUIRED)
+    find_library(IOUSBHOST_FRAMEWORK IOUSBHost REQUIRED)
+
+    add_library(ltusb1 SHARED
+        ../macos/TrackIRUserSpace/TrackIRUSBBackend.mm
+        ../macos/TrackIRUserSpace/TrackIRUSBTransport.mm
+        ../macos/TrackIRUserSpace/TrackIRUSB.h
+        ../macos/TrackIRUserSpace/TrackIRUSBTransport.h
+    )
+    target_include_directories(ltusb1 PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/../macos/TrackIRUserSpace
+    )
+    target_compile_options(ltusb1 PRIVATE -fobjc-arc)
+else()
+    add_library(ltusb1 SHARED
+        libusb_ifc.c
+    )
+endif()
 
 set_target_properties(ltusb1 PROPERTIES
     VERSION 0.0.0
@@ -219,6 +244,14 @@ target_link_libraries(ltusb1
     ltr
     ${USB_LIBRARIES}
 )
+
+if(APPLE)
+    target_link_libraries(ltusb1
+        ${FOUNDATION_FRAMEWORK}
+        ${IOKIT_FRAMEWORK}
+        ${IOUSBHOST_FRAMEWORK}
+    )
+endif()
 
 # libwc: V4L2 webcam/face-tracking driver (conditional)
 if(WEBCAM_SUPPORT AND WITH_LIBV4L2)
@@ -320,6 +353,16 @@ function(set_linuxtrack_rpath target)
     )
 endfunction()
 
+if(APPLE)
+    # The TrackIR and USB adapters are loaded with dlopen(), so each internal
+    # dylib needs the installed library directory available when dyld resolves
+    # its @rpath/libltr dependency.
+    set_linuxtrack_rpath(linuxtrack)
+    set_linuxtrack_rpath(ltr)
+    set_linuxtrack_rpath(tir)
+    set_linuxtrack_rpath(ltusb1)
+endif()
+
 # ============================================================================
 # Binaries
 # ============================================================================
@@ -341,57 +384,68 @@ target_link_libraries(ltr_server1
 # This is critical when the slave process is spawned from Wine context
 set_linuxtrack_rpath(ltr_server1)
 
-# ltr_pipe CLI
-add_executable(ltr_pipe
-    ltr_pipe.c
-    linuxtrack.c linuxtrack.h
-)
+# ltr_pipe CLI (Linux uinput helper)
+if(NOT APPLE)
+    add_executable(ltr_pipe
+        ltr_pipe.c
+        linuxtrack.c linuxtrack.h
+    )
 
-target_link_libraries(ltr_pipe
-    linuxtrack
-    ltr
-    dl
-)
+    target_link_libraries(ltr_pipe
+        linuxtrack
+        ltr
+        ${CMAKE_DL_LIBS}
+    )
 
-# Set RPATH so ltr_pipe can find liblinuxtrack.so.0 at runtime
-set_linuxtrack_rpath(ltr_pipe)
+    # Set RPATH so ltr_pipe can find liblinuxtrack.so.0 at runtime
+    set_linuxtrack_rpath(ltr_pipe)
+endif()
 
 # ltr_extractor CLI
-add_executable(ltr_extractor
-    hashing.c
-    game_data.c game_data.h
-    extract.c extract.h
-    digest.c digest.h
-    native_extractor/native_installer.c native_extractor/native_installer.h
-    native_extractor/cfb.c native_extractor/cfb.h
-    native_extractor/sha256.c native_extractor/sha256.h
-    native_extractor/third_party/libmspack/system.c
-    native_extractor/third_party/libmspack/cabd.c
-    native_extractor/third_party/libmspack/lzxd.c
-    native_extractor/third_party/libmspack/mszipd.c
-    native_extractor/third_party/libmspack/qtmd.c
-)
+if(MXML_FOUND)
+    add_executable(ltr_extractor
+        hashing.c
+        game_data.c game_data.h
+        extract.c extract.h
+        digest.c digest.h
+        native_extractor/native_installer.c native_extractor/native_installer.h
+        native_extractor/cfb.c native_extractor/cfb.h
+        native_extractor/sha256.c native_extractor/sha256.h
+        native_extractor/third_party/libmspack/system.c
+        native_extractor/third_party/libmspack/cabd.c
+        native_extractor/third_party/libmspack/lzxd.c
+        native_extractor/third_party/libmspack/mszipd.c
+        native_extractor/third_party/libmspack/qtmd.c
+    )
 
-target_include_directories(ltr_extractor PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/native_extractor
-    ${CMAKE_CURRENT_SOURCE_DIR}/native_extractor/third_party/libmspack
-)
+    target_include_directories(ltr_extractor PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/native_extractor
+        ${CMAKE_CURRENT_SOURCE_DIR}/native_extractor/third_party/libmspack
+        ${MXML_INCLUDE_DIRS}
+    )
 
-target_compile_definitions(ltr_extractor PRIVATE
-    _FILE_OFFSET_BITS=64
-    _POSIX_C_SOURCE=200809L
-    HAVE_FSEEKO=1
-)
+    target_link_directories(ltr_extractor PRIVATE ${MXML_LIBRARY_DIRS})
+    target_compile_options(ltr_extractor PRIVATE ${MXML_CFLAGS_OTHER})
 
-target_link_libraries(ltr_extractor
-    linuxtrack
-    ltr
-    ${MXML_LIBRARIES}
-    ${ZLIB_LIBRARIES}
-)
+    target_compile_definitions(ltr_extractor PRIVATE
+        _FILE_OFFSET_BITS=64
+        _POSIX_C_SOURCE=200809L
+        HAVE_FSEEKO=1
+    )
+    if(APPLE)
+        target_compile_definitions(ltr_extractor PRIVATE _DARWIN_C_SOURCE)
+    endif()
 
-# Set RPATH so ltr_extractor can find liblinuxtrack.so.0 at runtime
-set_linuxtrack_rpath(ltr_extractor)
+    target_link_libraries(ltr_extractor
+        linuxtrack
+        ltr
+        ${MXML_LIBRARIES}
+        ${ZLIB_LIBRARIES}
+    )
+
+    # Set RPATH so ltr_extractor can find liblinuxtrack.so.0 at runtime
+    set_linuxtrack_rpath(ltr_extractor)
+endif()
 
 # ltr_recenter helper
 add_executable(ltr_recenter
@@ -402,7 +456,7 @@ add_executable(ltr_recenter
 target_link_libraries(ltr_recenter
     linuxtrack
     ltr
-    dl
+    ${CMAKE_DL_LIBS}
 )
 
 # Set RPATH so ltr_recenter can find liblinuxtrack.so.0 at runtime
@@ -411,7 +465,7 @@ set_linuxtrack_rpath(ltr_recenter)
 # ltr_udp (Bridge for X4: Foundations / OpenTrack games)
 add_executable(ltr_udp ltr_udp.c linuxtrack.c)
 target_include_directories(ltr_udp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ..)
-target_link_libraries(ltr_udp linuxtrack pthread dl)
+target_link_libraries(ltr_udp linuxtrack ${PTHREAD_LIBRARY} ${CMAKE_DL_LIBS})
 set_linuxtrack_rpath(ltr_udp)
 
 # Man page for ltr_udp (other tools ship .1 sources; wire this one into install)
@@ -432,7 +486,7 @@ if(LIBLO_FOUND)
     target_link_libraries(osc_server PRIVATE
         linuxtrack
         ltr
-        dl
+        ${CMAKE_DL_LIBS}
         ${LIBLO_LIBRARIES}
         ${PTHREAD_LIBRARY}
     )
@@ -441,12 +495,28 @@ endif()
 
 option(LTR_BUILD_TESTS "Build unit tests" ON)
 if(LTR_BUILD_TESTS)
+    enable_testing()
+
     add_executable(test_align_translation
         tests/align_translation_unit.c
         math_utils.c
     )
     target_include_directories(test_align_translation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(test_align_translation PRIVATE m)
+
+    add_executable(test_tir_protocol
+        tests/tir_protocol_test.c
+        tir_protocol.c
+    )
+    target_include_directories(test_tir_protocol PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME tir_protocol COMMAND test_tir_protocol)
+
+    add_executable(test_tir_transport
+        tests/tir_transport_test.c
+        tir_transport.c
+    )
+    target_include_directories(test_tir_transport PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    add_test(NAME tir_transport COMMAND test_tir_transport)
 endif()
 
 # ============================================================================
@@ -476,7 +546,7 @@ if(ENABLE_XPLANE AND XPLANE_SDK_FOUND)
 
     target_link_libraries(xlinuxtrack9
         ${MATH_LIBRARY}
-        dl
+        ${CMAKE_DL_LIBS}
     )
 
     # if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/xlinuxtrack.sym)
@@ -491,7 +561,9 @@ endif()
 # ============================================================================
 
 # Add Qt6 GUI subdirectory
-add_subdirectory(qt_gui)
+if(ENABLE_GUI)
+    add_subdirectory(qt_gui)
+endif()
 
 # Add Mickey subdirectory
 if(MICKEY_SUPPORT)
@@ -512,17 +584,30 @@ install(TARGETS
     linuxtrack
     ltr
     tir
-    joy
     ltusb1
     ltr_server1
-    ltr_pipe
-    ltr_extractor
     ltr_recenter
     ltr_udp
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib/linuxtrack
     ARCHIVE DESTINATION lib/linuxtrack
 )
+
+if(NOT APPLE)
+    install(TARGETS joy ltr_pipe
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib/linuxtrack
+        ARCHIVE DESTINATION lib/linuxtrack
+    )
+endif()
+
+if(MXML_FOUND)
+    install(TARGETS ltr_extractor
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib/linuxtrack
+        ARCHIVE DESTINATION lib/linuxtrack
+    )
+endif()
 
 if(LIBLO_FOUND)
     install(TARGETS osc_server

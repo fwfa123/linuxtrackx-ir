@@ -20,6 +20,9 @@ typedef void (finish_usb_fun)(unsigned int interface);
 typedef bool (ctrl_data_fun)(uint8_t req_type, uint8_t req, uint16_t val, uint16_t index,
                             unsigned char data[], size_t size);
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifndef USB_IMPL_ONLY
 extern init_usb_fun *ltr_int_init_usb;
@@ -54,6 +57,9 @@ extern finish_usb_fun ltr_int_finish_usb;
 
 #endif
 
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

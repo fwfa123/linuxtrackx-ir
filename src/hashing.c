@@ -190,7 +190,7 @@ void process_file(FILE *output, const char *name)
   file_buf_t *f = read_file(name);
   unsigned char *md5sum = hash_md5(f);
   unsigned char *sha1sum = hash_sha1(f);
-  char *last_slash = rindex(name, '/');
+  char *last_slash = strrchr(name, '/');
   const char *file_name;
   if(last_slash == NULL){
     file_name = name;

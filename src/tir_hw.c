@@ -10,10 +10,81 @@
 #include "tir_hw.h"
 #include "tir_img.h"
 #include "usb_ifc.h"
+#include "tir_protocol.h"
 #include "utils.h"
 #include "tir_driver_prefs.h"
 #include "tir.h"
 #include "ipc_utils.h"
+
+
+/*
+ * Keep the transport state at the protocol boundary.  The legacy symbol
+ * names are mapped only in this translation unit so the rest of the project
+ * can continue loading existing libltusb1/libfakeusb backends unchanged.
+ */
+static ltr_usb_transport tir_usb_transport = {0};
+
+void ltr_int_set_tir_usb_transport(const ltr_usb_transport *transport)
+{
+  if(transport == NULL){
+    memset(&tir_usb_transport, 0, sizeof(tir_usb_transport));
+  }else{
+    tir_usb_transport = *transport;
+  }
+}
+
+const ltr_usb_transport *ltr_int_get_tir_usb_transport(void)
+{
+  return &tir_usb_transport;
+}
+
+static bool tir_usb_init(void)
+{
+  return ltr_usb_transport_init(&tir_usb_transport);
+}
+
+static dev_found tir_usb_find_tir(void)
+{
+  return ltr_usb_transport_find_tir(&tir_usb_transport, NULL);
+}
+
+static bool tir_usb_reset(void)
+{
+  return ltr_usb_transport_reset(&tir_usb_transport);
+}
+
+static bool tir_usb_prepare(unsigned int config, unsigned int interface_number)
+{
+  return ltr_usb_transport_prepare(&tir_usb_transport, config, interface_number);
+}
+
+static bool tir_usb_send(int endpoint, unsigned char data[], size_t size)
+{
+  return ltr_usb_transport_send(&tir_usb_transport, endpoint, data, size);
+}
+
+static bool tir_usb_receive(int endpoint, unsigned char data[], size_t size,
+                            size_t *transferred, long timeout)
+{
+  return ltr_usb_transport_receive(&tir_usb_transport, endpoint, data, size,
+                                   transferred, timeout);
+}
+
+static void tir_usb_finish(unsigned int interface_number)
+{
+  ltr_usb_transport_finish(&tir_usb_transport, interface_number);
+}
+
+#define ltr_int_init_usb() tir_usb_init()
+#define ltr_int_find_tir() tir_usb_find_tir()
+#define ltr_int_reset_device() tir_usb_reset()
+#define ltr_int_prepare_device(config, interface_number) \
+  tir_usb_prepare((config), (interface_number))
+#define ltr_int_send_data(endpoint, data, size) \
+  tir_usb_send((endpoint), (data), (size))
+#define ltr_int_receive_data(endpoint, data, size, transferred, timeout) \
+  tir_usb_receive((endpoint), (data), (size), (transferred), (timeout))
+#define ltr_int_finish_usb(interface_number) tir_usb_finish((interface_number))
 
 
 #define TIR_CONFIGURATION 1
@@ -107,11 +178,7 @@ static int cfg_in_ep;
 int ltr_int_data_in_ep;
 static int out_ep;
 
-typedef struct{
-  bool fw_loaded;
-  int cfg_flag;
-  unsigned int fw_cksum;
-} tir_status_t;
+typedef ltr_tir_status tir_status_t;
 
 typedef struct{
   unsigned char *firmware;
@@ -184,23 +251,7 @@ static void set_ir_brightness_tir(unsigned char b)
 static void cksum_firmware(firmware_t *fw)
 {
   assert(fw != NULL);
-  unsigned int cksum = 0;
-  unsigned int byte = 0;
-
-  unsigned char *firmware = fw->firmware;
-  size_t size = fw->size;
-
-  while(size > 0){
-    byte = (unsigned int)*firmware;
-
-    cksum += byte;
-    byte = byte << 4;
-    cksum ^= byte;
-
-    --size;
-    ++firmware;
-  }
-  fw->cksum = cksum & 0xffff;
+  fw->cksum = ltr_tir_firmware_checksum(fw->firmware, fw->size);
 }
 
 
@@ -216,6 +267,7 @@ static bool read_status_tir(tir_status_t *status)
   assert(status != NULL);
   size_t t;
   int counter = 0;
+  bool status_received = false;
   struct timeval tv1, tv2;
   struct timezone tz;
   gettimeofday(&tv1, &tz);
@@ -237,6 +289,7 @@ static bool read_status_tir(tir_status_t *status)
       }
       log_usb_receive("STATUS_REQ", cfg_in_ep, t, sizeof(ltr_int_packet), 500);
       if((t > 2) && (ltr_int_packet[0] == 0x07) && (ltr_int_packet[1] == 0x20)){
+        status_received = true;
         break;
       }
       gettimeofday(&tv2, &tz);
@@ -247,17 +300,18 @@ static bool read_status_tir(tir_status_t *status)
       }
     }
     if((t > 2) && (ltr_int_packet[0] == 0x07) && (ltr_int_packet[1] == 0x20)){
+      status_received = true;
       break;
     }
     counter++;
   }
+  if(!status_received || !ltr_tir_parse_status_packet(ltr_int_packet, t, status)){
+    ltr_int_log_message("Invalid TrackIR status packet.\n");
+    return false;
+  }
   ltr_int_log_message("Status packet: %02X %02X %02X %02X %02X %02X %02X\n",
     ltr_int_packet[0], ltr_int_packet[1], ltr_int_packet[2], ltr_int_packet[3],
     ltr_int_packet[4], ltr_int_packet[5], ltr_int_packet[6]);
-
-  status->fw_loaded = (ltr_int_packet[3] == 1) ? true : false;
-  status->cfg_flag = ltr_int_packet[6];
-  status->fw_cksum = (((unsigned int)ltr_int_packet[4]) << 8) + (unsigned int)ltr_int_packet[5];
   return true;
 }
 
@@ -427,7 +481,8 @@ static bool upload_firmware(firmware_t *fw)
 
 static bool wiggle_leds_tir(unsigned char leds, unsigned char mask)
 {
-  unsigned char msg[3] = {0x10, leds, mask};
+  unsigned char msg[3];
+  ltr_tir_build_led_packet(leds, mask, msg);
   if(!ltr_int_send_data(out_ep, msg, sizeof(msg))){
     ltr_int_log_message("Problem wiggling LEDs\n");
     return false;
@@ -464,22 +519,8 @@ bool ltr_int_set_threshold_tir(unsigned int val)
   if(device == TIR5V3){
     return set_threshold_tir5v3(val);
   }
-  unsigned char pkt[] = {0x15, 0x96, 0x01, 0x00};
-  size_t pkt_len = sizeof(pkt);
-  if(val > 253){
-    val = 253;
-  }
-  if(device > TIR2){
-    if(val < 30){
-      val = 30;
-    }
-  }else{
-    if(val < 40){
-      val = 40;
-    }
-    pkt_len -= 1;
-  }
-  pkt[1] = val;
+  unsigned char pkt[4];
+  size_t pkt_len = ltr_tir_build_threshold_packet(device, val, pkt);
   ltr_int_log_message("Setting threshold.\n");
   return ltr_int_send_data(out_ep, pkt, pkt_len);
 }
@@ -567,14 +608,12 @@ static bool control_ir_led_tir(bool ir)
 
 static bool set_exposure(unsigned int exp)
 {
-  unsigned char Set_exposure_h[] =  {0x23, 0x42, 0x08, 0x01, 0x00, 0x00};
-  unsigned char Set_exposure_l[] =  {0x23, 0x42, 0x10, 0x8F, 0x00, 0x00};
-
-  Set_exposure_h[3] = exp >> 8;
-  Set_exposure_l[3] = exp & 0xFF;
+  unsigned char set_exposure_h[6];
+  unsigned char set_exposure_l[6];
+  ltr_tir_build_exposure_packets(exp, set_exposure_h, set_exposure_l);
   ltr_int_log_message("Setting exposure.\n");
-  return ltr_int_send_data(out_ep, Set_exposure_h, sizeof(Set_exposure_h)) &&
-    ltr_int_send_data(out_ep, Set_exposure_l, sizeof(Set_exposure_l));
+  return ltr_int_send_data(out_ep, set_exposure_h, sizeof(set_exposure_h)) &&
+    ltr_int_send_data(out_ep, set_exposure_l, sizeof(set_exposure_l));
 
 }
 
@@ -1170,8 +1209,13 @@ bool ltr_int_open_tir(bool force_fw_load, bool switch_ir_on)
     ltr_int_log_message("Init failed!\n");
     return false;
   }
-  if((device = ltr_int_find_tir()) == NOT_TIR){
+  device = ltr_int_find_tir();
+  if(device == NOT_TIR){
     ltr_int_log_message("Tir not found!\n");
+    return false;
+  }
+  if((device & NOT_PERMITTED) != 0){
+    ltr_int_log_message("TrackIR was found, but IO access was not permitted.\n");
     return false;
   }
 
@@ -1853,6 +1897,7 @@ static bool read_status_tir5v3(tir_status_t *status)
   assert(status != NULL);
   size_t t;
   int counter = 0;
+  bool status_received = false;
   struct timeval tv1, tv2;
   struct timezone tz;
   gettimeofday(&tv1, &tz);
@@ -1870,6 +1915,7 @@ static bool read_status_tir5v3(tir_status_t *status)
         return false;
       }
       if((t > 2) && (ltr_int_packet[0] >= 0x07) && (ltr_int_packet[1] == 0x20)){
+        status_received = true;
         break;
       }
       gettimeofday(&tv2, &tz);
@@ -1880,17 +1926,21 @@ static bool read_status_tir5v3(tir_status_t *status)
       }
     }
     if((t > 2) && (ltr_int_packet[0] >= 0x07) && (ltr_int_packet[1] == 0x20)){
+      status_received = true;
       break;
     }
     counter++;
   }
+  if(!status_received || !ltr_tir_parse_status_packet(ltr_int_packet, t, status)){
+    ltr_int_log_message("Invalid TrackIR 5 v3 status packet.\n");
+    return false;
+  }
+  /* v3 only uses the firmware-loaded flag from this response today. */
+  status->cfg_flag = 0;
+  status->fw_cksum = 0;
   ltr_int_log_message("Status packet: %02X %02X %02X %02X %02X %02X %02X\n",
     ltr_int_packet[0], ltr_int_packet[1], ltr_int_packet[2], ltr_int_packet[3],
     ltr_int_packet[4], ltr_int_packet[5], ltr_int_packet[6]);
-
-  status->fw_loaded = (ltr_int_packet[3] == 1) ? true : false;
-  status->cfg_flag = 0;
-  status->fw_cksum = 0;
   return true;
 }
 
@@ -2032,4 +2082,3 @@ static tir_interface tir5v3 = {
   .get_tir_info = get_tir5v3_info,            //x
   .set_status_led_tir = set_status_led_tir5v3 //x
 };
-
