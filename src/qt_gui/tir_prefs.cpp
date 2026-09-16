@@ -229,11 +229,28 @@ void TirPrefs::initializeUI(const QString &/*ID*/)
         }
       }else{
         ui.TirFwLabel->setText(QString::fromUtf8("Firmware not found - TrackIr will not work!"));
-        // Defer message box to avoid blocking during layout
-        QTimer::singleShot(100, this, [this]() {
+        QString expected;
+        if(tirType == TIR5V2){
+          expected = tr("This device (TrackIR 5 v2 / 131d:0158) looks for "
+                        "tir5v2.fw.gz in ~/.config/linuxtrack/tir_firmware/ "
+                        "(tir5v2.fw, tir5.fw.gz, or tir5.fw are also accepted).");
+        }else if(tirType == TIR5){
+          expected = tr("This device looks for tir5.fw.gz or tir5.fw in "
+                        "~/.config/linuxtrack/tir_firmware/.");
+        }else if(tirType == TIR4){
+          expected = tr("This device looks for tir4.fw.gz or tir4.fw in "
+                        "~/.config/linuxtrack/tir_firmware/.");
+        }else if(tirType == SMARTNAV4){
+          expected = tr("This device looks for sn4.fw.gz or sn4.fw in "
+                        "~/.config/linuxtrack/tir_firmware/.");
+        }else{
+          expected = tr("Place the matching .fw.gz file in ~/.config/linuxtrack/tir_firmware/.");
+        }
+        QTimer::singleShot(100, this, [this, expected]() {
           if (this) {
             QMessageBox::warning(this, tr("TrackIR Firmware Installation"),
-                tr("TrackIR device was found, but you don't have the firmware installed."));
+                tr("TrackIR device was found, but you don't have the firmware installed.\n\n")
+                + expected);
           }
         });
       }

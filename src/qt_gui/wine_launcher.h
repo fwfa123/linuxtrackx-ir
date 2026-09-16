@@ -15,6 +15,8 @@ class WineLauncher:public QObject
   void run(const QString &tgt, const QStringList &params);
   bool wineAvailable();
   QProcessEnvironment getProcessEnvironment() const { return env; }
+  QString lastOutput() const { return lastOutput_; }
+  bool wow64RejectedWin32() const;
   
   // NEW: Wine version selection methods
   QString selectBestWineVersion();
@@ -30,7 +32,9 @@ class WineLauncher:public QObject
   QProcess wine;
   QProcessEnvironment env;
   QString winePath;
+  QString lastOutput_;
   bool available;
+  bool finishedSignaled;
   
   // NEW: Helper methods for version comparison
   bool parseWineVersion(const QString &versionString, int &major, int &minor);

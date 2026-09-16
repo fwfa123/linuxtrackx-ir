@@ -23,7 +23,8 @@ class TirFwExtractThread: public QThread
 {
  Q_OBJECT
  public:
-  TirFwExtractThread() : targets(NULL), gameDataFound(false){};
+  TirFwExtractThread() : targets(NULL), gameDataFound(false),
+    tirviewsFound(false), firmwareLooseCopied(false){};
   virtual void start(targets_t &t, const QString &p, const QString &d);
   void run();
   void stop(){quit = true;};
@@ -39,6 +40,7 @@ class TirFwExtractThread: public QThread
   QString destPath;
   bool gameDataFound;
   bool tirviewsFound;
+  bool firmwareLooseCopied;
   bool quit;
   bool everything;
 };

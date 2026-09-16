@@ -751,8 +751,8 @@ winetricks --version
 echo $WINEPREFIX
 echo $WINEARCH
 
-# 3. Try manual winetricks installation
-WINEPREFIX=/tmp/test_prefix WINEARCH=win32 winetricks mfc42
+# 3. Try manual winetricks installation (64-bit prefix; WoW64 Wine rejects win32)
+WINEPREFIX=/tmp/test_prefix WINEARCH=win64 winetricks mfc42
 
 # 4. Check for wine/winetricks conflicts
 which wine

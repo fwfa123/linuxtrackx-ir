@@ -42,6 +42,7 @@ class BlockId
   void isBlock(QFile &f, const QString &destPath, QStringList &msgs);
   bool foundAlready()const{return found;};
   void clearFoundFlag(){found = false;};
+  void markFound(){found = true;};
   const QString &getFname()const{return name;};
   void save(QTextStream &stream){stream<<name<<" "<<size<<" "<<fast<<" "<<md5<<" "<<sha1<<"\n";};
  private:
