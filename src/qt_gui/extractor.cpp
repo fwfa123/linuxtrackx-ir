@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <QCryptographicHash>
+#include <QProcess>
 
 
 #include "extractor.h"
@@ -52,6 +53,38 @@ QString getBlobName(const QString& installerName)
   return QStringLiteral("fw_blob_") + md5 + QStringLiteral("_") + sha1 + QStringLiteral(".bin");
 }
 
+static bool wineOutputIsWow64Win32Error(const QString &output)
+{
+  return output.contains(QStringLiteral("not supported in wow64 mode"), Qt::CaseInsensitive);
+}
+
+static bool prefixHasTrackIrPayload(const QString &winePrefix)
+{
+  if(winePrefix.isEmpty()){
+    return false;
+  }
+  QDirIterator it(winePrefix,
+                  QStringList() << QStringLiteral("TrackIR5.exe")
+                                << QStringLiteral("tir5.fw")
+                                << QStringLiteral("tir5.fw.gz")
+                                << QStringLiteral("tir5v2.fw")
+                                << QStringLiteral("tir5v2.fw.gz")
+                                << QStringLiteral("tir4.fw")
+                                << QStringLiteral("tir4.fw.gz")
+                                << QStringLiteral("TIRViews.dll")
+                                << QStringLiteral("sgl.dat"),
+                  QDir::Files,
+                  QDirIterator::Subdirectories);
+  return it.hasNext();
+}
+
+static void gzipFirmwareFile(const QString &outfile)
+{
+  QStringList args;
+  args << QStringLiteral("-9") << outfile;
+  QProcess::execute(QStringLiteral("gzip"), args);
+}
+
 void TirFwExtractThread::start(targets_t &t, const QString &p, const QString &d)
 {
   if(!isRunning()){
@@ -68,6 +101,7 @@ void TirFwExtractThread::run()
   emit progress(QString::fromUtf8("Commencing analysis of directory '%1'...").arg(path));
   gameDataFound = false;
   tirviewsFound = false;
+  firmwareLooseCopied = false;
   for(targets_iterator_t it = targets->begin(); it != targets->end(); ++it){
     it->second.clearFoundFlag();
   }
@@ -98,7 +132,7 @@ void TirFwExtractThread::analyzeFile(const QString fname)
   if(!file.open(QIODevice::ReadOnly)){
     return;
   }
-  qDebug()<<QString::fromUtf8("Analyzing ")<<fname;
+  emit progress(QString::fromUtf8("Analyzing %1").arg(fname));
   FastHash hash;
   QStringList msgs;
   char val;
@@ -138,17 +172,50 @@ bool TirFwExtractThread::findCandidates(QString name)
   int i;
   QDir dir(name);
   QStringList patt;
-  patt<<QString::fromUtf8("*.dll")<<QString::fromUtf8("*.exe")<<QString::fromUtf8("*.dat");
+  patt<<QString::fromUtf8("*.dll")<<QString::fromUtf8("*.exe")<<QString::fromUtf8("*.dat")
+      <<QString::fromUtf8("*.fw")<<QString::fromUtf8("*.fw.gz");
   QFileInfoList files = dir.entryInfoList(patt, QDir::Files | QDir::Readable);
+  const qint64 maxCarveSize = 256 * 1024;
   for(i = 0; i < files.size(); ++i){
     if(quit) return false;
+    const QString fname = files[i].fileName();
+    if(fname.endsWith(QString::fromUtf8(".fw"), Qt::CaseInsensitive) ||
+       fname.endsWith(QString::fromUtf8(".fw.gz"), Qt::CaseInsensitive)){
+      QString outfile = destPath + fname;
+      if(QFile::copy(files[i].canonicalFilePath(), outfile)){
+        firmwareLooseCopied = true;
+        emit progress(QString::fromUtf8("Copied %1...").arg(fname));
+        QString specName = fname;
+        if(specName.endsWith(QString::fromUtf8(".gz"), Qt::CaseInsensitive)){
+          specName.chop(3);
+        }
+        if(targets != NULL){
+          for(targets_iterator_t it = targets->begin(); it != targets->end(); ++it){
+            if(QFileInfo(it->second.getFname()).fileName().compare(specName, Qt::CaseInsensitive) == 0){
+              it->second.markFound();
+            }
+          }
+        }
+        if(fname.endsWith(QString::fromUtf8(".fw"), Qt::CaseInsensitive) &&
+           !fname.endsWith(QString::fromUtf8(".fw.gz"), Qt::CaseInsensitive)){
+          gzipFirmwareFile(outfile);
+          emit progress(QString::fromUtf8("Compressed %1").arg(fname));
+        }
+      }
+      continue;
+    }
     if(files[i].fileName().compare(QString::fromUtf8("TIRViews.dll")) == 0){
       QString outfile = QString::fromUtf8("%1/TIRViews.dll").arg(destPath);
       if((tirviewsFound = QFile::copy(files[i].canonicalFilePath(), outfile))){
         emit progress(QString::fromUtf8("Extracted TIRViews.dll..."));
       }
     }else if(files[i].fileName().compare(QString::fromUtf8("sgl.dat"))){
-      analyzeFile(files[i].canonicalFilePath());
+      if(firmwareLooseCopied && files[i].size() > maxCarveSize){
+        emit progress(QString::fromUtf8("Skipping large file %1 (firmware already copied).")
+                        .arg(files[i].fileName()));
+      }else{
+        analyzeFile(files[i].canonicalFilePath());
+      }
     }else{
       QString outfile = QString::fromUtf8("%1/gamedata.txt").arg(destPath);
       gameDataFound = get_game_data(files[i].canonicalFilePath().toUtf8().constData(),
@@ -251,7 +318,8 @@ Extractor::Extractor(QWidget *parent) : QDialog(parent), dl(NULL), progressDlg(N
   enableButtons(true);
 }
 
-TirFwExtractor::TirFwExtractor(QWidget *parent) : Extractor(parent), et(NULL)
+TirFwExtractor::TirFwExtractor(QWidget *parent) : Extractor(parent), et(NULL),
+  haveSpec(false), wineInitialized(false)
 {
   et = new TirFwExtractThread();
   QObject::connect(et, SIGNAL(progress(const QString &)), this, SLOT(progress(const QString &)));
@@ -332,32 +400,48 @@ static QString makeDestPath(const QString &base)
 
 void TirFwExtractor::wineFinished(bool result)
 {
-  if(!wineInitialized){
-    wineInitialized = true;
-    if(!result){
-      QMessageBox::warning(this, tr("Error running Wine"),
-        tr("There was an error initializing\n"
-        "the wine prefix; will try to install the firmware\n"
-        "just in case..."
-        "Please see the log for more details.\n\n")
-      );
-    }
-    // Skip the second run since we're using silent installation
-    // The installer should have completed in the first run
-    destPath = makeDestPath(PrefProxy::getRsrcDirPath());
-    et->start(targets, winePrefix, destPath);
-  }else{
-    if(!result){
-      QMessageBox::warning(this, tr("Error running Wine"),
-        tr("There was an error when extracting\n"
-        "the firmware, will try the analysis\n"
-        "just in case..."
-        "Please see the log for more details.\n\n")
-      );
-    }
-    destPath = makeDestPath(PrefProxy::getRsrcDirPath());
-    et->start(targets, winePrefix, destPath);
+  if(wineInitialized){
+    return;
   }
+  wineInitialized = true;
+
+  const QString wineLog = wine->lastOutput();
+  if(wine->wow64RejectedWin32() || wineOutputIsWow64Win32Error(wineLog)){
+    progress(QString::fromUtf8(
+      "Wine rejected WINEARCH=win32 (WoW64-only Wine). Sandbox extract aborted."));
+    progress(wineLog);
+    QMessageBox::warning(this, tr("Error running Wine"),
+      tr("This Wine build does not support 32-bit prefixes (WoW64 mode).\n"
+         "linuxtrack will not retry with WINEARCH=win32.\n\n"
+         "See the extractor log for details."));
+    enableButtons(true);
+    emit finished(false);
+    return;
+  }
+
+  if(!prefixHasTrackIrPayload(winePrefix)){
+    progress(QString::fromUtf8(
+      "Wine finished but TrackIR files were not found in the sandbox. Skipping analysis."));
+    progress(wineLog);
+    QMessageBox::warning(this, tr("Error running Wine"),
+      tr("The TrackIR installer did not place firmware files in the Wine sandbox.\n"
+         "Analysis was skipped to avoid scanning an empty prefix.\n\n"
+         "Please see the log for more details."));
+    enableButtons(true);
+    emit finished(false);
+    return;
+  }
+
+  if(!result){
+    QMessageBox::warning(this, tr("Error running Wine"),
+      tr("There was an error initializing\n"
+      "the wine prefix; will try to install the firmware\n"
+      "just in case..."
+      "Please see the log for more details.\n\n")
+    );
+  }
+  destPath = makeDestPath(PrefProxy::getRsrcDirPath());
+  et->start(targets, winePrefix, destPath);
 }
 
 
@@ -376,6 +460,7 @@ void TirFwExtractor::wineFinished(bool result)
 
 void TirFwExtractor::commenceExtraction(QString file)
 {
+  wineInitialized = false;
 #ifndef DARWIN
   QMessageBox::information(this, tr("Instructions"),
   tr("NP's TrackIR installer might pop up now.\n\n"
@@ -409,13 +494,25 @@ void TirFwExtractor::commenceExtraction(QString file)
 
 bool Extractor::tryBlob(const QString& installerName)
 {
+  QDir dataDir(PrefProxy::getDataPath(QStringLiteral(".")));
+  const QStringList cachedBlobs = dataDir.entryList(
+      QStringList() << QStringLiteral("fw_blob_*.bin") << QStringLiteral("blob_*.bin"),
+      QDir::Files);
+  if(cachedBlobs.isEmpty()){
+    progress(QStringLiteral("No firmware blob cache; falling back to Wine extraction."));
+    return false;
+  }
   QString blob_name{getBlobName(installerName)};
   if(blob_name.isEmpty()){
     return false;
   }
+  QString blob_w_path = PrefProxy::getDataPath(blob_name);
+  if(!QFile::exists(blob_w_path)){
+    progress(QStringLiteral("No blob matching this installer; falling back to Wine extraction."));
+    return false;
+  }
   progress(QStringLiteral("Found blob. Commencing extraction."));
   destPath = makeDestPath(PrefProxy::getRsrcDirPath());
-  QString blob_w_path = PrefProxy::getDataPath(blob_name);
   return 0 == extract_blob(installerName.toUtf8().data(),
                       destPath.toUtf8().data(),
                       false);
@@ -871,11 +968,11 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   // Set up environment for winetricks
   QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
   env.insert(QStringLiteral("WINEPREFIX"), tempPrefix);
-  env.insert(QStringLiteral("WINEARCH"), QStringLiteral("win32")); // Force 32-bit prefix for MFC42
+  env.insert(QStringLiteral("WINEARCH"), QStringLiteral("win64"));
   winetricks.setProcessEnvironment(env);
   
   progress(QString::fromUtf8("Using wine prefix: %1").arg(tempPrefix));
-  progress(QString::fromUtf8("Wine architecture: win32"));
+  progress(QString::fromUtf8("Wine architecture: win64 (WoW64-safe; mfc42 lives in syswow64)"));
   
   winetricks.setWorkingDirectory(tempPrefix);
   // Ensure PATH has common locations for GUI-launched environments
@@ -915,6 +1012,12 @@ bool Mfc42uWinetricksExtractor::tryWinetricksInstall()
   QString output = QString::fromUtf8(winetricks.readAllStandardOutput());
   progress(QString::fromUtf8("Winetricks output:"));
   progress(output);
+
+  if(wineOutputIsWow64Win32Error(output)){
+    progress(QString::fromUtf8(
+      "Winetricks/Wine rejected a 32-bit prefix (WoW64-only Wine)."));
+    return false;
+  }
   
   if(winetricks.exitCode() != 0) {
     progress(QString::fromUtf8("Winetricks installation failed with exit code: %1").arg(winetricks.exitCode()));
@@ -2062,15 +2165,27 @@ UpdateGamesExtractor::~UpdateGamesExtractor()
 
 bool UpdateGamesExtractor::tryBlob(const QString& installerName)
 {
+  QDir dataDir(PrefProxy::getDataPath(QStringLiteral(".")));
+  const QStringList cachedBlobs = dataDir.entryList(
+      QStringList() << QStringLiteral("fw_blob_*.bin") << QStringLiteral("blob_*.bin"),
+      QDir::Files);
+  if(cachedBlobs.isEmpty()){
+    progress(QStringLiteral("No firmware blob cache; falling back to Wine extraction."));
+    return false;
+  }
   QString blob_name{getBlobName(installerName)};
   if(blob_name.isEmpty()){
+    return false;
+  }
+  QString blob_w_path = PrefProxy::getDataPath(blob_name);
+  if(!QFile::exists(blob_w_path)){
+    progress(QStringLiteral("No blob matching this installer; falling back to Wine extraction."));
     return false;
   }
   progress(QStringLiteral("Found blob. Commencing game data extraction."));
   // Use tir_firmware directory directly, no timestamped folder
   destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
   QDir().mkpath(destPath);
-  QString blob_w_path = PrefProxy::getDataPath(blob_name);
   bool result = (0 == extract_blob(installerName.toUtf8().data(),
                       destPath.toUtf8().data(),
                       true)); // update_games_only = true
@@ -2082,6 +2197,7 @@ bool UpdateGamesExtractor::tryBlob(const QString& installerName)
 
 void UpdateGamesExtractor::commenceExtraction(QString file)
 {
+  wineInitialized = false;
 #ifndef DARWIN
   QMessageBox::information(this, tr("Instructions"),
   tr("NP's TrackIR installer might pop up now.\n\n"
@@ -2113,34 +2229,48 @@ void UpdateGamesExtractor::commenceExtraction(QString file)
 
 void UpdateGamesExtractor::wineFinished(bool result)
 {
-  if(!wineInitialized){
-    wineInitialized = true;
-    if(!result){
-      QMessageBox::warning(this, tr("Error running Wine"),
-        tr("There was an error initializing\n"
-        "the wine prefix; will try to extract game data\n"
-        "just in case..."
-        "Please see the log for more details.\n\n")
-      );
-    }
-    // Use tir_firmware directory directly, no timestamped folder
-    destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
-    QDir().mkpath(destPath);
-    et->start(winePrefix, destPath);
-  }else{
-    if(!result){
-      QMessageBox::warning(this, tr("Error running Wine"),
-        tr("There was an error when extracting\n"
-        "the game data, will try the analysis\n"
-        "just in case..."
-        "Please see the log for more details.\n\n")
-      );
-    }
-    // Use tir_firmware directory directly, no timestamped folder
-    destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
-    QDir().mkpath(destPath);
-    et->start(winePrefix, destPath);
+  if(wineInitialized){
+    return;
   }
+  wineInitialized = true;
+
+  const QString wineLog = wine->lastOutput();
+  if(wine->wow64RejectedWin32() || wineOutputIsWow64Win32Error(wineLog)){
+    progress(QString::fromUtf8(
+      "Wine rejected WINEARCH=win32 (WoW64-only Wine). Sandbox extract aborted."));
+    progress(wineLog);
+    QMessageBox::warning(this, tr("Error running Wine"),
+      tr("This Wine build does not support 32-bit prefixes (WoW64 mode).\n"
+         "linuxtrack will not retry with WINEARCH=win32.\n\n"
+         "See the extractor log for details."));
+    enableButtons(true);
+    emit finished(false);
+    return;
+  }
+
+  if(!prefixHasTrackIrPayload(winePrefix)){
+    progress(QString::fromUtf8(
+      "Wine finished but TrackIR files were not found in the sandbox. Skipping analysis."));
+    progress(wineLog);
+    QMessageBox::warning(this, tr("Error running Wine"),
+      tr("The TrackIR installer did not place game data files in the Wine sandbox.\n"
+         "Please see the log for more details."));
+    enableButtons(true);
+    emit finished(false);
+    return;
+  }
+
+  if(!result){
+    QMessageBox::warning(this, tr("Error running Wine"),
+      tr("There was an error initializing\n"
+      "the wine prefix; will try to extract game data\n"
+      "just in case..."
+      "Please see the log for more details.\n\n")
+    );
+  }
+  destPath = PrefProxy::getRsrcDirPath() + QString::fromUtf8("/tir_firmware");
+  QDir().mkpath(destPath);
+  et->start(winePrefix, destPath);
 }
 
 void UpdateGamesExtractor::browseDirPressed()

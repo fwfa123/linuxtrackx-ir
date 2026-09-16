@@ -1438,39 +1438,52 @@ static void switch_ir(bool state)
 
 char *ltr_int_find_firmware(dev_found dev)
 {
-  const char *fw_file;
+  static const char *tir4_names[] = {
+    "tir4.fw.gz", "tir4.fw", NULL
+  };
+  static const char *tir5_names[] = {
+    "tir5.fw.gz", "tir5.fw", NULL
+  };
+  static const char *tir5v2_names[] = {
+    "tir5v2.fw.gz", "tir5v2.fw", "tir5.fw.gz", "tir5.fw", NULL
+  };
+  static const char *sn4_names[] = {
+    "sn4.fw.gz", "sn4.fw", NULL
+  };
+  const char *const *names = NULL;
+
   switch(dev){
     case TIR3:
     case TIR2:
     case SMARTNAV3:
     case TIR5V3:
-      //no firmware needed
-      fw_file = NULL;
-      break;
+      return NULL;
     case TIR4:
-      fw_file = "tir4.fw.gz";
+      names = tir4_names;
       break;
     case TIR5:
-      fw_file = "tir5.fw.gz";
+      names = tir5_names;
       break;
     case TIR5V2:
-      fw_file = "tir5v2.fw.gz";
+      names = tir5v2_names;
       break;
     case SMARTNAV4:
-      fw_file = "sn4.fw.gz";
+      names = sn4_names;
       break;
     default:
       ltr_int_log_message("Unknown device!\n");
-      return false;
-      break;
+      return NULL;
   }
-  char *fw_path;
-  if(fw_file != NULL){
-    fw_path = ltr_int_get_resource_path("tir_firmware", fw_file);
-  }else{
-    fw_path = NULL;
+
+  for(int i = 0; names[i] != NULL; ++i){
+    char *fw_path = ltr_int_get_resource_path("tir_firmware", names[i]);
+    if(fw_path != NULL){
+      ltr_int_log_message("Using firmware file '%s'\n", fw_path);
+      return fw_path;
+    }
   }
-  return fw_path;
+  ltr_int_log_message("No firmware file found for this device in tir_firmware/.\n");
+  return NULL;
 }
 
 static tir_interface tir2 = {

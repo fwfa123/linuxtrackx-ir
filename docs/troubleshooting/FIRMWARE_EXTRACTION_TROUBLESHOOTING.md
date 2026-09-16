@@ -3,6 +3,25 @@
 ## Overview
 This document covers common issues encountered when extracting TrackIR firmware using the linuxtrack GUI tool and provides solutions for each problem.
 
+## Wine 10+/11 WoW64 (Arch and similar)
+
+Native WoW64 Wine **cannot** create `WINEARCH=win32` prefixes. The firmware/MFC sandboxes use `WINEARCH=win64` and read `mfc42u.dll` from `drive_c/windows/syswow64`. If you see:
+
+```
+wine: WINEARCH is set to 'win32' but this is not supported in wow64 mode.
+```
+
+unset `WINEARCH` in your environment (or set `win64`) and use linuxtrack 2.2.x with this fix. Do not pass `WINEARCH=win32` to winetricks for these extractors.
+
+### TrackIR 5 v2 / clones (`131d:0158`)
+
+That USB id is **TIR5V2**. Probe looks for, in order:
+
+- `tir5v2.fw.gz`, `tir5v2.fw`
+- then `tir5.fw.gz`, `tir5.fw`
+
+Uncompressed `.fw` is accepted (`gzopen` reads raw files). Dropping only `tir5.fw` under `~/.config/linuxtrack/tir_firmware/` is enough for the fallback; `tir5v2.fw.gz` is preferred.
+
 ## Common Error Messages
 
 ### "Can't find a blob matching the installer"

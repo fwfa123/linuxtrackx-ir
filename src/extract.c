@@ -334,11 +334,19 @@ static FILE* find_blob(const char *installer_name)
 	}
 
 	glob_t blobs;
-	blobs.gl_offs = 0;
+	memset(&blobs, 0, sizeof(blobs));
 	FILE* res = NULL;
-	char *pattern = ltr_int_get_data_path("blob_*.bin");
-	if(glob(pattern, GLOB_NOSORT, NULL, &blobs) == GLOB_NOMATCH){
-		free(pattern);
+	char *pattern_fw = ltr_int_get_data_path("fw_blob_*.bin");
+	char *pattern_legacy = ltr_int_get_data_path("blob_*.bin");
+	int g = glob(pattern_fw, GLOB_NOSORT, NULL, &blobs);
+	if(g == GLOB_NOMATCH){
+		g = glob(pattern_legacy, GLOB_NOSORT, NULL, &blobs);
+	}else if(g == 0){
+		glob(pattern_legacy, GLOB_NOSORT | GLOB_APPEND, NULL, &blobs);
+	}
+	free(pattern_fw);
+	free(pattern_legacy);
+	if(g == GLOB_NOMATCH){
 		globfree(&blobs);
 		fclose(installer);
 		return NULL;
@@ -364,7 +372,6 @@ static FILE* find_blob(const char *installer_name)
 		fclose(res);
 		res = NULL;
 	}
-	free(pattern);
 	globfree(&blobs);
 	fclose(installer);
 	return res;
