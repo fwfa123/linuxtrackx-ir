@@ -116,6 +116,7 @@ See the [Migration Guide](docs/readme/MIGRATION_GUIDE_USR_LOCAL_TO_OPT.md).
 2. **Calibrate tracking points** for accurate head tracking
 3. **Set up game profiles** for different applications
 4. **Test tracking functionality** before gaming
+5. **Optional:** On the **System** tab under **Appearance**, pick a GUI skin (native, Default, or demo themes such as Apache / F-35 / X-wing). Use **Open Skins Folder** and the seeded `README.md` to author custom Qt Style Sheet skins.
 
 ### Alternative Tracking Methods
 - **Controller / HOTAS hotkeys** - Bind Pause/Resume and Recenter to joystick buttons in the Tracking window (no AntimicroX)

@@ -1,7 +1,9 @@
 #include <QApplication>
+#include <QLocale>
 #include <QTranslator>
 
 #include "ltr_gui.h"
+#include "skin_manager.h"
 #include <utils.h>
 #include <locale.h>
 #include <stdlib.h>
@@ -27,6 +29,10 @@ static void catch_sigpipe(int sig)
      setlocale(LC_ALL, "C");
      QApplication app(argc, argv);
 
+     // Apply saved skin (or leave native platform style). Fusion is only
+     // forced when a non-native QSS skin is active — see SkinManager.
+     SkinManager::instance().loadSaved();
+
      // Load UI translations if available (embedded in resources)
      QTranslator appTranslator;
      const QString locale = QLocale::system().name();
@@ -39,4 +45,3 @@ static void catch_sigpipe(int sig)
      gui.show();
      return app.exec();
  }
-

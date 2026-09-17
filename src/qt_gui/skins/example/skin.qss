@@ -1,0 +1,296 @@
+/*
+ * =============================================================================
+ * EXAMPLE SKIN — "Apache cockpit" look for Linuxtrack X-IR
+ * =============================================================================
+ * NOTES for authors:
+ *
+ * 1. Copy this folder to make your own skin:
+ *      ~/.config/linuxtrack/skins/example/  →  ~/.config/linuxtrack/skins/my-skin/
+ *    Keep the folder name as the id shown in System → Appearance.
+ *
+ * 2. Colors come from skin.ini (@token → hex). Edit skin.ini to re-tint the
+ *    whole UI without hunting through every rule below.
+ *
+ * 3. This skin intentionally uses a FIXED military HUD palette (not OS
+ *    palette()). That is fine for a demo / personal look; use palette(...)
+ *    instead if you want light/dark desktop themes to keep working.
+ *
+ * 4. Fonts: we prefer a condensed sans + monospace for readouts. If a face
+ *    is missing, Qt falls back to the next family in the list.
+ *
+ * 5. Preview in the GUI, then Apply. Qt Style Sheets reference:
+ *    https://doc.qt.io/qt-6/stylesheet-reference.html
+ * =============================================================================
+ */
+
+/* --- Global glass / panel chrome ------------------------------------------ */
+QWidget {
+  background-color: @primary_bg;
+  color: @primary_fg;
+  font-family: "DejaVu Sans Condensed", "Noto Sans Condensed", "Liberation Sans Narrow", "Ubuntu Condensed", "DejaVu Sans", sans-serif;
+  font-size: 12px;
+}
+
+QMainWindow, QDialog, QDockWidget {
+  background-color: @primary_bg;
+  color: @primary_fg;
+}
+
+/* Monospace feel for logs / system text / numeric fields */
+QTextEdit, QPlainTextEdit, QLineEdit, QSpinBox, QDoubleSpinBox,
+QAbstractSpinBox, QComboBox QAbstractItemView {
+  font-family: "DejaVu Sans Mono", "Noto Sans Mono", "Liberation Mono", "Ubuntu Mono", monospace;
+  font-size: 12px;
+}
+
+QToolTip {
+  background-color: @panel_bg;
+  color: @accent;
+  border: 1px solid @accent;
+  font-family: "DejaVu Sans Mono", "Noto Sans Mono", monospace;
+  font-size: 11px;
+  padding: 4px;
+}
+
+/* --- Tabs (MFD-like header strip) ----------------------------------------- */
+QTabWidget::pane {
+  border: 1px solid @bezel;
+  background-color: @panel_bg;
+  top: -1px;
+}
+
+QTabBar::tab {
+  background-color: @primary_bg;
+  color: @muted;
+  border: 1px solid @bezel;
+  border-bottom: none;
+  padding: 6px 14px;
+  margin-right: 2px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+QTabBar::tab:selected {
+  background-color: @panel_bg;
+  color: @accent;
+  border-color: @accent;
+}
+
+QTabBar::tab:hover:!selected {
+  color: @primary_fg;
+  border-color: @muted;
+}
+
+/* --- Group boxes / frames (instrument bezels) ----------------------------- */
+QGroupBox {
+  background-color: @panel_bg;
+  border: 1px solid @bezel;
+  border-radius: 2px;
+  margin-top: 1.1em;
+  padding-top: 0.6em;
+  font-weight: bold;
+  color: @accent;
+}
+
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 10px;
+  padding: 0 6px;
+  color: @accent;
+  background-color: @panel_bg;
+  letter-spacing: 1px;
+}
+
+QFrame {
+  color: @primary_fg;
+}
+
+QFrame[frameShape="4"], /* HLine */
+QFrame[frameShape="5"] { /* VLine */
+  color: @bezel;
+}
+
+/* --- Buttons (armament / mode select feel) -------------------------------- */
+QPushButton {
+  background-color: @button_bg;
+  color: @primary_fg;
+  border: 1px solid @bezel;
+  border-radius: 2px;
+  padding: 5px 12px;
+  font-weight: bold;
+  letter-spacing: 0.4px;
+}
+
+QPushButton:hover {
+  background-color: @button_hover;
+  border-color: @accent;
+  color: @accent;
+}
+
+QPushButton:pressed {
+  background-color: @primary_bg;
+  border-color: @warning;
+  color: @warning;
+}
+
+QPushButton:default {
+  border: 1px solid @accent;
+  color: @accent;
+}
+
+QPushButton:disabled {
+  color: @muted;
+  border-color: @bezel;
+  background-color: @primary_bg;
+}
+
+/* --- Inputs --------------------------------------------------------------- */
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+  background-color: @input_bg;
+  color: @accent;
+  border: 1px solid @bezel;
+  border-radius: 1px;
+  selection-background-color: @accent;
+  selection-color: @primary_bg;
+  padding: 3px;
+}
+
+QComboBox::drop-down {
+  border-left: 1px solid @bezel;
+  width: 18px;
+}
+
+QComboBox QAbstractItemView {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @accent;
+  selection-background-color: @button_hover;
+  selection-color: @accent;
+}
+
+QCheckBox, QRadioButton {
+  color: @primary_fg;
+  spacing: 8px;
+}
+
+QCheckBox::indicator, QRadioButton::indicator {
+  width: 14px;
+  height: 14px;
+  border: 1px solid @bezel;
+  background-color: @input_bg;
+}
+
+QCheckBox::indicator:checked {
+  background-color: @accent;
+  border-color: @accent;
+}
+
+QRadioButton::indicator:checked {
+  background-color: @accent;
+  border-color: @accent;
+  border-radius: 7px;
+}
+
+QSlider::groove:horizontal {
+  height: 4px;
+  background: @bezel;
+}
+
+QSlider::handle:horizontal {
+  background: @accent;
+  width: 12px;
+  margin: -5px 0;
+  border-radius: 1px;
+}
+
+QProgressBar {
+  background-color: @input_bg;
+  border: 1px solid @bezel;
+  text-align: center;
+  color: @accent;
+}
+
+QProgressBar::chunk {
+  background-color: @nvg_green;
+}
+
+/* --- Lists / tables / scroll ---------------------------------------------- */
+QTreeView, QListView, QTableView, QHeaderView::section {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @bezel;
+  gridline-color: @bezel;
+}
+
+QHeaderView::section {
+  background-color: @button_bg;
+  color: @accent;
+  font-weight: bold;
+  padding: 4px;
+}
+
+QScrollBar:vertical, QScrollBar:horizontal {
+  background: @primary_bg;
+  border: 1px solid @bezel;
+}
+
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+  background: @bezel;
+  min-height: 24px;
+  min-width: 24px;
+}
+
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+  background: @accent;
+}
+
+/* --- Menus / status ------------------------------------------------------- */
+QMenuBar {
+  background-color: @primary_bg;
+  color: @muted;
+  border-bottom: 1px solid @bezel;
+}
+
+QMenuBar::item:selected {
+  background-color: @button_hover;
+  color: @accent;
+}
+
+QMenu {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @bezel;
+}
+
+QMenu::item:selected {
+  background-color: @button_hover;
+  color: @accent;
+}
+
+QStatusBar {
+  background-color: @primary_bg;
+  color: @muted;
+  border-top: 1px solid @bezel;
+}
+
+QLabel {
+  color: @primary_fg;
+  background-color: transparent;
+}
+
+/* --- Known ltr_gui object names ------------------------------------------- */
+QLabel#GamingPrereqHintLabel,
+QLabel#AdvancedWarningLabel {
+  font-weight: bold;
+  color: @warning;
+  letter-spacing: 0.5px;
+}
+
+QLabel#label_system_info_title {
+  color: @accent;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}

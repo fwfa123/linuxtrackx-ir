@@ -21,10 +21,13 @@ void WineLauncher::envSet(const QString var, const QString val)
     ltr_int_log_message(s.str().c_str());
 }
 
-WineLauncher::WineLauncher():winePath(QString::fromUtf8("")), available(false)
+WineLauncher::WineLauncher():winePath(QString::fromUtf8("")), lastOutput_(), available(false),
+  finishedSignaled(false)
 {
   std::ostringstream s;
   env = QProcessEnvironment::systemEnvironment();
+  // WoW64 Wine (Arch 10+/11) rejects win32 prefixes; never inherit a user WINEARCH=win32.
+  envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   
   // NEW: Select best wine version before checking
   QString bestWine = selectBestWineVersion();
@@ -344,8 +347,16 @@ bool WineLauncher::isDateGreaterOrEqual(int year1, int month1, int day1, int yea
   return day1 >= day2;
 }
 
+bool WineLauncher::wow64RejectedWin32() const
+{
+  return lastOutput_.contains(QStringLiteral("not supported in wow64 mode"),
+                              Qt::CaseInsensitive);
+}
+
 void WineLauncher::run(const QString &tgt)
 {
+  finishedSignaled = false;
+  lastOutput_.clear();
   envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
   QString cmd(winePath);
@@ -359,6 +370,8 @@ void WineLauncher::run(const QString &tgt)
 
 void WineLauncher::run(const QString &tgt, const QStringList &params)
 {
+  finishedSignaled = false;
+  lastOutput_.clear();
   envSet(QString::fromUtf8("WINEARCH"), QString::fromUtf8("win64"));
   wine.setProcessEnvironment(env);
   QString cmd(winePath);
@@ -388,9 +401,14 @@ void WineLauncher::finished(int exitCode, QProcess::ExitStatus exitStatus)
   }
   ltr_int_log_message("Wine finished with exitcode %d (%s).", exitCode, status.toUtf8().constData());
   QString msg(QString::fromUtf8(wine.readAllStandardOutput().constData()));
+  lastOutput_ += msg;
   std::ostringstream s;
   s<<msg.toUtf8().constData()<<"\n";
   ltr_int_log_message(s.str().c_str());
+  if(finishedSignaled){
+    return;
+  }
+  finishedSignaled = true;
   if(exitCode == 0 ){
     emit finished(true);
   }else{
@@ -427,11 +445,16 @@ const QString errorStr(QProcess::ProcessError error)
 void WineLauncher::error(QProcess::ProcessError error)
 {
   QString msg(QString::fromUtf8(wine.readAllStandardOutput().constData()));
+  lastOutput_ += msg;
   QString reason = errorStr(error);
   ltr_int_log_message("Error launching wine(%s)!", reason.toUtf8().constData());
   std::ostringstream s;
   s<<msg.toUtf8().constData()<<"\n";
   ltr_int_log_message(s.str().c_str());
+  if(finishedSignaled){
+    return;
+  }
+  finishedSignaled = true;
   emit finished(false);
 }
 
