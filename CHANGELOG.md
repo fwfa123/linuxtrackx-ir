@@ -4,6 +4,16 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: **2.0.x** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
+## [2.2.1] - 2026-09-17
+
+### Added
+
+- **New custom skins** New json driven Theme access on the System Tab
+
+### Fixed
+
+- **WOW64 firmware install failure** The firmware wizard no longer forces a 32-bit Wine prefix, and TIR5V2 (131d:0158) will accept tir5.fw as well as tir5v2.fw.gz.
+
 ## [2.2.0] - 2026-08-01
 
 ### Added
