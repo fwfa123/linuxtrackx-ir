@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QDateTime>
 #include <QDesktopServices>
+#include <QPalette>
 #include <QUrl>
 
 #ifdef HAVE_CONFIG_H
@@ -46,7 +47,9 @@ void AboutDialog::setupLayout()
     titleLabel->setAlignment(Qt::AlignCenter);
     
     QLabel *versionLabel = new QLabel(QStringLiteral("Version %1").arg(QStringLiteral(PACKAGE_VERSION)));
-    versionLabel->setStyleSheet(QStringLiteral("font-size: 14px; color: #666;"));
+    const QString mutedColor = palette().color(QPalette::PlaceholderText).name();
+    versionLabel->setStyleSheet(
+        QStringLiteral("font-size: 14px; color: %1;").arg(mutedColor));
     versionLabel->setAlignment(Qt::AlignCenter);
     
     titleLayout->addWidget(titleLabel);
@@ -100,7 +103,8 @@ void AboutDialog::setupLayout()
     QString diagText = tr("Config file: %1\nMaster: in-process (GUI)").arg(configPath);
     QLabel *diagValue = new QLabel(diagText);
     diagValue->setWordWrap(true);
-    diagValue->setStyleSheet(QStringLiteral("font-size: 11px; color: #444;"));
+    diagValue->setStyleSheet(
+        QStringLiteral("font-size: 11px; color: %1;").arg(mutedColor));
     diagValue->setTextInteractionFlags(Qt::TextSelectableByMouse);
     mainLayout->addWidget(diagValue);
     

@@ -205,7 +205,7 @@
        <item>
         <widget class="QLabel" name="GamingPrereqHintLabel">
          <property name="styleSheet">
-          <string>font-weight: bold; color: #c0392b;</string>
+          <string>font-weight: bold; color: palette(highlight);</string>
          </property>
          <property name="text">
           <string>Install TrackIR firmware and MFC42 libraries above to enable Wine Bridge installation and prefix testing.</string>
@@ -615,6 +615,109 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="AppearanceGroupBox">
+         <property name="title">
+          <string>Appearance</string>
+         </property>
+         <layout class="QVBoxLayout" name="appearanceGroupLayout">
+          <item>
+           <layout class="QHBoxLayout" name="appearanceSkinRow">
+            <item>
+             <widget class="QLabel" name="SkinLabel">
+              <property name="text">
+               <string>Appearance skin:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="SkinComboBox">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="accessibleName">
+               <string>Appearance skin selector</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SkinPreviewButton">
+              <property name="text">
+               <string>Preview</string>
+              </property>
+              <property name="toolTip">
+               <string>Apply the selected skin temporarily without saving</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SkinApplyButton">
+              <property name="text">
+               <string>Apply</string>
+              </property>
+              <property name="toolTip">
+               <string>Save and apply the selected skin</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="SkinCancelButton">
+              <property name="text">
+               <string>Cancel</string>
+              </property>
+              <property name="toolTip">
+               <string>Restore the previously saved skin</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="appearanceFolderRow">
+            <item>
+             <widget class="QPushButton" name="OpenSkinsFolderButton">
+              <property name="text">
+               <string>Open Skins Folder</string>
+              </property>
+              <property name="toolTip">
+               <string>Open ~/.config/linuxtrack/skins/ (creates it and a README.md how-to if needed)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="appearanceFolderSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="SkinHelpHintLabel">
+            <property name="text">
+             <string>Custom skins: open the skins folder, copy example/, f35/, or xwing/ to a new name, edit NOTES in skin.qss / skin.ini, then Preview/Apply.</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+            <property name="accessibleName">
+             <string>Skin authoring hint</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="LogsSupportGroupBox">
          <property name="title">
           <string>Logs &amp; Support</string>
@@ -789,7 +892,7 @@
           <item row="4" column="0" colspan="2">
            <widget class="QCheckBox" name="UsbResetCheck">
             <property name="text">
-             <string>Do usbreset before start tracking</string>
+             <string>Reset USB device before starting tracking</string>
             </property>
             <property name="toolTip">
              <string>Try this if your camera remains dark after pressing Start. Resets the TrackIR USB device before tracking (GitLab #51).</string>
@@ -831,7 +934,7 @@
        <item>
         <widget class="QLabel" name="AdvancedWarningLabel">
          <property name="styleSheet">
-          <string>font-weight: bold; color: #c0392b;</string>
+          <string>font-weight: bold; color: palette(highlight);</string>
          </property>
          <property name="text">
           <string>This tab is for special uses of Linuxtrack. Most users should use the Tracking Window for starting Linuxtrack.</string>

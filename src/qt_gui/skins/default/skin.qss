@@ -1,0 +1,21 @@
+/*
+ * Linuxtrack X-IR — default skin
+ *
+ * Palette-aware only: follows the OS light/dark theme.
+ * Optional @tokens from skin.ini are available for custom skins; this
+ * bundled default intentionally avoids hardcoded hex colors.
+ */
+
+QPushButton:default {
+  border: 1px solid palette(highlight);
+}
+
+QLabel#GamingPrereqHintLabel,
+QLabel#AdvancedWarningLabel {
+  font-weight: bold;
+  color: palette(highlight);
+}
+
+QLabel#label_system_info_title {
+  color: palette(highlight);
+}

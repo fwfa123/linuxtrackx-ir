@@ -224,7 +224,9 @@ void DeviceSetup::refresh()
   // Prefer TrackIR when available by adding it first
   std::cout << "[DeviceSetup::refresh] Adding TrackIR devices..." << std::endl;
   res |= TirPrefs::AddAvailableDevices(*(ui.DeviceSelector), this);
-  std::cout << "[DeviceSetup::refresh] TrackIR devices added, result: " << (res ? "true" : "false") << std::endl;
+  std::cout << "[DeviceSetup::refresh] TrackIR devices added, result: "
+            << (res ? "true" : "false")
+            << " (false means TrackIR was not the already-selected device)" << std::endl;
   res |= WiimotePrefs::AddAvailableDevices(*(ui.DeviceSelector));
 #ifdef DARWIN
   res |= MacP3ePrefs::AddAvailableDevices(*(ui.DeviceSelector));

@@ -102,6 +102,11 @@ class LinuxtrackGui : public QMainWindow
   // System information slots
   void on_button_copy_system_info_pressed();
   void on_button_refresh_system_info_pressed();
+  void on_SkinPreviewButton_pressed();
+  void on_SkinApplyButton_pressed();
+  void on_SkinCancelButton_pressed();
+  void on_OpenSkinsFolderButton_pressed();
+  void initAppearanceSkinUi();
   void updateSystemInformation();
   QString getSystemInformation();
   QString getLinuxDistribution();

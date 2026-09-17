@@ -11,7 +11,7 @@
 <table>
 <tr>
 <td>
-<img src="system.png" alt="System tab showing System Information, Logs &amp; Support, Troubleshooting (including Video_on Delay Timing and Do usbreset before start tracking), and Utilities.">
+<img src="system.png" alt="System tab showing System Information, Logs &amp; Support, Troubleshooting (including Video_on Delay Timing and Reset USB device before starting tracking), and Utilities.">
 </td>
 </tr>
 </table>
@@ -36,6 +36,19 @@
 <li><strong>Copy System Info to Clipboard:</strong> Copies all system information to clipboard for easy sharing when reporting issues</li>
 <li><strong>Refresh:</strong> Updates the system information display with current data</li>
 </ul>
+
+<h2>Appearance</h2>
+<p>Choose how the LinuxTrack GUI looks on the <strong>System</strong> tab.</p>
+<p>Built-in options:</p>
+<ul>
+<li><strong>System (native):</strong> Desktop/platform widget style with no stylesheet (default for new installs)</li>
+<li><strong>Default:</strong> Sparse Fusion theme tweaks that follow the OS light/dark palette</li>
+<li><strong>Example (Apache cockpit):</strong> Demo military HUD look (dark olive panels, amber accents). Folder id <code>example/</code></li>
+<li><strong>Example (F-35 glass):</strong> Demo modern glass-cockpit look (charcoal panels, cyan symbology). Folder id <code>f35/</code></li>
+<li><strong>Example (X-wing cockpit):</strong> Demo starfighter panel look (gunmetal, amber scopes, Rebel-red accents). Folder id <code>xwing/</code></li>
+</ul>
+<p>Use <strong>Preview</strong> to try a skin without saving, <strong>Apply</strong> to persist it, and <strong>Cancel</strong> to restore the last applied skin. Non-native skins use the Qt Fusion style for consistent QSS; native restores the platform style.</p>
+<p><strong>Open Skins Folder</strong> opens <code>~/.config/linuxtrack/skins/</code>, refreshes <code>README.md</code>, and refreshes the three demo folders from the app bundle. To make your own skin, <strong>copy</strong> a demo folder to a new name (do not edit demos in place), then edit <code>skin.qss</code> and optional <code>skin.ini</code> (<code>@token</code> colors). Preference is stored in <code>~/.config/linuxtrack/ltr_gui.conf</code> under <code>appearance/skin</code>.</p>
 
 <h2>Logs &amp; Support</h2>
 <p>Use these controls when collecting diagnostics for bug reports or local troubleshooting.</p>
@@ -70,7 +83,7 @@
 <h3>TrackIR Initialization</h3>
 <ul>
 <li><strong><a href="dev_setup.htm#Video_on_Delay">Video_on Delay Timing</a>:</strong> On the <strong>System</strong> tab under <strong>Troubleshooting</strong>, choose <strong>Default</strong> (no delay) for most TrackIR devices. Select <strong>Manual</strong> to expose a microseconds spinbox if camera LEDs fail to activate properly after Start. See the <a href="dev_setup.htm#Video_on_Delay">TrackIR setup guide</a> for screenshots and suggested values.</li>
-<li><strong>Do usbreset before start tracking:</strong> Opt-in checkbox (unchecked by default). Enable this if your TrackIR camera stays dark after pressing <strong>Start</strong>, or the log shows repeated <strong>"Data receive request timed out"</strong> messages (GitLab issue #51, especially TrackIR 5 v2, USB ID <code>131d:0158</code>). LinuxTrack issues a USB bus reset before TrackIR initialization — the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually. Check the box to enable; uncheck to disable. This addresses a wedged USB state and is <em>not</em> the same fix as Video_on Delay timing (LED activation); you may need one or both depending on your symptoms.</li>
+<li><strong>Reset USB device before starting tracking:</strong> Opt-in checkbox (unchecked by default). Enable this if your TrackIR camera stays dark after pressing <strong>Start</strong>, or the log shows repeated <strong>"Data receive request timed out"</strong> messages (GitLab issue #51, especially TrackIR 5 v2, USB ID <code>131d:0158</code>). LinuxTrack issues a USB bus reset before TrackIR initialization — the same effect as unplugging and replugging the device, or running <code>usbreset 131d:0158</code> manually. Check the box to enable; uncheck to disable. This addresses a wedged USB state and is <em>not</em> the same fix as Video_on Delay timing (LED activation); you may need one or both depending on your symptoms.</li>
 </ul>
 
 <h2>Utilities</h2>
@@ -118,7 +131,7 @@
 <li>Use legacy computation methods if experiencing issues with newer algorithms</li>
 <li>Lower <strong>Tracking rate (FPS)</strong> on the Tracking setup tab if you want fewer pose/preview updates and less CPU use</li>
 <li>Disable preview windows if you don't need them</li>
-<li>On the <strong>System</strong> tab, enable <strong>Do usbreset before start tracking</strong> if the TrackIR camera preview stays dark after Start (see Troubleshooting above)</li>
+<li>On the <strong>System</strong> tab, enable <strong>Reset USB device before starting tracking</strong> if the TrackIR camera preview stays dark after Start (see Troubleshooting above)</li>
 </ul>
 
 <h2>Log Files</h2>

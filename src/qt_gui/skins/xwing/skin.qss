@@ -1,0 +1,292 @@
+/*
+ * =============================================================================
+ * EXAMPLE SKIN — Star Wars X-wing cockpit look for Linuxtrack X-IR
+ * =============================================================================
+ * NOTES for authors:
+ *
+ * 1. Copy this folder to make your own skin:
+ *      ~/.config/linuxtrack/skins/xwing/  →  ~/.config/linuxtrack/skins/my-skin/
+ *
+ * 2. Colors come from skin.ini (@token). Edit skin.ini to re-tint quickly.
+ *
+ * 3. Inspired by Rebel starfighter panels: gunmetal, amber scopes, and that
+ *    classic red targeting-computer glow — warmer and more industrial than
+ *    the F-35 glass skin, redder than the Apache olive HUD.
+ *
+ * 4. Fixed palette (not OS palette()). Use palette(...) if you want desktop
+ *    light/dark themes to keep driving colors.
+ *
+ * 5. Preview in System → Appearance, then Apply.
+ *    https://doc.qt.io/qt-6/stylesheet-reference.html
+ * =============================================================================
+ */
+
+QWidget {
+  background-color: @primary_bg;
+  color: @primary_fg;
+  font-family: "DejaVu Sans", "Noto Sans", "Liberation Sans", sans-serif;
+  font-size: 12px;
+}
+
+QMainWindow, QDialog, QDockWidget {
+  background-color: @primary_bg;
+  color: @primary_fg;
+}
+
+QTextEdit, QPlainTextEdit, QLineEdit, QSpinBox, QDoubleSpinBox,
+QAbstractSpinBox, QComboBox QAbstractItemView {
+  font-family: "DejaVu Sans Mono", "Noto Sans Mono", "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+QToolTip {
+  background-color: @panel_bg;
+  color: @scope_amber;
+  border: 1px solid @rebel_red;
+  padding: 4px 7px;
+  font-family: "DejaVu Sans Mono", "Noto Sans Mono", monospace;
+  font-size: 11px;
+}
+
+/* --- Targeting / mode strip ----------------------------------------------- */
+QTabWidget::pane {
+  border: 2px solid @hull_edge;
+  background-color: @panel_bg;
+  top: -1px;
+}
+
+QTabBar::tab {
+  background-color: @button_bg;
+  color: @muted;
+  border: 1px solid @hull_edge;
+  border-bottom: none;
+  padding: 6px 14px;
+  margin-right: 3px;
+  font-weight: bold;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+
+QTabBar::tab:selected {
+  background-color: @panel_bg;
+  color: @rebel_red;
+  border-color: @rebel_red;
+}
+
+QTabBar::tab:hover:!selected {
+  color: @scope_amber;
+  border-color: @scope_amber;
+}
+
+/* --- Hull panels / instrument cages --------------------------------------- */
+QGroupBox {
+  background-color: @panel_bg;
+  border: 2px solid @hull_edge;
+  border-radius: 0px;
+  margin-top: 1.1em;
+  padding-top: 0.65em;
+  font-weight: bold;
+  color: @scope_amber;
+}
+
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 10px;
+  padding: 0 6px;
+  color: @scope_amber;
+  background-color: @panel_bg;
+  letter-spacing: 1px;
+}
+
+QFrame {
+  color: @primary_fg;
+}
+
+/* --- Switches / fire-control buttons -------------------------------------- */
+QPushButton {
+  background-color: @button_bg;
+  color: @primary_fg;
+  border: 2px solid @hull_edge;
+  border-radius: 0px;
+  padding: 5px 12px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+QPushButton:hover {
+  background-color: @button_hover;
+  border-color: @scope_amber;
+  color: @scope_amber;
+}
+
+QPushButton:pressed {
+  background-color: @primary_bg;
+  border-color: @rebel_red;
+  color: @rebel_red;
+}
+
+QPushButton:default {
+  border: 2px solid @rebel_red;
+  color: @rebel_red;
+}
+
+QPushButton:disabled {
+  color: @muted;
+  border-color: @hull_edge;
+  background-color: @primary_bg;
+}
+
+/* --- Scope / computer readouts -------------------------------------------- */
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+  background-color: @input_bg;
+  color: @scope_amber;
+  border: 2px solid @hull_edge;
+  border-radius: 0px;
+  selection-background-color: @rebel_red;
+  selection-color: @primary_fg;
+  padding: 3px;
+}
+
+QComboBox::drop-down {
+  border-left: 2px solid @hull_edge;
+  width: 18px;
+}
+
+QComboBox QAbstractItemView {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 2px solid @rebel_red;
+  selection-background-color: @button_hover;
+  selection-color: @scope_amber;
+}
+
+QCheckBox, QRadioButton {
+  color: @primary_fg;
+  spacing: 8px;
+}
+
+QCheckBox::indicator, QRadioButton::indicator {
+  width: 14px;
+  height: 14px;
+  border: 2px solid @hull_edge;
+  background-color: @input_bg;
+}
+
+QCheckBox::indicator:checked {
+  background-color: @rebel_red;
+  border-color: @rebel_red;
+}
+
+QRadioButton::indicator {
+  border-radius: 7px;
+}
+
+QRadioButton::indicator:checked {
+  background-color: @rebel_red;
+  border-color: @rebel_red;
+}
+
+QSlider::groove:horizontal {
+  height: 4px;
+  background: @hull_edge;
+}
+
+QSlider::handle:horizontal {
+  background: @rebel_red;
+  width: 12px;
+  margin: -5px 0;
+}
+
+QProgressBar {
+  background-color: @input_bg;
+  border: 2px solid @hull_edge;
+  text-align: center;
+  color: @scope_amber;
+  font-weight: bold;
+}
+
+QProgressBar::chunk {
+  background-color: @rebel_red;
+}
+
+/* --- Lists / scroll ------------------------------------------------------- */
+QTreeView, QListView, QTableView, QHeaderView::section {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @hull_edge;
+  gridline-color: @hull_edge;
+}
+
+QHeaderView::section {
+  background-color: @button_bg;
+  color: @scope_amber;
+  font-weight: bold;
+  padding: 4px;
+  border: 1px solid @hull_edge;
+}
+
+QScrollBar:vertical, QScrollBar:horizontal {
+  background: @primary_bg;
+  border: 1px solid @hull_edge;
+}
+
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+  background: @hull_edge;
+  min-height: 24px;
+  min-width: 24px;
+}
+
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+  background: @rebel_red;
+}
+
+/* --- Menus / status ------------------------------------------------------- */
+QMenuBar {
+  background-color: @primary_bg;
+  color: @muted;
+  border-bottom: 2px solid @hull_edge;
+}
+
+QMenuBar::item:selected {
+  background-color: @button_hover;
+  color: @scope_amber;
+}
+
+QMenu {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 2px solid @hull_edge;
+}
+
+QMenu::item:selected {
+  background-color: @button_hover;
+  color: @rebel_red;
+}
+
+QStatusBar {
+  background-color: @primary_bg;
+  color: @muted;
+  border-top: 2px solid @hull_edge;
+}
+
+QLabel {
+  color: @primary_fg;
+  background-color: transparent;
+}
+
+/* --- Known ltr_gui object names ------------------------------------------- */
+QLabel#GamingPrereqHintLabel,
+QLabel#AdvancedWarningLabel {
+  font-weight: bold;
+  color: @rebel_red;
+  letter-spacing: 0.5px;
+}
+
+QLabel#label_system_info_title {
+  color: @scope_amber;
+  font-weight: bold;
+  font-size: 14px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}

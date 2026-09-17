@@ -1,0 +1,305 @@
+/*
+ * =============================================================================
+ * EXAMPLE SKIN — F-35 glass cockpit look for Linuxtrack X-IR
+ * =============================================================================
+ * NOTES for authors:
+ *
+ * 1. Copy this folder to make your own skin:
+ *      ~/.config/linuxtrack/skins/f35/  →  ~/.config/linuxtrack/skins/my-skin/
+ *
+ * 2. Colors come from skin.ini (@token). Edit skin.ini to re-tint quickly.
+ *
+ * 3. Inspired by modern glass / PCD-style cockpits: charcoal panels, cool cyan
+ *    symbology, flat controls — contrast with the warmer Apache example skin.
+ *
+ * 4. Fixed palette (not OS palette()). Use palette(...) if you want desktop
+ *    light/dark themes to keep driving colors.
+ *
+ * 5. Preview in System → Appearance, then Apply.
+ *    https://doc.qt.io/qt-6/stylesheet-reference.html
+ * =============================================================================
+ */
+
+QWidget {
+  background-color: @primary_bg;
+  color: @primary_fg;
+  font-family: "Inter", "Noto Sans", "DejaVu Sans", "Liberation Sans", sans-serif;
+  font-size: 12px;
+}
+
+QMainWindow, QDialog, QDockWidget {
+  background-color: @primary_bg;
+  color: @primary_fg;
+}
+
+QTextEdit, QPlainTextEdit, QLineEdit, QSpinBox, QDoubleSpinBox,
+QAbstractSpinBox, QComboBox QAbstractItemView {
+  font-family: "IBM Plex Mono", "Noto Sans Mono", "DejaVu Sans Mono", "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+QToolTip {
+  background-color: @panel_bg;
+  color: @accent;
+  border: 1px solid @accent_dim;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+
+/* --- Panoramic display / tab chrome --------------------------------------- */
+QTabWidget::pane {
+  border: 1px solid @glass_edge;
+  background-color: @panel_bg;
+  top: -1px;
+}
+
+QTabBar::tab {
+  background-color: @primary_bg;
+  color: @muted;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  margin-right: 1px;
+  font-weight: 600;
+}
+
+QTabBar::tab:selected {
+  background-color: @panel_bg;
+  color: @accent;
+  border-bottom: 2px solid @accent;
+}
+
+QTabBar::tab:hover:!selected {
+  color: @primary_fg;
+  background-color: @button_hover;
+}
+
+/* --- Soft glass panels ---------------------------------------------------- */
+QGroupBox {
+  background-color: @panel_bg;
+  border: 1px solid @glass_edge;
+  border-radius: 6px;
+  margin-top: 1.0em;
+  padding-top: 0.7em;
+  font-weight: 600;
+  color: @accent;
+}
+
+QGroupBox::title {
+  subcontrol-origin: margin;
+  left: 12px;
+  padding: 0 8px;
+  color: @accent;
+  background-color: @panel_bg;
+}
+
+QFrame {
+  color: @primary_fg;
+}
+
+/* --- Flat touch-style buttons --------------------------------------------- */
+QPushButton {
+  background-color: @button_bg;
+  color: @primary_fg;
+  border: 1px solid @glass_edge;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-weight: 600;
+}
+
+QPushButton:hover {
+  background-color: @button_hover;
+  border-color: @accent_dim;
+  color: @accent;
+}
+
+QPushButton:pressed {
+  background-color: @input_bg;
+  border-color: @accent;
+  color: @accent;
+}
+
+QPushButton:default {
+  border: 1px solid @accent;
+  color: @accent;
+  background-color: @button_bg;
+}
+
+QPushButton:disabled {
+  color: @muted;
+  border-color: @glass_edge;
+  background-color: @primary_bg;
+}
+
+/* --- Inputs (glass readouts) ---------------------------------------------- */
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {
+  background-color: @input_bg;
+  color: @accent;
+  border: 1px solid @glass_edge;
+  border-radius: 4px;
+  selection-background-color: @accent_dim;
+  selection-color: @primary_fg;
+  padding: 4px 6px;
+}
+
+QComboBox::drop-down {
+  border-left: 1px solid @glass_edge;
+  width: 20px;
+}
+
+QComboBox QAbstractItemView {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @accent_dim;
+  selection-background-color: @button_hover;
+  selection-color: @accent;
+  outline: 0;
+}
+
+QCheckBox, QRadioButton {
+  color: @primary_fg;
+  spacing: 8px;
+}
+
+QCheckBox::indicator, QRadioButton::indicator {
+  width: 15px;
+  height: 15px;
+  border: 1px solid @glass_edge;
+  background-color: @input_bg;
+  border-radius: 3px;
+}
+
+QCheckBox::indicator:checked {
+  background-color: @accent;
+  border-color: @accent;
+}
+
+QRadioButton::indicator {
+  border-radius: 8px;
+}
+
+QRadioButton::indicator:checked {
+  background-color: @accent;
+  border-color: @accent;
+}
+
+QSlider::groove:horizontal {
+  height: 3px;
+  background: @glass_edge;
+  border-radius: 1px;
+}
+
+QSlider::handle:horizontal {
+  background: @accent;
+  width: 14px;
+  margin: -6px 0;
+  border-radius: 7px;
+}
+
+QProgressBar {
+  background-color: @input_bg;
+  border: 1px solid @glass_edge;
+  border-radius: 4px;
+  text-align: center;
+  color: @primary_fg;
+}
+
+QProgressBar::chunk {
+  background-color: @status_ok;
+  border-radius: 3px;
+}
+
+/* --- Views / scroll ------------------------------------------------------- */
+QTreeView, QListView, QTableView, QHeaderView::section {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @glass_edge;
+  gridline-color: @glass_edge;
+}
+
+QHeaderView::section {
+  background-color: @button_bg;
+  color: @accent;
+  font-weight: 600;
+  padding: 5px;
+  border: none;
+  border-right: 1px solid @glass_edge;
+}
+
+QScrollBar:vertical, QScrollBar:horizontal {
+  background: @primary_bg;
+  border: none;
+  width: 10px;
+  height: 10px;
+}
+
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+  background: @glass_edge;
+  border-radius: 4px;
+  min-height: 24px;
+  min-width: 24px;
+}
+
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+  background: @accent_dim;
+}
+
+QScrollBar::add-line, QScrollBar::sub-line {
+  height: 0;
+  width: 0;
+}
+
+/* --- Menus / status ------------------------------------------------------- */
+QMenuBar {
+  background-color: @primary_bg;
+  color: @muted;
+  border-bottom: 1px solid @glass_edge;
+}
+
+QMenuBar::item:selected {
+  background-color: @button_hover;
+  color: @accent;
+}
+
+QMenu {
+  background-color: @panel_bg;
+  color: @primary_fg;
+  border: 1px solid @glass_edge;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+QMenu::item {
+  padding: 5px 18px;
+  border-radius: 3px;
+}
+
+QMenu::item:selected {
+  background-color: @button_hover;
+  color: @accent;
+}
+
+QStatusBar {
+  background-color: @primary_bg;
+  color: @muted;
+  border-top: 1px solid @glass_edge;
+}
+
+QLabel {
+  color: @primary_fg;
+  background-color: transparent;
+}
+
+/* --- Known ltr_gui object names ------------------------------------------- */
+QLabel#GamingPrereqHintLabel,
+QLabel#AdvancedWarningLabel {
+  font-weight: 700;
+  color: @warning;
+}
+
+QLabel#label_system_info_title {
+  color: @accent;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 1px;
+}

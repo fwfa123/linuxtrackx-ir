@@ -12,6 +12,7 @@
 #include <QSettings>
 #include <QApplication>
 #include <QClipboard>
+#include <QDesktopServices>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 #include <QRegularExpression>
@@ -21,9 +22,11 @@
 #include <QShowEvent>
 #include <QProcess>
 #include <QMenuBar>
+#include <QUrl>
 #include <iostream>
 #include "ltr_gui.h"
 #include "ltr_gui_prefs.h"
+#include "skin_manager.h"
 #include "tir_driver_prefs.h"
 #include "prefs_link.h"
 #include "pathconfig.h"
@@ -190,6 +193,13 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   // Connect System information buttons
   QObject::connect(ui.button_copy_system_info, SIGNAL(pressed()), this, SLOT(on_button_copy_system_info_pressed()));
   QObject::connect(ui.button_refresh_system_info, SIGNAL(pressed()), this, SLOT(on_button_refresh_system_info_pressed()));
+
+  // Appearance / skin controls (auto-connect broken due to custom central widget)
+  QObject::connect(ui.SkinPreviewButton, SIGNAL(pressed()), this, SLOT(on_SkinPreviewButton_pressed()));
+  QObject::connect(ui.SkinApplyButton, SIGNAL(pressed()), this, SLOT(on_SkinApplyButton_pressed()));
+  QObject::connect(ui.SkinCancelButton, SIGNAL(pressed()), this, SLOT(on_SkinCancelButton_pressed()));
+  QObject::connect(ui.OpenSkinsFolderButton, SIGNAL(pressed()), this, SLOT(on_OpenSkinsFolderButton_pressed()));
+  initAppearanceSkinUi();
 
   // System tab troubleshooting (auto-connect broken due to custom central widget)
   QObject::connect(ui.VideoOnDelayMode, SIGNAL(currentIndexChanged(int)), this, SLOT(on_VideoOnDelayMode_activated(int)));
@@ -1406,6 +1416,82 @@ void LinuxtrackGui::on_RunTesterButton_pressed()
 }
 
 // System information functions
+void LinuxtrackGui::initAppearanceSkinUi()
+{
+  SkinManager &skins = SkinManager::instance();
+  const QStringList names = skins.availableSkins();
+  // Prefer keeping the combo selection across refreshes when it is still valid
+  const QString previousSelection = ui.SkinComboBox->currentData().toString();
+  QString selectId = previousSelection;
+  if (selectId.isEmpty() || !names.contains(selectId)) {
+    selectId = skins.currentSkin();
+  }
+  ui.SkinComboBox->blockSignals(true);
+  ui.SkinComboBox->clear();
+  for (const QString &name : names) {
+    QString label = name;
+    if (SkinManager::isNativeSkin(name)) {
+      label = tr("System (native)");
+    } else if (name == QLatin1String(SkinManager::kDefaultSkin)) {
+      label = tr("Default");
+    } else if (name == QLatin1String(SkinManager::kExampleSkin)) {
+      label = tr("Example (Apache cockpit)");
+    } else if (name == QLatin1String(SkinManager::kF35Skin)) {
+      label = tr("Example (F-35 glass)");
+    } else if (name == QLatin1String(SkinManager::kXWingSkin)) {
+      label = tr("Example (X-wing cockpit)");
+    }
+    ui.SkinComboBox->addItem(label, name);
+  }
+  int idx = ui.SkinComboBox->findData(selectId);
+  if (idx < 0) {
+    idx = ui.SkinComboBox->findData(QString::fromUtf8(SkinManager::kNativeSkin));
+  }
+  if (idx >= 0) {
+    ui.SkinComboBox->setCurrentIndex(idx);
+  }
+  ui.SkinComboBox->blockSignals(false);
+}
+
+void LinuxtrackGui::on_SkinPreviewButton_pressed()
+{
+  const QString name = ui.SkinComboBox->currentData().toString();
+  if (name.isEmpty()) {
+    return;
+  }
+  if (!SkinManager::instance().load(name)) {
+    QMessageBox::warning(this, tr("Appearance"),
+                         tr("Could not load skin \"%1\".").arg(name));
+  }
+}
+
+void LinuxtrackGui::on_SkinApplyButton_pressed()
+{
+  const QString name = ui.SkinComboBox->currentData().toString();
+  if (name.isEmpty()) {
+    return;
+  }
+  if (!SkinManager::instance().saveSkin(name)) {
+    QMessageBox::warning(this, tr("Appearance"),
+                         tr("Could not apply skin \"%1\".").arg(name));
+  }
+}
+
+void LinuxtrackGui::on_SkinCancelButton_pressed()
+{
+  SkinManager::instance().revert();
+  // Force combo back to the saved skin (drop in-progress selection)
+  ui.SkinComboBox->setCurrentIndex(-1);
+  initAppearanceSkinUi();
+}
+
+void LinuxtrackGui::on_OpenSkinsFolderButton_pressed()
+{
+  const QString dir = SkinManager::instance().userSkinsDir(true);
+  QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+  initAppearanceSkinUi(); // pick up skins already present
+}
+
 void LinuxtrackGui::on_button_copy_system_info_pressed()
 {
     QString systemInfo = getSystemInformation();
