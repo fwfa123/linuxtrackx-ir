@@ -24,7 +24,19 @@
 #include <map>
 #include <string>
 
-static std::multimap<std::string, int> slaves;
+/* Per-slave non-blocking TX state. Games that stop calling NP_GetData (e.g. Falcon
+ * BMS menus) stop draining the pose socket; a short write would tear the fixed-size
+ * message stream. Keep at most one in-flight message, coalesce unsent poses, and
+ * treat EAGAIN as backpressure rather than a hard failure (GitLab #70). */
+struct slave_conn_t {
+  int fd;
+  message_t tx;
+  size_t tx_sent;
+  bool tx_pending;
+  bool stall_logged;
+};
+
+static std::multimap<std::string, slave_conn_t> slaves;
 static semaphore_p pfSem = NULL;
 
 static linuxtrack_full_pose_t current_pose;
@@ -37,6 +49,71 @@ static bool save_prefs = true;
 static bool no_slaves = false;
 static pthread_mutex_t send_mx = PTHREAD_MUTEX_INITIALIZER;
 
+/* Flush pending TX for one slave. Returns false if the peer is gone. */
+static bool slave_tx_flush(slave_conn_t &s)
+{
+  while(s.tx_pending){
+    size_t left = sizeof(message_t) - s.tx_sent;
+    ssize_t n = write(s.fd, ((char *)&s.tx) + s.tx_sent, left);
+    if(n > 0){
+      s.tx_sent += (size_t)n;
+      if(s.tx_sent >= sizeof(message_t)){
+        s.tx_pending = false;
+        s.tx_sent = 0;
+        if(s.stall_logged){
+          ltr_int_log_message("Slave @socket %d send resumed\n", s.fd);
+          s.stall_logged = false;
+        }
+      }
+      continue;
+    }
+    if(n < 0 && errno == EINTR){
+      continue;
+    }
+    if((n == 0) || (errno == EAGAIN) || (errno == EWOULDBLOCK)){
+      if(!s.stall_logged){
+        ltr_int_log_message(
+          "Slave @socket %d send buffer full; coalescing poses until peer reads\n",
+          s.fd);
+        s.stall_logged = true;
+      }
+      return true;
+    }
+    /* Hard error (EPIPE, ECONNRESET, ...) - peer is gone. */
+    return false;
+  }
+  return true;
+}
+
+/* Queue a whole message. Returns false if the peer is gone. */
+static bool slave_tx_queue(slave_conn_t &s, const message_t &msg, bool is_pose)
+{
+  if(s.tx_pending){
+    /* Never interleave: push what is queued before replacing it. */
+    if(!slave_tx_flush(s)){
+      return false;
+    }
+    /* Only an untouched pose may be superseded by a newer pose; anything
+     * else has to wait so a partially written message is never torn. */
+    if(s.tx_pending && !(is_pose && (s.tx_sent == 0))){
+      return true;
+    }
+  }
+
+  s.tx = msg;
+  s.tx_sent = 0;
+  s.tx_pending = true;
+  return slave_tx_flush(s);
+}
+
+static void slave_drop(std::multimap<std::string, slave_conn_t>::iterator &i, bool &checkSlaves)
+{
+  ltr_int_log_message("Slave @socket %d left!\n", i->second.fd);
+  close(i->second.fd);
+  i->second.fd = -1;
+  slaves.erase(i++);
+  checkSlaves = true;
+}
 
 bool ltr_int_gui_lock(bool do_lock)
 {
@@ -77,20 +154,39 @@ void ltr_int_gui_lock_clean()
 
 void ltr_int_change(const char *profile, int axis, int elem, float val)
 {
+  message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = CMD_PARAM;
+  msg.data = 0;
+  msg.param.axis_id = (uint32_t)axis;
+  msg.param.param_id = (uint32_t)elem;
+  msg.param.flt_val = val;
+
   pthread_mutex_lock(&send_mx);
-  std::pair<std::multimap<std::string, int>::iterator, std::multimap<std::string, int>::iterator> range;
-  std::multimap<std::string, int>::iterator i;
+  std::pair<std::multimap<std::string, slave_conn_t>::iterator,
+            std::multimap<std::string, slave_conn_t>::iterator> range;
+  std::multimap<std::string, slave_conn_t>::iterator i;
+  bool checkSlaves = false;
   if(profile != NULL){
-    //Finds all slaves belonging to the specific profile
     range = slaves.equal_range(profile);
-    for(i = range.first; i != range.second; ++i){
-      ltr_int_send_param_update(i->second, axis, elem, val);
+    for(i = range.first; i != range.second;){
+      if(!slave_tx_queue(i->second, msg, false)){
+        slave_drop(i, checkSlaves);
+      }else{
+        ++i;
+      }
     }
   }else{
-    //Broadcast to all slaves
-    for(i = slaves.begin(); i != slaves.end(); ++i){
-      ltr_int_send_param_update(i->second, axis, elem, val);
+    for(i = slaves.begin(); i != slaves.end();){
+      if(!slave_tx_queue(i->second, msg, false)){
+        slave_drop(i, checkSlaves);
+      }else{
+        ++i;
+      }
     }
+  }
+  if(checkSlaves && (slaves.size() == 0)){
+    no_slaves = true;
   }
   pthread_mutex_unlock(&send_mx);
 }
@@ -109,20 +205,19 @@ void ltr_int_set_callback_hooks(ltr_new_frame_callback_t nfh, ltr_status_update_
 
 bool ltr_int_broadcast_pose(linuxtrack_full_pose_t &pose)
 {
+  message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = CMD_POSE;
+  msg.data = 0;
+  msg.pose = pose;
+
   pthread_mutex_lock(&send_mx);
-  std::multimap<std::string, int>::iterator i;
-  int res;
+  std::multimap<std::string, slave_conn_t>::iterator i;
   bool checkSlaves = false;
-  //Send updated pose to all clients
-  //printf("Master: %g  %g  %g\n", pose.pose.raw_pitch, pose.pose.raw_yaw, pose.pose.raw_roll);
+  //Send updated pose to all clients (coalesce when peer is not draining)
   for(i = slaves.begin(); i != slaves.end();){
-    res = ltr_int_send_data(i->second, &pose);
-    if(res == -EPIPE){
-      ltr_int_log_message("Slave @socket %d left!\n", i->second);
-      close(i->second);
-      i->second = -1;
-      slaves.erase(i++);
-      checkSlaves = true;
+    if(!slave_tx_queue(i->second, msg, true)){
+      slave_drop(i, checkSlaves);
     }else{
       ++i;
     }
@@ -164,7 +259,10 @@ bool ltr_int_register_slave(int socket, message_t &msg)
 {
   ltr_int_log_message("Trying to register slave!\n");
   pthread_mutex_lock(&send_mx);
-  slaves.insert(std::pair<std::string, int>(msg.str, socket));
+  slave_conn_t sc;
+  memset(&sc, 0, sizeof(sc));
+  sc.fd = socket;
+  slaves.insert(std::pair<std::string, slave_conn_t>(msg.str, sc));
   ltr_int_log_message("Slave with profile '%s' @socket %d registered!\n", msg.str, socket);
   pthread_mutex_unlock(&send_mx);
 
