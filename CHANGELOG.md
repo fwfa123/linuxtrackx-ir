@@ -4,6 +4,11 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: **2.0.x** is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
+## [Unreleased]
+
+### Fixed
+- **Wine / Falcon BMS**: Master keeps pose frames aligned when a game stops polling (e.g. menus); coalesce on `EAGAIN` instead of tearing the 508-byte stream (GitLab #70).
+
 ## [2.2.1] - 2026-09-17
 
 ### Added
