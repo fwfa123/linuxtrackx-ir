@@ -1,7 +1,9 @@
 
 #include "my_line_edit.h"
+#include "hotkey_label.h"
 #include <iostream>
 #include <QKeyEvent>
+#include <QKeySequence>
 
 myLineEdit::myLineEdit(QWidget *parent) : QLineEdit(parent), tgt(NULL)
 {
@@ -9,23 +11,7 @@ myLineEdit::myLineEdit(QWidget *parent) : QLineEdit(parent), tgt(NULL)
 
 void myLineEdit::keyPressEvent(QKeyEvent * event)
 {
-  QString seq = QString();
-  Qt::KeyboardModifiers mods = event->modifiers();
-  if(mods & Qt::ShiftModifier){
-    seq += QString::fromUtf8("Shift+");
-  }
-  if(mods & Qt::ControlModifier){
-    seq += QString::fromUtf8("Ctrl+");
-  }
-  if(mods & Qt::AltModifier){
-    seq += QString::fromUtf8("Alt+");
-  }
-  if(mods & Qt::MetaModifier){
-    seq += QString::fromUtf8("Meta+");
-  }
-  int k = event->key();
-  //std::cout<<"Key event -> '"<<k<<"\n";
-   
+  const int k = event->key();
   switch(k){
     case 0:
     case Qt::Key_unknown:
@@ -33,18 +19,22 @@ void myLineEdit::keyPressEvent(QKeyEvent * event)
     case Qt::Key_Control:
     case Qt::Key_Alt:
     case Qt::Key_Meta:
-      break;
+      return;
     default:
-      seq += QKeySequence(event->key()).toString(QKeySequence::NativeText);
-      setText(seq);
-      if(tgt != NULL){
-        *tgt = seq; 
-      }
-      //std::cout<<"Key event -> '"<<seq.toUtf8().constData()<<"' !"<<k<<"\n";
       break;
   }
-  //QLineEdit::keyPressEvent(event);
+
+  Qt::KeyboardModifiers mods = event->modifiers() &
+    (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier |
+     Qt::MetaModifier | Qt::KeypadModifier);
+
+  const QKeySequence seq(QKeyCombination(mods, static_cast<Qt::Key>(k)));
+  /* PortableText keeps KeypadModifier as Num+ so registration can map KP_* */
+  const QString stored = seq.toString(QKeySequence::PortableText);
+  setText(hotkeyDisplayString(stored));
+  if(tgt != NULL){
+    *tgt = stored;
+  }
 }
 
 #include "moc_my_line_edit.cpp"
-

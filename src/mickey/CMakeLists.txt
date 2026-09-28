@@ -27,6 +27,7 @@ add_executable(mickey
     keyb_x11.cpp
     ../linuxtrack.c
     hotkey.cpp
+    hotkey_label.cpp
     my_line_edit.cpp
     hotkey_setup_dlg.cpp
     mickey.qrc

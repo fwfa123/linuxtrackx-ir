@@ -18,6 +18,7 @@ Reporting problems to user.
 
 // X11 protocol constants (X_GrabKey, etc.) are in Xproto.h
 #include <X11/Xproto.h>
+#include <X11/keysym.h>
 
 static shortcutHash_t shortcutHash;
 static bool errorEncountered;
@@ -299,7 +300,97 @@ static unsigned int getModifiers(Qt::KeyboardModifiers mods)
   modifiers |= (mods & Qt::MetaModifier)? Mod4Mask : 0;
   //Mod2Mask => NumLock!
   //Mod5Mask => ScrollLock!
+  // KeypadModifier is NOT an X grab mask; KP_* keycodes distinguish the numpad.
   return modifiers;
+}
+
+static KeySym qtKeyToXKeysym(int qtKey, bool fromKeypad)
+{
+  if(fromKeypad){
+    switch(qtKey){
+      case Qt::Key_0: return XK_KP_0;
+      case Qt::Key_1: return XK_KP_1;
+      case Qt::Key_2: return XK_KP_2;
+      case Qt::Key_3: return XK_KP_3;
+      case Qt::Key_4: return XK_KP_4;
+      case Qt::Key_5: return XK_KP_5;
+      case Qt::Key_6: return XK_KP_6;
+      case Qt::Key_7: return XK_KP_7;
+      case Qt::Key_8: return XK_KP_8;
+      case Qt::Key_9: return XK_KP_9;
+      case Qt::Key_Plus: return XK_KP_Add;
+      case Qt::Key_Minus: return XK_KP_Subtract;
+      case Qt::Key_Asterisk: return XK_KP_Multiply;
+      case Qt::Key_Slash: return XK_KP_Divide;
+      case Qt::Key_Period: return XK_KP_Decimal;
+      case Qt::Key_Comma: return XK_KP_Separator;
+      case Qt::Key_Enter:
+      case Qt::Key_Return: return XK_KP_Enter;
+      case Qt::Key_Equal: return XK_KP_Equal;
+      case Qt::Key_Insert: return XK_KP_Insert;
+      case Qt::Key_Delete: return XK_KP_Delete;
+      case Qt::Key_Home: return XK_KP_Home;
+      case Qt::Key_End: return XK_KP_End;
+      case Qt::Key_PageUp: return XK_KP_Page_Up;
+      case Qt::Key_PageDown: return XK_KP_Page_Down;
+      case Qt::Key_Left: return XK_KP_Left;
+      case Qt::Key_Right: return XK_KP_Right;
+      case Qt::Key_Up: return XK_KP_Up;
+      case Qt::Key_Down: return XK_KP_Down;
+      default:
+        break;
+    }
+  }
+
+  /* Qt Latin-1 printable keys match X11 Latin-1 keysyms (e.g. '=' -> XK_equal). */
+  if((qtKey >= Qt::Key_Space && qtKey <= Qt::Key_AsciiTilde) ||
+     (qtKey >= Qt::Key_nobreakspace && qtKey <= Qt::Key_ydiaeresis)){
+    return static_cast<KeySym>(qtKey);
+  }
+
+  switch(qtKey){
+    case Qt::Key_Escape: return XK_Escape;
+    case Qt::Key_Tab: return XK_Tab;
+    case Qt::Key_Backtab: return XK_ISO_Left_Tab;
+    case Qt::Key_Backspace: return XK_BackSpace;
+    case Qt::Key_Return: return XK_Return;
+    case Qt::Key_Enter: return XK_KP_Enter;
+    case Qt::Key_Insert: return XK_Insert;
+    case Qt::Key_Delete: return XK_Delete;
+    case Qt::Key_Pause: return XK_Pause;
+    case Qt::Key_Print: return XK_Print;
+    case Qt::Key_Home: return XK_Home;
+    case Qt::Key_End: return XK_End;
+    case Qt::Key_Left: return XK_Left;
+    case Qt::Key_Up: return XK_Up;
+    case Qt::Key_Right: return XK_Right;
+    case Qt::Key_Down: return XK_Down;
+    case Qt::Key_PageUp: return XK_Page_Up;
+    case Qt::Key_PageDown: return XK_Page_Down;
+    case Qt::Key_CapsLock: return XK_Caps_Lock;
+    case Qt::Key_NumLock: return XK_Num_Lock;
+    case Qt::Key_ScrollLock: return XK_Scroll_Lock;
+    case Qt::Key_F1: return XK_F1;
+    case Qt::Key_F2: return XK_F2;
+    case Qt::Key_F3: return XK_F3;
+    case Qt::Key_F4: return XK_F4;
+    case Qt::Key_F5: return XK_F5;
+    case Qt::Key_F6: return XK_F6;
+    case Qt::Key_F7: return XK_F7;
+    case Qt::Key_F8: return XK_F8;
+    case Qt::Key_F9: return XK_F9;
+    case Qt::Key_F10: return XK_F10;
+    case Qt::Key_F11: return XK_F11;
+    case Qt::Key_F12: return XK_F12;
+    case Qt::Key_Super_L: return XK_Super_L;
+    case Qt::Key_Super_R: return XK_Super_R;
+    case Qt::Key_Menu: return XK_Menu;
+    default:
+      break;
+  }
+
+  const QKeySequence key(static_cast<Qt::Key>(qtKey));
+  return XStringToKeysym(qPrintable(key.toString(QKeySequence::PortableText)));
 }
 
 static bool removeIdFromHash(shortcut* shortcutId, keyPair_t *kp = NULL)
@@ -325,18 +416,21 @@ static bool translateSequence(const QKeySequence &s, KeyCode &code, unsigned int
 {
   // Qt6: QKeyCombination API - extract key and modifiers separately
   QKeyCombination combo = s[0];
-  QKeySequence key(combo.key());  // Create sequence with just the key (no modifiers)
-  modifiers = getModifiers(combo.keyboardModifiers());
-  
+  const int qtKey = static_cast<int>(combo.key());
+  const Qt::KeyboardModifiers kmods = combo.keyboardModifiers();
+  const bool fromKeypad = (kmods & Qt::KeypadModifier) != 0;
+  modifiers = getModifiers(kmods);
+
   // Debug: Show what modifiers were extracted
   static int regDebugCount = 0;
   if(regDebugCount < 5){
-    fprintf(stderr, "DEBUG: translateSequence: QKeySequence='%s', combo.key()=%d, combo.keyboardModifiers()=0x%x, extracted modifiers=0x%x\n",
-            qPrintable(s.toString()), combo.key(), static_cast<unsigned int>(combo.keyboardModifiers()), modifiers);
+    fprintf(stderr, "DEBUG: translateSequence: QKeySequence='%s', combo.key()=%d, keypad=%d, combo.keyboardModifiers()=0x%x, extracted modifiers=0x%x\n",
+            qPrintable(s.toString()), qtKey, fromKeypad ? 1 : 0,
+            static_cast<unsigned int>(kmods), modifiers);
     regDebugCount++;
   }
-  
-  KeySym sym = XStringToKeysym(qPrintable(key.toString()));
+
+  KeySym sym = qtKeyToXKeysym(qtKey, fromKeypad);
   if(sym == NoSymbol){
     //printf("Unknown symbol!\n");
     return false;

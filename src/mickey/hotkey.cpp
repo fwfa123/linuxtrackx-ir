@@ -3,6 +3,7 @@
 #include <iostream>
 #include "hotkey.h"
 #include "hotkey_setup_dlg.h"
+#include "hotkey_label.h"
 
 #ifdef LTR_GUI_JOY_HOTKEYS
 #include "../qt_gui/joy_hotkey_monitor.h"
@@ -47,7 +48,7 @@ bool HotKey::setHotKey(const QString &newHK)
     s->resetShortcut();
   }
   emit newHotKey(prefId, newHK);
-  ui.AssignButton->setText(label + QString::fromUtf8(" ") + newHK);
+  ui.AssignButton->setText(label + QString::fromUtf8(" ") + hotkeyDisplayString(newHK));
   ui.AssignButton->setToolTip(QString());
   hotKey = newHK;
   return true;
