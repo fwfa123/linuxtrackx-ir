@@ -4,13 +4,11 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: **2.x** development is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
-## [Unreleased]
+## [2.2.1] - 2026-09-30
 
 ### Fixed
 - **Wine / Falcon BMS**: Master keeps pose frames aligned when a game stops polling (e.g. menus); coalesce on `EAGAIN` instead of tearing the 508-byte stream (GitLab #70).
 - **Global hotkeys**: Numpad keys register as distinct `KP_*` bindings and show as `NumPad N` in the UI; punctuation keys (e.g. `=`, `[`) map to valid X11 KeySyms (GitLab #69).
-
-## [2.2.1] - 2026-09-17
 
 ### Added
 
