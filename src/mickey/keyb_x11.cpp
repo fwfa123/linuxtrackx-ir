@@ -420,6 +420,12 @@ bool setShortCut(const QKeySequence &s, shortcut* shortcutId)
     (keyPair_t(code, modifiers), shortcutId));
   HKDBG("Shortcut registered: keycode=%u, modifiers=0x%x, hash size=%zu\n",
           code, modifiers, shortcutHash.size());
+
+  /* Reset dedup on new binding so stale entries don't suppress the first press. */
+  s_last_raw_keycode = 0;
+  s_last_raw_time    = CurrentTime;
+  s_last_raw_pressed = false;
+
   if(needInstallFilter){
     HKDBG("Installing native event filter (first shortcut registered)\n");
     installFilter();
@@ -473,7 +479,7 @@ static bool grabKeyX(Display *display, Window &window, KeyCode code, unsigned in
   }
     
   //ScrollLock
-  XGrabKey(display, code, modifiers | Mod5Mask, window, true, GrabModeAsync, GrabModeAsync);
+  XGrabKey(display, code, modifiers | Mod5Mask, DefaultRootWindow(display), true, GrabModeAsync, GrabModeAsync);
   XSync(display, false);
   if(errorEncountered){
     goto scroll_lock_failed;
@@ -486,15 +492,15 @@ static bool grabKeyX(Display *display, Window &window, KeyCode code, unsigned in
     XSetErrorHandler(prev_x_errhandler);
     return true;
   }
-  
+
   //Num+scroll lock failed, clean ScrollLock, num lock and no mod
-  XUngrabKey(display, code, modifiers | Mod5Mask, window);
+  XUngrabKey(display, code, modifiers | Mod5Mask, DefaultRootWindow(display));
  scroll_lock_failed:
   //Scroll lock failed, clean up Numlock and no mod
-  XUngrabKey(display, code, modifiers | Mod2Mask, window);
+  XUngrabKey(display, code, modifiers | Mod2Mask, DefaultRootWindow(display));
  num_lock_failed:
   //Num lock failed, clean up no mod
-  XUngrabKey(display, code, modifiers, window);
+  XUngrabKey(display, code, modifiers, DefaultRootWindow(display));
 
   XSetErrorHandler(prev_x_errhandler);
   return false;
