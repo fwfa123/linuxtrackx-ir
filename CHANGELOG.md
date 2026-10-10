@@ -17,6 +17,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 ### Fixed
 
 - **WOW64 firmware install failure** The firmware wizard no longer forces a 32-bit Wine prefix, and TIR5V2 (131d:0158) will accept tir5.fw as well as tir5v2.fw.gz.
+- **Global hotkeys that bind but do not fire** (GitLab #69 follow-up): the GUI now launches on `xcb` by default so XGrabKey works in Wayland sessions; added XInput2 raw key listening so hotkeys still fire when a fullscreen game has grabbed the keyboard (e.g. Arma 3); external numpad bindings now persist the exact scan code so number-row and numpad keys no longer collide; silent hotkey drops are logged to the tracking logfile instead of disappearing.
 
 ## [2.2.0] - 2026-08-01
 

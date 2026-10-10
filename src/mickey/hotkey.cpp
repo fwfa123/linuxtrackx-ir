@@ -16,6 +16,7 @@ HotKey::HotKey(const QString &iLabel, const QString &iPrefId, int iHotKeyId, QWi
   ui.AssignButton->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
   ui.AssignButton->setToolTip(QString());
   s = new shortcut();
+  s->setHotKeyId(hotKeyId);   // so setShortCut can look up the saved X keycode
   QObject::connect(s, SIGNAL(activated(bool)), this, SLOT(shortcutActivated(bool)));
 }
 
@@ -65,6 +66,7 @@ void HotKey::on_AssignButton_pressed()
   QString newHK;
   int res;
   hotKeySetupDlg *dlg = new hotKeySetupDlg(newHK, this);
+  dlg->setHotKeyId(hotKeyId);   // so myLineEdit persists the right QSettings key
   res = dlg->exec();
   delete dlg;
   if(res != QDialog::Accepted){

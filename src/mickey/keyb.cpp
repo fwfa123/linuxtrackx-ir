@@ -15,6 +15,7 @@
 #endif
 
 shortcut::shortcut()
+  : m_hotKeyId(-1)
 {
 }
 
