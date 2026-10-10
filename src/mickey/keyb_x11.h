@@ -13,10 +13,6 @@
 // Include X11 after Qt to avoid macro conflicts
 #include <X11/Xlib.h>
 
-#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
-  #include <QAbstractNativeEventFilter>
-#endif
-
 class shortcut;
 
 typedef std::pair<KeyCode, unsigned int> keyPair_t;
@@ -25,13 +21,7 @@ typedef std::map<keyPair_t, shortcut*> shortcutHash_t;
 bool setShortCut(const QKeySequence &s, shortcut* id);
 bool unsetShortcut(shortcut* id);
 
-#if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
-class hotKeyFilter : public QAbstractNativeEventFilter
-{
- protected:
-  bool nativeEventFilter(const QByteArray & eventType, void * message, qintptr * result); 
-};
-#endif
+
 /*
 class shortcutPimpl : public QObject
 {
