@@ -255,6 +255,7 @@ endif()
 # Note: Qt6::X11Extras is not available in Qt6, X11 functionality is handled differently
 if(NOT APPLE)
     target_link_libraries(ltr_gui
+        Xi
         X11
     )
 endif()

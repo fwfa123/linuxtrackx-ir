@@ -10,16 +10,17 @@ DISPLAY_SERVER=""
 if [ "$XDG_SESSION_TYPE" = "wayland" ] || [ -n "$WAYLAND_DISPLAY" ]; then
     DISPLAY_SERVER="Wayland"
     echo "Detected: $DISPLAY_SERVER session"
-    echo "GUI may work better with X11. Use --force-x11 to run with XWayland"
+    echo "Defaulting to XWayland for reliable global hotkeys. Use --no-force-x11 to opt out."
     
-    # Check for force X11 flag
-    if [ "$1" = "--force-x11" ]; then
-        echo "Forcing X11 mode via XWayland..."
+    # Default to XWayland for reliable global hotkeys (XGrabKey + XInput2).
+    # Use --no-force-x11 to opt out and let Qt pick the native platform.
+    if [ "$1" = "--no-force-x11" ]; then
+        echo "Using native Wayland platform (hotkeys may not work in all cases)."
+    else
+        echo "Running via XWayland for reliable global hotkeys..."
         export QT_QPA_PLATFORM=xcb
         export GDK_BACKEND=x11
         export CLUTTER_BACKEND=x11
-    else
-        echo "To force X11 mode: ./run_gui.sh --force-x11"
     fi
 elif [ -n "$DISPLAY" ]; then
     DISPLAY_SERVER="X11"

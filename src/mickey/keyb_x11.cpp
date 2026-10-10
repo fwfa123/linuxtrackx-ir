@@ -19,6 +19,8 @@ Reporting problems to user.
 // X11 protocol constants (X_GrabKey, etc.) are in Xproto.h
 #include <X11/Xproto.h>
 #include <X11/keysym.h>
+#include <Xi/xi.h>
+#include <Xi/xinput.h>
 
 static shortcutHash_t shortcutHash;
 static bool errorEncountered;
@@ -26,6 +28,16 @@ static QString errMsg;
 static Display *display = NULL;
 static Window window;
 static Window eventWindow = 0;
+
+/* Dedup: track the last raw key event so we don't fire twice when both
+ * XGrabKey and XI_RawKeyPress arrive for the same physical press. */
+static KeyCode   s_last_raw_keycode = 0;
+static Time      s_last_raw_time    = CurrentTime;
+static bool      s_last_raw_pressed = false;
+
+/* Cached XInput extension opcode so we can recognise raw key events. */
+static int       s_xi_opcode        = -1;
+
 #if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
 static QSocketNotifier *x11SocketNotifier = NULL;
 #endif
@@ -191,6 +203,52 @@ static void processX11Events()
     XEvent event;
     XNextEvent(display, &event);
 
+    /* Handle XI_RawKeyPress / XI_RawKeyRelease (XInput2 raw key events).
+     * These arrive even when a game has grabbed the keyboard with
+     * XGrabKeyboard, so they are our fallback for fullscreen games. */
+    if(event.type == GenericEvent && s_xi_opcode >= 0){
+      if (XGetEventData(display, &event)) {
+        XIRawEvent *raw = (XIRawEvent *) event.xdata.generic.data;
+        if (raw->event_type == XI_RawKeyPress || raw->event_type == XI_RawKeyRelease) {
+          KeyCode    rk     = raw->detail;
+          Time       rtime  = raw->timestamp;
+          bool       rpress = (raw->event_type == XI_RawKeyPress);
+
+          /* Dedup: skip if the same physical press was already handled by
+           * XGrabKey on this (keycode, time, pressed) tuple. */
+          if (!(rk == s_last_raw_keycode && rtime == s_last_raw_time &&
+                rpress == s_last_raw_pressed)) {
+            s_last_raw_keycode = rk;
+            s_last_raw_time    = rtime;
+            s_last_raw_pressed = rpress;
+
+            /* Raw events carry no modifier mask — read it from the keyboard.
+             * We only care about Shift, Control, Mod1 (Alt), and Mod4 (Super). */
+            unsigned int modifiers = 0;
+            unsigned int state;
+            Window       dummy_win;
+            int          dx, dy, dd;
+            XQueryPointer(display, DefaultRootWindow(display), &dummy_win,
+                          &dummy_win, &dx, &dy, &dd, &dd, &state);
+            if (state & ShiftMask)      modifiers |= ShiftMask;
+            if (state & ControlMask)    modifiers |= ControlMask;
+            if (state & Mod1Mask)       modifiers |= Mod1Mask;
+            if (state & Mod4Mask)       modifiers |= Mod4Mask;
+
+            keyPair_t kp(rk, modifiers);
+            shortcutHash_t::iterator i = shortcutHash.find(kp);
+            if (i != shortcutHash.end()) {
+              HKDBG("DEBUG: Raw event keycode=%u pressed=%d -> matched\n", rk, rpress);
+              i->second->activate(rpress);
+            }
+          } else {
+            HKDBG("DEBUG: Raw event keycode=%u deduped (same press)\n", rk);
+          }
+        }
+        XFreeEventData(display, &event.xcookie);
+      }
+    }
+
     // Check if this is a key event
     bool pressed = (event.type == KeyPress);
     bool released = (event.type == KeyRelease);
@@ -263,6 +321,11 @@ static void uninstallFilter()
     #error "setEventFilter not available in Qt6 - define QT6_OVERRIDES to use native event filter"
   }
 #endif
+  /* Reset dedup state so stale entries don't block future bindings. */
+  s_last_raw_keycode = 0;
+  s_last_raw_time    = CurrentTime;
+  s_last_raw_pressed = false;
+
   // Close X11 display when no shortcuts remain
   if(display != NULL){
     destroyEventWindow();
@@ -457,6 +520,20 @@ bool setShortCut(const QKeySequence &s, shortcut* shortcutId)
     // Qt6: Create a dedicated window for receiving grabbed key events
     createEventWindow();
 
+    /* Listen for raw key events on the root window so we still receive keys
+     * when a game has XGrabKeyboard (e.g. Arma 3 fullscreen). */
+    {
+      int         event_base, error_base;
+      XIEventMask emask;
+      unsigned char mask[] = { 1 << XI_RawKeyPress, 1 << XI_RawKeyRelease };
+      if (XQueryExtension(display, "XInputExtension", &s_xi_opcode, &event_base, &error_base)) {
+        emask.deviceid   = XIAllMasterDevices;
+        emask.mask_len   = sizeof(mask);
+        emask.mask       = mask;
+        XISelectEvents(display, DefaultRootWindow(display), &emask, 1);
+      }
+    }
+
     fprintf(stderr, "DEBUG: Opened X11 display, root window=0x%lx, event window=0x%lx\n", window, eventWindow);
   }
   removeIdFromHash(shortcutId);
@@ -464,10 +541,32 @@ bool setShortCut(const QKeySequence &s, shortcut* shortcutId)
     //printf("Empty key sequence!\n");
     return false;
   }
+
+  /* Look up a saved X keycode for this hotkey. If present, use it directly
+   * instead of translating via KeySym — this avoids ambiguity on external
+   * numpads where the same keysym maps to different physical keycodes. */
   unsigned int modifiers;
-  KeyCode code;
-  if(!translateSequence(s, code, modifiers)){
-    return false;
+  KeyCode      code = 0;
+  if(shortcutId && shortcutId->getHotKeyId() >= 0){
+    QSettings settings(QString::fromUtf8("linuxtrack"), QString::fromUtf8("ltr_gui"));
+    QString key = QString::fromUtf8("HotKeys/xkey_%1").arg(shortcutId->getHotKeyId());
+    QVariant v = settings.value(key);
+    if(v.isValid() && v.toInt() > 0){
+      code = static_cast<KeyCode>(v.toInt());
+      HKDBG("DEBUG: Using saved keycode %u for hotkey %d\n", code, shortcutId->getHotKeyId());
+    }
+  }
+
+  /* Fall back to KeySym translation if no saved keycode. */
+  if(code == 0){
+    if(!translateSequence(s, code, modifiers)){
+      return false;
+    }
+  }else{
+    /* Extract modifiers from the sequence without overwriting the saved code.
+     * translateSequence writes both code and modifiers; discard the former. */
+    KeyCode dummy;
+    translateSequence(s, dummy, modifiers);
   }
   //verify the hotkey doesn't exist already
   keyPair_t kp(code, modifiers);

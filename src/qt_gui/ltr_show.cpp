@@ -510,6 +510,9 @@ void LtrGuiForm::hotKey_activated(int id, bool pressed)
   // Only activate hotkeys when tracking is active (running or paused)
   linuxtrack_state_type current_state = ltr_int_get_tracking_state();
   if(current_state != RUNNING && current_state != PAUSED){
+    /* Log why the hotkey was ignored so users can diagnose silent drops. */
+    const char *role = (id == HOTKEY_TOGGLE_TRACKING) ? "toggle" : "recenter";
+    ltr_int_log_message("Hotkey %s ignored: tracker state=%d (need RUNNING/PAUSED)", role, current_state);
     return; // Tracker not active, ignore hotkey
   }
 

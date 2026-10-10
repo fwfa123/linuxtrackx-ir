@@ -53,6 +53,7 @@ target_link_libraries(mickey
 if(NOT APPLE)
     # Note: Qt6::X11Extras is not available in Qt6, X11 functionality is handled differently
     target_link_libraries(mickey
+        Xi
         X11
     )
 endif()
