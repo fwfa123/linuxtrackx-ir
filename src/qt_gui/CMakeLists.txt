@@ -254,10 +254,14 @@ endif()
 # Platform-specific linking
 # Note: Qt6::X11Extras is not available in Qt6, X11 functionality is handled differently
 if(NOT APPLE)
-    # Check for XInput2 headers (libxi-dev) — required by keyb_x11.cpp
+    # Check for XInput2 headers (libXi) — required by keyb_x11.cpp
     find_path(XI_INCLUDE_DIR Xi/xi.h)
     if(NOT XI_INCLUDE_DIR)
-        message(FATAL_ERROR "XInput2 development headers not found. Install libxi-dev: sudo apt install libxi-dev")
+        message(FATAL_ERROR
+            "XInput2 development headers not found. Install the libXi dev package:
+             Debian/Ubuntu:  sudo apt install libxi-dev
+             Fedora/RHEL:    sudo dnf install libXi-devel
+             Arch/CachyOS:   sudo pacman -S libxi")
     endif()
     target_link_libraries(ltr_gui
         Xi

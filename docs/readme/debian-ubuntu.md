@@ -27,7 +27,7 @@ sudo apt update
 sudo apt install build-essential cmake pkg-config
 sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
 sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools libqt6opengl6-dev
-sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
+sudo apt install libmxml-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev
 
 # 32-bit native library (liblinuxtrack32.so) — host GCC -m32, not MinGW
 # Required on amd64 for 32-bit Wine/Proton; build-essential alone is not enough.
@@ -87,7 +87,7 @@ sudo apt install build-essential cmake pkg-config
 sudo apt install libusb-1.0-0-dev zlib1g-dev bison flex
 sudo apt install qt6-base-dev qt6-tools-dev qt6-tools-dev-tools
 sudo apt install libqt6opengl6-dev  # Required for Qt6OpenGL CMake config
-sudo apt install libmxml-dev libx11-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev
+sudo apt install libmxml-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libglu1-mesa-dev
 
 # amd64 only: native 32-bit liblinuxtrack32.so (ENABLE_LTR_32LIB_ON_X64, on by default)
 sudo dpkg --add-architecture i386
