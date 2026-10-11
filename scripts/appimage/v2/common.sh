@@ -29,9 +29,25 @@ require_pkg_config() {
     print_success "Build dependency: $pc_name $(pkg-config --modversion "$pc_name")"
 }
 
-# Fail early when a requested Level 7 feature would be silently dropped by CMake.
+# Hard requirement on Linux/X11: XInput2 headers for raw key event detection.
+# Without these, the hotkey system cannot bypass fullscreen game grabs (e.g. Arma 3).
+require_xi_headers() {
+    if [[ -f /usr/include/Xi/xi.h && -f /usr/include/Xi/xinput.h ]]; then
+        print_success "Build dependency: XInput2 headers present"
+    else
+        die 'XInput2 development headers not found (install libXi-dev — README Level 1+)'
+        echo '         Debian/Ubuntu:  sudo apt install libxi-dev'
+        echo '         Fedora/RHEL:    sudo dnf install libXi-devel'
+        echo '         Arch/CachyOS:   sudo pacman -S libxi'
+        exit 1
+    fi
+}
+
 check_appimage_build_deps() {
     print_status "Preflight: AppImage build dependencies (Level 7 defaults)"
+
+    # Hard requirement — always check first
+    require_xi_headers
 
     if [[ "${ENABLE_OSC:-1}" == "1" ]]; then
         require_pkg_config liblo "install liblo-dev — README Level 5+"
