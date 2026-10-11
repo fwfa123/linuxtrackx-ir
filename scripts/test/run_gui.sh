@@ -39,6 +39,10 @@ echo "Available libraries:"
 ls -la "$LIB_PATH"/libltr.so*
 
 # Change to GUI directory and launch
+if [ ! -d "src/qt_gui" ]; then
+    echo "Error: src/qt_gui not found. Run this script from the repository root." >&2
+    exit 1
+fi
 cd src/qt_gui
 echo "GUI directory: $(pwd)"
 echo "Launching ltr_gui..."
