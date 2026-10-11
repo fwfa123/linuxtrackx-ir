@@ -12,15 +12,15 @@ class hotKeySetupDlg : public QDialog
   Q_OBJECT
  public:
   hotKeySetupDlg(QString &res, QWidget *parent = 0);
+
+  /* Pass the hotkey ID to myLineEdit so it can persist the native scan code. */
+  void setHotKeyId(int id){ ui.lineEdit->setHotKeyId(id); }
   ~hotKeySetupDlg() override;
  private slots:
   void pollJoysticks();
  private:
   void startJoyCapture();
   void stopJoyCapture();
-
-  /* Pass the hotkey ID to myLineEdit so it can persist the native scan code. */
-  void setHotKeyId(int id){ ui.lineEdit->setHotKeyId(id); }
 
   Ui::HotKeySetupDlg ui;
   QString *result;
