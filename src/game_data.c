@@ -20,6 +20,13 @@ static char *decoded = NULL;
 static mxml_node_t *xml = NULL;
 static mxml_node_t *tree = NULL;
 
+// Mini-XML 4 renamed the descend constant
+#if defined(MXML_MAJOR_VERSION) && MXML_MAJOR_VERSION >= 4
+#  define LTR_MXML_DESCEND MXML_DESCEND_ALL
+#else
+#  define LTR_MXML_DESCEND MXML_DESCEND
+#endif
+
 static void ksa(uint8_t key[], size_t len)
 {
   unsigned int i, j;
@@ -104,7 +111,12 @@ static bool game_data_init(const char *fname, bool from_update)
     return false;
   }
   xml = mxmlNewXML("1.0");
+#if defined(MXML_MAJOR_VERSION) && MXML_MAJOR_VERSION >= 4
+  /* NULL options use MXML_TYPE_TEXT, the equivalent of the v3 callback. */
+  tree = mxmlLoadString(xml, NULL, decoded);
+#else
   tree = mxmlLoadString(xml, decoded, MXML_TEXT_CALLBACK);
+#endif
   return (tree != NULL);
 }
 
@@ -129,13 +141,13 @@ bool get_game_data(const char *input_fname, const char *output_fname, bool from_
   mxml_node_t *game;
   const char *name;
   const char *id;
-  for(game = mxmlFindElement(tree, tree, "Game", NULL, NULL, MXML_DESCEND);
+  for(game = mxmlFindElement(tree, tree, "Game", NULL, NULL, LTR_MXML_DESCEND);
       game != NULL;
-      game =  mxmlFindElement(game, tree, "Game", NULL, NULL, MXML_DESCEND)){
+      game =  mxmlFindElement(game, tree, "Game", NULL, NULL, LTR_MXML_DESCEND)){
     name = mxmlElementGetAttr(game, "Name");
     id = mxmlElementGetAttr(game, "Id");
 
-    mxml_node_t *appid = mxmlFindElement(game, game, "ApplicationID", NULL, NULL, MXML_DESCEND);
+    mxml_node_t *appid = mxmlFindElement(game, game, "ApplicationID", NULL, NULL, LTR_MXML_DESCEND);
     if(appid == NULL){
       fprintf(outfile, "%s \"%s\"\n", id, name);
     }else{

@@ -3,6 +3,7 @@
 #include "usb_ifc.h"
 #include "tir_hw.h"
 #include "tir_img.h"
+#include "tir_protocol.h"
 #include "utils.h"
 #include "image_process.h"
 #include "sn4_com.h"
@@ -15,13 +16,18 @@ static dev_found device = NOT_TIR;
 
 static bool process_stripe_tir2(unsigned char p_stripe[])
 {
-  stripe_t stripe;
-    stripe.vline = p_stripe[0];
-    stripe.hstart = p_stripe[1];
-    stripe.hstop = p_stripe[2];
-    stripe.sum = stripe.hstop - stripe.hstart + 1;
-    stripe.sum_x = (unsigned int)(stripe.sum * (stripe.sum - 1) / 2.0);
-    stripe.points = stripe.sum;
+  ltr_tir_stripe decoded;
+  if(!ltr_tir_decode_tir2_stripe(p_stripe, &decoded)){
+    return false;
+  }
+  stripe_t stripe = {
+    .vline = decoded.vline,
+    .hstart = decoded.hstart,
+    .hstop = decoded.hstop,
+    .sum_x = decoded.sum_x,
+    .sum = decoded.sum,
+    .points = decoded.points
+  };
     if(!ltr_int_add_stripe(&stripe, p_img)){
       ltr_int_log_message("Couldn't add stripe!\n");
     }
@@ -123,23 +129,18 @@ static bool process_stripe_sn4gr(unsigned char p_stripe[], size_t size)
 
 static bool process_stripe_tir4(unsigned char p_stripe[])
 {
-  stripe_t stripe;
-  unsigned char rest;
-
-    stripe.vline = p_stripe[0];
-    stripe.hstart = p_stripe[1];
-    stripe.hstop = p_stripe[2];
-    rest = p_stripe[3];
-    if(rest & 0x20)
-      stripe.vline |= 0x100;
-    if(rest & 0x80)
-      stripe.hstart |= 0x100;
-    if(rest & 0x40)
-      stripe.hstop |= 0x100;
-    if(rest & 0x10)
-      stripe.hstart |= 0x200;
-    if(rest & 0x08)
-      stripe.hstop |= 0x200;
+  ltr_tir_stripe decoded;
+  if(!ltr_tir_decode_tir4_stripe(p_stripe, &decoded)){
+    return false;
+  }
+  stripe_t stripe = {
+    .vline = decoded.vline,
+    .hstart = decoded.hstart,
+    .hstop = decoded.hstop,
+    .sum_x = decoded.sum_x,
+    .sum = decoded.sum,
+    .points = decoded.points
+  };
 //    assert(stripe.hstart >= 81);
 //    assert(stripe.hstop >= 81);
 //    assert(stripe.vline >= 12);
@@ -187,20 +188,18 @@ static bool is_next_frame_tir2(unsigned char p_stripe[])
 
 static bool process_stripe_tir5(unsigned char payload[])
 {
-  stripe_t stripe;
-    stripe.hstart = (((unsigned int)payload[0]) << 2) |
-                     (((unsigned int)payload[1]) >> 6);
-    stripe.vline = ((((unsigned int)payload[1]) & 0x3F) << 3) |
-                    ((((unsigned int)payload[2]) & 0xE0) >> 5);
-    stripe.points = (((((unsigned int)payload[2]) & 0x1F) << 5) |
-                    (((unsigned int)payload[3]) >> 3));
-    stripe.hstop =  stripe.points + stripe.hstart - 1;
-    stripe.sum_x = (((unsigned int)payload[3]) & 7) << 17 |
-                    (((unsigned int)payload[4]) << 9) |
-		    ((unsigned int)payload[5]) << 1 |
-		    ((unsigned int)payload[6]) >>7;
-    stripe.sum = (((unsigned int)payload[6]) & 0x7F) << 8 |
-                   ((unsigned int)payload[7]);
+  ltr_tir_stripe decoded;
+  if(!ltr_tir_decode_tir5_stripe(payload, &decoded)){
+    return false;
+  }
+  stripe_t stripe = {
+    .vline = decoded.vline,
+    .hstart = decoded.hstart,
+    .hstop = decoded.hstop,
+    .sum_x = decoded.sum_x,
+    .sum = decoded.sum,
+    .points = decoded.points
+  };
     if(!ltr_int_add_stripe(&stripe, p_img)){
       ltr_int_log_message("Couldn't add stripe!\n");
     }
@@ -209,7 +208,7 @@ static bool process_stripe_tir5(unsigned char payload[])
 
 static bool check_paket_header_tir5(unsigned char data[])
 {
-  if((data[0] ^ data[1] ^ data[2] ^ data[3]) != 0xAA){
+  if(!ltr_tir_validate_tir5_header(data, 4)){
     ltr_int_log_message("Bad packet header!\n");
     return false;
   }else{
@@ -219,12 +218,7 @@ static bool check_paket_header_tir5(unsigned char data[])
 
 static bool check_paket_header_sn4(unsigned char data[])
 {
-  unsigned char csum = 0;
-  int i;
-  for(i = 0; i < 8; ++i){
-    csum ^= data[i];
-  }
-  if(csum != 0xAA){
+  if(!ltr_tir_validate_sn4_header(data, 8)){
     ltr_int_log_message("Bad packet header!\n");
     return false;
   }else{
@@ -551,7 +545,9 @@ int ltr_int_read_blobs_tir(struct bloblist_type *blt, int min, int max, image_t 
   while(1){
     if(ptr >= size){
       ptr = 0;
-      if(!ltr_int_receive_data(ltr_int_data_in_ep, ltr_int_packet, sizeof(ltr_int_packet), &size, 1000)){
+      if(!ltr_usb_transport_receive(ltr_int_get_tir_usb_transport(),
+                                     ltr_int_data_in_ep, ltr_int_packet,
+                                     sizeof(ltr_int_packet), &size, 1000)){
 	ltr_int_log_message("Problem reading data from USB!\n");
         return -1;
       }

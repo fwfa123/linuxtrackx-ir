@@ -6,7 +6,9 @@
 
 #include <QRegularExpression>
 #include <cstring>
-#include <linux/input-event-codes.h>
+#ifdef __linux__
+#  include <linux/input-event-codes.h>
+#endif
 
 typedef joystickNames_t *(*enum_joysticks_t)(ifc_type_t ifc);
 typedef void (*free_joysticks_t)(joystickNames_t *nl);
@@ -187,6 +189,7 @@ QString JoyHotkey::shortDeviceName(const QString &fullName)
 
 QString JoyHotkey::friendlyButtonName(int buttonCode)
 {
+#ifdef __linux__
   switch(buttonCode){
     case BTN_0: return QString::fromUtf8("Btn0");
     case BTN_1: return QString::fromUtf8("Btn1");
@@ -240,6 +243,9 @@ QString JoyHotkey::friendlyButtonName(int buttonCode)
     default:
       return QString::fromUtf8("Btn %1").arg(buttonCode);
   }
+#else
+  return QString::fromUtf8("Btn %1").arg(buttonCode);
+#endif
 }
 
 QString JoyHotkey::displayName(const QString &binding)

@@ -6,7 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -99,7 +99,7 @@ static int32_t file_size(const char *fname)
 }
 
 static const char *get_base_name(const char *fname){
-       	char *last_slash = rindex(fname, '/');
+        char *last_slash = strrchr(fname, '/');
 	const char* base_name = last_slash ? (last_slash + 1) : fname;
 	const size_t max_name_len = 1024;
        	size_t name_len = strnlen(base_name, max_name_len);

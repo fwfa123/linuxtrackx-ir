@@ -281,7 +281,7 @@ bool ltr_int_is_vector_finite(double vec[3])
 
 bool ltr_int_is_finite(double f)
 {
-  if(finite(f) != 0){
+  if(isfinite(f)){
     return true;
   }else{
     return false;

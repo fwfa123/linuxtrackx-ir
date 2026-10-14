@@ -2,7 +2,7 @@
 #define TIRHW__H
 
 #include <stdint.h>
-#include "usb_ifc.h"
+#include "tir_transport.h"
 
 #define TIR_LED_RED    0x10
 #define TIR_LED_GREEN  0x20
@@ -25,6 +25,10 @@ typedef struct {
 void ltr_int_get_tir_info(tir_info *info);
 char *ltr_int_find_firmware(dev_found device);
 extern int ltr_int_data_in_ep; 
+
+/* Bind the platform transport selected by the driver loader. */
+void ltr_int_set_tir_usb_transport(const ltr_usb_transport *transport);
+const ltr_usb_transport *ltr_int_get_tir_usb_transport(void);
 
 typedef bool (*stop_camera_tir_fun)();
 typedef bool (*start_camera_tir_fun)();
