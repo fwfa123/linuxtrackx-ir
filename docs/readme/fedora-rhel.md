@@ -28,6 +28,8 @@ sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
 sudo dnf install mxml-devel mesa-libGL-devel mesa-libGLU-devel libXi-devel
+# libXi-devel provides XInput2 headers (Xi/xi.h) required for global hotkeys.
+# On minimal installs, also need: sudo dnf install xorg-x11-proto-devel
 sudo dnf install sqlite   # Qt SQL (QSQLITE driver): Lutris game-database integration
 
 # Wine bridge (MinGW cross-compiler builds the PE DLLs; Wine provides the runtime prefix)
@@ -81,6 +83,8 @@ sudo dnf install cmake pkg-config
 sudo dnf install libusb1-devel zlib-devel bison flex
 sudo dnf install qt6-qtbase-devel qt6-qttools-devel qt6-qt5compat-devel
 sudo dnf install mxml-devel mesa-libGL-devel mesa-libGLU-devel libXi-devel
+# libXi-devel provides XInput2 headers (Xi/xi.h) required for global hotkeys.
+# On minimal installs, also need: sudo dnf install xorg-x11-proto-devel
 sudo dnf install sqlite  # Qt SQL (QSQLITE driver): Lutris game-database integration
 ```
 **Fedora package names:** There is no `qt5-qmake` package—`qmake-qt5` is included in `qt5-qtbase-devel`. On Debian/Ubuntu, Mini-XML is **`libmxml-dev`**.
