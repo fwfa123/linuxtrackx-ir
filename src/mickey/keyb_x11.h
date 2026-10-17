@@ -1,7 +1,9 @@
 #ifndef KEYB_X11__h
 #define KEYB_X11__h
 
-// Include Qt headers first to avoid macro conflicts with X11
+// Qt headers only — no X11 includes here.
+// Display and Window are forward-declared below so this header never pulls in Xlib.h,
+// which avoids the '#define Status int' macro conflict with Qt6.
 #include <QKeySequence>
 #include <QAbstractEventDispatcher>
 #include <QMutex>
@@ -9,13 +11,11 @@
 #include <QSocketNotifier>
 #include <QTimer>
 
-// QX11Info was removed in Qt6 - use X11 APIs directly
-// Include X11 after Qt to avoid macro conflicts
-#include <X11/Xlib.h>
-
 class shortcut;
 
-typedef std::pair<KeyCode, unsigned int> keyPair_t;
+/* Use unsigned int instead of X11 KeyCode so this header doesn't need
+ * Xlib/Xproto.  The actual XGrabKey calls cast to KeyCode where needed. */
+typedef std::pair<unsigned int, unsigned int> keyPair_t;
 typedef std::map<keyPair_t, shortcut*> shortcutHash_t;
 
 bool setShortCut(const QKeySequence &s, shortcut* id);

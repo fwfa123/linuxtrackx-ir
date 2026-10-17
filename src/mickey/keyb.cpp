@@ -11,6 +11,11 @@
 #include "moc_keyb.cpp"
 
 #ifndef DARWIN
+  /* keyb_x11.h uses KeyCode in its keyPair_t typedef, so Xlib/Xproto must be
+   * included first. moc_keyb.cpp is already processed at this point,
+   * so the Status macro won't conflict with Qt internals. */
+  #include <X11/Xlib.h>
+  #include <X11/Xproto.h>
   #include "keyb_x11.h"
 #endif
 
