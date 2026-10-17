@@ -4,9 +4,18 @@ Think through handling for more than one request for the same key.
 Reporting problems to user.
 */
 
-// Include keyb_x11.h FIRST - it includes Qt headers before X11 headers
+// Qt6 requires QTextStream before any header that might define 'Status'.
+// X11/Xlib.h #defines Status as int (a macro), which breaks Qt6 internals.
+// Strategy: all Qt headers first, then undef Status, then X11 headers.
+#include <QTextStream>
+
+// keyb_x11.h includes only Qt headers — no X11/Xlib.h (see that file's comment).
 #include "keyb_x11.h"
+
+// Remaining Qt headers (still before any X11 include).
 #include "keyb.h"
+#include <QSettings>
+#include <QVariant>
 #include <cstdio>
 
 #if defined(QT5_OVERRIDES) || defined(QT6_OVERRIDES)
@@ -14,11 +23,16 @@ Reporting problems to user.
   #include <QTimer>
 #endif
 
-// X11 protocol constants (X_GrabKey, etc.) are in Xproto.h
+// Now undef the Status macro before pulling in X11/Xlib.h.
+#undef Status
+
+// X11 headers — pulled in after Qt and #undef Status.
+// Uses standard libXi field names (time, evtype) — no compatibility macros needed
+// since we compile against the installed libXi version directly.
+#include <X11/Xlib.h>
 #include <X11/Xproto.h>
 #include <X11/keysym.h>
-#include <Xi/xi.h>
-#include <Xi/xinput.h>
+#include <X11/extensions/XInput2.h>
 
 /* Debug logging — replace with fprintf(stderr, ...) if you want it always on. */
 #ifndef HKDBG
@@ -67,12 +81,19 @@ static void processX11Events()
      * These arrive even when a game has grabbed the keyboard with
      * XGrabKeyboard, so they are our fallback for fullscreen games. */
     if(event.type == GenericEvent && s_xi_opcode >= 0){
-      if (XGetEventData(display, &event)) {
-        XIRawEvent *raw = (XIRawEvent *) event.xdata.generic.data;
-        if (raw->event_type == XI_RawKeyPress || raw->event_type == XI_RawKeyRelease) {
+      XGenericEventCookie cookie;
+      cookie.data = NULL;
+      if (XGetEventData(display, &cookie) && cookie.extension == s_xi_opcode) {
+        /* cookie.data points to the actual XInput event struct.  For raw
+         * key events it is an XIRawEvent.  We cast directly to XIRawEvent *
+         * and check evtype there — casting cookie.data as XGenericEventCookie*
+         * would read garbage because the two structs have different layouts.
+         * (cookie.extension == s_xi_opcode already confirmed this is XI data.) */
+        XIRawEvent *raw = (XIRawEvent *) cookie.data;
+        if (raw->evtype == XI_RawKeyPress || raw->evtype == XI_RawKeyRelease) {
           KeyCode    rk     = raw->detail;
-          Time       rtime  = raw->timestamp;
-          bool       rpress = (raw->event_type == XI_RawKeyPress);
+          Time       rtime  = raw->time;
+          bool       rpress = (raw->evtype == XI_RawKeyPress);
 
           /* Dedup: skip if the same physical press was already handled by
            * XGrabKey on this (keycode, time, pressed) tuple. */
@@ -98,14 +119,14 @@ static void processX11Events()
             keyPair_t kp(rk, modifiers);
             shortcutHash_t::iterator i = shortcutHash.find(kp);
             if (i != shortcutHash.end()) {
-              HKDBG("DEBUG: Raw event keycode=%u pressed=%d -> matched\n", rk, rpress);
+              HKDBG("Raw event keycode=%u pressed=%d -> matched\n", rk, rpress);
               i->second->activate(rpress);
             }
           } else {
-            HKDBG("DEBUG: Raw event keycode=%u deduped (same press)\n", rk);
+            HKDBG("Raw event keycode=%u deduped (same press)\n", rk);
           }
         }
-        XFreeEventData(display, &event.xcookie);
+        XFreeEventData(display, &cookie);
       }
     }
 
@@ -354,7 +375,10 @@ bool setShortCut(const QKeySequence &s, shortcut* shortcutId)
     {
       int         event_base, error_base;
       XIEventMask emask;
-      unsigned char mask[] = { 1 << XI_RawKeyPress, 1 << XI_RawKeyRelease };
+      /* XInput2 event masks: byte index = type/8, bit within byte = type%8. */
+      unsigned char mask[] = { 0, 0 };
+      mask[XI_RawKeyPress / 8] |= (1 << (XI_RawKeyPress % 8));
+      mask[XI_RawKeyRelease / 8] |= (1 << (XI_RawKeyRelease % 8));
       if (XQueryExtension(display, "XInputExtension", &s_xi_opcode, &event_base, &error_base)) {
         emask.deviceid   = XIAllMasterDevices;
         emask.mask_len   = sizeof(mask);
@@ -508,6 +532,7 @@ static bool grabKeyX(Display *display, Window &window, KeyCode code, unsigned in
 
 static bool ungrabKeyX(Display *display, Window &window, KeyCode code, unsigned int modifiers)
 {
+  (void)window; // unused
   prev_x_errhandler = XSetErrorHandler(my_x_errhandler);
   //Flush stuff, so we don't get false errors... Paranoia? ;)
   XSync(display, false);

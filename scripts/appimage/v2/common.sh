@@ -32,7 +32,7 @@ require_pkg_config() {
 # Hard requirement on Linux/X11: XInput2 headers for raw key event detection.
 # Without these, the hotkey system cannot bypass fullscreen game grabs (e.g. Arma 3).
 require_xi_headers() {
-    if [[ -f /usr/include/Xi/xi.h && -f /usr/include/Xi/xinput.h ]]; then
+    if [[ -f /usr/include/X11/extensions/XInput2.h ]]; then
         print_success "Build dependency: XInput2 headers present"
     else
         die 'XInput2 development headers not found (install libXi-dev — README Level 1+)'
