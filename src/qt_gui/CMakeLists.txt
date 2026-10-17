@@ -258,6 +258,9 @@ if(NOT APPLE)
     # Debian/Ubuntu ships it as X11/extensions/XInput2.h; Fedora/RHEL as Xi/xi.h.
     find_path(XI_INCLUDE_DIR X11/extensions/XInput2.h)
     if(NOT XI_INCLUDE_DIR)
+        find_path(XI_INCLUDE_DIR Xi/xi.h)
+    endif()
+    if(NOT XI_INCLUDE_DIR)
         message(FATAL_ERROR
             "XInput2 development headers not found. Install the libXi dev package:
              Debian/Ubuntu:  sudo apt install libxi-dev

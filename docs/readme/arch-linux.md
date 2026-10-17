@@ -27,7 +27,7 @@ The AppImage bundles the GUI and Wine bridge. No system packages beyond Wine (fo
 # Core build tools and Qt6
 sudo pacman -S base-devel cmake pkg-config libusb bison flex
 sudo pacman -S qt6-base qt6-tools qt6-5compat
-sudo pacman -S mxml mesa glu libxi
+sudo pacman -S mxml mesa glu libxi  # libxi pulls in xorg-xproto which provides XInput2 headers for global hotkeys
 # CachyOS / systems with zlib-ng-compat: skip the zlib line below (zlib-ng-compat already provides libz)
 sudo pacman -S zlib
 
@@ -76,7 +76,7 @@ ls /opt/lib/linuxtrack/wine_bridge/NPClient.dll   # Level 2+ Wine bridge
 sudo pacman -S base-devel cmake pkg-config
 sudo pacman -S libusb bison flex
 sudo pacman -S qt6-base qt6-tools qt6-5compat
-sudo pacman -S mxml mesa glu libxi  # package name is mxml, not libmxml
+sudo pacman -S mxml mesa glu libxi  # libxi pulls in xorg-xproto which provides XInput2 headers for global hotkeys; package name is mxml, not libmxml
 # zlib: if you get "zlib and zlib-ng-compat are in conflict", answer N and do NOT remove zlib-ng-compat.
 # zlib-ng-compat provides libz; CMake will find it. Only install zlib if neither is present.
 sudo pacman -S zlib   # omit if zlib-ng-compat is already installed (CachyOS, etc.)

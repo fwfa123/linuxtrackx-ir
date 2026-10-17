@@ -34,6 +34,8 @@ require_pkg_config() {
 require_xi_headers() {
     if [[ -f /usr/include/X11/extensions/XInput2.h ]]; then
         print_success "Build dependency: XInput2 headers present"
+    elif [[ -f /usr/include/Xi/xi.h ]]; then
+        print_success "Build dependency: XInput2 headers present (Xi/xi.h)"
     else
         die 'XInput2 development headers not found (install libXi-dev — README Level 1+)'
         echo '         Debian/Ubuntu:  sudo apt install libxi-dev'
