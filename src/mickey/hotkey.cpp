@@ -63,19 +63,32 @@ void HotKey::getHotKey(QString &hk) const
 
 void HotKey::on_AssignButton_pressed()
 {
+  // Save the current binding so we can restore it if user cancels or gets nothing.
+  QString savedHotKey = hotKey;
+
+  // Temporarily ungrab this widget's keys from X11 before opening the dialog.
+  // This is critical: while the dialog is open, any key that was previously
+  // grabbed by XGrabKey would be intercepted and never reach myLineEdit.
+  s->resetShortcut();
+
   QString newHK;
   int res;
   hotKeySetupDlg *dlg = new hotKeySetupDlg(newHK, this);
   dlg->setHotKeyId(hotKeyId);   // so myLineEdit persists the right QSettings key
   res = dlg->exec();
   delete dlg;
-  if(res != QDialog::Accepted){
-    return;
-  }
-  if(newHK.isEmpty()){
-    setHotKey(QString::fromUtf8("None"));
-  }else{
+
+  if(res == QDialog::Accepted && !newHK.isEmpty()){
+    // User picked a new key — re-grab it.
     setHotKey(newHK);
+  }else{
+    // User cancelled or entered nothing — restore the previous binding.
+    if(!savedHotKey.isEmpty() && savedHotKey != QString::fromUtf8("None")){
+      s->resetShortcut();                    // clean slate (in case partial state)
+      setHotKey(savedHotKey);                // re-grab what was there before
+    }else{
+      hotKey = QString::fromUtf8("None");   // truly no binding to restore
+    }
   }
 }
 
