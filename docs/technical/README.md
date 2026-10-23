@@ -36,6 +36,10 @@ This directory contains technical documentation for LinuxTrack.
 ### OpenTrack
 - **`OPENTRACK_PLUGIN_PLAN.md`** — OpenTrack plugin integration plan
 
+### Global hotkeys (GitLab #69)
+- **`ISSUE_69_ASSESSMENT.md`** — Symptom analysis, fix mapping, weekend test checklist, closure path
+- **`ISSUE_69_HOTKEY_FIX_PLAN.md`** — Code-review remediation (Phases 1–3 on `main`)
+
 ---
 
 ## Key Technical Areas
