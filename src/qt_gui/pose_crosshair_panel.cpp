@@ -89,18 +89,18 @@ void PoseCrosshairPanel::updateRanges()
 
 void PoseCrosshairPanel::updateDeadzones()
 {
-  lookWidget->setDeadzone(TRACKER.axisGet(YAW, AXIS_DEADZONE),
-                          TRACKER.axisGet(PITCH, AXIS_DEADZONE));
-  leanWidget->setDeadzone(TRACKER.axisGet(TX, AXIS_DEADZONE),
-                          TRACKER.axisGet(TZ, AXIS_DEADZONE));
-  raiseWidget->setDeadzone(TRACKER.axisGet(ROLL, AXIS_DEADZONE),
-                           TRACKER.axisGet(TY, AXIS_DEADZONE));
+  lookWidget->setDeadzone(TRACKER.axisFlatPrefix(YAW),
+                          TRACKER.axisFlatPrefix(PITCH));
+  leanWidget->setDeadzone(TRACKER.axisFlatPrefix(TX),
+                          TRACKER.axisFlatPrefix(TZ));
+  raiseWidget->setDeadzone(TRACKER.axisFlatPrefix(ROLL),
+                           TRACKER.axisFlatPrefix(TY));
 }
 
 void PoseCrosshairPanel::axisChanged(int axis, int elem)
 {
   (void) axis;
-  if(elem == AXIS_DEADZONE || elem == AXIS_LLIMIT || elem == AXIS_RLIMIT
+  if(elem == AXIS_DEADZONE || elem == AXIS_CURVE || elem == AXIS_LLIMIT || elem == AXIS_RLIMIT
      || elem == AXIS_MULT){
     updateRanges();
     updateDeadzones();

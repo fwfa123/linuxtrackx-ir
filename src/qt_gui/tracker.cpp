@@ -166,6 +166,14 @@ void Tracker::signalNewPose(linuxtrack_full_pose_t *full_pose)
 }
 
 
+static void pushCurve(const char *profile, axis_t axis, ltr_axes_t axes)
+{
+  char text[LTR_CURVE_TEXT];
+  if(ltr_int_axis_format_curve(axes, axis, text, (int)sizeof(text)) > 0){
+    ltr_int_change_curve(profile, (int)axis, text);
+  }
+}
+
 void Tracker::signalNewSlave(const char *name)
 {
   ltr_axes_t tmp_axes = LTR_AXES_T_INITIALIZER;
@@ -173,9 +181,15 @@ void Tracker::signalNewSlave(const char *name)
   for(int i = PITCH; i <= TZ; ++i){
     ltr_int_change(name, i, AXIS_ENABLED, ltr_int_get_axis_bool_param(tmp_axes, (axis_t)i, AXIS_ENABLED)?1.0:0.0);
     ltr_int_change(name, i, AXIS_INVERTED, ltr_int_get_axis_bool_param(tmp_axes, (axis_t)i, AXIS_INVERTED)?1.0:0.0);
-    for(int j = AXIS_DEADZONE; j <= AXIS_FILTER; ++j){
-      ltr_int_change(name, i, j, ltr_int_get_axis_param(tmp_axes, (axis_t)i, (axis_param_t)j));
-    }
+    ltr_int_change(name, i, AXIS_MULT,
+      ltr_int_get_axis_param(tmp_axes, (axis_t)i, AXIS_MULT));
+    ltr_int_change(name, i, AXIS_LLIMIT,
+      ltr_int_get_axis_param(tmp_axes, (axis_t)i, AXIS_LLIMIT));
+    ltr_int_change(name, i, AXIS_RLIMIT,
+      ltr_int_get_axis_param(tmp_axes, (axis_t)i, AXIS_RLIMIT));
+    ltr_int_change(name, i, AXIS_FILTER,
+      ltr_int_get_axis_param(tmp_axes, (axis_t)i, AXIS_FILTER));
+    pushCurve(name, (axis_t)i, tmp_axes);
   }
   ltr_int_change(NULL, MISC, MISC_LEGR, ltr_int_use_oldrot()?1.0:0.0);
   ltr_int_change(NULL, MISC, MISC_ALTER, ltr_int_use_alter()?1.0:0.0);
@@ -200,13 +214,15 @@ void Tracker::broadcastAxesToSlaves()
       ltr_int_get_axis_bool_param(axes, (axis_t)i, AXIS_ENABLED) ? 1.0 : 0.0);
     ltr_int_change(profile, i, AXIS_INVERTED,
       ltr_int_get_axis_bool_param(axes, (axis_t)i, AXIS_INVERTED) ? 1.0 : 0.0);
-    for(int j = AXIS_DEADZONE; j <= AXIS_FILTER; ++j){
-      float val = ltr_int_get_axis_param(axes, (axis_t)i, (axis_param_t)j);
-      if((axis_param_t)j == AXIS_FILTER){
-        val = limit_ff(ffs[i] + common_ff);
-      }
-      ltr_int_change(profile, i, j, val);
-    }
+    ltr_int_change(profile, i, AXIS_MULT,
+      ltr_int_get_axis_param(axes, (axis_t)i, AXIS_MULT));
+    ltr_int_change(profile, i, AXIS_LLIMIT,
+      ltr_int_get_axis_param(axes, (axis_t)i, AXIS_LLIMIT));
+    ltr_int_change(profile, i, AXIS_RLIMIT,
+      ltr_int_get_axis_param(axes, (axis_t)i, AXIS_RLIMIT));
+    ltr_int_change(profile, i, AXIS_FILTER,
+      limit_ff(ffs[i] + common_ff));
+    pushCurve(profile, (axis_t)i, axes);
   }
 }
 
@@ -415,6 +431,55 @@ float Tracker::axisGetValue(axis_t axis, float val)
 bool Tracker::axisIsSymetrical(axis_t axis)
 {
   return ltr_int_is_symetrical(axes, axis);
+}
+
+int Tracker::axisGetCurve(axis_t axis, bool right, ltr_curve_pt *pts, int max_pts)
+{
+  return ltr_int_axis_get_curve(axes, axis, right ? 1 : 0, pts, max_pts);
+}
+
+bool Tracker::axisSetCurve(axis_t axis, const ltr_curve_pt *left, int nleft,
+                            const ltr_curve_pt *right, int nright)
+{
+  char text[LTR_CURVE_TEXT];
+  if(!ltr_int_axis_set_curve(axes, axis, left, nleft, right, nright, true)){
+    return false;
+  }
+  emit axisChanged(axis, AXIS_CURVE);
+  if(ltr_int_axis_format_curve(axes, axis, text, (int)sizeof(text)) > 0){
+    ltr_int_change_curve(profileSection.toUtf8().constData(), (int)axis, text);
+  }
+  ltr_int_prefs_changed();
+  saveDebounceTimer->start(800);
+  return true;
+}
+
+bool Tracker::axisSetCurvePreview(axis_t axis, const ltr_curve_pt *left, int nleft,
+                                   const ltr_curve_pt *right, int nright)
+{
+  return ltr_int_axis_set_curve(axes, axis, left, nleft, right, nright, false);
+}
+
+bool Tracker::axisSetCurveText(axis_t axis, const QString &left, const QString &right)
+{
+  ltr_curve_pt left_pts[LTR_CURVE_MAX_POINTS];
+  ltr_curve_pt right_pts[LTR_CURVE_MAX_POINTS];
+  const QByteArray left_bytes = left.toUtf8();
+  const QByteArray right_bytes = right.toUtf8();
+  int nleft = ltr_int_curve_parse_points(left_bytes.constData(), left_pts, LTR_CURVE_MAX_POINTS);
+  int nright = ltr_int_curve_parse_points(right_bytes.constData(), right_pts, LTR_CURVE_MAX_POINTS);
+  if(nleft < 2){
+    nleft = ltr_int_curve_parse_points(LTR_CURVE_DEFAULT_TEXT, left_pts, LTR_CURVE_MAX_POINTS);
+  }
+  if(nright < 2){
+    nright = ltr_int_curve_parse_points(LTR_CURVE_DEFAULT_TEXT, right_pts, LTR_CURVE_MAX_POINTS);
+  }
+  return axisSetCurve(axis, left_pts, nleft, right_pts, nright);
+}
+
+float Tracker::axisFlatPrefix(axis_t axis)
+{
+  return ltr_int_axis_flat_prefix(axes, axis);
 }
 
 bool Tracker::setCommonFilterFactor(float c_f)

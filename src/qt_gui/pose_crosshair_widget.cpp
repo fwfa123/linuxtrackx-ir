@@ -17,7 +17,6 @@ const float kPlotMarginScale = 0.88f;
 const float kRingFractions[] = { 0.33f, 0.66f, 1.0f };
 const int kRingFractionCount = 3;
 
-// AXIS_DEADZONE is a fraction of axis span (0..1), same normalized space as spline.c.
 float plotHalfFromNorm(float norm, float plotHalf)
 {
   const float clamped = std::max(0.f, std::min(1.f, norm));

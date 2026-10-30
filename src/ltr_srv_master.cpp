@@ -191,6 +191,46 @@ void ltr_int_change(const char *profile, int axis, int elem, float val)
   pthread_mutex_unlock(&send_mx);
 }
 
+void ltr_int_change_curve(const char *profile, int axis, const char *curve)
+{
+  message_t msg;
+  memset(&msg, 0, sizeof(msg));
+  msg.cmd = CMD_CURVE;
+  msg.data = (uint32_t)axis;
+  if(curve != NULL){
+    strncpy(msg.str, curve, sizeof(msg.str) - 1);
+    msg.str[sizeof(msg.str) - 1] = '\0';
+  }
+
+  pthread_mutex_lock(&send_mx);
+  std::pair<std::multimap<std::string, slave_conn_t>::iterator,
+            std::multimap<std::string, slave_conn_t>::iterator> range;
+  std::multimap<std::string, slave_conn_t>::iterator i;
+  bool checkSlaves = false;
+  if(profile != NULL){
+    range = slaves.equal_range(profile);
+    for(i = range.first; i != range.second;){
+      if(!slave_tx_queue(i->second, msg, false)){
+        slave_drop(i, checkSlaves);
+      }else{
+        ++i;
+      }
+    }
+  }else{
+    for(i = slaves.begin(); i != slaves.end();){
+      if(!slave_tx_queue(i->second, msg, false)){
+        slave_drop(i, checkSlaves);
+      }else{
+        ++i;
+      }
+    }
+  }
+  if(checkSlaves && (slaves.size() == 0)){
+    no_slaves = true;
+  }
+  pthread_mutex_unlock(&send_mx);
+}
+
 //When slave is started, in GUI its axes might have changed (so better send through all )
 
 

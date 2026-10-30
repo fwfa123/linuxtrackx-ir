@@ -204,6 +204,11 @@ static bool ltr_int_process_message(int l_master_uplink)
         ltr_int_set_axis_param(axes, msg.param.axis_id, msg.param.param_id, msg.param.flt_val);
       }
       break;
+    case CMD_CURVE:
+      if(!ltr_int_axis_set_curve_string(axes, (enum axis_t)msg.data, msg.str)){
+        ltr_int_log_message("Slave rejected curve update for axis %u\n", msg.data);
+      }
+      break;
     default:
       ltr_int_log_message("Slave received unexpected message %d!\n", msg.cmd);
       return false;

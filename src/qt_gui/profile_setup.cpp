@@ -2,6 +2,7 @@
 #include <QFileDialog>
 #include <QTextStream>
 #include <QSignalBlocker>
+#include <QStringList>
 #include "profile_setup.h"
 #include "scp_form.h"
 #include "tracker.cpp"
@@ -317,6 +318,26 @@ void ProfileSetup::on_Smoothing_valueChanged(int val)
   if(!initializing) TRACKER.setCommonFilterFactor((float)val / ui.Smoothing->maximum());
 }
 
+static QString formatCurveHalf(axis_t axis, bool right)
+{
+  ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+  const int count = TRACKER.axisGetCurve(axis, right, pts, LTR_CURVE_MAX_POINTS);
+  QStringList parts;
+  for(int i = 0; i < count; ++i){
+    parts.append(QString::number(pts[i].x, 'f', 4) + QLatin1Char(',') +
+                 QString::number(pts[i].y, 'f', 4));
+  }
+  if(parts.isEmpty()){
+    return QString::fromUtf8(LTR_CURVE_DEFAULT_TEXT);
+  }
+  return parts.join(QLatin1Char(';'));
+}
+
+static bool isLegacyShapeParam(axis_param_t param)
+{
+  return param == AXIS_DEADZONE || param == AXIS_LCURV || param == AXIS_RCURV;
+}
+
 void ProfileSetup::importProfile(QTextStream &tf)
 {
   int version = 1;
@@ -338,10 +359,30 @@ void ProfileSetup::importProfile(QTextStream &tf)
     if(tf.atEnd()) break;
     tf>>ival;
     TRACKER.axisChange((axis_t)i, AXIS_INVERTED, ival != 0);
-    for(int j = AXIS_DEADZONE; j <= AXIS_FILTER; ++j){
-      if(tf.atEnd()) break;
+    if(version >= 3){
       tf>>fval;
-      TRACKER.axisChange((axis_t)i, (axis_param_t)j, fval);
+      TRACKER.axisChange((axis_t)i, AXIS_MULT, fval);
+      tf>>fval;
+      TRACKER.axisChange((axis_t)i, AXIS_LLIMIT, fval);
+      tf>>fval;
+      TRACKER.axisChange((axis_t)i, AXIS_RLIMIT, fval);
+      tf>>fval;
+      TRACKER.axisChange((axis_t)i, AXIS_FILTER, fval);
+      QString leftPoints;
+      QString rightPoints;
+      tf >> leftPoints >> rightPoints;
+      TRACKER.axisSetCurveText((axis_t)i, leftPoints, rightPoints);
+    }else{
+      for(int j = AXIS_DEADZONE; j <= AXIS_FILTER; ++j){
+        if(tf.atEnd()) break;
+        tf>>fval;
+        if(!isLegacyShapeParam((axis_param_t)j)){
+          TRACKER.axisChange((axis_t)i, (axis_param_t)j, fval);
+        }
+      }
+      TRACKER.axisSetCurveText((axis_t)i,
+                               QString::fromUtf8(LTR_CURVE_DEFAULT_TEXT),
+                               QString::fromUtf8(LTR_CURVE_DEFAULT_TEXT));
     }
   }
   if (!tf.atEnd()) {
@@ -354,17 +395,19 @@ void ProfileSetup::importProfile(QTextStream &tf)
 void ProfileSetup::exportProfile(QTextStream &tf)
 {
   tf<<profileName<<"\n";
-  tf<<"2"<<"\n";
+  tf<<"3"<<"\n";
   tf<<TRACKER.getCommonFilterFactor()<<"\n";
   for(int i = PITCH; i <= TZ; ++i){
     tf<<(TRACKER.axisGetBool((axis_t)i, AXIS_ENABLED) ? QString::fromUtf8("1") : QString::fromUtf8("0"))<<
       QString::fromUtf8(" ");
     tf<<(TRACKER.axisGetBool((axis_t)i, AXIS_INVERTED) ? QString::fromUtf8("1") : QString::fromUtf8("0"))<<
       QString::fromUtf8(" ");
-    for(int j = AXIS_DEADZONE; j < AXIS_FILTER; ++j){
-      tf<<TRACKER.axisGet((axis_t)i, (axis_param_t)j)<<QString::fromUtf8(" ");
-    }
-    tf<<TRACKER.axisGet((axis_t)i, AXIS_FILTER)<<"\n";
+    tf<<TRACKER.axisGet((axis_t)i, AXIS_MULT)<<QString::fromUtf8(" ");
+    tf<<TRACKER.axisGet((axis_t)i, AXIS_LLIMIT)<<QString::fromUtf8(" ");
+    tf<<TRACKER.axisGet((axis_t)i, AXIS_RLIMIT)<<QString::fromUtf8(" ");
+    tf<<TRACKER.axisGet((axis_t)i, AXIS_FILTER)<<QString::fromUtf8(" ");
+    tf<<formatCurveHalf((axis_t)i, false)<<QString::fromUtf8(" ");
+    tf<<formatCurveHalf((axis_t)i, true)<<"\n";
   }
   tf<<TRACKER.getTrackingRateFps()<<"\n";
 }
