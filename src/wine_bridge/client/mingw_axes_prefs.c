@@ -415,21 +415,28 @@ void ltr_int_get_section_list(void *sections_ptr)
   (void)sections_ptr;
 }
 
+static bool mingw_tr_align_cached = true;
+static bool mingw_tr_align_initialized = false;
+
 bool ltr_int_do_tr_align(void)
 {
-  static bool cached = false;
-  static bool initialized = false;
-  if(!initialized){
+  if(!mingw_tr_align_initialized){
     bool align = true;
     char *tmp = ltr_int_get_key("Global", "Align-translations");
     if(tmp != NULL){
       align = (strcasecmp(tmp, "yes") == 0);
       free(tmp);
     }
-    cached = align;
-    initialized = true;
+    mingw_tr_align_cached = align;
+    mingw_tr_align_initialized = true;
   }
-  return cached;
+  return mingw_tr_align_cached;
+}
+
+void ltr_int_set_tr_align(bool state)
+{
+  mingw_tr_align_cached = state;
+  mingw_tr_align_initialized = true;
 }
 
 #endif

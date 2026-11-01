@@ -98,11 +98,21 @@ static void dbg_report(const char *msg,...);
 
 #ifdef __MINGW32__
 typedef struct {
+  uint32_t axis_id;
+  uint32_t param_id;
+  union {
+    float flt_val;
+    bool bool_val;
+  };
+} ltr_param_t;
+
+typedef struct {
   uint32_t cmd;
   uint32_t data;
   union {
     char str[500];
     linuxtrack_full_pose_t pose;
+    ltr_param_t param;
   };
 } ltr_message_t;
 
@@ -112,7 +122,10 @@ enum {
   LTR_CMD_PAUSE = 2,
   LTR_CMD_WAKEUP = 3,
   LTR_CMD_RECENTER = 4,
-  LTR_CMD_POSE = 5
+  LTR_CMD_POSE = 5,
+  LTR_CMD_PARAM = 6,
+  LTR_CMD_FRAMES = 7,
+  LTR_CMD_CURVE = 8
 };
 
 enum {
@@ -916,9 +929,68 @@ static bool mingw_pose_processing_ensure_axes(void)
   snprintf(mingw_pose_processing.profile, sizeof(mingw_pose_processing.profile), "%s", profile);
   mingw_pose_processing.initialized = true;
   mingw_pose_processing_reset_filters();
-  dbg_report("MinGW pose processing: initialized axes for profile='%s' section='%s'\n",
-             profile, ltr_int_axes_get_section(mingw_pose_processing.axes));
+  {
+    ltr_curve_pt yaw_left[LTR_CURVE_MAX_POINTS];
+    ltr_curve_pt yaw_right[LTR_CURVE_MAX_POINTS];
+    const int nleft = ltr_int_axis_get_curve(mingw_pose_processing.axes, YAW, 0,
+                                             yaw_left, LTR_CURVE_MAX_POINTS);
+    const int nright = ltr_int_axis_get_curve(mingw_pose_processing.axes, YAW, 1,
+                                              yaw_right, LTR_CURVE_MAX_POINTS);
+    dbg_report(
+      "MinGW pose processing: initialized axes for profile='%s' section='%s' yaw_points L=%d R=%d yaw_dead_prefix=%.4f\n",
+      profile, ltr_int_axes_get_section(mingw_pose_processing.axes),
+      nleft, nright, ltr_int_axis_flat_prefix(mingw_pose_processing.axes, YAW));
+  }
   return true;
+}
+
+static void mingw_apply_param_message(const ltr_message_t *msg)
+{
+  if(msg == NULL || !mingw_pose_processing_ensure_axes()){
+    return;
+  }
+  if(msg->param.axis_id == (uint32_t)MISC){
+    if(msg->param.param_id == (uint32_t)MISC_ALIGN){
+      ltr_int_set_tr_align(msg->param.flt_val > 0.5f);
+    }
+    dbg_report("MinGW pose processing: PARAM misc id=%u val=%.4f\n",
+               (unsigned int)msg->param.param_id, msg->param.flt_val);
+    return;
+  }
+  if(msg->param.param_id == (uint32_t)AXIS_ENABLED ||
+     msg->param.param_id == (uint32_t)AXIS_INVERTED){
+    if(!ltr_int_set_axis_bool_param(mingw_pose_processing.axes,
+                                    (enum axis_t)msg->param.axis_id,
+                                    (enum axis_param_t)msg->param.param_id,
+                                    msg->param.flt_val > 0.5f)){
+      dbg_report("MinGW pose processing: PARAM bool rejected axis=%u param=%u\n",
+                 (unsigned int)msg->param.axis_id, (unsigned int)msg->param.param_id);
+    }
+  }else if(!ltr_int_set_axis_param(mingw_pose_processing.axes,
+                                   (enum axis_t)msg->param.axis_id,
+                                   (enum axis_param_t)msg->param.param_id,
+                                   msg->param.flt_val)){
+    dbg_report("MinGW pose processing: PARAM rejected axis=%u param=%u val=%.4f\n",
+               (unsigned int)msg->param.axis_id, (unsigned int)msg->param.param_id,
+               msg->param.flt_val);
+  }
+}
+
+static void mingw_apply_curve_message(const ltr_message_t *msg)
+{
+  if(msg == NULL || !mingw_pose_processing_ensure_axes()){
+    return;
+  }
+  if(!ltr_int_axis_set_curve_string(mingw_pose_processing.axes,
+                                    (enum axis_t)msg->data, msg->str)){
+    dbg_report("MinGW pose processing: CMD_CURVE rejected axis=%u\n",
+               (unsigned int)msg->data);
+    return;
+  }
+  dbg_report("MinGW pose processing: CMD_CURVE axis=%u prefix=%.4f curve='%s'\n",
+             (unsigned int)msg->data,
+             ltr_int_axis_flat_prefix(mingw_pose_processing.axes, (enum axis_t)msg->data),
+             msg->str);
 }
 
 static bool mingw_postprocess_axes(linuxtrack_pose_t *pose, linuxtrack_pose_t *unfiltered)
@@ -1046,6 +1118,10 @@ static int mingw_pose_pump(void)
           mingw_pose_runtime.last_pose = msg.pose;
           mingw_pose_runtime.has_pose = true;
           got_pose = true;
+        }else if(msg.cmd == LTR_CMD_PARAM){
+          mingw_apply_param_message(&msg);
+        }else if(msg.cmd == LTR_CMD_CURVE){
+          mingw_apply_curve_message(&msg);
         }
         mingw_pose_runtime.rx_used -= sizeof(ltr_message_t);
         if(mingw_pose_runtime.rx_used > 0){
@@ -1544,10 +1620,12 @@ int __stdcall NPCLIENT_NP_GetData(tir_data_t * data)
   bool used_raw_fallback = false;
 
   /*
-   * Some profiles can report zeroed filtered pose while raw pose is valid.
-   * Prefer raw values as a fallback only when all filtered channels are near zero.
+   * Master frames only fill raw_* until Wine applies axes. Use raw values only
+   * before the first successful postprocess; a later all-zero filtered pose is
+   * a valid deadzone and must be delivered as zeros.
    */
-  if(fabsf(pose_roll) < 0.001f &&
+  if(mingw_pose_processing.processed_frames == 0u &&
+     fabsf(pose_roll) < 0.001f &&
      fabsf(pose_pitch) < 0.001f &&
      fabsf(pose_yaw) < 0.001f &&
      fabsf(pose_tx) < 0.001f &&
