@@ -28,6 +28,7 @@ lsusb | grep 131d
 5. **Display issues on Wayland** → [WAYLAND_COMPATIBILITY_ISSUE.md](WAYLAND_COMPATIBILITY_ISSUE.md)
 6. **Steam (Flatpak) no tracking / debug logs** → [STEAM_FLATPAK_DEBUG_LOGS.md](STEAM_FLATPAK_DEBUG_LOGS.md)
 7. **Per-game Wine/Proton workarounds** → [../GAME_WORKAROUNDS.md](../GAME_WORKAROUNDS.md)
+8. **Global hotkeys work on the desktop but not in a Proton game** → [readme troubleshooting: Global hotkeys and Proton Wayland](../readme/troubleshooting.md#global-hotkeys-and-proton-wayland)
 
 ## Troubleshooting Files
 

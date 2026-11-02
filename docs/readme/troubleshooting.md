@@ -98,6 +98,7 @@ Distro packages for a **source build** with webcam: `libv4l-dev` + `v4l-utils` (
 | Wine/Proton prefix issues | Wine errors | Verify the target prefix, Wine/Proton version, and MFC42 setup |
 | Wine bridge components missing | No `NPClient.dll` under `/opt/lib/linuxtrack/wine_bridge` | Verify MinGW is installed, rebuild, `cmake --install`, then install into prefix from GUI or `scripts/install/install_wine_bridge.sh` |
 | Wine version conflicts | Incompatible Wine/Proton with a game | Try current Proton or Wine Staging; bridge install has no fixed Wine version gate |
+| Global hotkeys dead in game only | Bindings fire on the desktop, nothing happens in a Proton game, log stays empty | The prefix is on `winewayland.drv` (`PROTON_ENABLE_WAYLAND=1`). See [Global hotkeys and Proton Wayland](#global-hotkeys-and-proton-wayland) |
 
 ### Distribution-Specific Quick Fixes
 
@@ -142,6 +143,14 @@ sudo dnf install mingw32-gcc mingw32-gcc-c++ mingw32-binutils
 sudo dnf install mingw64-gcc mingw64-gcc-c++ mingw64-binutils
 sudo dnf install wine
 ```
+
+## Global hotkeys and Proton Wayland
+
+Global hotkeys listen on the XWayland connection (`XGrabKey` / XInput2). The desktop session can stay on Wayland. Launch the GUI with `QT_QPA_PLATFORM=xcb` (the desktop entry and AppImage already do this).
+
+`PROTON_ENABLE_WAYLAND=1` selects `winewayland.drv` for that prefix. The game then takes keyboard input as a Wayland client, so in-game hotkeys never arrive and the log stays empty. Desktop hotkeys still work. This showed up on Fedora Workstation with native Steam (GitLab #69); the same game worked once the prefix was back on the X11 driver.
+
+Leave `PROTON_ENABLE_WAYLAND` unset, or set it to `0`. The Wayland driver can stay selected in the prefix after the variable is removed. If hotkeys still die only in game, remove the launch option and verify the game files in Steam, or recreate the prefix, so Wine is on the X11 driver again.
 
 ## Advanced Diagnostics
 
@@ -191,7 +200,7 @@ udevadm info -a -n /dev/bus/usb/XXX/YYY  # Replace with device numbers
 
 ## Known Limitations
 
-- **Wayland**: Some features work better with X11 (force with `QT_QPA_PLATFORM=xcb`)
+- **Wayland**: Launch the GUI with `QT_QPA_PLATFORM=xcb`. In-game global hotkeys also need the Proton prefix on the X11 driver, not `PROTON_ENABLE_WAYLAND=1` (see [Global hotkeys and Proton Wayland](#global-hotkeys-and-proton-wayland))
 - **Toolchain drift**: Wine bridge build requires MinGW-w64 cross-compilers on the build host (NSIS not used in v2)
 - **Qt6 themes**: Some desktop themes may affect GUI appearance
 - **Multiple TrackIR devices**: Only one device supported simultaneously
