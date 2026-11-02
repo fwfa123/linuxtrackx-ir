@@ -82,7 +82,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   setMaximumWidth(280);
 
   QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
-  const bool expanded = settings.value(QStringLiteral("curveEditor/poseMapsExpanded"), false).toBool();
+  const bool expanded = settings.value(QStringLiteral("curveEditor/poseMapsExpanded"), true).toBool();
   box->setChecked(expanded);
   applyExpanded(expanded);
 
