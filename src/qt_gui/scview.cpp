@@ -219,16 +219,27 @@ CurveGeom buildCurveGeom(axis_t axis, const QFontMetrics &fm, const QSize &sz)
   return g;
 }
 
-QPointF controlPointPixel(const ltr_curve_pt &pt, bool right, bool invert, const CurveGeom &g)
+bool axisIsInverted(axis_t axis)
+{
+  return TRACKER.axisGetBool(axis, AXIS_INVERTED);
+}
+
+QPointF controlPointPixel(axis_t axis, const ltr_curve_pt &pt, bool right, bool invert,
+                          const CurveGeom &g)
 {
   const float lim = right ? g.rLimit : g.lLimit;
-  const float physical = (right ? 1.f : -1.f) * pt.x * lim / g.factor;
+  float physical = (right ? 1.f : -1.f) * pt.x * lim / g.factor;
+  /* AXIS_INVERTED remaps physical input before the curve (see ltr_int_val_on_axis);
+   * mirror points in physical space so they stay on the flipped polyline. */
+  if(axisIsInverted(axis)){
+    physical = -physical;
+  }
   const float output = pt.y * lim;
   return QPointF(valueToPixelX(physical, g.maxK, invert, g.plot),
                  outputToPixelY(output, g.maxF, g.plot));
 }
 
-bool pixelToNormalized(const QPointF &pos, bool invert, const CurveGeom &g,
+bool pixelToNormalized(axis_t axis, const QPointF &pos, bool invert, const CurveGeom &g,
                        bool forceHalf, bool &right, float &nx, float &ny)
 {
   if(!g.ok){
@@ -236,6 +247,9 @@ bool pixelToNormalized(const QPointF &pos, bool invert, const CurveGeom &g,
   }
   const float display = (static_cast<float>(pos.x()) - g.plot.centerX) / g.plot.halfW * g.maxK;
   float physical = invert ? -display : display;
+  if(axisIsInverted(axis)){
+    physical = -physical;
+  }
   if(!forceHalf){
     right = physical >= 0.f;
   }else if(right && physical < 0.f){
@@ -269,7 +283,7 @@ void drawControlPoints(QPainter &painter, axis_t axis, bool invert, const CurveG
     ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
     const int count = TRACKER.axisGetCurve(axis, right, pts, LTR_CURVE_MAX_POINTS);
     for(int i = 0; i < count; ++i){
-      const QPointF at = controlPointPixel(pts[i], right, invert, g);
+      const QPointF at = controlPointPixel(axis, pts[i], right, invert, g);
       const bool endpoint = (i == 0 || i + 1 == count);
       const bool selected = hasSelection && selectedRight == right && selectedIndex == i;
       const float radius = selected ? 7.f : (endpoint ? 4.f : 5.5f);
@@ -551,7 +565,7 @@ PointHit hitTestPoint(axis_t axis, bool invert, const CurveGeom &geom, const QPo
     ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
     const int count = TRACKER.axisGetCurve(axis, right, pts, LTR_CURVE_MAX_POINTS);
     for(int i = 0; i < count; ++i){
-      const QPointF at = controlPointPixel(pts[i], right, invert, geom);
+      const QPointF at = controlPointPixel(axis, pts[i], right, invert, geom);
       const float dx = static_cast<float>(pos.x()) - static_cast<float>(at.x());
       const float dy = static_cast<float>(pos.y()) - static_cast<float>(at.y());
       const float dist = std::sqrt(dx * dx + dy * dy);
@@ -608,7 +622,7 @@ void SCView::mousePressEvent(QMouseEvent *event)
     bool right = false;
     float nx = 0.f;
     float ny = 0.f;
-    if(pixelToNormalized(pos, invert, geom, false, right, nx, ny) &&
+    if(pixelToNormalized(axis, pos, invert, geom, false, right, nx, ny) &&
        nx > LTR_CURVE_MIN_GAP && nx < 1.f - LTR_CURVE_MIN_GAP){
       ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
       const int count = TRACKER.axisGetCurve(axis, right, pts, LTR_CURVE_MAX_POINTS);
@@ -655,7 +669,7 @@ void SCView::mouseMoveEvent(QMouseEvent *event)
   bool right = dragRight;
   float nx = 0.f;
   float ny = 0.f;
-  if(!pixelToNormalized(event->position(), invert, geom, true, right, nx, ny)){
+  if(!pixelToNormalized(axis, event->position(), invert, geom, true, right, nx, ny)){
     return;
   }
   if(dragIndex <= 0 || dragIndex + 1 >= dragCount){

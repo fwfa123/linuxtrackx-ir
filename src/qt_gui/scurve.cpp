@@ -203,8 +203,13 @@ void SCurve::axisChanged(int a, int elem)
       }
       break;
     case AXIS_ENABLED:
+      syncEnableInvertFromTracker();
+      break;
     case AXIS_INVERTED:
       syncEnableInvertFromTracker();
+      if(view != NULL){
+        view->refreshSelectionEmit();
+      }
       break;
     case AXIS_CURVE:
       syncSymmetryFromTracker();
