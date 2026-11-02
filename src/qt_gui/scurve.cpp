@@ -128,8 +128,15 @@ void SCurve::mirrorPointsFromLeft()
 
 void SCurve::on_SCLeftLimit_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(axis, AXIS_LLIMIT, (float)d);
-  if(symetrical){
+  if(!initializing){
+    TRACKER.axisChange(axis, AXIS_LLIMIT, (float)d);
+    if(symetrical){
+      TRACKER.axisChange(axis, AXIS_RLIMIT, (float)d);
+      QSignalBlocker block(ui.SCRightLimit);
+      ui.SCRightLimit->setValue(d);
+    }
+  }else if(symetrical){
+    QSignalBlocker block(ui.SCRightLimit);
     ui.SCRightLimit->setValue(d);
   }
   emit changed();
@@ -137,8 +144,15 @@ void SCurve::on_SCLeftLimit_valueChanged(double d)
 
 void SCurve::on_SCRightLimit_valueChanged(double d)
 {
-  if(!initializing) TRACKER.axisChange(axis, AXIS_RLIMIT, (float)d);
-  if(symetrical){
+  if(!initializing){
+    TRACKER.axisChange(axis, AXIS_RLIMIT, (float)d);
+    if(symetrical){
+      TRACKER.axisChange(axis, AXIS_LLIMIT, (float)d);
+      QSignalBlocker block(ui.SCLeftLimit);
+      ui.SCLeftLimit->setValue(d);
+    }
+  }else if(symetrical){
+    QSignalBlocker block(ui.SCLeftLimit);
     ui.SCLeftLimit->setValue(d);
   }
   emit changed();
@@ -157,12 +171,16 @@ void SCurve::axisChanged(int a, int elem)
       setFilter(TRACKER.axisGet(axis, AXIS_FILTER));
       break;
     case AXIS_LLIMIT:
-      ui.SCLeftLimit->setValue(TRACKER.axisGet(axis, AXIS_LLIMIT));
-      syncSymmetryFromTracker();
+      {
+        QSignalBlocker block(ui.SCLeftLimit);
+        ui.SCLeftLimit->setValue(TRACKER.axisGet(axis, AXIS_LLIMIT));
+      }
       break;
     case AXIS_RLIMIT:
-      ui.SCRightLimit->setValue(TRACKER.axisGet(axis, AXIS_RLIMIT));
-      syncSymmetryFromTracker();
+      {
+        QSignalBlocker block(ui.SCRightLimit);
+        ui.SCRightLimit->setValue(TRACKER.axisGet(axis, AXIS_RLIMIT));
+      }
       break;
     case AXIS_CURVE:
     case AXIS_ENABLED:
