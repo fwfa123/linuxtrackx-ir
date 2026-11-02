@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include <QLabel>
+#include <QGroupBox>
+#include <QGridLayout>
 #include <axis.h>
 #include <ltlib.h>
 
@@ -17,9 +19,15 @@ class PoseMonitorStrip : public QWidget
   void newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_pose_t *unfiltered,
                linuxtrack_pose_t *pose);
 
+ private slots:
+  void onExpandedToggled(bool expanded);
+
  private:
   void updateRow(int row, float measured, float curved, float filtered);
+  void applyExpanded(bool expanded);
 
+  QGroupBox *box;
+  QWidget *gridHost;
   QLabel *headerLabels[4];
   QLabel *rowLabels[6][4];
   axis_t activeAxis;

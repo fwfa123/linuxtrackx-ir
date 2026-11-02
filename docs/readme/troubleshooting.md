@@ -89,6 +89,7 @@ Distro packages for a **source build** with webcam: `libv4l-dev` + `v4l-utils` (
 | Permission denied | Device access error | Add user to `plugdev,input,uinput,video` groups (webcams need `video`) |
 | TrackIR not detected | No tracking | Check USB device: `lsusb \| grep Track` |
 | Wine bridge fails | Windows games don't track | Check Wine installation and MFC42 setup |
+| Curve edits need game restart | Live curve changes ignored in Wine | Select the same profile **Title** in the GUI as the game registers (Wine `CMD_NEW_SOCKET` name). Reinstall NPClient after updating the bridge. |
 
 ### Wine-Specific Issues
 

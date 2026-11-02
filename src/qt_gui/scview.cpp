@@ -254,13 +254,15 @@ bool pixelToNormalized(const QPointF &pos, bool invert, const CurveGeom &g,
   return true;
 }
 
-void drawControlPoints(QPainter &painter, axis_t axis, bool invert, const CurveGeom &g)
+void drawControlPoints(QPainter &painter, axis_t axis, bool invert, const CurveGeom &g,
+                       bool hasSelection, bool selectedRight, int selectedIndex)
 {
   if(!g.ok){
     return;
   }
   const QColor fill = painter.pen().color().lighter(160);
   const QColor outline(40, 90, 160);
+  const QColor selectedOutline(220, 120, 40);
   painter.setRenderHint(QPainter::Antialiasing, true);
   for(int side = 0; side < 2; ++side){
     const bool right = side == 1;
@@ -269,8 +271,9 @@ void drawControlPoints(QPainter &painter, axis_t axis, bool invert, const CurveG
     for(int i = 0; i < count; ++i){
       const QPointF at = controlPointPixel(pts[i], right, invert, g);
       const bool endpoint = (i == 0 || i + 1 == count);
-      const float radius = endpoint ? 4.f : 5.5f;
-      painter.setPen(QPen(outline, 1.5));
+      const bool selected = hasSelection && selectedRight == right && selectedIndex == i;
+      const float radius = selected ? 7.f : (endpoint ? 4.f : 5.5f);
+      painter.setPen(QPen(selected ? selectedOutline : outline, selected ? 2.5 : 1.5));
       painter.setBrush(endpoint ? QColor(outline.red(), outline.green(), outline.blue(), 70) : fill);
       painter.drawEllipse(at, radius, radius);
     }
@@ -281,11 +284,13 @@ void drawControlPoints(QPainter &painter, axis_t axis, bool invert, const CurveG
 
 SCView::SCView(axis_t a, QWidget *parent)
   : QWidget(parent), px(0.0), axis(a), timer(NULL), invert(false),
-    symmetrical(false), dragging(false), dragRight(false), dragIndex(-1), dragCount(0)
+    symmetrical(false), dragging(false), dragRight(false), dragIndex(-1), dragCount(0),
+    selectedRight(false), selectedIndex(-1)
 {
   setBackgroundRole(QPalette::Base);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
   setAutoFillBackground(true);
+  setFocusPolicy(Qt::StrongFocus);
   timer = new QTimer(this);
   connect(timer, SIGNAL(timeout()), this, SLOT(update()));
   connect(&TRACKER, SIGNAL(newPose(linuxtrack_full_pose_t *, linuxtrack_pose_t *, linuxtrack_pose_t *)), 
@@ -293,7 +298,8 @@ SCView::SCView(axis_t a, QWidget *parent)
   timer->start(50);
   setMinimumSize(400, 140);
   setMouseTracking(false);
-  setToolTip(tr("Click to add a control point. Drag to move it. Right-click to remove it."));
+  setToolTip(tr("Click to select or add a control point. Drag to move it. "
+                "Right-click or Delete removes an interior point."));
   switch(a){
     case YAW:
     case ROLL:
@@ -385,7 +391,8 @@ void SCView::paintEvent(QPaintEvent * /* event */)
 
   painter.setPen(curveColor);
   painter.drawPolyline(points, spline_points);
-  drawControlPoints(painter, axis, invert, geom);
+  drawControlPoints(painter, axis, invert, geom,
+                    selectedIndex >= 0, selectedRight, selectedIndex);
 
   const float nx = valueToPixelX(rx, max_k, invert, plot);
   const float ny = outputToPixelY(std::fabs(px), max_f, plot);
@@ -407,6 +414,101 @@ void SCView::paintEvent(QPaintEvent * /* event */)
 void SCView::setSymmetrical(bool isSymmetrical)
 {
   symmetrical = isSymmetrical;
+}
+
+bool SCView::hasSelection() const
+{
+  return selectedIndex >= 0;
+}
+
+bool SCView::selectionIsRemovable() const
+{
+  if(selectedIndex < 0){
+    return false;
+  }
+  ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+  const int count = TRACKER.axisGetCurve(axis, selectedRight, pts, LTR_CURVE_MAX_POINTS);
+  return selectedIndex > 0 && selectedIndex + 1 < count;
+}
+
+void SCView::emitSelectionChanged()
+{
+  float x = 0.f;
+  float y = 0.f;
+  bool removable = false;
+  if(selectedIndex >= 0){
+    ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+    const int count = TRACKER.axisGetCurve(axis, selectedRight, pts, LTR_CURVE_MAX_POINTS);
+    if(selectedIndex < count){
+      x = pts[selectedIndex].x;
+      y = pts[selectedIndex].y;
+      removable = selectedIndex > 0 && selectedIndex + 1 < count;
+    }else{
+      selectedIndex = -1;
+    }
+  }
+  emit pointSelectionChanged(selectedRight, selectedIndex, x, y, removable, selectedIndex >= 0);
+}
+
+void SCView::selectPoint(bool right, int index)
+{
+  selectedRight = right;
+  selectedIndex = index;
+  emitSelectionChanged();
+  update();
+}
+
+void SCView::clearSelection()
+{
+  if(selectedIndex < 0){
+    return;
+  }
+  selectedIndex = -1;
+  emitSelectionChanged();
+  update();
+}
+
+void SCView::refreshSelectionEmit()
+{
+  emitSelectionChanged();
+}
+
+bool SCView::setSelectedPointCoords(float x, float y)
+{
+  if(!selectionIsRemovable()){
+    return false;
+  }
+  ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+  const int count = TRACKER.axisGetCurve(axis, selectedRight, pts, LTR_CURVE_MAX_POINTS);
+  const float minX = pts[selectedIndex - 1].x + LTR_CURVE_MIN_GAP;
+  const float maxX = pts[selectedIndex + 1].x - LTR_CURVE_MIN_GAP;
+  if(minX > maxX){
+    return false;
+  }
+  if(x < minX) x = minX;
+  if(x > maxX) x = maxX;
+  if(y < 0.f) y = 0.f;
+  if(y > 1.f) y = 1.f;
+  pts[selectedIndex].x = x;
+  pts[selectedIndex].y = y;
+  applyHalf(selectedRight, pts, count, true);
+  emitSelectionChanged();
+  update();
+  return true;
+}
+
+void SCView::removeSelectedPoint()
+{
+  if(!selectionIsRemovable()){
+    return;
+  }
+  ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+  const int count = TRACKER.axisGetCurve(axis, selectedRight, pts, LTR_CURVE_MAX_POINTS);
+  for(int i = selectedIndex; i + 1 < count; ++i){
+    pts[i] = pts[i + 1];
+  }
+  applyHalf(selectedRight, pts, count - 1, true);
+  clearSelection();
 }
 
 void SCView::applyHalf(bool right, const ltr_curve_pt *edited, int count, bool persist)
@@ -469,6 +571,7 @@ PointHit hitTestPoint(axis_t axis, bool invert, const CurveGeom &geom, const QPo
 
 void SCView::mousePressEvent(QMouseEvent *event)
 {
+  setFocus(Qt::MouseFocusReason);
   const QPointF pos = event->position();
   const CurveGeom geom = buildCurveGeom(axis, fontMetrics(), size());
   const PointHit hit = hitTestPoint(axis, invert, geom, pos);
@@ -476,14 +579,8 @@ void SCView::mousePressEvent(QMouseEvent *event)
 
   if(event->button() == Qt::RightButton){
     if(hit.valid && !endpoint){
-      ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
-      const int count = TRACKER.axisGetCurve(axis, hit.right, pts, LTR_CURVE_MAX_POINTS);
-      if(hit.index > 0 && hit.index + 1 < count){
-        for(int i = hit.index; i + 1 < count; ++i){
-          pts[i] = pts[i + 1];
-        }
-        applyHalf(hit.right, pts, count - 1, true);
-      }
+      selectPoint(hit.right, hit.index);
+      removeSelectedPoint();
     }
     event->accept();
     return;
@@ -494,12 +591,15 @@ void SCView::mousePressEvent(QMouseEvent *event)
     return;
   }
 
-  if(hit.valid && !endpoint){
-    dragging = true;
-    dragRight = hit.right;
-    dragIndex = hit.index;
-    dragCount = TRACKER.axisGetCurve(axis, dragRight, dragPts, LTR_CURVE_MAX_POINTS);
-    grabMouse();
+  if(hit.valid){
+    selectPoint(hit.right, hit.index);
+    if(!endpoint){
+      dragging = true;
+      dragRight = hit.right;
+      dragIndex = hit.index;
+      dragCount = TRACKER.axisGetCurve(axis, dragRight, dragPts, LTR_CURVE_MAX_POINTS);
+      grabMouse();
+    }
     event->accept();
     return;
   }
@@ -523,7 +623,23 @@ void SCView::mousePressEvent(QMouseEvent *event)
         pts[count].x = nx;
         pts[count].y = ny;
         applyHalf(right, pts, count + 1, true);
+        /* Points are stored sorted by x; find the new index after apply. */
+        const int newCount = TRACKER.axisGetCurve(axis, right, pts, LTR_CURVE_MAX_POINTS);
+        int newIndex = -1;
+        for(int i = 0; i < newCount; ++i){
+          if(std::fabs(pts[i].x - nx) < LTR_CURVE_MIN_GAP * 0.5f){
+            newIndex = i;
+            break;
+          }
+        }
+        if(newIndex >= 0){
+          selectPoint(right, newIndex);
+        }
+      }else{
+        clearSelection();
       }
+    }else{
+      clearSelection();
     }
   }
   event->accept();
@@ -555,6 +671,9 @@ void SCView::mouseMoveEvent(QMouseEvent *event)
   dragPts[dragIndex].x = nx;
   dragPts[dragIndex].y = ny;
   applyHalf(dragRight, dragPts, dragCount, false);
+  selectedRight = dragRight;
+  selectedIndex = dragIndex;
+  emitSelectionChanged();
   update();
   event->accept();
 }
@@ -564,6 +683,7 @@ void SCView::mouseReleaseEvent(QMouseEvent *event)
   if(dragging && event->button() == Qt::LeftButton){
     if(dragIndex > 0 && dragIndex + 1 < dragCount){
       applyHalf(dragRight, dragPts, dragCount, true);
+      selectPoint(dragRight, dragIndex);
     }
     dragging = false;
     dragIndex = -1;
@@ -573,6 +693,23 @@ void SCView::mouseReleaseEvent(QMouseEvent *event)
     return;
   }
   QWidget::mouseReleaseEvent(event);
+}
+
+void SCView::keyPressEvent(QKeyEvent *event)
+{
+  if(event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace){
+    if(selectionIsRemovable()){
+      removeSelectedPoint();
+      event->accept();
+      return;
+    }
+  }
+  if(event->key() == Qt::Key_Escape){
+    clearSelection();
+    event->accept();
+    return;
+  }
+  QWidget::keyPressEvent(event);
 }
 
 void SCView::newPose(linuxtrack_full_pose_t *raw_pose, linuxtrack_pose_t *unfiltered, linuxtrack_pose_t *pose)

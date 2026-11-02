@@ -6,9 +6,13 @@
 #include "tracker.h"
 #include <math.h>
 #include <QSignalBlocker>
+#include <QHBoxLayout>
+#include <QFormLayout>
 
 SCurve::SCurve(axis_t a, QString axis_name, QString left_label, QString right_label, QWidget *parent)
-  : QWidget(parent), axis(a), symetrical(true), view(NULL), initializing(false)
+  : QWidget(parent), axis(a), symetrical(true), view(NULL), initializing(false),
+    updatingPointEditor(false), pointInputSpin(NULL), pointOutputSpin(NULL),
+    removePointButton(NULL), pointHintLabel(NULL)
 {
   symetrical = TRACKER.axisIsSymetrical(axis);
   ui.setupUi(this);
@@ -22,13 +26,17 @@ SCurve::SCurve(axis_t a, QString axis_name, QString left_label, QString right_la
 
   view = new SCView(axis, this);
   ui.SCView->addWidget(view, 1);
+  setupPointEditor();
   ui.horizontalLayout_2->setStretch(0, 1);
   ui.horizontalLayout_2->setStretch(1, 0);
   ui.verticalLayout_4->setStretch(0, 0);
   ui.verticalLayout_4->setStretch(1, 1);
   ui.verticalLayout_4->setStretch(2, 0);
+  ui.verticalLayout_4->setStretch(3, 0);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
   QObject::connect(this, SIGNAL(changed()), view, SLOT(update()));
+  QObject::connect(view, SIGNAL(pointSelectionChanged(bool,int,float,float,bool,bool)),
+                   this, SLOT(onPointSelectionChanged(bool,int,float,float,bool,bool)));
   initAxes();
 }
 
@@ -159,6 +167,9 @@ void SCurve::axisChanged(int a, int elem)
     case AXIS_CURVE:
     case AXIS_ENABLED:
       syncSymmetryFromTracker();
+      if(view != NULL){
+        view->refreshSelectionEmit();
+      }
       break;
     case AXIS_FULL:
       ui.SCFactor->setValue(TRACKER.axisGet(axis, AXIS_MULT) * 12.0);
@@ -178,4 +189,91 @@ void SCurve::initAxes()
   initializing = true;
   setup_gui();
   initializing = false;
+}
+
+void SCurve::setupPointEditor()
+{
+  QWidget *row = new QWidget(this);
+  QHBoxLayout *layout = new QHBoxLayout(row);
+  layout->setContentsMargins(0, 4, 0, 4);
+
+  pointHintLabel = new QLabel(
+    tr("Select a point to edit. Right-click or Delete removes interior points."), row);
+  pointHintLabel->setWordWrap(true);
+
+  pointInputSpin = new QDoubleSpinBox(row);
+  pointInputSpin->setDecimals(4);
+  pointInputSpin->setRange(0.0, 1.0);
+  pointInputSpin->setSingleStep(0.01);
+  pointInputSpin->setPrefix(tr("In "));
+  pointInputSpin->setEnabled(false);
+
+  pointOutputSpin = new QDoubleSpinBox(row);
+  pointOutputSpin->setDecimals(4);
+  pointOutputSpin->setRange(0.0, 1.0);
+  pointOutputSpin->setSingleStep(0.01);
+  pointOutputSpin->setPrefix(tr("Out "));
+  pointOutputSpin->setEnabled(false);
+
+  removePointButton = new QPushButton(tr("Remove point"), row);
+  removePointButton->setEnabled(false);
+
+  layout->addWidget(pointHintLabel, 1);
+  layout->addWidget(pointInputSpin, 0);
+  layout->addWidget(pointOutputSpin, 0);
+  layout->addWidget(removePointButton, 0);
+
+  /* Insert above Sensitivity/Smoothing (frame_3), after the curve+side panel row. */
+  ui.verticalLayout_4->insertWidget(2, row);
+
+  QObject::connect(pointInputSpin, SIGNAL(valueChanged(double)),
+                   this, SLOT(onPointCoordEdited()));
+  QObject::connect(pointOutputSpin, SIGNAL(valueChanged(double)),
+                   this, SLOT(onPointCoordEdited()));
+  QObject::connect(removePointButton, SIGNAL(clicked()),
+                   this, SLOT(onRemovePointClicked()));
+}
+
+void SCurve::onPointSelectionChanged(bool right, int index, float x, float y,
+                                     bool removable, bool hasSelection)
+{
+  (void)right;
+  (void)index;
+  updatingPointEditor = true;
+  if(pointInputSpin != NULL){
+    QSignalBlocker b1(pointInputSpin);
+    QSignalBlocker b2(pointOutputSpin);
+    pointInputSpin->setValue(x);
+    pointOutputSpin->setValue(y);
+    /* Endpoints are display-only; interior points are editable. */
+    const bool editable = hasSelection && removable;
+    pointInputSpin->setEnabled(editable);
+    pointOutputSpin->setEnabled(editable);
+  }
+  if(removePointButton != NULL){
+    removePointButton->setEnabled(removable);
+  }
+  updatingPointEditor = false;
+}
+
+void SCurve::onPointCoordEdited()
+{
+  if(updatingPointEditor || initializing || view == NULL){
+    return;
+  }
+  if(!view->selectionIsRemovable()){
+    return;
+  }
+  view->setSelectedPointCoords(static_cast<float>(pointInputSpin->value()),
+                               static_cast<float>(pointOutputSpin->value()));
+  emit changed();
+}
+
+void SCurve::onRemovePointClicked()
+{
+  if(view == NULL){
+    return;
+  }
+  view->removeSelectedPoint();
+  emit changed();
 }
