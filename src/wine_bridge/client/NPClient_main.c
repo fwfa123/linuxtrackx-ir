@@ -97,6 +97,7 @@ static int ensure_socket_runtime_ready(void);
 static void dbg_report(const char *msg,...);
 
 #ifdef __MINGW32__
+/* Must match native param_t / message_t in ltr_srv_comm.h (same field order). */
 typedef struct {
   uint32_t axis_id;
   uint32_t param_id;
@@ -124,6 +125,7 @@ enum {
   LTR_CMD_RECENTER = 4,
   LTR_CMD_POSE = 5,
   LTR_CMD_PARAM = 6,
+  /* Slave→master only (request frame publish). Kept for layout parity; not handled inbound. */
   LTR_CMD_FRAMES = 7,
   LTR_CMD_CURVE = 8
 };
@@ -946,11 +948,16 @@ static bool mingw_pose_processing_ensure_axes(void)
 
 static void mingw_apply_param_message(const ltr_message_t *msg)
 {
-  if(msg == NULL || !mingw_pose_processing_ensure_axes()){
+  if(msg == NULL){
+    return;
+  }
+  if(!mingw_pose_processing_ensure_axes()){
+    dbg_report("MinGW pose processing: CMD_PARAM skipped: axes not ready\n");
     return;
   }
   if(msg->param.axis_id == (uint32_t)MISC){
     if(msg->param.param_id == (uint32_t)MISC_ALIGN){
+      /* Master always sends bools as flt_val (0.0/1.0); never read bool_val. */
       ltr_int_set_tr_align(msg->param.flt_val > 0.5f);
     }
     dbg_report("MinGW pose processing: PARAM misc id=%u val=%.4f\n",
@@ -959,6 +966,7 @@ static void mingw_apply_param_message(const ltr_message_t *msg)
   }
   if(msg->param.param_id == (uint32_t)AXIS_ENABLED ||
      msg->param.param_id == (uint32_t)AXIS_INVERTED){
+    /* Wire contract: master ltr_int_change writes flt_val only (same as ltr_srv_slave). */
     if(!ltr_int_set_axis_bool_param(mingw_pose_processing.axes,
                                     (enum axis_t)msg->param.axis_id,
                                     (enum axis_param_t)msg->param.param_id,
@@ -978,7 +986,11 @@ static void mingw_apply_param_message(const ltr_message_t *msg)
 
 static void mingw_apply_curve_message(const ltr_message_t *msg)
 {
-  if(msg == NULL || !mingw_pose_processing_ensure_axes()){
+  if(msg == NULL){
+    return;
+  }
+  if(!mingw_pose_processing_ensure_axes()){
+    dbg_report("MinGW pose processing: CMD_CURVE skipped: axes not ready\n");
     return;
   }
   if(!ltr_int_axis_set_curve_string(mingw_pose_processing.axes,
@@ -1076,6 +1088,9 @@ static int mingw_pose_pump(void)
     dbg_report("MinGW pose pump: not connected\n");
     return -1;
   }
+  /* Warm axes as soon as the socket is up so CMD_CURVE from signalNewSlave
+   * is not the first force-init under a connect race. */
+  (void)mingw_pose_processing_ensure_axes();
 
   bool got_pose = false;
   for(;;){

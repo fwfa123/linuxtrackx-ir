@@ -207,8 +207,9 @@ static float limit_ff(float val)
 
 void Tracker::broadcastAxesToSlaves()
 {
-  const QByteArray sec = profileSection.toUtf8();
-  const char *profile = sec.constData();
+  /* Slaves (incl. Wine) register under profile Title, not prefs section id. */
+  const QByteArray title = currentProfile.toUtf8();
+  const char *profile = title.constData();
   for(int i = PITCH; i <= TZ; ++i){
     ltr_int_change(profile, i, AXIS_ENABLED,
       ltr_int_get_axis_bool_param(axes, (axis_t)i, AXIS_ENABLED) ? 1.0 : 0.0);
@@ -285,8 +286,8 @@ void Tracker::setProfile(QString p)
   PREF.getProfileSection(currentProfile, profileSection);
   //std::cout<<"Set profile "<<currentProfile.toStdString()<<" - "<<p.toStdString()<<"\n";
   ltr_int_init_axes(&axes, currentProfile.toUtf8().constData());
-  // Keep profileSection in sync with axes section so ltr_int_change() and axis
-  // persistence (save_val_flt) always use the same prefs section.
+  // Keep profileSection in sync with axes section for prefs I/O only.
+  // Slave targeting (ltr_int_change / change_curve) uses currentProfile Title.
   const char *sec = ltr_int_axes_get_section(axes);
   if(sec != NULL){
     profileSection = QString::fromUtf8(sec);
@@ -373,7 +374,7 @@ bool Tracker::axisChange(axis_t axis, axis_param_t elem, bool enabled)
 {
   ltr_int_set_axis_bool_param(axes, axis, elem, enabled);
   emit axisChanged(axis, elem);
-  ltr_int_change(profileSection.toUtf8().constData(), axis, elem, enabled?1.0:0.0);
+  ltr_int_change(currentProfile.toUtf8().constData(), axis, elem, enabled?1.0:0.0);
   ltr_int_prefs_changed();
   saveDebounceTimer->start(800);
   return true;
@@ -403,7 +404,7 @@ bool Tracker::axisChange(axis_t axis, axis_param_t elem, float val)
   }
   bool res = ltr_int_set_axis_param(axes, axis, elem, val);
   emit axisChanged(axis, elem);
-  ltr_int_change(profileSection.toUtf8().constData(), axis, elem, val);
+  ltr_int_change(currentProfile.toUtf8().constData(), axis, elem, val);
   ltr_int_prefs_changed();
   saveDebounceTimer->start(800);
   return res;
@@ -447,7 +448,7 @@ bool Tracker::axisSetCurve(axis_t axis, const ltr_curve_pt *left, int nleft,
   }
   emit axisChanged(axis, AXIS_CURVE);
   if(ltr_int_axis_format_curve(axes, axis, text, (int)sizeof(text)) > 0){
-    ltr_int_change_curve(profileSection.toUtf8().constData(), (int)axis, text);
+    ltr_int_change_curve(currentProfile.toUtf8().constData(), (int)axis, text);
   }
   ltr_int_prefs_changed();
   saveDebounceTimer->start(800);
@@ -457,7 +458,15 @@ bool Tracker::axisSetCurve(axis_t axis, const ltr_curve_pt *left, int nleft,
 bool Tracker::axisSetCurvePreview(axis_t axis, const ltr_curve_pt *left, int nleft,
                                    const ltr_curve_pt *right, int nright)
 {
-  return ltr_int_axis_set_curve(axes, axis, left, nleft, right, nright, false);
+  char text[LTR_CURVE_TEXT];
+  if(!ltr_int_axis_set_curve(axes, axis, left, nleft, right, nright, false)){
+    return false;
+  }
+  /* Live drag: push to slaves (Title key) without prefs save. */
+  if(ltr_int_axis_format_curve(axes, axis, text, (int)sizeof(text)) > 0){
+    ltr_int_change_curve(currentProfile.toUtf8().constData(), (int)axis, text);
+  }
+  return true;
 }
 
 bool Tracker::axisSetCurveText(axis_t axis, const QString &left, const QString &right)
@@ -491,7 +500,7 @@ bool Tracker::setCommonFilterFactor(float c_f)
     val = limit_ff(ffs[i] + common_ff);
     res &= ltr_int_set_axis_param(axes, (axis_t)i, AXIS_FILTER, val);
     emit axisChanged(i, AXIS_FILTER);
-    ltr_int_change(profileSection.toUtf8().constData(), i, AXIS_FILTER, val);
+    ltr_int_change(currentProfile.toUtf8().constData(), i, AXIS_FILTER, val);
   }
   emit setCommonFF(c_f);
   ltr_int_prefs_changed();

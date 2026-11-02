@@ -93,10 +93,16 @@ static bool slave_tx_queue(slave_conn_t &s, const message_t &msg, bool is_pose)
     if(!slave_tx_flush(s)){
       return false;
     }
-    /* Only an untouched pose may be superseded by a newer pose; anything
-     * else has to wait so a partially written message is never torn. */
-    if(s.tx_pending && !(is_pose && (s.tx_sent == 0))){
-      return true;
+    if(s.tx_pending){
+      /* Never tear a partially written message. */
+      if(s.tx_sent != 0){
+        return true;
+      }
+      /* Unsent pose may be superseded by a newer pose or by control
+       * (CMD_PARAM / CMD_CURVE). Do not discard an unsent control for a pose. */
+      if(s.tx.cmd != CMD_POSE && is_pose){
+        return true;
+      }
     }
   }
 
@@ -160,6 +166,7 @@ void ltr_int_change(const char *profile, int axis, int elem, float val)
   msg.data = 0;
   msg.param.axis_id = (uint32_t)axis;
   msg.param.param_id = (uint32_t)elem;
+  /* Always encode on flt_val (incl. bools as 0.0/1.0) so Wine/native agree. */
   msg.param.flt_val = val;
 
   pthread_mutex_lock(&send_mx);

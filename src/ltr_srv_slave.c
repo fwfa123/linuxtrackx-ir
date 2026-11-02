@@ -199,6 +199,7 @@ static bool ltr_int_process_message(int l_master_uplink)
             break;
         }
       }else if(msg.param.param_id == AXIS_ENABLED){
+        /* Master writes flt_val for bools; do not use bool_val on the wire. */
         ltr_int_set_axis_bool_param(axes, msg.param.axis_id, msg.param.param_id, msg.param.flt_val > 0.5f);
       }else{
         ltr_int_set_axis_param(axes, msg.param.axis_id, msg.param.param_id, msg.param.flt_val);
