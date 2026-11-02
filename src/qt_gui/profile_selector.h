@@ -24,7 +24,6 @@ class ProfileSelector : public QWidget
    bool close();
  private slots:
   void profilesCurrentTextChanged(const QString &text);
-  void on_CopyFromDefault_pressed();
   void on_ImportProfile_pressed();
   void on_ExportProfile_pressed();
 };

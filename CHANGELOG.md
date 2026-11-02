@@ -2,7 +2,17 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: **2.x** development is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
+> **Note**: **3.x** development is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
+
+## [3.0.0] - 2026-11-02
+
+### Changed
+- **Profile tab**: Sensitivity, Enable, and Invert grids removed from the Profile overview. Tracking Rate and Common Smoothing stay in a slim always-visible header with Copy / Restore / Save axis actions.
+- **Curves on Profile**: Detailed axis curves editor is embedded in the Profile tab (no separate Detailed Axes window). Per-axis Enable and Invert live on each curve page with Sensitivity, Smoothing, Limits, and the point editor.
+- **Pose maps sidebar**: Look / Lean / Raise-Roll stack vertically in a column beside the curve editor (saves vertical space); collapsed maps free the graph width; restore via the Pose maps button next to Recenter.
+- **Profile scroll**: Tracking setup scrolls on short displays; scroll-area sizing fixed so embedded curves exceed the viewport and scroll vertically.
+- **Diagnostics**: Live pose remains collapsible (default collapsed). Pan / head-center tuning is Model Setup only (removed from the Tracking setup curves pane).
+- **Help / docs**: Tracking setup, Wine, model setup, news, and game workarounds updated for the embedded curves UI.
 
 ## [2.2.1] - 2026-09-30
 

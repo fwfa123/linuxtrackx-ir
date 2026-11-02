@@ -58,19 +58,39 @@ void SCurve::syncSymmetryFromTracker()
   }
 }
 
+void SCurve::syncEnableInvertFromTracker()
+{
+  {
+    QSignalBlocker block(ui.SCEnable);
+    ui.SCEnable->setCheckState(TRACKER.axisGetBool(axis, AXIS_ENABLED) ? Qt::Checked : Qt::Unchecked);
+  }
+  {
+    QSignalBlocker block(ui.SCInvert);
+    ui.SCInvert->setCheckState(TRACKER.axisGetBool(axis, AXIS_INVERTED) ? Qt::Checked : Qt::Unchecked);
+  }
+}
+
 void SCurve::setup_gui()
 {
   syncSymmetryFromTracker();
+  syncEnableInvertFromTracker();
   ui.SCFactor->setValue(TRACKER.axisGet(axis, AXIS_MULT) * 12);
   setFilter(TRACKER.axisGet(axis, AXIS_FILTER));
   ui.SCRightLimit->setValue(TRACKER.axisGet(axis, AXIS_RLIMIT));
   ui.SCLeftLimit->setValue(TRACKER.axisGet(axis, AXIS_LLIMIT));
 }
 
-void SCurve::setEnabled(int state)
+void SCurve::on_SCEnable_stateChanged(int state)
 {
   if(!initializing){
     TRACKER.axisChange(axis, AXIS_ENABLED, state == Qt::Checked);
+  }
+}
+
+void SCurve::on_SCInvert_stateChanged(int state)
+{
+  if(!initializing){
+    TRACKER.axisChange(axis, AXIS_INVERTED, state == Qt::Checked);
   }
 }
 
@@ -182,8 +202,11 @@ void SCurve::axisChanged(int a, int elem)
         ui.SCRightLimit->setValue(TRACKER.axisGet(axis, AXIS_RLIMIT));
       }
       break;
-    case AXIS_CURVE:
     case AXIS_ENABLED:
+    case AXIS_INVERTED:
+      syncEnableInvertFromTracker();
+      break;
+    case AXIS_CURVE:
       syncSymmetryFromTracker();
       if(view != NULL){
         view->refreshSelectionEmit();
@@ -195,6 +218,7 @@ void SCurve::axisChanged(int a, int elem)
       ui.SCLeftLimit->setValue(TRACKER.axisGet(axis, AXIS_LLIMIT));
       ui.SCRightLimit->setValue(TRACKER.axisGet(axis, AXIS_RLIMIT));
       syncSymmetryFromTracker();
+      syncEnableInvertFromTracker();
       break;
     default:
       break;

@@ -60,8 +60,8 @@ bridge (there is no native Linux DCS client).
    tab or `scripts/install/install_wine_bridge.sh`).
 2. Enable head tracking in DCS (Controls → Head Tracking).
 3. Use a DCS-specific profile in `ltr_gui` (auto-created on first launch).
-4. Set translation axis limits to **±500 mm** in Detailed Axes Setup (TrackIR
-   convention).
+4. Set translation axis limits to **±500 mm** on the Tracking setup curve page
+   for each translation axis (TrackIR convention).
 
 **If translation still feels wrong:**
 
