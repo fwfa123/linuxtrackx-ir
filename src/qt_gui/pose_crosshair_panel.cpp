@@ -46,7 +46,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   lookWidget->setUnits(true, true);
   lookWidget->setInvertHorizontal(true);
   lookWidget->setDeadzoneStyle(PoseCrosshairWidget::CircleDeadzone);
-  lookWidget->setMinimumHeight(110);
+  lookWidget->setMinimumHeight(170);
 
   leanWidget = new PoseCrosshairWidget(contentHost);
   leanWidget->setTitle(tr("Lean"));
@@ -54,7 +54,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   leanWidget->setUnits(false, false);
   leanWidget->setInvertVertical(true);
   leanWidget->setDeadzoneStyle(PoseCrosshairWidget::SquareDeadzone);
-  leanWidget->setMinimumHeight(110);
+  leanWidget->setMinimumHeight(170);
 
   raiseWidget = new PoseCrosshairWidget(contentHost);
   raiseWidget->setTitle(tr("Raise/Roll"));
@@ -62,7 +62,7 @@ PoseCrosshairPanel::PoseCrosshairPanel(QWidget *parent)
   raiseWidget->setUnits(true, false);
   raiseWidget->setInvertHorizontal(true);
   raiseWidget->setDeadzoneStyle(PoseCrosshairWidget::SquareDeadzone);
-  raiseWidget->setMinimumHeight(110);
+  raiseWidget->setMinimumHeight(170);
 
   QVBoxLayout *mapsLayout = new QVBoxLayout();
   mapsLayout->addWidget(lookWidget, 1);

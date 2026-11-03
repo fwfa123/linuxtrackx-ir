@@ -12,7 +12,6 @@ const QColor kCenterCrossColor(16, 16, 48);
 const QColor kGridColor(64, 128, 128);
 const QColor kDeadzoneFill(24, 0, 0);
 const QColor kDotFill(64, 255, 128);
-const QColor kValueTextColor(0, 128, 255);
 const float kPlotMarginScale = 0.88f;
 const float kRingFractions[] = { 0.33f, 0.66f, 1.0f };
 const int kRingFractionCount = 3;
@@ -104,7 +103,7 @@ PoseCrosshairWidget::PoseCrosshairWidget(QWidget *parent)
     maxHorizontal(45.f), maxVertical(45.f), deadzoneHorizontal(0.f), deadzoneVertical(0.f),
     horizValue(0.f), vertValue(0.f), plotBackgroundValid(false)
 {
-  setMinimumSize(256, 256);
+  setMinimumSize(0, 0);
   setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
@@ -189,14 +188,23 @@ QRect PoseCrosshairWidget::plotRectForSize(const QSize &size) const
 {
   QFontMetrics fm(font());
   const int lineHeight = fm.height();
-  const int headerHeight = lineHeight * 2 + 10;
-  const int footerHeight = lineHeight + 8;
-  const int sideBand = std::max(40, std::max(fm.horizontalAdvance(labelLeft),
-                                              fm.horizontalAdvance(labelRight)) + 12);
+  /* One-line title+values header; Up/Down sit on the plot so no footer band. */
+  const int headerHeight = lineHeight + 4;
+  const int footerHeight = 0;
+  const int sideBand = std::max(28, std::max(fm.horizontalAdvance(labelLeft),
+                                              fm.horizontalAdvance(labelRight)) + 6);
 
-  return QRect(sideBand, headerHeight,
-               size.width() - sideBand * 2,
-               size.height() - headerHeight - footerHeight);
+  const int availW = size.width() - sideBand * 2;
+  const int availH = size.height() - headerHeight - footerHeight;
+  if(availW <= 0 || availH <= 0){
+    return QRect(sideBand, headerHeight, 0, 0);
+  }
+
+  /* Inscribe a square so rings and guides keep a 1:1 aspect as the cell stretches. */
+  const int side = std::min(availW, availH);
+  const int left = sideBand + (availW - side) / 2;
+  const int top = headerHeight + (availH - side) / 2;
+  return QRect(left, top, side, side);
 }
 
 void PoseCrosshairWidget::resizeEvent(QResizeEvent *event)
@@ -326,15 +334,16 @@ void PoseCrosshairWidget::paintEvent(QPaintEvent * /* event */)
                                 .arg(horizSuffix)
                                 .arg(vertValue, 0, 'f', 1)
                                 .arg(vertSuffix);
+  const QString headerText = title.isEmpty()
+                                 ? valueText
+                                 : QString::fromUtf8("%1 · %2").arg(title).arg(valueText);
 
   const int sideBand = plotRect.left();
+  const int headerHeight = lineHeight + 4;
 
   painter.setPen(titleColor);
-  painter.drawText(QRect(4, 4, width() - 8, lineHeight),
-                   Qt::AlignHCenter | Qt::AlignVCenter, title);
-  painter.setPen(kValueTextColor);
-  painter.drawText(QRect(4, 4 + lineHeight, width() - 8, lineHeight),
-                   Qt::AlignHCenter | Qt::AlignVCenter, valueText);
+  painter.drawText(QRect(4, 0, width() - 8, headerHeight),
+                   Qt::AlignHCenter | Qt::AlignVCenter, headerText);
 
   painter.setPen(edgeColor);
   painter.drawText(QRect(4, plotCenter.y() - lineHeight / 2, sideBand - 6, lineHeight),
