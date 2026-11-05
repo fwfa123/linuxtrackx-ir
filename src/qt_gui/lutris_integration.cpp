@@ -16,11 +16,15 @@
 #include <QDesktopServices>
 #include <QUrl>
 #include <QProcessEnvironment>
+#include <QSqlDriver>
+#include <QThread>
 
 LutrisIntegration::LutrisIntegration(QObject *parent)
     : QObject(parent)
     , useCustomPaths(false)
 {
+    connectionName = QStringLiteral("LutrisConnection-%1").arg(
+        reinterpret_cast<quintptr>(this), 0, 16);
     loadCustomPaths();
     initializePaths();
 }
@@ -32,6 +36,11 @@ LutrisIntegration::~LutrisIntegration()
 
 bool LutrisIntegration::initializePaths()
 {
+    struct ReleaseIfPathChanged {
+        LutrisIntegration *self;
+        ~ReleaseIfPathChanged() { self->releaseStaleDatabase(); }
+    } guard{this};
+
     QString homeDir = getHomeDirectory();
 
     // CRITICAL: Verify that the home directory is not a hardcoded build-time path
@@ -494,37 +503,145 @@ bool LutrisIntegration::isLutrisInstalled()
     return true;
 }
 
+bool LutrisIntegration::connectionOpenOnThisThread() const
+{
+    if (!lutrisDb.isValid() || !lutrisDb.isOpen())
+        return false;
+    const QSqlDriver *driver = lutrisDb.driver();
+    return driver && driver->thread() == QThread::currentThread();
+}
+
+void LutrisIntegration::releaseStaleDatabase()
+{
+    if (!lutrisDb.isValid())
+        return;
+    if (lutrisDb.databaseName() == databasePath)
+        return;
+    cachedLutrisGames.clear();
+    gamesQueryFailed = false;
+    closeLutrisDatabase();
+}
+
 bool LutrisIntegration::openLutrisDatabase()
 {
     if (!isLutrisInstalled()) {
+        if (lastError.isEmpty())
+            lastError = QString::fromUtf8("Lutris is not installed or its data files could not be found");
         return false;
     }
-    
-    lutrisDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("LutrisConnection"));
-    lutrisDb.setDatabaseName(databasePath);
-    
-    if (!lutrisDb.open()) {
+
+    if (connectionName.isEmpty()) {
+        connectionName = QStringLiteral("LutrisConnection-%1").arg(
+            reinterpret_cast<quintptr>(this), 0, 16);
+    }
+
+    if (connectionOpenOnThisThread() && lutrisDb.databaseName() == databasePath)
+        return true;
+
+    if (lutrisDb.isValid()) {
+        const QSqlDriver *driver = lutrisDb.driver();
+        if (driver && lutrisDb.isOpen() && driver->thread() != QThread::currentThread()) {
+            lastError = QString::fromUtf8("Lutris database is open on another thread");
+            return false;
+        }
+        if (lutrisDb.isOpen() && lutrisDb.databaseName() != databasePath)
+            cachedLutrisGames.clear();
+        closeLutrisDatabase();
+    }
+
+    if (!QSqlDatabase::contains(connectionName))
+        lutrisDb = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), connectionName);
+    else
+        lutrisDb = QSqlDatabase::database(connectionName, false);
+
+    if (!lutrisDb.isValid()) {
+        lastError = QString::fromUtf8("Failed to create Lutris database connection");
+        return false;
+    }
+
+    const QSqlDriver *driver = lutrisDb.driver();
+    if (driver && driver->thread() != QThread::currentThread()) {
+        lastError = QString::fromUtf8("Lutris database is open on another thread");
+        lutrisDb = QSqlDatabase();
+        return false;
+    }
+
+    if (lutrisDb.databaseName() != databasePath)
+        lutrisDb.setDatabaseName(databasePath);
+    // Read-only so a missing pga.db is reported instead of created empty.
+    lutrisDb.setConnectOptions(QStringLiteral("QSQLITE_OPEN_READONLY"));
+
+    if (!lutrisDb.isOpen() && !lutrisDb.open()) {
         lastError = QString::fromUtf8("Failed to open Lutris database: ") + lutrisDb.lastError().text();
         return false;
     }
-    
+
     return true;
 }
 
 void LutrisIntegration::closeLutrisDatabase()
 {
-    if (lutrisDb.isOpen()) {
-        lutrisDb.close();
+    const QString name = lutrisDb.isValid() ? lutrisDb.connectionName() : connectionName;
+    if (lutrisDb.isValid()) {
+        if (lutrisDb.isOpen())
+            lutrisDb.close();
+        lutrisDb = QSqlDatabase();
     }
-    QSqlDatabase::removeDatabase(QStringLiteral("LutrisConnection"));
+    if (!name.isEmpty() && QSqlDatabase::contains(name))
+        QSqlDatabase::removeDatabase(name);
+}
+
+bool LutrisIntegration::databaseHasWineGames(bool *ok)
+{
+    if (ok)
+        *ok = false;
+
+    if (!connectionOpenOnThisThread() || lutrisDb.databaseName() != databasePath) {
+        if (lutrisDb.isValid()) {
+            const QSqlDriver *driver = lutrisDb.driver();
+            if (driver && lutrisDb.isOpen() && driver->thread() != QThread::currentThread()) {
+                lastError = QString::fromUtf8("Lutris database is open on another thread");
+                return !cachedLutrisGames.isEmpty();
+            }
+        }
+        if (!openLutrisDatabase())
+            return false;
+    }
+
+    QSqlQuery query(lutrisDb);
+    query.prepare(QStringLiteral("SELECT COUNT(*) FROM games WHERE runner = 'wine'"));
+    if (!query.exec() || !query.next()) {
+        lastError = QString::fromUtf8("Failed to query Lutris games: ") + query.lastError().text();
+        return false;
+    }
+
+    if (ok)
+        *ok = true;
+    return query.value(0).toInt() > 0;
 }
 
 QList<LutrisGame> LutrisIntegration::queryLutrisGames()
 {
     QList<LutrisGame> games;
-    
-    if (!lutrisDb.isOpen()) {
+    gamesQueryFailed = false;
+
+    // Lutris installed but never launched: no games, not a database error.
+    if (!QFileInfo::exists(databasePath)) {
+        debugInfo = QString::fromUtf8("Lutris database not found: ") + databasePath + QString::fromUtf8("\n");
+        return games;
+    }
+
+    if (!connectionOpenOnThisThread() || lutrisDb.databaseName() != databasePath) {
+        if (lutrisDb.isValid()) {
+            const QSqlDriver *driver = lutrisDb.driver();
+            if (driver && lutrisDb.isOpen() && driver->thread() != QThread::currentThread()) {
+                lastError = QString::fromUtf8("Lutris database is open on another thread");
+                gamesQueryFailed = true;
+                return games;
+            }
+        }
         if (!openLutrisDatabase()) {
+            gamesQueryFailed = true;
             return games;
         }
     }
@@ -546,6 +663,7 @@ QList<LutrisGame> LutrisIntegration::queryLutrisGames()
     
     if (!query.exec()) {
         lastError = QString::fromUtf8("Failed to query Lutris games: ") + query.lastError().text();
+        gamesQueryFailed = true;
         return games;
     }
     
@@ -607,7 +725,7 @@ QList<LutrisGame> LutrisIntegration::queryLutrisGames()
 QStringList LutrisIntegration::getAvailableGames()
 {
     QStringList gameNames;
-    QList<LutrisGame> games = queryLutrisGames();
+    QList<LutrisGame> games = getLutrisGames();
     
     for (const LutrisGame &game : games) {
         if (!game.game_name.isEmpty()) {
@@ -626,15 +744,20 @@ QStringList LutrisIntegration::getAvailableGames()
 QList<LutrisGame> LutrisIntegration::getLutrisGames()
 {
     QList<LutrisGame> games = queryLutrisGames();
-    
-    // Sort games alphabetically by name
+    if (gamesQueryFailed) {
+        ltr_int_log_message("LutrisIntegration::getLutrisGames() - query failed (%s), cache size %d\n",
+                            lastError.toUtf8().constData(), cachedLutrisGames.size());
+        return cachedLutrisGames;
+    }
+
     std::sort(games.begin(), games.end(), [](const LutrisGame &a, const LutrisGame &b) {
         QString nameA = a.game_name.isEmpty() ? a.game_slug : a.game_name;
         QString nameB = b.game_name.isEmpty() ? b.game_slug : b.game_name;
         return nameA.compare(nameB, Qt::CaseInsensitive) < 0;
     });
-    
-    return games;
+
+    cachedLutrisGames = games;
+    return cachedLutrisGames;
 }
 
 bool LutrisIntegration::parseLutrisConfig(const QString &configPath, LutrisGame &game)
@@ -893,7 +1016,7 @@ void LutrisIntegration::setSelectedLutrisGameConfig(const QString &gameSlug, con
 QStringList LutrisIntegration::getWinePrefixes()
 {
     QStringList prefixes;
-    QList<LutrisGame> games = queryLutrisGames();
+    QList<LutrisGame> games = getLutrisGames();
     
     for (const LutrisGame &game : games) {
         if (!game.wine_prefix.isEmpty() && isValidWinePrefix(game.wine_prefix)) {
@@ -996,7 +1119,7 @@ bool LutrisIntegration::installToLutrisGame(const QString &gameSlug)
         return installToLutrisPrefix(parsed.wine_prefix, parsed.wine_version);
     }
 
-    QList<LutrisGame> games = queryLutrisGames();
+    QList<LutrisGame> games = getLutrisGames();
     LutrisGame matched;
     int matchCount = 0;
     for (const LutrisGame &game : games) {

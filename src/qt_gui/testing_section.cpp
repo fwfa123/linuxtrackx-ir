@@ -70,6 +70,9 @@ TestingSection::TestingSection(QObject *parent)
 
 TestingSection::~TestingSection()
 {
+    // The Steam scan uses steamIntegration, a child deleted after this body runs.
+    gamesLoadWatcher.cancel();
+    gamesLoadWatcher.waitForFinished();
 }
 
 void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
@@ -119,33 +122,14 @@ void TestingSection::setupUI(Ui::LinuxtrackMainForm &ui)
                          this, &TestingSection::onFilterTextChanged);
     }
 
-    // Async loader completion
-    QObject::connect(&gamesLoadWatcher, &QFutureWatcher<QStringList>::finished, [this]() {
-        const QStringList loaded = gamesLoadWatcher.result();
-        currentGames = loaded;
-        // Populate with filter applied
-        onFilterTextChanged(gameFilterEdit ? gameFilterEdit->text() : QString());
-        // Finalize status/progress only here
-        if (testingStatusLabel) {
-            if (!currentGames.isEmpty()) {
-                testingStatusLabel->setText(QObject::tr("Loaded %1 games").arg(currentGames.size()));
-            } else {
-                testingStatusLabel->setText(QObject::tr("No games found"));
-            }
-        }
-        if (testingProgressBar) testingProgressBar->setVisible(false);
-        // Restore last game selection if present
-        QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
-        settings.beginGroup(QStringLiteral("TestingSection"));
-        const QString lastGame = settings.value(QStringLiteral("last_game_%1").arg(currentPlatform), QString()).toString();
-        settings.endGroup();
-        if (!lastGame.isEmpty() && gameComboBox) {
-            int idx = gameComboBox->findText(lastGame);
-            if (idx >= 0) {
-                gameComboBox->setCurrentIndex(idx);
-                if (runTesterButton) runTesterButton->setEnabled(true);
-            }
-        }
+    // Async loader completion (Steam scans). Stale generations are ignored.
+    QObject::connect(&gamesLoadWatcher, &QFutureWatcher<GameLoadResult>::finished, [this]() {
+        if (gamesLoadWatcher.isCanceled())
+            return;
+        const GameLoadResult loaded = gamesLoadWatcher.result();
+        if (loaded.generation != loadGeneration)
+            return;
+        applyGameLoadResult(loaded);
     });
 }
 QString TestingSection::getCurrentPlatformKey() const
@@ -218,18 +202,22 @@ void TestingSection::onPlatformSelectionChanged()
         currentPlatform = platformComboBox->currentText();
         qDebug() << "Platform selection changed to:" << currentPlatform;
         
-        // Clear games list when platform changes
-        if (gameComboBox) {
-            gameComboBox->clear();
+        // Keep the current names visible until a new load succeeds.
+        if (gameComboBox)
             gameComboBox->setEnabled(false);
-        }
-        if (runTesterButton) {
+        if (runTesterButton)
             runTesterButton->setEnabled(false);
-        }
 
         // Check if a valid platform is selected (not "Select Platform")
         if (currentPlatform == QStringLiteral("Select Platform")) {
-            // Placeholder selected - clear status and don't load games
+            ++loadGeneration;
+            gamesLoadWatcher.cancel();
+            currentGames.clear();
+            loadedPlatformKey.clear();
+            if (gameComboBox) {
+                gameComboBox->clear();
+                gameComboBox->setEnabled(false);
+            }
             if (testingStatusLabel) testingStatusLabel->clear();
             if (testingProgressBar) testingProgressBar->setVisible(false);
             return;
@@ -280,32 +268,171 @@ void TestingSection::loadGamesForPlatform(const QString &platform)
     }
     
     currentPlatform = platform;
-    currentGames.clear();
-    
+    const int generation = ++loadGeneration;
     const QString platformKey = getCurrentPlatformKey();
+
     if (platformKey == QStringLiteral("custom")) {
-        // Run custom prefix selection synchronously on the UI thread
         const QStringList customGames = getCustomPrefixGames();
-        currentGames = customGames;
-        onFilterTextChanged(gameFilterEdit ? gameFilterEdit->text() : QString());
-        if (testingStatusLabel) {
-            testingStatusLabel->setText(customGames.isEmpty() ? QObject::tr("No games found")
-                                                              : QObject::tr("Loaded %1 games").arg(customGames.size()));
+        if (generation != loadGeneration)
+            return;
+        GameLoadResult result;
+        result.generation = generation;
+        result.platformKey = platformKey;
+        if (customGames.isEmpty() && loadedPlatformKey == platformKey && !currentGames.isEmpty()) {
+            result.ok = false;
+            result.error = tr("Prefix selection cancelled");
+        } else {
+            result.ok = true;
+            result.names = customGames;
         }
-        if (testingProgressBar) testingProgressBar->setVisible(false);
+        applyGameLoadResult(result);
         return;
     }
 
-    // Thread off Steam/Lutris discovery only
-    auto task = QtConcurrent::run([this, platformKey]() -> QStringList {
-        if (platformKey == QStringLiteral("steam")) {
-            return getSteamGames();
-        } else if (platformKey == QStringLiteral("lutris")) {
-            return getLutrisGames();
+    // Lutris SQL can only be used on the thread that opened the connection.
+    if (platformKey == QStringLiteral("lutris")) {
+        GameLoadResult result;
+        result.generation = generation;
+        result.platformKey = platformKey;
+        if (!lutrisIntegration || !lutrisIntegration->isLutrisInstalled()) {
+            result.ok = false;
+            result.error = tr("Lutris is not installed");
+        } else {
+            const QList<LutrisGame> lutrisGames = lutrisIntegration->getLutrisGames();
+            for (const LutrisGame &game : lutrisGames)
+                result.names << game.game_name;
+            if (lutrisIntegration->lastRefreshFailed()) {
+                result.ok = false;
+                result.error = lutrisIntegration->getLastError().isEmpty()
+                    ? tr("Could not read the Lutris game database")
+                    : lutrisIntegration->getLastError();
+            } else {
+                result.ok = true;
+            }
         }
-        return QStringList();
+        if (generation != loadGeneration)
+            return;
+        applyGameLoadResult(result);
+        return;
+    }
+
+    if (platformKey != QStringLiteral("steam")) {
+        GameLoadResult result;
+        result.ok = false;
+        result.platformKey = platformKey;
+        result.generation = generation;
+        result.error = tr("Please select a valid platform");
+        applyGameLoadResult(result);
+        return;
+    }
+
+    SteamIntegration *steam = steamIntegration;
+    auto task = QtConcurrent::run([steam, platformKey, generation]() -> GameLoadResult {
+        GameLoadResult result;
+        result.platformKey = platformKey;
+        result.generation = generation;
+        if (!steam || !steam->isSteamInstalled()) {
+            result.ok = false;
+            result.error = QObject::tr("Steam is not installed");
+            return result;
+        }
+        const QList<SteamGame> steamGames = steam->getSteamGames();
+        for (const SteamGame &game : steamGames) {
+            if (game.is_installed)
+                result.names << game.game_name;
+        }
+        if (steam->lastRefreshFailed()) {
+            result.ok = false;
+            result.error = steam->getLastError().isEmpty()
+                ? QObject::tr("Could not read the Steam game library")
+                : steam->getLastError();
+        } else {
+            result.ok = true;
+        }
+        return result;
     });
     gamesLoadWatcher.setFuture(task);
+}
+
+void TestingSection::rememberLoadedRecords(const QString &platformKey)
+{
+    if (platformKey == QStringLiteral("steam") && steamIntegration)
+        loadedSteamGames = steamIntegration->cachedGames();
+    else if (platformKey == QStringLiteral("lutris") && lutrisIntegration)
+        loadedLutrisGames = lutrisIntegration->cachedGames();
+}
+
+QList<SteamGame> TestingSection::steamGamesForSelection() const
+{
+    if (!loadedSteamGames.isEmpty())
+        return loadedSteamGames;
+    if (steamIntegration)
+        return steamIntegration->cachedGames();
+    return {};
+}
+
+QList<LutrisGame> TestingSection::lutrisGamesForSelection() const
+{
+    if (!loadedLutrisGames.isEmpty())
+        return loadedLutrisGames;
+    if (lutrisIntegration)
+        return lutrisIntegration->cachedGames();
+    return {};
+}
+
+void TestingSection::applyGameLoadResult(const GameLoadResult &result)
+{
+    if (testingProgressBar)
+        testingProgressBar->setVisible(false);
+
+    if (result.platformKey != getCurrentPlatformKey())
+        return;
+
+    if (!result.ok) {
+        const QString message = result.error.isEmpty() ? tr("Could not reload games") : result.error;
+        const bool keepExisting = loadedPlatformKey == result.platformKey && !currentGames.isEmpty();
+        if (keepExisting) {
+            if (testingStatusLabel)
+                testingStatusLabel->setText(message);
+            if (gameComboBox)
+                gameComboBox->setEnabled(true);
+            if (runTesterButton && gameComboBox && !gameComboBox->currentText().isEmpty())
+                runTesterButton->setEnabled(true);
+            return;
+        }
+        // Never leave another platform's names in the picker.
+        currentGames = result.names;
+        loadedPlatformKey = result.names.isEmpty() ? QString() : result.platformKey;
+        if (!result.names.isEmpty())
+            rememberLoadedRecords(result.platformKey);
+        onFilterTextChanged(gameFilterEdit ? gameFilterEdit->text() : QString());
+        if (testingStatusLabel)
+            testingStatusLabel->setText(message);
+        return;
+    }
+
+    currentGames = result.names;
+    loadedPlatformKey = result.platformKey;
+    rememberLoadedRecords(result.platformKey);
+    onFilterTextChanged(gameFilterEdit ? gameFilterEdit->text() : QString());
+    if (testingStatusLabel) {
+        testingStatusLabel->setText(currentGames.isEmpty()
+            ? tr("No games found")
+            : tr("Loaded %1 games").arg(currentGames.size()));
+    }
+
+    QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+    settings.beginGroup(QStringLiteral("TestingSection"));
+    const QString lastGame = settings.value(QStringLiteral("last_game_%1").arg(currentPlatform), QString()).toString();
+    settings.endGroup();
+    if (!lastGame.isEmpty() && gameComboBox) {
+        const int idx = gameComboBox->findText(lastGame);
+        if (idx >= 0) {
+            gameComboBox->setCurrentIndex(idx);
+            if (runTesterButton)
+                runTesterButton->setEnabled(true);
+        }
+    }
 }
 
 void TestingSection::onFilterTextChanged(const QString &text)
@@ -323,60 +450,9 @@ void TestingSection::onFilterTextChanged(const QString &text)
         }), toShow.end());
     }
     gameComboBox->addItems(toShow);
-    gameComboBox->setEnabled(!toShow.isEmpty());
+    // Names from a previous platform stay visible but not selectable while a load runs.
+    gameComboBox->setEnabled(!toShow.isEmpty() && loadedPlatformKey == getCurrentPlatformKey());
     gameComboBox->blockSignals(false);
-}
-
-QStringList TestingSection::getSteamGames()
-{
-    QStringList games;
-    
-    if (!steamIntegration) {
-        qDebug() << "Steam integration not initialized";
-        return games;
-    }
-    
-    if (!steamIntegration->isSteamInstalled()) {
-        qDebug() << "Steam not installed";
-        return games;
-    }
-    
-    // Get list of Steam games
-    QList<SteamGame> steamGames = steamIntegration->getSteamGames();
-    
-    for (const SteamGame &game : steamGames) {
-        if (game.is_installed) {
-            games << game.game_name;
-        }
-    }
-    
-    qDebug() << "Found" << games.size() << "Steam games";
-    return games;
-}
-
-QStringList TestingSection::getLutrisGames()
-{
-    QStringList games;
-    
-    if (!lutrisIntegration) {
-        qDebug() << "Lutris integration not initialized";
-        return games;
-    }
-    
-    if (!lutrisIntegration->isLutrisInstalled()) {
-        qDebug() << "Lutris not installed";
-        return games;
-    }
-    
-    // Get list of Lutris games
-    QList<LutrisGame> lutrisGames = lutrisIntegration->getLutrisGames();
-    
-    for (const LutrisGame &game : lutrisGames) {
-        games << game.game_name;
-    }
-    
-    qDebug() << "Found" << games.size() << "Lutris games";
-    return games;
 }
 
 QStringList TestingSection::getCustomPrefixGames()
@@ -508,6 +584,22 @@ void TestingSection::runSelectedTester()
 QString TestingSection::getPrefixForGame(const QString &gameName, const QString &platform)
 {
     const QString platformKey = platformLabelToKey(platform);
+    if (platformKey == QStringLiteral("lutris")) {
+        for (const LutrisGame &game : lutrisGamesForSelection()) {
+            if (game.game_name == gameName) {
+                qDebug() << "Found" << platform << "prefix for" << gameName << ":" << game.wine_prefix;
+                return game.wine_prefix;
+            }
+        }
+    } else if (platformKey == QStringLiteral("steam")) {
+        for (const SteamGame &game : steamGamesForSelection()) {
+            if (game.game_name == gameName && game.is_installed && !game.prefix_path.isEmpty()) {
+                qDebug() << "Found" << platform << "prefix for" << gameName << ":" << game.prefix_path;
+                return game.prefix_path;
+            }
+        }
+    }
+
     if (platformKey == QStringLiteral("steam") || platformKey == QStringLiteral("lutris")) {
         QString prefixPath = TesterLauncher::getPrefixForGame(gameName, platform, steamIntegration, lutrisIntegration);
         if (!prefixPath.isEmpty()) {
@@ -597,8 +689,8 @@ QString TestingSection::getCurrentGameId()
         return QString::fromUtf8("");
     }
     
-    // Find the game ID by matching the game name
-    QList<SteamGame> games = steamIntegration->getSteamGames();
+    // Find the game ID from the list already loaded for this session.
+    const QList<SteamGame> games = steamGamesForSelection();
     for (const SteamGame &game : games) {
         if (game.game_name == selectedGameName) {
             return game.game_id;
@@ -623,8 +715,8 @@ QString TestingSection::getCurrentGameSlug()
         return QString::fromUtf8("");
     }
     
-    // Find the game slug by matching the game name
-    QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
+    // Find the game slug from the list already loaded for this session.
+    const QList<LutrisGame> games = lutrisGamesForSelection();
     for (const LutrisGame &game : games) {
         if (game.game_name == selectedGameName) {
             return game.game_slug;
@@ -732,7 +824,7 @@ void TestingSection::executeTester(const QString &testerPath, const QString &pre
         // Use existing Lutris integration logic
         QString gameSlug = getCurrentGameSlug();
         if (!gameSlug.isEmpty()) {
-            QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
+            const QList<LutrisGame> games = lutrisGamesForSelection();
             QString wineVersion;
             
             // Find the wine version for the current game

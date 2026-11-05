@@ -9,6 +9,7 @@
 #include <QFileInfo>
 #include <QStandardPaths>
 #include <QProcess>
+#include <QRecursiveMutex>
 #include "flatpak_detector.h"
 #include "wine_bridge_install.h"
 
@@ -41,6 +42,10 @@ public:
     bool isSteamInstalledFlatpak();
     QStringList getAvailableGames();
     QList<SteamGame> getSteamGames();
+    /** Last successful library scan. Does not rescan. */
+    QList<SteamGame> cachedGames() const;
+    /** True when the most recent scan failed and the returned list is the previous cache (or empty). */
+    bool lastRefreshFailed() const;
     bool installToSteamGame(const QString &gameId);
     bool installToSteamPrefix(const QString &prefixPath, const QString &protonVersion = QString());
     
@@ -74,6 +79,9 @@ public:
     WineBridgeInstall::InstallOutcome getLastInstallOutcome() const { return lastInstallOutcome; }
 
 private:
+    mutable QRecursiveMutex gamesMutex;
+    QList<SteamGame> cachedSteamGames;
+    bool gamesQueryFailed = false;
     QString lastError;
     QString debugInfo;
     QString steamPath;

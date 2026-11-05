@@ -1,6 +1,6 @@
 # Fix one-shot game selection
 
-Date: 2026-11-03. Status: not started. This is the plan for a later pass. No `src/` changes have been made for it.
+Date: 2026-11-03. Status: implemented 2026-11-05.
 
 The first Lutris or Steam listing succeeds. The next install or tester load comes back empty, and the UI shows the "no games installed" dialogs in `src/qt_gui/plugin_install.cpp` (`No Lutris Games Found`, `No Steam Games Found`, `No Proton Games Found`) or the tester status `No games found` in `src/qt_gui/testing_section.cpp`.
 

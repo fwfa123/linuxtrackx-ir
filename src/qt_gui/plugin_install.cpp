@@ -9,8 +9,6 @@
 #include <QInputDialog>
 #include <QAbstractButton>
 #include <QPushButton>
-#include <QSqlDatabase>
-#include <QSqlQuery>
 #include <zlib.h>
 #include "extractor.h"
 #include "utils.h"
@@ -695,20 +693,8 @@ void PluginInstall::installLutrisWineBridge()
   // We check the database directly rather than parsing games (which requires config files)
   bool dbHasGames = false;
   if (dbExists) {
-    // Try to open database and check if it has wine games in the database
-    if (lutrisIntegration->openLutrisDatabase()) {
-      // Direct database query to check for wine games without requiring config files
-      QSqlDatabase db = QSqlDatabase::database(QStringLiteral("LutrisConnection"));
-      if (db.isOpen()) {
-        QSqlQuery query(db);
-        query.prepare(QStringLiteral("SELECT COUNT(*) FROM games WHERE runner = 'wine'"));
-        if (query.exec() && query.next()) {
-          int gameCount = query.value(0).toInt();
-          dbHasGames = (gameCount > 0);
-        }
-      }
-      lutrisIntegration->closeLutrisDatabase();
-    }
+    bool queryOk = false;
+    dbHasGames = lutrisIntegration->databaseHasWineGames(&queryOk);
   }
 
   // Trigger dialog if:
@@ -790,8 +776,15 @@ void PluginInstall::installLutrisWineBridge()
     }
   }
   
-  // Get available Lutris games
+  // Get available Lutris games. A failed refresh keeps the last good list.
   QList<LutrisGame> games = lutrisIntegration->getLutrisGames();
+  if (lutrisIntegration->lastRefreshFailed() && games.isEmpty()) {
+    QMessageBox::warning(getParentWidget(), QObject::tr("Lutris Database Error"),
+      QObject::tr("Could not read the Lutris game database.\n\n") +
+      lutrisIntegration->getLastError() + QString::fromUtf8("\n\n") +
+      QObject::tr("Debug Info: ") + lutrisIntegration->getDebugInfo());
+    return;
+  }
   if (games.isEmpty()) {
     QMessageBox::information(getParentWidget(), QObject::tr("No Lutris Games Found"),
       QObject::tr("No Wine-based games were found in Lutris.\n\n") +
@@ -887,8 +880,15 @@ void PluginInstall::installSteamProtonBridge()
     return;
   }
   
-  // Get available Steam games with Proton prefixes
+  // Get available Steam games with Proton prefixes. A failed rescan keeps the last good list.
   QList<SteamGame> games = steamIntegration->getSteamGames();
+  if (steamIntegration->lastRefreshFailed() && games.isEmpty()) {
+    QMessageBox::warning(getParentWidget(), QObject::tr("Steam Library Error"),
+      QObject::tr("Could not read the Steam game library.\n\n") +
+      steamIntegration->getLastError() + QString::fromUtf8("\n\n") +
+      QObject::tr("Debug Info: ") + steamIntegration->getDebugInfo());
+    return;
+  }
   if (games.isEmpty()) {
     QMessageBox::information(getParentWidget(), QObject::tr("No Steam Games Found"),
       QObject::tr("No Steam games with Proton prefixes were found.\n\n") +
