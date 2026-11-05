@@ -16,7 +16,70 @@
 - [ ] **merge-control-points** — Merge `feature/curve-control-points` into GitLab `main`
 - [ ] **tag-300** — Tag and push `v3.0.0`
 - [ ] **post-pr8** — Paste the comment below on [GitHub PR #8](https://github.com/fwfa123/linuxtrackx-ir/pull/8), filling in the tag URL and commit
-- [ ] **leave-open** — Leave the PR open; merge into GitLab only after wilmai rebases onto `v3.0.0`
+- [ ] **leave-open** — Leave the PR open; merge into GitLab only after wilmai rebases onto `v3.0.0` (use the workflow below)
+
+---
+
+## How to merge a GitHub PR into GitLab
+
+The GitHub PR never lands on GitHub. Pull the contributor’s branch into this GitLab clone and merge (or open a GitLab MR) here. Do **not** use GitHub’s Merge button unless that GitHub repo is what you actually release from.
+
+`origin` for this worktree is GitLab: `git@gitlab.com:fwfa123/linuxtrackx-ir.git`.
+
+### 1. Fetch the PR branch
+
+```bash
+git fetch origin
+git checkout main
+git pull origin main
+
+# one-shot fetch of the contributor branch (PR #8)
+git fetch https://github.com/wilmai/linuxtrackx-ir.git feat/macos-support:refs/heads/pr-8-macos
+git checkout pr-8-macos
+```
+
+Or add a remote once and reuse it:
+
+```bash
+git remote add wilmai https://github.com/wilmai/linuxtrackx-ir.git   # once
+git fetch wilmai feat/macos-support
+git checkout -b pr-8-macos wilmai/feat/macos-support
+```
+
+Prefer waiting until wilmai has rebased onto `v3.0.0` and pushed to the same GitHub PR, then fetch that updated tip.
+
+### 2. Rebase onto current GitLab `main` (or `v3.0.0`)
+
+```bash
+git rebase origin/main   # or: git rebase v3.0.0
+# fix conflicts if any, then:
+git rebase --continue
+```
+
+### 3. Merge into GitLab `main` and push
+
+```bash
+git checkout main
+git merge --no-ff pr-8-macos   # or fast-forward if you prefer
+git push origin main
+```
+
+Or push the branch and open a GitLab merge request:
+
+```bash
+git push -u origin pr-8-macos
+# then open MR on GitLab UI / glab
+```
+
+### 4. Close the GitHub PR
+
+On GitHub, comment that it was merged into GitLab (link the GitLab commit or MR), then close the PR.
+
+### 5. After merge (PR #8 specific)
+
+- Bump `Formula/linuxtrackx-ir.rb` to the new GitLab revision if the Homebrew formula is kept.
+- Sync the GitHub mirror later if needed: push the same `main` (or tag) so GitHub catches up.
+- Retest one TIR5 v2 Linux session (see below).
 
 ---
 
