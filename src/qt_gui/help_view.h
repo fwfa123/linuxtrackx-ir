@@ -36,6 +36,7 @@ private slots:
 
 private:
   void showPage(const QString &fileName);
+  void selectTocItem(const QString &fileName);
 
   Ui::LogViewerForm ui;
   QPushButton *wikiButton;

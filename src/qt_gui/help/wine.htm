@@ -2,144 +2,127 @@
 <html>
 
 <head>
-  <title>Linuxtrack - Wine</title>
+  <title>Wine reference</title>
   <meta name="generator" content="Bluefish 2.0.2" >
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 </head>
 <body>
-<h1>Linuxtrack X-IR - Wine Support</h1>
-To allow Windows programs running under Wine to use headtracking, Linuxtrack X-IR installs a Wine bridge (NPClient.dll and related PE files) into each Wine or Proton prefix where you need tracking.
-The bridge channels headtracking data to TrackIR-enabled applications and FreeTrack-compatible applications.
-TrackIR firmware with companion files must be available on the Linux host (even if you are not using TrackIR hardware for tracking).
-
+<h1>Wine reference</h1>
 <p>
-Install TrackIR firmware and mfc42u.dll first using the prerequisites on the <strong>Gaming</strong> tab of ltr_gui.
+For day-to-day Wine Bridge setup, use the <a href="gaming_tab.htm">Gaming</a> tab in ltr_gui:
+install TrackIR firmware and MFC42 as prerequisites, then use <strong>Install Wine Bridge</strong>
+for Lutris, Steam Proton, or a custom Wine prefix.
+Detailed firmware extraction steps are in the
+<a href="extractor.htm">Firmware and Wine bridge</a> guide.
+</p>
 <p>
-Then use <strong>Install Wine Bridge</strong> (Lutris, Steam Proton, or custom Wine prefix). The GUI copies bridge files from <code>/opt/lib/linuxtrack/wine_bridge/</code>, writes registry keys with <code>wine reg</code>, and links firmware DLLs into the prefix.
+This page keeps command-line notes and prefix details for when the Gaming tab is not enough.
+The Wine bridge (NPClient.dll and related PE files) channels headtracking into TrackIR-enabled
+and FreeTrack-compatible Windows applications. Install it into every Wine or Proton prefix where
+you need tracking. TrackIR firmware with companion files must be available on the Linux host
+(even if you are not using TrackIR hardware for tracking).
+</p>
+
+<h2>Command-line reference</h2>
 <p>
-You can also install from the shell: <code>scripts/install/install_wine_bridge.sh &lt;WINEPREFIX&gt; &lt;wine-binary&gt;</code>
+Install from the shell:
+<code>scripts/install/install_wine_bridge.sh &lt;WINEPREFIX&gt; &lt;wine-binary&gt;</code>
+</p>
 <p>
-Install the bridge into every wine bottle/prefix where you require headtracking.
+The GUI copies bridge files from <code>/opt/lib/linuxtrack/wine_bridge/</code>, writes registry
+keys with <code>wine reg</code>, and links firmware DLLs into the prefix. The same payload is
+used by the shell script.
+</p>
 
-<h2>Modern Installation Methods</h2>
-LinuxTrack X-IR now uses modern installation methods for better compatibility with current distributions:
-
-<h3>Method 1: Winetricks Installation (Recommended for Debian/Ubuntu/MX)</h3>
-The most reliable approach for Debian-based systems is to use winetricks:
-
-<code>WINEPREFIX=~/.wine winetricks mfc42</code>
-
-<h3>Method 2: Package Manager Installation (Other Distributions)</h3>
-Some distributions have mfc42 packages available:
-
+<h3>MFC42 without the Gaming tab</h3>
+<p>
+If you need MFC42 outside ltr_gui:
+</p>
 <ul>
-<li><strong>Fedora/RHEL/CentOS:</strong> <code>sudo dnf install mfc42</code>
-<li><strong>Arch Linux/Manjaro:</strong> <code>sudo pacman -S mfc42</code>
-<li><strong>OpenSUSE:</strong> <code>sudo zypper install mfc42</code>
+<li><strong>Debian/Ubuntu/MX (winetricks):</strong> <code>WINEPREFIX=~/.wine winetricks mfc42</code></li>
+<li><strong>Fedora/RHEL/CentOS:</strong> <code>sudo dnf install mfc42</code></li>
+<li><strong>Arch Linux/Manjaro:</strong> <code>sudo pacman -S mfc42</code></li>
+<li><strong>OpenSUSE:</strong> <code>sudo zypper install mfc42</code></li>
 </ul>
-
-<p><strong>Note:</strong> Ubuntu/Debian/MX Linux do not have MFC42 packages in their repositories and should use winetricks instead.
-
-<h3>Method 3: Manual Installation</h3>
-As a last resort, manually copy mfc42u.dll from a Windows system to the LinuxTrack firmware directory.
-
 <p>
-The installation process will automatically try these methods in order, providing clear guidance if manual intervention is required.
+Ubuntu/Debian/MX Linux do not ship MFC42 packages; prefer winetricks or the Gaming tab Install/Repair buttons.
+</p>
 
-<h2>Modern MinGW Build System</h2>
-LinuxTrack X-IR uses MinGW-w64 cross-compilation for generating real Windows PE binaries for Wine/Proton compatibility.
-
-<h3>Benefits of MinGW Approach</h3>
+<h2>Modern MinGW build system</h2>
+<p>
+LinuxTrack X-IR uses MinGW-w64 cross-compilation for real Windows PE binaries for Wine/Proton.
+</p>
 <ul>
-<li><strong>Real Windows Artifacts:</strong> outputs are <code>.exe</code> and <code>.dll</code> PE binaries</li>
+<li><strong>Real Windows artifacts:</strong> outputs are <code>.exe</code> and <code>.dll</code> PE binaries</li>
 <li><strong>Dual-prefix install:</strong> GUI/CLI detects 32-bit or 64-bit Wine prefixes and copies the correct PE files</li>
-<li><strong>Cleaner Host Dependencies:</strong> no winegcc-specific compile path required</li>
-<li><strong>Native Linux Symlink Handling:</strong> filesystem link creation stays on the Linux side</li>
-<li><strong>Simplified CI/CD:</strong> consistent MinGW toolchain behavior across distros</li>
+<li><strong>Cleaner host dependencies:</strong> no winegcc-specific compile path required</li>
+<li><strong>Native Linux symlink handling:</strong> filesystem link creation stays on the Linux side</li>
 </ul>
 
-<h3>Built Components</h3>
-The build system generates the following Wine-compatible components:
+<h3>Built components</h3>
 <ul>
 <li><strong>NPClient.dll</strong> - TrackIR API compatibility (32-bit)</li>
 <li><strong>NPClient64.dll</strong> - TrackIR API compatibility (64-bit)</li>
 <li><strong>FreeTrackClient.dll</strong> - FreeTrack API compatibility</li>
 <li><strong>Controller.exe</strong> - Hotkey control utility</li>
-<li><strong>Tester.exe</strong> - TrackIR testing utility</li>
-<li><strong>Tester64.exe</strong> - 64-bit TrackIR testing utility</li>
+<li><strong>Tester.exe</strong> / <strong>Tester64.exe</strong> - TrackIR testing utilities</li>
 <li><strong>ftc.exe</strong> - FreeTrack testing utility</li>
 <li><strong>TrackIR.exe</strong> - Fake TrackIR executable for games</li>
 </ul>
 
 <h2>Programs in the Wine prefix</h2>
+<p>
 After you install the Wine bridge into a bottle/prefix, several programs are available there:
-
+</p>
 <p>
 <strong>Controller</strong> allows you to bind hotkeys to pause/resume and recenter the tracking.
 It can be minimized to the tray so it doesn't clutter the desktop.
-When a <b>Controller</b> is started, window pops up and you should specify the pause key and recenter key -
+When a <b>Controller</b> is started, a window pops up and you should specify the pause key and recenter key -
 just press the appropriate button followed by key/keys of your choice (max 2 keys).
-One thing to be aware of is, that the <strong>Controller</strong> works (meaning it sees the hotkey pressed) only inside the bottle/prefix where you installed it!
+The <strong>Controller</strong> only sees hotkeys inside the bottle/prefix where you installed it.
+</p>
 <p>
-<strong>TrackIR</strong> is a fake TrackIR executable, that is required by certain games in order to accept the tracking data. It also loads TIRViews library, that channels the headtracking data into following games:
-<ul>
-<li>Battlefield 2
-<li>Wings of War
-<li>Nascar Racing Season 2003
-<li>Collin McRae Rally 04
-<li>ToCA Race Driver 2
-<li>Richard Burns Rally
-<li>F1 Challenge
-<li>MSFS 2004, FSX
-<li>CFS3
-<li>Prepar3D
-</ul>
-
+<strong>TrackIR</strong> is a fake TrackIR executable required by certain games in order to accept tracking data. It also loads the TIRViews library for older titles such as Battlefield 2, MSFS 2004/FSX, Richard Burns Rally, and similar.
+</p>
 <p>
-<strong>FreeTrackTester</strong>, <strong>Tester</strong> (and on 64bit Wine also <strong>Tester64</strong>) allow you to troubleshoot the Linuxtrack-Wine installation. They are FreeTrack and TrackIR client applications and if they are working, the installation is OK.
-
+<strong>FreeTrackTester</strong>, <strong>Tester</strong> (and on 64-bit Wine also <strong>Tester64</strong>) allow you to troubleshoot the Linuxtrack-Wine installation. If they work, the installation is OK.
+</p>
 <p>
 To remove the bridge, delete the <code>Linuxtrack</code> folder under <code>Program Files</code> or <code>Program Files (x86)</code> in that prefix, and remove registry keys under <code>NaturalPoint</code>, <code>Freetrack</code>, and <code>HKLM\SOFTWARE\Linuxtrack</code>.
+</p>
 
 <h2>Supported games</h2>
-Technically speaking, any FreeTrack and/or TrackIR enabled game/application should work. Directly tested (meaning I tested them) were the following:
-
-<ul>
-<li>Microsoft Flight Simulator (2020, X)
-<li>DCS World
-<li>IL-2 Sturmovik series
-<li>War Thunder
-<li>Elite Dangerous
-<li>Euro Truck Simulator 2
-<li>American Truck Simulator
-<li>Falcon AF
-<li>Condor Soaring simulator
-<li>MSFS 2004
-</ul>
-
-If you know of others (working or not; assuming the game itself work under wine), please let me know, so I can either assist you in troubleshooting or update the list.
+<p>
+Technically speaking, any FreeTrack and/or TrackIR enabled game/application should work. Directly tested titles include Microsoft Flight Simulator (2020, X), DCS World, IL-2 Sturmovik series, War Thunder, Elite Dangerous, Euro Truck Simulator 2, American Truck Simulator, Falcon AF, Condor Soaring simulator, and MSFS 2004.
+</p>
+<p>
+If you know of others (working or not; assuming the game itself works under Wine), please let us know so the list can be updated.
+</p>
 
 <h2>Note on profiles</h2>
-When the game/application is started for the first time, a new profile is created automatically by copying the default one.
-When adjusting the tracking in the ltr_gui, be sure to select the correct profile first, otherwise you won't see any change (because you are modifying the wrong profile).
 <p>
-The TrackIR software uses the plus/minus 500mm as a displacement limit, so to use the full displacement range, set the limits for translations accordingly (go to the <strong>Tracking Setup</strong> pane, select the appropriate profile, choose each translation axis in the axis list, and set the limit to 500 on the curve page).
+When the game/application is started for the first time, a new profile is created automatically by copying the default one.
+When adjusting the tracking in ltr_gui, be sure to select the correct profile first, otherwise you won't see any change.
+</p>
+<p>
+The TrackIR software uses plus/minus 500&nbsp;mm as a displacement limit, so to use the full displacement range, set the limits for translations accordingly (go to the <strong>Tracking Setup</strong> pane, select the appropriate profile, choose each translation axis in the axis list, and set the limit to 500 on the curve page).
+</p>
 
 <h2>Troubleshooting</h2>
-If you encounter issues with the Wine installation:
-
-<h3>Common Issues</h3>
 <ul>
-<li><strong>Build Errors:</strong> Ensure MinGW toolchains are installed and on PATH</li>
+<li><strong>Build errors:</strong> Ensure MinGW toolchains are installed and on PATH</li>
 <li><strong>Payload not found:</strong> Confirm <code>/opt/lib/linuxtrack/wine_bridge/NPClient.dll</code> exists after <code>cmake --install</code></li>
-<li><strong>Artifact Mismatch:</strong> expected outputs are <code>.exe</code>/<code>.dll</code> (not <code>.exe.so</code>/<code>.dll.so</code>)</li>
-<li><strong>Missing Files:</strong> Verify all dependencies are installed (see README for details)</li>
+<li><strong>Artifact mismatch:</strong> expected outputs are <code>.exe</code>/<code>.dll</code> (not <code>.exe.so</code>/<code>.dll.so</code>)</li>
+<li><strong>Missing files:</strong> Verify all dependencies are installed (see README for details)</li>
 </ul>
-
-<h3>Verification Steps</h3>
-1. Check that MinGW toolchains are available: <code>which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc</code>
-2. Test the build process: <code>cmake -S . -B build && cmake --build build -j$(nproc)</code>
-4. Check generated files: look for <code>.exe</code> and <code>.dll</code> files in wine bridge build directories
+<p>
+Verification steps:
+</p>
+<ol>
+<li>Check that MinGW toolchains are available: <code>which i686-w64-mingw32-gcc x86_64-w64-mingw32-gcc</code></li>
+<li>Test the build process: <code>cmake -S . -B build &amp;&amp; cmake --build build -j$(nproc)</code></li>
+<li>Check generated files: look for <code>.exe</code> and <code>.dll</code> files in wine bridge build directories</li>
+</ol>
 
 </body>
 </html>

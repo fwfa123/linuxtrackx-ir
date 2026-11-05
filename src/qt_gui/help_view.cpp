@@ -8,6 +8,7 @@
 #include <QDesktopServices>
 #include <QSplitter>
 #include <QTreeWidget>
+#include <QTreeWidgetItemIterator>
 #include <QDir>
 #include <QApplication>
 #include <QFileInfo>
@@ -15,6 +16,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QUrl>
+#include <QSignalBlocker>
 
 HelpViewer *HelpViewer::hlp = NULL;
 
@@ -31,24 +33,40 @@ static const TocEntry toc[] = {
 };
 static const int tocCount = sizeof(toc) / sizeof(toc[0]);
 #else
-static const TocEntry toc[] = {
+static const TocEntry startHere[] = {
     {"Welcome", "welcome.htm"},
     {"What's new", "news.htm"},
-    {"Hall Of Fame", "hall_of_fame.htm"},
-    {"Tracker Setup", "dev_setup.htm"},
-    {"TrackIR Permissions", "trackir_permissions.htm"},
+};
+static const TocEntry theWindow[] = {
+    {"Device Setup", "dev_setup.htm"},
     {"Model Setup", "model_setup.htm"},
     {"Tracking Setup", "axes_setup.htm"},
-    {"TrackIR firmware and Wine integration", "extractor.htm"},
-    {"Gaming Tab", "gaming_tab.htm"},
-    {"Advanced Tab", "advanced_tab.htm"},
-    {"XPlane plugin setup", "xpl_setup.htm"},
-    {"Linuxtrack Interface", "interface.htm"},
-    {"Wine games support", "wine.htm"},
-    {"Virtual mouse setup", "mickey.htm"},
-    {"System Information", "misc.htm"},
+    {"Gaming", "gaming_tab.htm"},
+    {"System", "misc.htm"},
+    {"Advanced", "advanced_tab.htm"},
 };
-static const int tocCount = sizeof(toc) / sizeof(toc[0]);
+static const TocEntry otherTasks[] = {
+    {"TrackIR permissions", "trackir_permissions.htm"},
+    {"Firmware and Wine bridge", "extractor.htm"},
+    {"X-Plane plugin", "xpl_setup.htm"},
+    {"Virtual mouse", "mickey.htm"},
+    {"Linuxtrack interface", "interface.htm"},
+    {"Wine reference", "wine.htm"},
+    {"Hall of Fame", "hall_of_fame.htm"},
+};
+
+static void addTocGroup(QTreeWidget *tree, const char *title,
+                        const TocEntry *children, int childCount)
+{
+  QTreeWidgetItem *parent = new QTreeWidgetItem(tree);
+  parent->setText(0, QString::fromUtf8(title));
+  parent->setFlags(parent->flags() & ~Qt::ItemIsSelectable);
+  for (int i = 0; i < childCount; ++i) {
+    QTreeWidgetItem *item = new QTreeWidgetItem(parent);
+    item->setText(0, QString::fromUtf8(children[i].title));
+    item->setData(0, Qt::UserRole, QString::fromUtf8(children[i].file));
+  }
+}
 #endif
 
 HelpViewer &HelpViewer::getHlp()
@@ -125,6 +143,22 @@ static QString resolveHelpDir()
   return QString();
 }
 
+void HelpViewer::selectTocItem(const QString &fileName)
+{
+  if (!tocTree || fileName.isEmpty())
+    return;
+  QTreeWidgetItemIterator it(tocTree);
+  while (*it) {
+    if ((*it)->data(0, Qt::UserRole).toString() == fileName) {
+      const QSignalBlocker blocker(tocTree);
+      tocTree->setCurrentItem(*it);
+      tocTree->scrollToItem(*it);
+      return;
+    }
+    ++it;
+  }
+}
+
 void HelpViewer::showPage(const QString &fileName)
 {
   if (helpDir.isEmpty()) {
@@ -138,6 +172,7 @@ void HelpViewer::showPage(const QString &fileName)
     return;
   }
   viewer->setSource(QUrl::fromLocalFile(path));
+  selectTocItem(fileName);
 }
 
 HelpViewer::HelpViewer(QWidget *parent) : QWidget(parent)
@@ -152,11 +187,20 @@ HelpViewer::HelpViewer(QWidget *parent) : QWidget(parent)
 
   tocTree = new QTreeWidget(this);
   tocTree->setHeaderHidden(true);
+#if defined(HELP_TOC_MICKEY)
   for (int i = 0; i < tocCount; ++i) {
     QTreeWidgetItem *item = new QTreeWidgetItem(tocTree);
     item->setText(0, QString::fromUtf8(toc[i].title));
     item->setData(0, Qt::UserRole, QString::fromUtf8(toc[i].file));
   }
+#else
+  addTocGroup(tocTree, "Start here", startHere,
+              static_cast<int>(sizeof(startHere) / sizeof(startHere[0])));
+  addTocGroup(tocTree, "The window", theWindow,
+              static_cast<int>(sizeof(theWindow) / sizeof(theWindow[0])));
+  addTocGroup(tocTree, "Other tasks", otherTasks,
+              static_cast<int>(sizeof(otherTasks) / sizeof(otherTasks[0])));
+#endif
   tocTree->expandAll();
 
   viewer = new HelpViewWidget(this);
@@ -178,9 +222,12 @@ HelpViewer::HelpViewer(QWidget *parent) : QWidget(parent)
   connect(tocTree, SIGNAL(itemClicked(QTreeWidgetItem*,int)), this, SLOT(tocItemClicked(QTreeWidgetItem*,int)));
   connect(viewer, SIGNAL(anchorClicked(QUrl)), this, SLOT(followLink(QUrl)));
 
+#if defined(HELP_TOC_MICKEY)
   if (tocCount > 0)
     showPage(QString::fromUtf8(toc[0].file));
-  else if (!helpDir.isEmpty())
+  else
+#endif
+  if (!helpDir.isEmpty())
     showPage(QStringLiteral("welcome.htm"));
   else
     viewer->setHtml(QStringLiteral("<p>Help files not found. <a href=\"") + QString::fromUtf8(WIKI_URL) +
@@ -220,7 +267,19 @@ void HelpViewer::followLink(const QUrl &url)
   if (url.scheme().compare(QLatin1String("http"), Qt::CaseInsensitive) == 0 ||
       url.scheme().compare(QLatin1String("https"), Qt::CaseInsensitive) == 0) {
     QDesktopServices::openUrl(url);
-  } else {
-    viewer->setSource(url);
+    return;
   }
+
+  QString fileName = url.fileName();
+  if (fileName.isEmpty() && url.isRelative())
+    fileName = url.path();
+  if (fileName.contains(QLatin1Char('/')))
+    fileName = QFileInfo(fileName).fileName();
+
+  if (!fileName.isEmpty() && !helpDir.isEmpty() &&
+      QFileInfo::exists(QDir(helpDir).absoluteFilePath(fileName))) {
+    showPage(fileName);
+    return;
+  }
+  viewer->setSource(url);
 }
