@@ -302,21 +302,40 @@ static void ltr_int_state_changed(void *param)
   ltr_int_broadcast_pose(current_pose);
 }
 
+static bool profile_title_ok(const char *title, size_t n)
+{
+  size_t i;
+  for(i = 0; i < n; ++i){
+    if(title[i] == '\n' || title[i] == '\r'){
+      return false;
+    }
+  }
+  return true;
+}
+
 bool ltr_int_register_slave(int socket, message_t &msg)
 {
+  size_t title_len = strnlen(msg.str, sizeof(msg.str));
+  if(title_len == sizeof(msg.str) || !profile_title_ok(msg.str, title_len)){
+    ltr_int_log_message("Slave profile title rejected.\n");
+    return false;
+  }
+  char profile[sizeof(msg.str)];
+  memcpy(profile, msg.str, title_len);
+  profile[title_len] = '\0';
   ltr_int_log_message("Trying to register slave!\n");
   pthread_mutex_lock(&send_mx);
   slave_conn_t sc;
   memset(&sc, 0, sizeof(sc));
   sc.fd = socket;
-  slaves.insert(std::pair<std::string, slave_conn_t>(msg.str, sc));
-  ltr_int_log_message("Slave with profile '%s' @socket %d registered!\n", msg.str, socket);
+  slaves.insert(std::pair<std::string, slave_conn_t>(std::string(profile, title_len), sc));
+  ltr_int_log_message("Slave with profile '%s' @socket %d registered!\n", profile, socket);
   pthread_mutex_unlock(&send_mx);
 
   //Make sure the new section is created if needed...
   ltr_axes_t tmp_axes;
   tmp_axes = NULL;
-  ltr_int_init_axes(&tmp_axes, msg.str);
+  ltr_int_init_axes(&tmp_axes, profile);
   ltr_int_close_axes(&tmp_axes);
 
   /* Persist prefs when a slave registers and there are unsaved changes (GUI and standalone). */
@@ -326,7 +345,7 @@ bool ltr_int_register_slave(int socket, message_t &msg)
   }
 
   if(new_slave_hook != NULL){
-    new_slave_hook(msg.str);
+    new_slave_hook(profile);
   }
   return true;
 }
@@ -364,6 +383,24 @@ struct pollfd *descs = NULL;
 size_t max_len = 0;
 size_t current_len = 0;
 nfds_t numfd = 0;
+
+/* Bytes of the current message already read. Dispatch only when this reaches sizeof(message_t). */
+struct rx_accum {
+  message_t msg;
+  size_t got;
+};
+static std::map<int, rx_accum> rx_by_fd;
+
+static bool slave_map_holds_fd(int fd)
+{
+  std::multimap<std::string, slave_conn_t>::iterator i;
+  for(i = slaves.begin(); i != slaves.end(); ++i){
+    if(i->second.fd == fd){
+      return true;
+    }
+  }
+  return false;
+}
 
 bool add_poll_desc(int fd){
   ltr_int_log_message("Adding fd %d\n", fd);
@@ -411,6 +448,14 @@ bool remove_poll_desc(){
   for(i = 0; i < current_len; ++i){
     if(descs[i].revents & POLLHUP){
       ltr_int_log_message("Removing hanged fd %d\n", descs[i].fd);
+      rx_by_fd.erase(descs[i].fd);
+      /* Registered slaves close the fd in slave_drop. Unregistered fds are closed here. */
+      pthread_mutex_lock(&send_mx);
+      if(descs[i].fd >= 0 && !slave_map_holds_fd(descs[i].fd)){
+        close(descs[i].fd);
+        descs[i].fd = -1;
+      }
+      pthread_mutex_unlock(&send_mx);
       if(i < (current_len - 1)){
         descs[i] = descs[current_len - 1];
       }else{
@@ -488,6 +533,9 @@ int ltr_int_master_main_loop(int unix_sock, int tcp_listen_sock)
                 }
                 //No more connection requests
                 break;
+              }else if(!ltr_int_connection_is_same_user(new_fd)){
+                ltr_int_log_message("Rejecting unix client fd %d: different user.\n", new_fd);
+                close(new_fd);
               }else{
                 add_poll_desc(new_fd);
               }
@@ -506,42 +554,52 @@ int ltr_int_master_main_loop(int unix_sock, int tcp_listen_sock)
                 if(ioctl(new_fd, FIONBIO, (char *)&set) < 0){
                   perror("tcp client ioctl");
                 }
-                add_poll_desc(new_fd);
+                if(!ltr_int_connection_is_same_user(new_fd)){
+                  ltr_int_log_message("Rejecting TCP client fd %d: different user.\n", new_fd);
+                  close(new_fd);
+                }else{
+                  add_poll_desc(new_fd);
+                }
               }
             }while(new_fd >= 0);
           }else{
-            message_t msg;
-            msg.cmd = CMD_NOP;
-            ssize_t x = ltr_int_socket_receive(descs[i].fd, &msg, sizeof(message_t));
-            //ltr_int_log_message("Read %d bytes from fd %d.\n", (int)x, descs[i].fd);
+            rx_accum &rx = rx_by_fd[descs[i].fd];
+            ssize_t x = read(descs[i].fd, ((char *)&rx.msg) + rx.got, sizeof(message_t) - rx.got);
             if(x < 0){
-              if(x != -EWOULDBLOCK){
-                ltr_int_log_message("Unexpected error %d reading from fd %d.\n", x, descs[i].fd);
+              if(errno != EWOULDBLOCK && errno != EAGAIN && errno != EINTR){
+                ltr_int_log_message("Unexpected error %d reading from fd %d.\n", errno, descs[i].fd);
+                descs[i].revents |= POLLHUP;
                 close_conn = true;
-                descs[i].fd = -1;
               }
             }else if(x == 0){
-              //close_conn = true;
-              //descs[i].fd = -1;
+              descs[i].revents |= POLLHUP;
+              close_conn = true;
             }else{
-              //ltr_int_log_message("Received a message from slave (%d)!!!\n", msg.cmd);
-              switch(msg.cmd){
-                case CMD_PAUSE:
-                  ltr_int_suspend_cmd();
-                  break;
-                case CMD_WAKEUP:
-                  ltr_int_wakeup_cmd();
-                  break;
-                case CMD_RECENTER:
-                  ltr_int_recenter_cmd();
-                  break;
-                case CMD_NEW_SOCKET:
-                  //ltr_int_log_message("Cmd to register new slave...\n");
-                  ltr_int_register_slave(descs[i].fd, msg);
-                  break;
-                case CMD_FRAMES:
-                  ltr_int_publish_frames_cmd();
-                  break;
+              rx.got += (size_t)x;
+              if(rx.got >= sizeof(message_t)){
+                message_t msg = rx.msg;
+                rx.got = 0;
+                memset(&rx.msg, 0, sizeof(rx.msg));
+                switch(msg.cmd){
+                  case CMD_PAUSE:
+                    ltr_int_suspend_cmd();
+                    break;
+                  case CMD_WAKEUP:
+                    ltr_int_wakeup_cmd();
+                    break;
+                  case CMD_RECENTER:
+                    ltr_int_recenter_cmd();
+                    break;
+                  case CMD_NEW_SOCKET:
+                    if(!ltr_int_register_slave(descs[i].fd, msg)){
+                      descs[i].revents |= POLLHUP;
+                      close_conn = true;
+                    }
+                    break;
+                  case CMD_FRAMES:
+                    ltr_int_publish_frames_cmd();
+                    break;
+                }
               }
             }
           }

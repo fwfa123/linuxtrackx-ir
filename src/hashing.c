@@ -13,6 +13,7 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <dirent.h>
 // This dependency proved problematic (deprecating MD5 and spweing warnings)
 //   so I opted for my own implementation.
@@ -405,19 +406,25 @@ bool new_char(int c, struct spec_s *spec, FILE *f, const char* destination)
   }
   fclose(r);
   if(strcmp(spec->name + (strlen(spec->name) - 3), ".fw") == 0){
-    const char command[] = "gzip -f -9 ";
-    int command_length = strlen(tgt_data) + strlen(command) + 1;
-    char *commandline = (char *)malloc(command_length);
-    if(commandline == NULL){
-      return false;
-    }
-    snprintf(commandline, command_length, "%s%s", command, tgt_data);
+    pid_t gzip_pid;
+    int gzip_status = 1;
+    char *gzip_argv[] = {(char *)"gzip", (char *)"-f", (char *)"-9", tgt_data, NULL};
     printf("    Packing the firmware '%s'.\n", spec->name);
-    if(system(commandline) != 0){
+    gzip_pid = fork();
+    if(gzip_pid < 0){
       printf("    Failed to pack the firmware file '%s'.\n", spec->name);
+    }else if(gzip_pid == 0){
+      execvp(gzip_argv[0], gzip_argv);
+      _exit(127);
+    }else{
+      pid_t waited;
+      do{
+        waited = waitpid(gzip_pid, &gzip_status, 0);
+      }while(waited < 0 && errno == EINTR);
+      if(waited < 0 || !WIFEXITED(gzip_status) || WEXITSTATUS(gzip_status) != 0){
+        printf("    Failed to pack the firmware file '%s'.\n", spec->name);
+      }
     }
-    free(commandline);
-    commandline = NULL;
   }
   free(tgt_data);
   tgt_data = NULL;

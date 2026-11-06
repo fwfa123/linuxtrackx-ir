@@ -274,20 +274,49 @@ char *ltr_int_get_app_path(const char *suffix)
 
   free(fname);
   fname = NULL;
-  char key[2048];
+  char line[4096];
   char val[2048];
   bool found = false;
-  while(!feof(f)){
-    if(fscanf(f, "%2040s", key) == 1){
-      if(strcasecmp(key, "PREFIX") == 0){
-	if(fgets(key, 2040, f) != NULL){
-	  if(sscanf(key, " = \"%[^\"\n]", val) > 0){
-	    found = true;
-	    break;
-	  }
-	}
-      }
+  while(fgets(line, sizeof(line), f) != NULL){
+    const char *p = line;
+    size_t n;
+    const char *end;
+    while(*p == ' ' || *p == '\t'){
+      ++p;
     }
+    if(strncasecmp(p, "Prefix", 6) != 0){
+      continue;
+    }
+    if(p[6] != ' ' && p[6] != '\t' && p[6] != '='){
+      continue;
+    }
+    p += 6;
+    while(*p == ' ' || *p == '\t'){
+      ++p;
+    }
+    if(*p != '='){
+      continue;
+    }
+    ++p;
+    while(*p == ' ' || *p == '\t'){
+      ++p;
+    }
+    if(*p != '"'){
+      continue;
+    }
+    ++p;
+    end = strchr(p, '"');
+    if(end == NULL || end == p){
+      continue;
+    }
+    n = (size_t)(end - p);
+    if(n >= sizeof(val)){
+      continue;
+    }
+    memcpy(val, p, n);
+    val[n] = '\0';
+    found = true;
+    break;
   }
   fclose(f);
   if(found){

@@ -45,6 +45,8 @@ void ltr_int_close_tmp_file(char *fname, int fd);
 
 int ltr_int_socket_send(int socket, void *buf, size_t size);
 ssize_t ltr_int_socket_receive(int socket, void *buf, size_t size);
+/* True when the peer of an accepted socket is this process's euid. */
+bool ltr_int_connection_is_same_user(int fd);
 int ltr_int_pipe_poll(int pipe, int timeout, bool *hup);
 int ltr_int_create_server_socket(const char *name);
 /** Listen on 127.0.0.1:port for the same stream protocol as the Unix master socket. Returns -1 on failure. */

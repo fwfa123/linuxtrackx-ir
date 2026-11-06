@@ -7,7 +7,13 @@
 #include <QStandardPaths>
 #include <QTextStream>
 #include <QDebug>
+#include <QRegularExpression>
 #include <QtCore/qglobal.h>
+#include <pwd.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
 
 const QString TrackIRPermissionDialog::CONFIG_FILE = QString::fromUtf8("trackir_permissions.conf");
 const QString TrackIRPermissionDialog::DONT_SHOW_KEY = QString::fromUtf8("dont_show_permission_dialog");
@@ -16,6 +22,66 @@ const QString TrackIRPermissionDialog::DONT_SHOW_KEY = QString::fromUtf8("dont_s
 static QString udevRulesDir()
 {
     return QString::fromUtf8("/etc/udev/rules.d");
+}
+
+/* Login names may contain dots (james.clay). Reject shell metacharacters. */
+static bool loginNameIsSafe(const QString &name)
+{
+    if (name.isEmpty() || name == QLatin1String(".") || name == QLatin1String("..")) {
+        return false;
+    }
+    static const QRegularExpression re(QStringLiteral("^[a-zA-Z0-9._][a-zA-Z0-9._-]*$"));
+    return re.match(name).hasMatch();
+}
+
+static QString currentLoginName()
+{
+    struct passwd *pw = getpwuid(geteuid());
+    if (pw == nullptr || pw->pw_name == nullptr) {
+        return QString();
+    }
+    const QString name = QString::fromLocal8Bit(pw->pw_name);
+    if (!loginNameIsSafe(name)) {
+        return QString();
+    }
+    return name;
+}
+
+static bool writeAllFd(int fd, const QByteArray &data)
+{
+    qint64 off = 0;
+    while (off < data.size()) {
+        const ssize_t n = ::write(fd, data.constData() + off, static_cast<size_t>(data.size() - off));
+        if (n < 0) {
+            if (errno == EINTR) {
+                continue;
+            }
+            return false;
+        }
+        if (n == 0) {
+            return false;
+        }
+        off += n;
+    }
+    return true;
+}
+
+/* Owner-only temp file. Caller unlinks path. */
+static int createPrivateTemp(char *tmpl, QString *pathOut)
+{
+    const int fd = mkstemp(tmpl);
+    if (fd < 0) {
+        return -1;
+    }
+    if (fchmod(fd, 0600) != 0) {
+        ::close(fd);
+        ::unlink(tmpl);
+        return -1;
+    }
+    if (pathOut != nullptr) {
+        *pathOut = QString::fromLocal8Bit(tmpl);
+    }
+    return fd;
 }
 
 static bool isUdevRulesInstalled()
@@ -169,7 +235,7 @@ void TrackIRPermissionDialog::onHelpClicked()
            "<pre>lsusb | grep 131d   # TrackIR\n"
            "lsusb | grep 1415     # PlayStation Eye</pre>"
            "<p><b>Note:</b> TrackIR rule content (vendor 131d):</p>"
-           "<pre>SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"</pre>"
+           "<pre>SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0660\", GROUP=\"plugdev\", TAG+=\"uaccess\"</pre>"
            "<p>PS3 Eye (1415:2000): see <code>99-PS3Eye.rules</code> in the source tree.</p>"
            "<p>For more detailed help, see the LinuxTrack documentation."));
 }
@@ -178,20 +244,19 @@ bool TrackIRPermissionDialog::installUdevRules()
 {
     QProcess process;
     
-    // Create the udev rules content
-    QString rulesContent = QString::fromUtf8("SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"\n");
-    
-    // Write rules to a temporary file
-    QString tempRulesFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString::fromUtf8("/99-TIR.rules");
-    QFile tempFile(tempRulesFile);
-    if (!tempFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << "Failed to create temporary rules file:" << tempFile.errorString();
+    const QByteArray rulesContent("SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0660\", GROUP=\"plugdev\", TAG+=\"uaccess\"\n");
+    char tmpl[] = "/tmp/ltr-99-TIR-XXXXXX";
+    QString tempRulesFile;
+    const int rulesFd = createPrivateTemp(tmpl, &tempRulesFile);
+    if (rulesFd < 0 || !writeAllFd(rulesFd, rulesContent)) {
+        qDebug() << "Failed to create temporary rules file";
+        if (rulesFd >= 0) {
+            ::close(rulesFd);
+            ::unlink(tmpl);
+        }
         return false;
     }
-    
-    QTextStream out(&tempFile);
-    out << rulesContent;
-    tempFile.close();
+    ::close(rulesFd);
     
     // Copy rules to system location using pkexec or sudo (prefer FHS path if it exists)
     QString rulesDest = udevRulesDir() + QString::fromUtf8("/99-TIR.rules");
@@ -281,14 +346,9 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         return false;
     }
 
-    // Get current user
-    QString currentUser = QString::fromUtf8(qgetenv("USER"));
+    const QString currentUser = currentLoginName();
     if (currentUser.isEmpty()) {
-        currentUser = QString::fromUtf8(qgetenv("USERNAME"));
-    }
-
-    if (currentUser.isEmpty()) {
-        qDebug() << "Could not determine current user";
+        qDebug() << "Could not determine a safe login name";
         showInstallationResult(false, tr("Could not determine current user. Please try manual installation."));
         return false;
     }
@@ -300,7 +360,7 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "\n"
         "# Create TrackIR udev rules content\n"
         "cat > /tmp/99-TIR.rules << 'EOF'\n"
-        "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0666\"\n"
+        "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"131d\", MODE=\"0660\", GROUP=\"plugdev\", TAG+=\"uaccess\"\n"
         "EOF\n"
         "\n"
         "# Create Mickey udev rules content\n"
@@ -310,7 +370,7 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "\n"
         "# Create PlayStation Eye (PS3 Eye) udev rules\n"
         "cat > /tmp/99-PS3Eye.rules << 'EOF'\n"
-        "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"1415\", ATTRS{idProduct}==\"2000\", MODE=\"0666\"\n"
+        "SUBSYSTEM==\"usb\", ATTRS{idVendor}==\"1415\", ATTRS{idProduct}==\"2000\", MODE=\"0660\", GROUP=\"plugdev\", TAG+=\"uaccess\"\n"
         "EOF\n"
         "\n"
         "# Copy udev rules to local admin location (/etc/udev/rules.d)\n"
@@ -333,7 +393,13 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "fi\n"
         "\n"
         "# Add user to plugdev group\n"
-        "usermod -a -G plugdev,input \"%2\"\n"
+        "user=\"$1\"\n"
+        "if ! [[ \"$user\" =~ ^[a-zA-Z0-9._][a-zA-Z0-9._-]*$ ]]; then\n"
+        "    echo \"Refusing unsafe username\" >&2\n"
+        "    exit 1\n"
+        "fi\n"
+        "case \"$user\" in .|..) exit 1 ;; esac\n"
+        "usermod -a -G plugdev,input \"$user\"\n"
         "\n"
         "# Create uinput group if it doesn't exist (as system group for udev)\n"
         "if ! getent group uinput > /dev/null 2>&1; then\n"
@@ -347,11 +413,11 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "fi\n"
         "\n"
         "# Add user to uinput group\n"
-        "usermod -a -G uinput \"%2\"\n"
+        "usermod -a -G uinput \"$user\"\n"
         "\n"
         "# On Linux, add user to video group for V4L2 webcam access (/dev/video*)\n"
         "if getent group video > /dev/null 2>&1; then\n"
-        "    usermod -a -G video \"%2\"\n"
+        "    usermod -a -G video \"$user\"\n"
         "    echo \"Added user to video group for webcam access\"\n"
         "fi\n"
         "\n"
@@ -364,31 +430,29 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
         "rm -f /tmp/99-PS3Eye.rules\n"
         "\n"
         "echo \"Installation completed successfully\"\n"
-    ).arg(udevRulesDir()).arg(currentUser);
+    ).arg(udevRulesDir());
 
-    // Write script to a temporary file
-    QString tempScriptFile = QStandardPaths::writableLocation(QStandardPaths::TempLocation) + QString::fromUtf8("/install_trackir_rules.sh");
-    QFile tempScript(tempScriptFile);
-    if (!tempScript.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        qDebug() << "Failed to create temporary script file:" << tempScript.errorString();
+    char tmpl[] = "/tmp/ltr-udev-XXXXXX";
+    QString tempScriptFile;
+    const int scriptFd = createPrivateTemp(tmpl, &tempScriptFile);
+    if (scriptFd < 0 || !writeAllFd(scriptFd, scriptContent.toUtf8())) {
+        if (scriptFd >= 0) {
+            ::close(scriptFd);
+            ::unlink(tmpl);
+        }
         showInstallationResult(false, tr("Failed to create installation script. Please try manual installation."));
         return false;
     }
+    ::close(scriptFd);
 
-    QTextStream out(&tempScript);
-    out << scriptContent;
-    tempScript.close();
-
-    // Make script executable
-    QFile::setPermissions(tempScriptFile, QFile::permissions(tempScriptFile) | QFile::ExeOwner);
-
-    // Run the script with sudo and password on stdin.
-    // This avoids interactive TTY issues and still prompts the user in-app.
+    /* bash reads the 0600 script. The login name is a separate argv element. */
     QProcess process;
     QStringList sudoArgs;
     sudoArgs << QString::fromUtf8("-S")
              << QString::fromUtf8("-k")
-             << tempScriptFile;
+             << QString::fromUtf8("bash")
+             << tempScriptFile
+             << currentUser;
 
     qDebug() << "Running installation script with sudo -S:" << tempScriptFile;
     process.start(QString::fromUtf8("sudo"), sudoArgs);
@@ -433,16 +497,12 @@ bool TrackIRPermissionDialog::installUdevRulesAndGroups()
 bool TrackIRPermissionDialog::addUserToGroups()
 {
     QProcess process;
-    QString currentUser = QString::fromUtf8(qgetenv("USER"));
+    const QString currentUser = currentLoginName();
     if (currentUser.isEmpty()) {
-        currentUser = QString::fromUtf8(qgetenv("USERNAME"));
-    }
-    
-    if (currentUser.isEmpty()) {
-        qDebug() << "Could not determine current user";
+        qDebug() << "Could not determine a safe login name";
         return false;
     }
-    
+
     // Add user to plugdev, input, uinput, and video groups
     QStringList arguments;
     arguments << QString::fromUtf8("usermod") << QString::fromUtf8("-a") << QString::fromUtf8("-G")
@@ -469,11 +529,7 @@ bool TrackIRPermissionDialog::addUserToGroups()
 bool TrackIRPermissionDialog::checkIfUserInGroup(const QString &group)
 {
     QProcess process;
-    QString currentUser = QString::fromUtf8(qgetenv("USER"));
-    if (currentUser.isEmpty()) {
-        currentUser = QString::fromUtf8(qgetenv("USERNAME"));
-    }
-    
+    const QString currentUser = currentLoginName();
     if (currentUser.isEmpty()) {
         return false;
     }
