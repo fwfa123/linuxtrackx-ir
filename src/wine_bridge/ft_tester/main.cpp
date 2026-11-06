@@ -238,46 +238,379 @@ VOID CALLBACK TimerProcedure(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTim
   SetDlgItemInt(hwnd, IDC_NUM, d.dataID, true);
 }
 
+static void normalize_game_name(const char *raw, char *out, size_t out_sz)
+{
+  if(!out || out_sz == 0){
+    return;
+  }
+  out[0] = '\0';
+  if(!raw || !*raw){
+    return;
+  }
+  size_t j = 0;
+  for(size_t i = 0; raw[i] != '\0' && j + 1 < out_sz; ++i){
+    char ch = raw[i];
+    if(ch >= 'A' && ch <= 'Z'){
+      ch = (char)(ch - 'A' + 'a');
+    }
+    if(ch == '_' || ch == '-' || ch == ':' || ch == ';' || ch == ',' || ch == '.'){
+      ch = ' ';
+    }
+    out[j++] = ch;
+  }
+  out[j] = '\0';
+}
+
+static void fix_assualt_typo(char *normalized)
+{
+  if(!normalized){
+    return;
+  }
+  for(char *p = strstr(normalized, "assualt"); p != NULL; p = strstr(p + 1, "assualt")){
+    memcpy(p, "assault", strlen("assault"));
+  }
+}
+
+static bool name_hints_arma_cwa_or_ofp(const char *normalized)
+{
+  if(!normalized || !*normalized){
+    return false;
+  }
+  if(strstr(normalized, "operation flashpoint") != NULL){
+    return true;
+  }
+  bool has_arma = strstr(normalized, "arma") != NULL;
+  bool has_cold_war = strstr(normalized, "cold war") != NULL;
+  return has_arma && has_cold_war;
+}
+
+static bool try_cwa_ofp_gamedata_aliases(const char *orig_key, const char *normalized,
+                                         int *found_id, bool from_slug)
+{
+  if(!name_hints_arma_cwa_or_ofp(normalized) || !found_id){
+    return false;
+  }
+  static const char *aliases[] = {
+    "arma cold war assault",
+    "operation flashpoint resistance",
+    "operation flashpoint cold war assault",
+    "operation flashpoint",
+  };
+  for(size_t i = 0; i < sizeof(aliases) / sizeof(aliases[0]); ++i){
+    if(game_data_find_id_by_normalized_exact(aliases[i], found_id) && *found_id > 0){
+      if(from_slug){
+        append_log("Using LTR_GAME_SLUG CWA/OFP alias '%s' => TrackIR ID=%d (slug='%s')",
+                   aliases[i], *found_id, orig_key);
+      }else{
+        append_log("Using LTR_GAME_NAME CWA/OFP alias '%s' => TrackIR ID=%d (from '%s')",
+                   aliases[i], *found_id, orig_key);
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+enum {
+  NAME_LOOKUP_NONE = 0,
+  NAME_LOOKUP_ALIAS = 1,
+  NAME_LOOKUP_CANDIDATE = 2
+};
+
+static int try_game_name_with_aliases(const char *env_name, int *found_id)
+{
+  if(!env_name || !*env_name || !found_id){
+    return NAME_LOOKUP_NONE;
+  }
+  char normalized[512];
+  normalize_game_name(env_name, normalized, sizeof(normalized));
+  fix_assualt_typo(normalized);
+  if(try_cwa_ofp_gamedata_aliases(env_name, normalized, found_id, false)){
+    return NAME_LOOKUP_ALIAS;
+  }
+  if(game_data_find_id_by_name(env_name, found_id) && *found_id > 0){
+    append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
+               env_name, *found_id, env_name);
+    return NAME_LOOKUP_CANDIDATE;
+  }
+  if(normalized[0] != '\0' && strcmp(normalized, env_name) != 0){
+    if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
+      append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
+                 env_name, *found_id, normalized);
+      return NAME_LOOKUP_CANDIDATE;
+    }
+  }
+  return NAME_LOOKUP_NONE;
+}
+
+static int try_game_slug_with_aliases(const char *env_slug, int *found_id)
+{
+  if(!env_slug || !*env_slug || !found_id){
+    return NAME_LOOKUP_NONE;
+  }
+  char normalized[512];
+  normalize_game_name(env_slug, normalized, sizeof(normalized));
+  fix_assualt_typo(normalized);
+  if(try_cwa_ofp_gamedata_aliases(env_slug, normalized, found_id, true)){
+    return NAME_LOOKUP_ALIAS;
+  }
+  if(normalized[0] != '\0'){
+    if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
+      append_log("Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d (query='%s')",
+                 env_slug, *found_id, normalized);
+      return NAME_LOOKUP_CANDIDATE;
+    }
+  }
+  return NAME_LOOKUP_NONE;
+}
+
+static void release_game_desc(game_desc_t *gd)
+{
+  if(gd && gd->name){
+    free((void *)gd->name);
+    gd->name = NULL;
+  }
+}
+
+static void normalize_catalog_name_for_match(char *out, size_t cap, const char *in)
+{
+  if(!out || cap < 2 || !in){
+    if(out && cap > 0){
+      out[0] = '\0';
+    }
+    return;
+  }
+  size_t j = 0;
+  for(size_t i = 0; in[i] != '\0' && j + 1 < cap; ++i){
+    char ch = in[i];
+    if(ch >= 'A' && ch <= 'Z'){
+      ch = (char)(ch - 'A' + 'a');
+    }
+    if(ch == '_' || ch == '-' || ch == ':' || ch == ';' || ch == ',' || ch == '.'
+       || ch == '(' || ch == ')' || ch == '\t' || ch == '\r' || ch == '\n'){
+      ch = ' ';
+    }
+    out[j++] = ch;
+  }
+  out[j] = '\0';
+  char *w = out;
+  bool prev_space = true;
+  for(char *r = out; *r; ++r){
+    if(*r == ' '){
+      if(!prev_space){
+        *w++ = ' ';
+        prev_space = true;
+      }
+    }else{
+      *w++ = *r;
+      prev_space = false;
+    }
+  }
+  if(w > out && w[-1] == ' '){
+    --w;
+  }
+  *w = '\0';
+}
+
+static size_t longest_common_substring(const char *a, const char *b)
+{
+  size_t best = 0;
+  if(!a || !b){
+    return 0;
+  }
+  size_t la = strlen(a);
+  size_t lb = strlen(b);
+  for(size_t i = 0; i < la; ++i){
+    for(size_t j = 0; j < lb; ++j){
+      size_t k = 0;
+      while(i + k < la && j + k < lb && a[i + k] == b[j + k]){
+        ++k;
+      }
+      if(k > best){
+        best = k;
+      }
+    }
+  }
+  return best;
+}
+
+static double catalog_name_similarity(const char *storefront, const char *catalog)
+{
+  char left[512];
+  char right[512];
+  normalize_catalog_name_for_match(left, sizeof(left), storefront ? storefront : "");
+  normalize_catalog_name_for_match(right, sizeof(right), catalog ? catalog : "");
+  size_t left_len = strlen(left);
+  size_t right_len = strlen(right);
+  size_t longer = left_len > right_len ? left_len : right_len;
+  if(longer == 0){
+    return 0.0;
+  }
+  return (double)longest_common_substring(left, right) / (double)longer;
+}
+
+static void warn_game_list_issue(HWND hwnd, bool weak_under_80, const char *detail)
+{
+  const char *lead = weak_under_80
+                         ? "The game name match is under 80%%.\r\n\r\n"
+                         : "No matching game was found in the TrackIR game list.\r\n\r\n";
+  char text[1280];
+  snprintf(text, sizeof(text),
+           "%s"
+           "Either the game list is out of date, or TrackIR may not support this game. "
+           "Check the NaturalPoint website. If the game is supported, update the game list "
+           "from the Linuxtrack UI using the latest TrackIR installer from NaturalPoint.\r\n\r\n"
+           "%s",
+           lead,
+           detail ? detail : "");
+  append_log("Game list warning: %s", detail ? detail : "");
+  MessageBoxA(hwnd, text, "Game list match", MB_OK | MB_ICONWARNING);
+}
+
+static int resolve_storefront_name(const char *name, const char *slug, int *out_id, const char **out_query)
+{
+  int found_id = -1;
+  if(name && *name){
+    int kind = try_game_name_with_aliases(name, &found_id);
+    if(kind != NAME_LOOKUP_NONE){
+      *out_id = found_id;
+      *out_query = name;
+      return kind;
+    }
+  }
+  if(slug && *slug){
+    int kind = try_game_slug_with_aliases(slug, &found_id);
+    if(kind != NAME_LOOKUP_NONE){
+      *out_id = found_id;
+      *out_query = slug;
+      return kind;
+    }
+  }
+  if(name && *name){
+    *out_query = name;
+  }else if(slug && *slug){
+    *out_query = slug;
+  }else{
+    *out_query = NULL;
+  }
+  return NAME_LOOKUP_NONE;
+}
+
+static const char *catalog_name_for_id(int id, game_desc_t *gd)
+{
+  memset(gd, 0, sizeof(*gd));
+  if(game_data_get_desc(id, gd) && gd->name && gd->name[0] != '\0'){
+    return gd->name;
+  }
+  return NULL;
+}
+
+static void set_profile_title(HWND hwnd, const char *title)
+{
+  SetDlgItemTextA(hwnd, IDC_TITLE, (title && title[0] != '\0') ? title : "Default");
+}
+
 BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     (void) lParam;
     switch(uMsg)
     {
         case WM_INITDIALOG:
-            SetDlgItemText(hwndDlg, IDC_TITLE, "Default");
+            SetDlgItemTextA(hwndDlg, IDC_TITLE, "Default");
             {
-              int initial_id = 2307;
+              const char *env_name = getenv("LTR_GAME_NAME");
+              const char *env_slug = getenv("LTR_GAME_SLUG");
+              const char *storefront = (env_name && *env_name) ? env_name : NULL;
+              append_log("Autofill start: LTR_GAME_NAME='%s' LTR_GAME_SLUG='%s'",
+                         env_name ? env_name : "<unset>",
+                         env_slug ? env_slug : "<unset>");
               char *env_id = getenv("LTR_GAME_ID");
+              bool named_from_list = false;
+              int chosen_id = -1;
               if(env_id && *env_id){
                 int v = atoi(env_id);
-                if(v > 0){ initial_id = v; printf("INFO: Using LTR_GAME_ID=%d\n", v); append_log("Using LTR_GAME_ID=%d", v); }
-              }else{
-                // Steam hint first
+                if(v > 0){
+                  chosen_id = v;
+                  named_from_list = true;
+                  printf("INFO: Using LTR_GAME_ID=%d\n", v);
+                  append_log("Using LTR_GAME_ID=%d", v);
+                }
+              }
+              if(!named_from_list){
                 char *steam_appid = getenv("SteamAppId");
                 if(!(steam_appid && *steam_appid)){
                   steam_appid = getenv("SteamGameId");
                 }
                 int mapped_id = -1;
                 if(steam_appid && *steam_appid && game_data_find_id_by_steam_appid(steam_appid, &mapped_id) && mapped_id > 0){
-                  initial_id = mapped_id;
+                  chosen_id = mapped_id;
+                  named_from_list = true;
                   printf("INFO: Using Steam mapping SteamAppId=%s => TrackIR ID=%d\n", steam_appid, mapped_id);
                   append_log("Using Steam mapping SteamAppId=%s => TrackIR ID=%d", steam_appid, mapped_id);
-                }else{
-                  char *env_name = getenv("LTR_GAME_NAME");
-                  if(env_name && *env_name){
-                    int found_id = -1;
-                    if(game_data_find_id_by_name(env_name, &found_id) && found_id > 0){
-                      initial_id = found_id;
-                      printf("INFO: Using LTR_GAME_NAME match '%s' => TrackIR ID=%d\n", env_name, found_id);
-                      append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d", env_name, found_id);
-                    }
-                  }
                 }
               }
-              if(initial_id == 2307){ printf("INFO: Auto-fill not found; using default TrackIR ID=2307\n"); append_log("Auto-fill not found; using default TrackIR ID=2307"); }
-              char id_str[16];
-              sprintf(id_str, "%d", initial_id);
-              SetDlgItemText(hwndDlg, IDC_TITLE, id_str);
+              if(named_from_list){
+                game_desc_t gd;
+                const char *catalog = catalog_name_for_id(chosen_id, &gd);
+                set_profile_title(hwndDlg, catalog ? catalog : storefront);
+                append_log("Profile title '%s' from trusted ID=%d",
+                           catalog ? catalog : (storefront ? storefront : "Default"), chosen_id);
+                release_game_desc(&gd);
+              }else{
+                const char *query = NULL;
+                int found_id = -1;
+                int kind = resolve_storefront_name(env_name, env_slug, &found_id, &query);
+                if(kind == NAME_LOOKUP_NONE){
+                  char detail[512];
+                  if(query && *query){
+                    snprintf(detail, sizeof(detail),
+                             "No game list entry was found for '%s'. "
+                             "The profile title will be '%s'.",
+                             query, storefront ? storefront : "Default");
+                  }else{
+                    snprintf(detail, sizeof(detail),
+                             "No game name was provided. The profile title will be Default.");
+                  }
+                  warn_game_list_issue(hwndDlg, false, detail);
+                  set_profile_title(hwndDlg, storefront);
+                  append_log("Auto-fill not found; profile title '%s'",
+                             storefront ? storefront : "Default");
+                }else{
+                  game_desc_t gd;
+                  const char *catalog = catalog_name_for_id(found_id, &gd);
+                  double similarity = 1.0;
+                  if(kind == NAME_LOOKUP_CANDIDATE){
+                    similarity = catalog ? catalog_name_similarity(query, catalog) : 0.0;
+                    append_log("Name similarity %.3f for '%s' vs catalog '%s' (ID=%d)",
+                               similarity, query ? query : "", catalog ? catalog : "", found_id);
+                  }
+                  if(kind == NAME_LOOKUP_CANDIDATE && similarity < 0.80){
+                    char detail[512];
+                    if(catalog){
+                      snprintf(detail, sizeof(detail),
+                               "Closest game list entry is '%s' (Application ID %d). "
+                               "That name is filled in as the profile title and can be changed before Start.",
+                               catalog, found_id);
+                    }else{
+                      snprintf(detail, sizeof(detail),
+                               "Closest Application ID is %d, but it has no name in the game list. "
+                               "The profile title will be '%s' and can be changed before Start.",
+                               found_id, storefront ? storefront : "Default");
+                    }
+                    warn_game_list_issue(hwndDlg, true, detail);
+                    set_profile_title(hwndDlg, catalog ? catalog : storefront);
+                  }else{
+                    set_profile_title(hwndDlg, catalog ? catalog : storefront);
+                    printf("INFO: Profile title '%s' from '%s' (ID=%d, similarity %.0f%%)\n",
+                           catalog ? catalog : (storefront ? storefront : "Default"),
+                           query ? query : "", found_id, similarity * 100.0);
+                    append_log("Profile title '%s' from '%s' (ID=%d)",
+                               catalog ? catalog : (storefront ? storefront : "Default"),
+                               query ? query : "", found_id);
+                  }
+                  release_game_desc(&gd);
+                }
+              }
             }
             return TRUE;
 
