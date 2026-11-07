@@ -8,7 +8,9 @@
 
 int main(int argc, char *argv[])
 {
+#ifndef DARWIN
   ltr_int_check_root();
+#endif
   signal(SIGPIPE, SIG_IGN);
 
   if (argc >= 2 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0)) {
@@ -20,9 +22,12 @@ int main(int argc, char *argv[])
 
   if (argc == 1) {
     ltr_int_master(true);
-  } else {
+  } else if (argc >= 6) {
     /* Arguments are passed by the master when spawning a slave; not for direct use. */
     ltr_int_slave(argv[1], argv[2], argv[3], argv[4], argv[5]);
+  } else {
+    fprintf(stderr, "Invalid arguments. Use --help for usage.\n");
+    return 1;
   }
   return 0;
 }
