@@ -17,6 +17,49 @@
 
 static const size_t sums_len = SHA_DIGEST_LENGTH + MD5_DIGEST_LENGTH;
 
+/* 0 = end of blob, 1 = sizes fit in memory, -1 = reject. */
+static int blob_record_ok(int32_t fname_size, int32_t data_len, size_t *total)
+{
+  size_t body;
+  if(fname_size == 0 && data_len == 0){
+    return 0;
+  }
+  if(fname_size <= 0 || data_len < 0){
+    printf("Rejecting blob record with invalid sizes (%d, %d).\n", fname_size, data_len);
+    return -1;
+  }
+  if((size_t)fname_size > SIZE_MAX - (size_t)data_len){
+    printf("Rejecting blob record that overflows.\n");
+    return -1;
+  }
+  body = (size_t)fname_size + (size_t)data_len;
+  if(body > SIZE_MAX - sums_len){
+    printf("Rejecting blob record that overflows.\n");
+    return -1;
+  }
+  *total = body + sums_len;
+  return 1;
+}
+
+static bool blob_name_ok(const int8_t *buffer, int32_t fname_size)
+{
+  const char *name;
+  if(fname_size <= 0){
+    return false;
+  }
+  if(memchr(buffer, '\0', (size_t)fname_size) == NULL){
+    printf("Rejecting blob filename without a terminator.\n");
+    return false;
+  }
+  name = (const char *)buffer;
+  if(name[0] == '\0' || strcmp(name, ".") == 0 || strcmp(name, "..") == 0 ||
+     strchr(name, '/') != NULL){
+    printf("Rejecting unsafe blob filename '%s'.\n", name);
+    return false;
+  }
+  return true;
+}
+
 
 /*
  * Obfuscate data in buf of length size with contents read from the installer.
@@ -179,6 +222,9 @@ static int append_file(FILE *installer, FILE *blob, const char* name)
 static int process_buffer(int8_t* buffer, int32_t fname_len, int32_t data_len, FILE* installer, const char* destination, bool update_games_only)
 {
 	const char *fname = (const char*)buffer;
+	if(!blob_name_ok(buffer, fname_len)){
+		return -1;
+	}
 	if(update_games_only && (strcmp(fname, "sgl.dat") != 0)){
 		return 0;
 	}
@@ -274,12 +320,14 @@ static int extract_files(FILE* blob, FILE* installer, const char* destination, b
 			printf("Problem reading blob.\n");
 			return -1;
 		}
-		size_t len = fname_size + data_len;
-		if(len == 0){
+		size_t len = 0;
+		int size_ok = blob_record_ok(fname_size, data_len, &len);
+		if(size_ok == 0){
 			break;
 		}
-		// So checksums are extracted too...
-		len += sums_len;
+		if(size_ok < 0){
+			return -1;
+		}
 		int8_t* buffer = malloc(len);
 		if(!buffer){
 			printf("Problem allocating buffer for data.\n");
@@ -289,6 +337,10 @@ static int extract_files(FILE* blob, FILE* installer, const char* destination, b
 		if(fread(buffer, sizeof(int8_t), len, blob) != len){
 			printf("Problem reading data from blob.\n");
                 	free(buffer);
+			return -1;
+		}
+		if(!blob_name_ok(buffer, fname_size)){
+			free(buffer);
 			return -1;
 		}
 		printf("Going to extract file '%s' (%d bytes long).\n", buffer, data_len);

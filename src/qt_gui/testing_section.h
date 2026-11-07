@@ -21,6 +21,14 @@
 
 // WineArchitecture is defined in tester_launcher.h
 
+struct GameLoadResult {
+    QStringList names;
+    bool ok = false;
+    QString error;
+    QString platformKey;
+    int generation = 0;
+};
+
 class TestingSection : public QObject
 {
     Q_OBJECT
@@ -69,9 +77,11 @@ public slots:
     static QString platformLabelToKey(const QString &label);
 
 private:
-    QStringList getSteamGames();
-    QStringList getLutrisGames();
     QStringList getCustomPrefixGames();
+    void applyGameLoadResult(const GameLoadResult &result);
+    void rememberLoadedRecords(const QString &platformKey);
+    QList<SteamGame> steamGamesForSelection() const;
+    QList<LutrisGame> lutrisGamesForSelection() const;
     QString getPrefixForGame(const QString &gameName, const QString &platform);
     QString findTesterInPrefix(const QString &prefixPath, const QString &testerType);
     void executeTester(const QString &testerPath, const QString &prefixPath, const QString &platform, WineArchitecture arch);
@@ -93,6 +103,10 @@ private:
     QString currentGame;
     QString currentTesterType;
     QStringList currentGames;
+    QString loadedPlatformKey;
+    QList<SteamGame> loadedSteamGames;
+    QList<LutrisGame> loadedLutrisGames;
+    int loadGeneration = 0;
     
     // Selected custom Wine prefix path for the "Custom Prefix" platform
     QString customPrefixPath;
@@ -105,7 +119,7 @@ private:
     bool trackingStarted;
 
     // Async loading support
-    QFutureWatcher<QStringList> gamesLoadWatcher;
+    QFutureWatcher<GameLoadResult> gamesLoadWatcher;
 };
 
 #endif // TESTING_SECTION_H 

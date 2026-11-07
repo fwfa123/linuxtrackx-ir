@@ -252,8 +252,6 @@ static void make_triangle(int index1, int index2, int index3)
 
 bool GLWidget::makeObjects()
  {
-   int triangles = 0;
-   
    // Clear existing objects and textures
    std::vector<GLuint>::iterator i;
    for(i = objects.begin(); i != objects.end(); ++i){
@@ -313,7 +311,6 @@ bool GLWidget::makeObjects()
        for(int i = 0; i < count; i+=3){
          make_triangle(obj.vtx_indices[offset + i], obj.vtx_indices[offset + i + 1], 
                    obj.vtx_indices[offset + i + 2]);
-         triangles++;
        }
        glEnd();
        if(tris_index->glass){
@@ -329,7 +326,6 @@ bool GLWidget::makeObjects()
        ++list;
      }
    }
-   //std::cout<<triangles<<" triangles.\n";
    return true;
  }
 

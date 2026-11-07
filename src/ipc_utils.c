@@ -413,6 +413,13 @@ int ltr_int_make_socket(const char *name)
     ltr_int_my_perror("bind");
     return -1;
   }
+  /* Do not leave the socket group/world writable when umask is loose. */
+  if(fchmod(socket_fd, 0600) != 0){
+    ltr_int_my_perror("fchmod");
+    close(socket_fd);
+    unlink(name);
+    return -1;
+  }
   if(listen(socket_fd, 1) != 0){
     ltr_int_my_perror("listen");
     return -1;
@@ -513,16 +520,126 @@ int ltr_int_connect_to_socket(const char *name){
 
 int ltr_int_socket_send(int socket, void *buf, size_t size)
 {
+  const char *p;
+  size_t left;
   if(socket <= 0){
     return -1;
   }
-  if(write(socket, buf, size) < 0){
+  p = (const char *)buf;
+  left = size;
+  while(left > 0){
+    ssize_t n = write(socket, p, left);
+    if(n > 0){
+      p += n;
+      left -= (size_t)n;
+      continue;
+    }
+    if(n < 0 && errno == EINTR){
+      continue;
+    }
+    if(n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)){
+      struct pollfd pfd;
+      int pr;
+      pfd.fd = socket;
+      pfd.events = POLLOUT;
+      pfd.revents = 0;
+      pr = poll(&pfd, 1, -1);
+      if(pr < 0 && errno == EINTR){
+        continue;
+      }
+      if(pr <= 0){
+        int err = (pr < 0) ? errno : EPIPE;
+        ltr_int_log_message("Write @fd %d failed:\n", socket);
+        return -err;
+      }
+      continue;
+    }
     ltr_int_log_message("Write @fd %d failed:\n", socket);
-    int err = errno;
     ltr_int_my_perror("write@socket_send");
-    return -err;
-   }
+    return -(n < 0 ? errno : EPIPE);
+  }
   return 0;
+}
+
+/* Client row in /proc/net/tcp: local port is the peer port, remote port is ours. */
+static bool tcp_loopback_peer_is_same_user(int fd)
+{
+  struct sockaddr_in local_addr;
+  struct sockaddr_in peer_addr;
+  socklen_t local_len = sizeof(local_addr);
+  socklen_t peer_len = sizeof(peer_addr);
+  FILE *proc;
+  char line[512];
+  unsigned int want_uid;
+  unsigned int server_port;
+  unsigned int peer_port;
+
+  memset(&local_addr, 0, sizeof(local_addr));
+  memset(&peer_addr, 0, sizeof(peer_addr));
+  if(getsockname(fd, (struct sockaddr *)&local_addr, &local_len) != 0 ||
+     getpeername(fd, (struct sockaddr *)&peer_addr, &peer_len) != 0){
+    return false;
+  }
+  if(local_addr.sin_family != AF_INET || peer_addr.sin_family != AF_INET){
+    return false;
+  }
+  if(local_addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK) ||
+     peer_addr.sin_addr.s_addr != htonl(INADDR_LOOPBACK)){
+    return false;
+  }
+  server_port = ntohs(local_addr.sin_port);
+  peer_port = ntohs(peer_addr.sin_port);
+  want_uid = (unsigned int)geteuid();
+  proc = fopen("/proc/net/tcp", "r");
+  if(proc == NULL){
+    ltr_int_log_message("Can't read /proc/net/tcp to check the TCP peer.\n");
+    return false;
+  }
+  /* Skip the header. */
+  if(fgets(line, sizeof(line), proc) == NULL){
+    fclose(proc);
+    return false;
+  }
+  while(fgets(line, sizeof(line), proc) != NULL){
+    int sl;
+    unsigned int lip, lport, rip, rport, st, uid;
+    if(sscanf(line, "%d: %x:%x %x:%x %x %*x:%*x %*x:%*x %*x %u",
+              &sl, &lip, &lport, &rip, &rport, &st, &uid) != 7){
+      continue;
+    }
+    /* 127.0.0.1 is 0x0100007F in the little-endian hex used by /proc/net/tcp. */
+    if(lip == 0x0100007Fu && rip == 0x0100007Fu &&
+       lport == peer_port && rport == server_port &&
+       uid == want_uid){
+      fclose(proc);
+      return true;
+    }
+  }
+  fclose(proc);
+  ltr_int_log_message("TCP peer on port %u is not uid %u.\n", peer_port, want_uid);
+  return false;
+}
+
+bool ltr_int_connection_is_same_user(int fd)
+{
+  struct sockaddr_storage ss;
+  socklen_t sl = sizeof(ss);
+  if(fd < 0 || getsockname(fd, (struct sockaddr *)&ss, &sl) != 0){
+    return false;
+  }
+  if(ss.ss_family == AF_UNIX){
+    struct ucred cred;
+    socklen_t cl = sizeof(cred);
+    if(getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &cl) != 0){
+      ltr_int_my_perror("SO_PEERCRED");
+      return false;
+    }
+    return cred.uid == geteuid();
+  }
+  if(ss.ss_family == AF_INET){
+    return tcp_loopback_peer_is_same_user(fd);
+  }
+  return false;
 }
 
 ssize_t ltr_int_socket_receive(int socket, void *buf, size_t size)

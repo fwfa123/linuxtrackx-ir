@@ -37,6 +37,13 @@ class Tracker : public QObject{
   float axisGetValue(axis_t axis, float val);
 
   bool axisIsSymetrical(axis_t axis);
+  int axisGetCurve(axis_t axis, bool right, ltr_curve_pt *pts, int max_pts);
+  bool axisSetCurve(axis_t axis, const ltr_curve_pt *left, int nleft,
+                    const ltr_curve_pt *right, int nright);
+  bool axisSetCurvePreview(axis_t axis, const ltr_curve_pt *left, int nleft,
+                           const ltr_curve_pt *right, int nright);
+  bool axisSetCurveText(axis_t axis, const QString &left, const QString &right);
+  float axisFlatPrefix(axis_t axis);
   bool setCommonFilterFactor(float c_f);
   float getCommonFilterFactor();
   int getTrackingRateFps();

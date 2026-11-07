@@ -177,10 +177,16 @@ static bool try_cwa_ofp_gamedata_aliases(const char *orig_key, const char *norma
   return false;
 }
 
-static bool try_game_name_with_aliases(const char *env_name, int *found_id)
+enum {
+  NAME_LOOKUP_NONE = 0,
+  NAME_LOOKUP_ALIAS = 1,
+  NAME_LOOKUP_CANDIDATE = 2
+};
+
+static int try_game_name_with_aliases(const char *env_name, int *found_id)
 {
   if(!env_name || !*env_name || !found_id){
-    return false;
+    return NAME_LOOKUP_NONE;
   }
 
   char normalized[512];
@@ -188,30 +194,30 @@ static bool try_game_name_with_aliases(const char *env_name, int *found_id)
   fix_assualt_typo(normalized);
 
   if(try_cwa_ofp_gamedata_aliases(env_name, normalized, found_id, false)){
-    return true;
+    return NAME_LOOKUP_ALIAS;
   }
 
   if(game_data_find_id_by_name(env_name, found_id) && *found_id > 0){
     append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
                env_name, *found_id, env_name);
-    return true;
+    return NAME_LOOKUP_CANDIDATE;
   }
 
   if(normalized[0] != '\0' && strcmp(normalized, env_name) != 0){
     if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
       append_log("Using LTR_GAME_NAME match '%s' => TrackIR ID=%d (query='%s')",
                  env_name, *found_id, normalized);
-      return true;
+      return NAME_LOOKUP_CANDIDATE;
     }
   }
 
-  return false;
+  return NAME_LOOKUP_NONE;
 }
 
-static bool try_game_slug_with_aliases(const char *env_slug, int *found_id)
+static int try_game_slug_with_aliases(const char *env_slug, int *found_id)
 {
   if(!env_slug || !*env_slug || !found_id){
-    return false;
+    return NAME_LOOKUP_NONE;
   }
 
   char normalized[512];
@@ -219,18 +225,153 @@ static bool try_game_slug_with_aliases(const char *env_slug, int *found_id)
   fix_assualt_typo(normalized);
 
   if(try_cwa_ofp_gamedata_aliases(env_slug, normalized, found_id, true)){
-    return true;
+    return NAME_LOOKUP_ALIAS;
   }
 
   if(normalized[0] != '\0'){
     if(game_data_find_id_by_name(normalized, found_id) && *found_id > 0){
       append_log("Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d (query='%s')",
                  env_slug, *found_id, normalized);
-      return true;
+      return NAME_LOOKUP_CANDIDATE;
     }
   }
 
-  return false;
+  return NAME_LOOKUP_NONE;
+}
+
+static void release_game_desc(game_desc_t *gd)
+{
+  if(gd && gd->name){
+    free((void *)gd->name);
+    gd->name = NULL;
+  }
+}
+
+/* Same folding as game_data_find_id_by_normalized_exact's catalog names. */
+static void normalize_catalog_name_for_match(char *out, size_t cap, const char *in)
+{
+  if(!out || cap < 2 || !in){
+    if(out && cap > 0){
+      out[0] = '\0';
+    }
+    return;
+  }
+  size_t j = 0;
+  for(size_t i = 0; in[i] != '\0' && j + 1 < cap; ++i){
+    char ch = in[i];
+    if(ch >= 'A' && ch <= 'Z'){
+      ch = (char)(ch - 'A' + 'a');
+    }
+    if(ch == '_' || ch == '-' || ch == ':' || ch == ';' || ch == ',' || ch == '.'
+       || ch == '(' || ch == ')' || ch == '\t' || ch == '\r' || ch == '\n'){
+      ch = ' ';
+    }
+    out[j++] = ch;
+  }
+  out[j] = '\0';
+  char *w = out;
+  bool prev_space = true;
+  for(char *r = out; *r; ++r){
+    if(*r == ' '){
+      if(!prev_space){
+        *w++ = ' ';
+        prev_space = true;
+      }
+    }else{
+      *w++ = *r;
+      prev_space = false;
+    }
+  }
+  if(w > out && w[-1] == ' '){
+    --w;
+  }
+  *w = '\0';
+}
+
+static size_t longest_common_substring(const char *a, const char *b)
+{
+  size_t best = 0;
+  if(!a || !b){
+    return 0;
+  }
+  size_t la = strlen(a);
+  size_t lb = strlen(b);
+  for(size_t i = 0; i < la; ++i){
+    for(size_t j = 0; j < lb; ++j){
+      size_t k = 0;
+      while(i + k < la && j + k < lb && a[i + k] == b[j + k]){
+        ++k;
+      }
+      if(k > best){
+        best = k;
+      }
+    }
+  }
+  return best;
+}
+
+/* Longest shared run divided by the longer normalized name. 1.0 is identical. */
+static double catalog_name_similarity(const char *storefront, const char *catalog)
+{
+  char left[512];
+  char right[512];
+  normalize_catalog_name_for_match(left, sizeof(left), storefront ? storefront : "");
+  normalize_catalog_name_for_match(right, sizeof(right), catalog ? catalog : "");
+  size_t left_len = strlen(left);
+  size_t right_len = strlen(right);
+  size_t longer = left_len > right_len ? left_len : right_len;
+  if(longer == 0){
+    return 0.0;
+  }
+  return (double)longest_common_substring(left, right) / (double)longer;
+}
+
+/* weak_under_80: similarity below threshold on a fuzzy ID. !weak_under_80: no list entry. */
+static void warn_game_list_issue(HWND hwnd, bool weak_under_80, const char *detail)
+{
+  const char *lead = weak_under_80
+                         ? "The game name match is under 80%%.\r\n\r\n"
+                         : "No matching game was found in the TrackIR game list.\r\n\r\n";
+  char text[1280];
+  snprintf(text, sizeof(text),
+           "%s"
+           "Either the game list is out of date, or TrackIR may not support this game. "
+           "Check the NaturalPoint website. If the game is supported, update the game list "
+           "from the Linuxtrack UI using the latest TrackIR installer from NaturalPoint.\r\n\r\n"
+           "%s",
+           lead,
+           detail ? detail : "");
+  append_log("Game list warning: %s", detail ? detail : "");
+  MessageBoxA(hwnd, text, "Game list match", MB_OK | MB_ICONWARNING);
+}
+
+static int resolve_storefront_name(const char *name, const char *slug, int *out_id, const char **out_query)
+{
+  int found_id = -1;
+  if(name && *name){
+    int kind = try_game_name_with_aliases(name, &found_id);
+    if(kind != NAME_LOOKUP_NONE){
+      *out_id = found_id;
+      *out_query = name;
+      return kind;
+    }
+  }
+  if(slug && *slug){
+    int kind = try_game_slug_with_aliases(slug, &found_id);
+    if(kind != NAME_LOOKUP_NONE){
+      *out_id = found_id;
+      *out_query = slug;
+      return kind;
+    }
+  }
+  if(name && *name){
+    *out_query = name;
+  }else if(slug && *slug){
+    *out_query = slug;
+  }else{
+    *out_query = NULL;
+  }
+  return NAME_LOOKUP_NONE;
 }
 
 HINSTANCE hInst;
@@ -255,12 +396,6 @@ VOID CALLBACK TimerProcedure(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTim
   snprintf(buf, sizeof(buf), "%.2f", td.ty);    SetDlgItemText(hwnd, IDC_Y1, buf);
   snprintf(buf, sizeof(buf), "%.2f", td.tz);    SetDlgItemText(hwnd, IDC_Z1, buf);
 
-  snprintf(buf, sizeof(buf), "%.2f", td.padding[0]); SetDlgItemText(hwnd, IDC_X2, buf);
-  snprintf(buf, sizeof(buf), "%.2f", td.padding[1]); SetDlgItemText(hwnd, IDC_Y2, buf);
-  snprintf(buf, sizeof(buf), "%.2f", td.padding[2]); SetDlgItemText(hwnd, IDC_Z2, buf);
-  snprintf(buf, sizeof(buf), "%.2f", td.padding[3]); SetDlgItemText(hwnd, IDC_X3, buf);
-  snprintf(buf, sizeof(buf), "%.2f", td.padding[4]); SetDlgItemText(hwnd, IDC_Y3, buf);
-  snprintf(buf, sizeof(buf), "%.2f", td.padding[5]); SetDlgItemText(hwnd, IDC_Z3, buf);
   SetDlgItemInt(hwnd, IDC_S, td.status, true);
   SetDlgItemInt(hwnd, IDC_F, td.frame, true);
 }
@@ -296,24 +431,59 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                   printf("INFO: Using Steam mapping SteamAppId=%s => TrackIR ID=%d\n", steam_appid, mapped_id);
                   append_log("Using Steam mapping SteamAppId=%s => TrackIR ID=%d", steam_appid, mapped_id);
                 }else{
-                  // Env hint: LTR_GAME_NAME -> lookup in gamedata.txt
                   char *env_name = getenv("LTR_GAME_NAME");
-                  if(env_name && *env_name){
-                    int found_id = -1;
-                    if(try_game_name_with_aliases(env_name, &found_id)){
-                      initial_id = found_id;
-                      printf("INFO: Using LTR_GAME_NAME match '%s' => TrackIR ID=%d\n", env_name, found_id);
+                  char *env_slug = getenv("LTR_GAME_SLUG");
+                  const char *query = NULL;
+                  int found_id = -1;
+                  int kind = resolve_storefront_name(env_name, env_slug, &found_id, &query);
+                  if(kind == NAME_LOOKUP_ALIAS){
+                    initial_id = found_id;
+                    printf("INFO: Using alias match '%s' => TrackIR ID=%d\n",
+                           query ? query : "", found_id);
+                  }else if(kind == NAME_LOOKUP_CANDIDATE){
+                    initial_id = found_id;
+                    game_desc_t gd;
+                    memset(&gd, 0, sizeof(gd));
+                    const char *catalog = NULL;
+                    if(game_data_get_desc(found_id, &gd) && gd.name){
+                      catalog = gd.name;
                     }
-                  }
-                  if(initial_id == 2307){
-                    char *env_slug = getenv("LTR_GAME_SLUG");
-                    if(env_slug && *env_slug){
-                      int found_id = -1;
-                      if(try_game_slug_with_aliases(env_slug, &found_id)){
-                        initial_id = found_id;
-                        printf("INFO: Using LTR_GAME_SLUG match '%s' => TrackIR ID=%d\n", env_slug, found_id);
+                    double similarity = catalog ? catalog_name_similarity(query, catalog) : 0.0;
+                    append_log("Name similarity %.3f for '%s' vs catalog '%s' (ID=%d)",
+                               similarity, query ? query : "", catalog ? catalog : "", found_id);
+                    printf("INFO: Using name match '%s' => TrackIR ID=%d (similarity %.0f%%)\n",
+                           query ? query : "", found_id, similarity * 100.0);
+                    if(similarity < 0.80){
+                      char detail[512];
+                      if(catalog){
+                        snprintf(detail, sizeof(detail),
+                                 "Closest game list entry is '%s' (Application ID %d). "
+                                 "That ID is filled in and can be changed before Start.",
+                                 catalog, found_id);
+                      }else{
+                        snprintf(detail, sizeof(detail),
+                                 "Closest Application ID is %d, but it has no name in the game list. "
+                                 "That ID is filled in and can be changed before Start.",
+                                 found_id);
                       }
+                      warn_game_list_issue(hwndDlg, true, detail);
                     }
+                    release_game_desc(&gd);
+                  }else{
+                    char detail[512];
+                    if(query && *query){
+                      snprintf(detail, sizeof(detail),
+                               "No game list entry was found for '%s'. "
+                               "The Application ID stays at 2307. Start will create that ID's profile, "
+                               "or Default if 2307 is not in the game list.",
+                               query);
+                    }else{
+                      snprintf(detail, sizeof(detail),
+                               "No game name was provided. "
+                               "The Application ID stays at 2307. Start will create that ID's profile, "
+                               "or Default if 2307 is not in the game list.");
+                    }
+                    warn_game_list_issue(hwndDlg, false, detail);
                   }
                 }
               }
@@ -365,9 +535,17 @@ BOOL CALLBACK DialogProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                   if(game_data_get_desc(num, &gd)){
                     printf("Application ID: %d - %s\n", num, gd.name);
                     append_log("Resolved AppID=%u to '%s'", (unsigned int)num, gd.name);
+                    release_game_desc(&gd);
                   }else{
                     printf("Unknown Application ID: %d\n", num);
                     append_log("game_data_get_desc failed for AppID=%u; continuing with direct NP init", (unsigned int)num);
+                    MessageBoxA(hwndDlg,
+                                "This Application ID is not in the TrackIR game list.\r\n\r\n"
+                                "The profile will be Default, except Application IDs 8106 (Operation Flashpoint) "
+                                "and 10601, 7502, and 7503 (ArmA). Encrypted pose data will not use this game's keys.\r\n\r\n"
+                                "Tracking will still start.",
+                                "Unknown Application ID",
+                                MB_OK | MB_ICONWARNING);
                   }
                   if(npifc_init(hwndDlg, num)){
                     append_log("npifc_init succeeded for AppID=%u", (unsigned int)num);

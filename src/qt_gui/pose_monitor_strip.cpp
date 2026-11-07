@@ -1,8 +1,7 @@
 #include "pose_monitor_strip.h"
 
 #include <QFont>
-#include <QGridLayout>
-#include <QGroupBox>
+#include <QSettings>
 #include <QVBoxLayout>
 
 #include "tracker.h"
@@ -11,10 +10,15 @@ static const char *kRowNames[6] = {"Yaw", "Pitch", "Roll", "X", "Y", "Z"};
 static const axis_t kRowAxes[6] = {YAW, PITCH, ROLL, TX, TY, TZ};
 
 PoseMonitorStrip::PoseMonitorStrip(QWidget *parent)
-  : QWidget(parent), activeAxis(YAW)
+  : QWidget(parent), box(NULL), gridHost(NULL), activeAxis(YAW)
 {
-  QGroupBox *box = new QGroupBox(tr("Live pose (Measured = camera, before curves)"), this);
-  QGridLayout *grid = new QGridLayout(box);
+  box = new QGroupBox(tr("Live pose (Measured = camera, before curves)"), this);
+  box->setCheckable(true);
+  box->setFlat(false);
+
+  gridHost = new QWidget(box);
+  QGridLayout *grid = new QGridLayout(gridHost);
+  grid->setContentsMargins(0, 0, 0, 0);
 
   const QString headers[4] = {
     tr("Axis"), tr("Measured"), tr("Curved"), tr("Filtered")
@@ -22,14 +26,14 @@ PoseMonitorStrip::PoseMonitorStrip(QWidget *parent)
   QFont headerFont = font();
   headerFont.setBold(true);
   for(int col = 0; col < 4; ++col){
-    headerLabels[col] = new QLabel(headers[col], box);
+    headerLabels[col] = new QLabel(headers[col], gridHost);
     headerLabels[col]->setFont(headerFont);
     grid->addWidget(headerLabels[col], 0, col);
   }
 
   for(int row = 0; row < 6; ++row){
     for(int col = 0; col < 4; ++col){
-      rowLabels[row][col] = new QLabel(QString::fromUtf8("-"), box);
+      rowLabels[row][col] = new QLabel(QString::fromUtf8("-"), gridHost);
       if(col == 0){
         rowLabels[row][col]->setText(QString::fromUtf8(kRowNames[row]));
       }
@@ -37,12 +41,35 @@ PoseMonitorStrip::PoseMonitorStrip(QWidget *parent)
     }
   }
 
+  QVBoxLayout *boxLayout = new QVBoxLayout(box);
+  boxLayout->addWidget(gridHost);
+
   QVBoxLayout *outer = new QVBoxLayout(this);
   outer->setContentsMargins(0, 0, 0, 0);
   outer->addWidget(box);
 
+  QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+  const bool expanded = settings.value(QStringLiteral("curveEditor/livePoseExpanded"), false).toBool();
+  box->setChecked(expanded);
+  applyExpanded(expanded);
+
+  connect(box, SIGNAL(toggled(bool)), this, SLOT(onExpandedToggled(bool)));
   connect(&TRACKER, SIGNAL(newPose(linuxtrack_full_pose_t *, linuxtrack_pose_t *, linuxtrack_pose_t *)),
           this, SLOT(newPose(linuxtrack_full_pose_t *, linuxtrack_pose_t *, linuxtrack_pose_t *)));
+}
+
+void PoseMonitorStrip::applyExpanded(bool expanded)
+{
+  if(gridHost != NULL){
+    gridHost->setVisible(expanded);
+  }
+}
+
+void PoseMonitorStrip::onExpandedToggled(bool expanded)
+{
+  applyExpanded(expanded);
+  QSettings settings(QStringLiteral("linuxtrack"), QStringLiteral("ltr_gui"));
+  settings.setValue(QStringLiteral("curveEditor/livePoseExpanded"), expanded);
 }
 
 void PoseMonitorStrip::setActiveAxis(axis_t axis)

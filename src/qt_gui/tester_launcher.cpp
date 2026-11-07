@@ -18,9 +18,13 @@ QString TesterLauncher::getPrefixForGame(const QString &gameName,
     const QString platformKey = QString(platform).trimmed().toLower();
     if (platformKey == QStringLiteral("steam")) {
         if (!steamIntegration) { return QString(); }
-        QList<SteamGame> steamGames = steamIntegration->getSteamGames();
+        QList<SteamGame> steamGames = steamIntegration->cachedGames();
+        if (steamGames.isEmpty())
+            steamGames = steamIntegration->getSteamGames();
         for (const SteamGame &game : steamGames) {
             if (game.game_name == gameName && game.is_installed) {
+                if (!game.prefix_path.isEmpty())
+                    return game.prefix_path;
                 return steamIntegration->findProtonPrefix(game.game_id);
             }
         }
@@ -29,7 +33,9 @@ QString TesterLauncher::getPrefixForGame(const QString &gameName,
 
     if (platformKey == QStringLiteral("lutris")) {
         if (!lutrisIntegration) { return QString(); }
-        QList<LutrisGame> lutrisGames = lutrisIntegration->getLutrisGames();
+        QList<LutrisGame> lutrisGames = lutrisIntegration->cachedGames();
+        if (lutrisGames.isEmpty())
+            lutrisGames = lutrisIntegration->getLutrisGames();
         for (const LutrisGame &game : lutrisGames) {
             if (game.game_name == gameName) {
                 return game.wine_prefix;

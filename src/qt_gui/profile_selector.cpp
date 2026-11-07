@@ -1,6 +1,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QSizePolicy>
 
 #include "profile_selector.h"
 #include "profile_setup.h"
@@ -14,6 +15,10 @@
 ProfileSelector::ProfileSelector(QWidget *parent) : QWidget(parent), ps(NULL), initializing(true)
 {
   ui.setupUi(this);
+  /* Profile combo (0) + axesScroll (1); stretch the scroll area. */
+  ui.verticalLayout->setStretch(1, 1);
+  ui.verticalLayout_2->setStretch(0, 1);
+  ui.axesScroll->setWidgetResizable(true);
 
   // Explicit signal/slot connection for Qt6 compatibility
   connect(ui.Profiles, &QComboBox::currentTextChanged,
@@ -91,18 +96,13 @@ void ProfileSelector::profilesCurrentTextChanged(const QString &text)
     ps = new ProfileSetup(text, this);
     // Qt6 RADICAL FIX: use addWidget() instead of insertWidget() to avoid
     // edge cases with out-of-range indexes confusing QBoxLayout internals.
-    ui.AxesSetup->addWidget(ps);
+    /* No vertical stretch: content must size to its minimum so axesScroll can scroll. */
+    ui.AxesSetup->addWidget(ps, 0);
+    ps->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
   } else {
     // Qt6 RADICAL FIX: reuse existing ProfileSetup instance for new profile
     // instead of deleting/recreating it (which was crashing inside Qt layouts).
     ps->loadProfile(text);
-  }
-}
-
-void ProfileSelector::on_CopyFromDefault_pressed()
-{
-  if (ps != NULL) {
-    ps->copyFromDefault();
   }
 }
 

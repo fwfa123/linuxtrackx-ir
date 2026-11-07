@@ -15,22 +15,43 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <widget class="QLabel" name="SCTitle">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>15</pointsize>
-      </font>
-     </property>
-     <property name="text">
-      <string>Title</string>
-     </property>
-    </widget>
+    <layout class="QHBoxLayout" name="titleRowLayout">
+     <item>
+      <widget class="QLabel" name="SCTitle">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>15</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Title</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="SCEnable">
+       <property name="text">
+        <string>Enable</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="SCInvert">
+       <property name="text">
+        <string>Invert</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">
@@ -101,47 +122,6 @@
               </property>
               <property name="value">
                <double>600.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="SCCurvL">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Curvature</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QSlider" name="SCLeftCurv">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximum">
-               <number>100</number>
-              </property>
-              <property name="value">
-               <number>50</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="tickPosition">
-               <enum>QSlider::TicksBelow</enum>
-              </property>
-              <property name="tickInterval">
-               <number>10</number>
               </property>
              </widget>
             </item>
@@ -238,47 +218,6 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="SCCurvR">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Curvature</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QSlider" name="SCRightCurv">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximum">
-               <number>100</number>
-              </property>
-              <property name="value">
-               <number>50</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="tickPosition">
-               <enum>QSlider::TicksBelow</enum>
-              </property>
-              <property name="tickInterval">
-               <number>10</number>
-              </property>
-             </widget>
-            </item>
            </layout>
           </item>
          </layout>
@@ -300,13 +239,6 @@
       <item>
        <layout class="QGridLayout" name="gridLayout">
         <item row="1" column="0">
-         <widget class="QLabel" name="label_4">
-          <property name="text">
-           <string>Dead Zone:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
          <widget class="QLabel" name="label_5">
           <property name="text">
            <string>Smoothing:</string>
@@ -357,22 +289,6 @@
          </widget>
         </item>
         <item row="1" column="2">
-         <widget class="QSlider" name="SCDeadZone">
-          <property name="maximum">
-           <number>100</number>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="tickPosition">
-           <enum>QSlider::TicksBelow</enum>
-          </property>
-          <property name="tickInterval">
-           <number>10</number>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="2">
          <widget class="QSlider" name="SCFilterSlider">
           <property name="minimum">
            <number>0</number>
@@ -392,27 +308,13 @@
          </widget>
         </item>
         <item row="1" column="1">
-         <widget class="QLabel" name="label_7">
-          <property name="text">
-           <string>None</string>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="3">
-         <widget class="QLabel" name="label_8">
-          <property name="text">
-           <string>Full</string>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
          <widget class="QLabel" name="label_10">
           <property name="text">
            <string>None</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="3">
+        <item row="1" column="3">
          <widget class="QLabel" name="label_11">
           <property name="text">
            <string>Max</string>

@@ -10,6 +10,20 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the LinuxTrack X-IR software.
 
+<h2>LinuxTrack X-IR v3.0.0 - Embedded Profile curves (2026)</h2>
+<h3>Tracking setup</h3>
+<p>
+Axis curves are embedded in the Tracking setup tab (no separate Detailed Axes window). The slim header keeps <strong>Tracking rate</strong>, <strong>Common smoothing</strong>, and Copy / Restore / Save. Per-axis <strong>Enable</strong> and <strong>Invert</strong> live on each curve page with Sensitivity, Smoothing, Limits, and the point editor.
+</p>
+<h3>Pose maps sidebar</h3>
+<p>
+<strong>Pose maps</strong> (Look, Lean, Raise/Roll) sit in a vertical column beside the curve editor to save vertical space. Live pose remains collapsible. Pan / head-center tuning stays on the Model Setup tab. The Profile tab scrolls on small displays.
+</p>
+<h3>Local security</h3>
+<p>
+The tracker socket accepts only the same user. Profile titles that contain a newline are rejected, and the install path is read only from a <code>Prefix</code> line. Firmware names such as <code>..</code> are not extracted. TrackIR and PS3 Eye device nodes are no longer world-writable; the logged-in desktop user still receives access, and the permission dialog still adds <code>plugdev</code>, <code>input</code>, <code>uinput</code>, and <code>video</code>. Existing Wine bridges keep the same message format.
+</p>
+
 <h2>LinuxTrack X-IR v2.2.1 - New custom skins (2026)</h2>
 <h3>New custom skins</h3>
 New json driven Theme access on the System Tab

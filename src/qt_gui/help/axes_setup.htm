@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<title>Axes setup</title>
+<title>Tracking setup</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
@@ -16,51 +16,50 @@
 </tr>
 </table>
 
-<p>Here you can set sensitivities, dead zones, nonlinearities and the amount of filtration for each axis separately; you can also turn unwanted axes off, specify limits of each axis and so on... All this can be done separately for each target program/game.</p>
+<p>Here you can set sensitivities, dead zones, response curves and filtration for each axis separately; you can also turn unwanted axes off, specify limits of each axis and so on. All this can be done separately for each target program/game. Axis curves and diagnostics are embedded directly in the Tracking setup tab.</p>
 
 <h2>Default profile</h2>
 <p>The Default profile is quite special - when an unknown game/program is run for the first time, the Default profile is copied over as a base of the new profile.</p>
 
-<h2>General setup</h2>
-<p>Make sure you have selected the desired profile. Controls in the Tracking setup pane lets you do the following:</p>
+<h2>Profile header</h2>
+<p>Make sure you have selected the desired profile. The always-visible header lets you do the following:</p>
 
 <ul>
-<li>Check-box in the front allows you to enable/disable an axis.</li>
-<li>Sensitivity controls allow you to change control responsiveness - the higher the sensitivity is, the more responsive the particular axis will be.</li>
-<li>Check-box on the right side allows you to invert the axis response.</li>
-<li><strong>Common smoothing</strong> slider allows you to set the amount of smoothing applied to all axes.</li>
 <li><strong>Tracking rate (FPS)</strong> sets how often head pose and the camera preview in the Tracking window are updated each second (30–120&nbsp;FPS; default 120). The value is saved per profile. Lower rates reduce CPU usage and how often games or clients receive pose updates; they do not change the camera hardware frame rate.</li>
+<li><strong>Common smoothing</strong> slider sets the amount of smoothing applied to all axes.</li>
+<li><strong>Copy from Default Profile</strong> copies Default profile setup to the current profile.</li>
 <li><strong>Restore axis defaults</strong> resets all axis settings on the current profile from your <strong>saved axis baseline</strong> (factory values until you use <strong>Save as axis defaults</strong>). Editing the Default profile or any profile autosaves to that profile only; it does not update the baseline unless you save it. Tracking rate is not changed.</li>
 <li><strong>Save as axis defaults</strong> stores the current profile's axis settings as the rollback baseline used by <strong>Restore axis defaults</strong>. This is separate from the <strong>Default</strong> profile used when new games are detected.</li>
-<li><strong>Detailed axes setup</strong> button opens a dialog allowing you to set all aspects of all the axes.</li>
-<li><strong>Import profile</strong> button imports all settings in the current profile from a file.</li>
-<li><strong>Export profile</strong> button exports current profile to a file.</li>
-<li><strong>Copy from Default Profile</strong> copies Default profile setup to the current profile.</li>
+<li><strong>Import profile</strong> / <strong>Export profile</strong> (at the bottom of the tab) import or export the current profile from/to a file.</li>
 </ul>
 
 <p>All the controls have immediate effect on the tracking, so you can directly see the impact of the change. Also note, that while it is possible to run ltr_gui in parallel with a client program/game, it is not recommended. The tracking does work without the GUI running, unlike other popular alternatives (NP, FreeTrack, FaceTrack NoIR...).</p>
 
-<h2>Detailed axes setup</h2>
-<p>When <strong>Detailed axes setup</strong> button is pressed, new dialog pops up allowing you to set all aspects of all axes.</p>
+<h2>Axis curves</h2>
+<p>Below the header, select an axis from the list (Pitch, Yaw, Roll, and the three translations). The curve editor for that axis is shown in the center of the tab.</p>
 
 <table>
 <tr>
 <td>
-<img src="DetAxis.png" alt="Sensitivity curves setup with pose maps and per-axis S-curve controls.">
+<img src="DetAxis.png" alt="Sensitivity curves setup with pose maps sidebar and per-axis S-curve controls.">
 </td>
 </tr>
 </table>
 
-<p>On the left side of each axis panel you can see a visualization of the current axis and its setup. For both halves of an axis you can set an in-game limit of an axis and the curvature (nonlinearity) of the axis. There is a <strong>Symmetrical</strong> check-box that allows you to unchain those halves and set each one separately.</p>
+<ul>
+<li><strong>Enable</strong> and <strong>Invert</strong> on the curve page turn the axis on/off or reverse its response.</li>
+<li>For both halves of an axis you can set an in-game <strong>Limit</strong>. The <strong>Symmetrical</strong> check-box allows you to unchain those halves and set each one separately.</li>
+<li><strong>Sensitivity</strong> changes how responsive the axis is. The higher the sensitivity, the smaller head movement will be necessary for tracking. Just be careful not to set it too high — it might result in a stiff neck, and other problems.</li>
+<li>Per-axis <strong>Smoothing</strong> gives that axis additional filtration beyond Common smoothing.</li>
+<li>The response graph lets you edit curve points (select a point to edit coordinates; remove interior points with the button, right-click, or Delete).</li>
+</ul>
 
-<p>You can also set the axis sensitivity, dead-zone and the amount of additional filtration.</p>
-
-<p>The higher the sensitivity is, the smaller head movement will be necessary for tracking. Just be careful not to set it too high - it might result in a stiff neck, and other problems.</p>
-
-<p>Dead-zone allows you to specify size of the region around the center position, where the output is ignored.</p>
-
-<p>At the top of the dialog, the <strong>Pose maps</strong> section shows live head position on three maps (Look, Lean, Raise/Roll). Each map uses a dark plot with a center crosshair, teal guide rings, and a <strong>red dead-zone region</strong> at the middle. The red area matches the per-axis dead-zone sliders for that map's axes and updates immediately when you change them; the teal rings subdivide the remaining range from the dead-zone edge to the axis limit (decorative only). The Look map also shows diagonal spokes. A green dot shows the current measured or filtered position (selectable from the drop-down).</p>
-
-<p>Smoothing slider can be used to give the particular axis additional amount of smoothing.</p>
+<h2>Diagnostics</h2>
+<ul>
+<li><strong>Live pose</strong> (collapsible) shows measured, curved, and filtered values for each axis.</li>
+<li><strong>Pose maps</strong> sit in a collapsible column to the right of the curve editor (Look, Lean, Raise/Roll stacked vertically). Each map uses a dark plot with a center crosshair, teal guide rings, and a <strong>red flat-response region</strong> at the middle. That red area is the flat prefix of the response curves for the map's axes (near-zero output along the curve, e.g. Look uses yaw and pitch); editing those curve points updates the overlay. Teal rings are decorative guides out to the axis limits. A green dot shows the current measured or filtered position (selectable from the drop-down). When Pose maps are collapsed, use the <strong>Pose maps</strong> button next to Recenter to show them again.</li>
+<li><strong>Recenter</strong> recenters the current head pose.</li>
+<li>Clip/Cap <strong>head-center (pan) tuning</strong> lives on the <strong>Model Setup</strong> tab, not here.</li>
+</ul>
 </body>
-</html> 
+</html>

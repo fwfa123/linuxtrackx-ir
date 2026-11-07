@@ -68,6 +68,8 @@ This index organizes LinuxTrack documentation. **The supported GUI/toolchain is 
 - **[technical/ADVANCED_INSTALLATION_AND_DEPENDENCIES.md](technical/ADVANCED_INSTALLATION_AND_DEPENDENCIES.md)** - Deep install dependencies
 - **[technical/INSTALLATION_ANALYSIS_COMPREHENSIVE.md](technical/INSTALLATION_ANALYSIS_COMPREHENSIVE.md)** - Install path analysis
 - **[technical/TrackIR_MFC42_modern_windows_analysis.md](technical/TrackIR_MFC42_modern_windows_analysis.md)** - MFC42 on Windows analysis
+- **[technical/SRC_DESLOP_REPORT.md](technical/SRC_DESLOP_REPORT.md)** - Deslop audit of `src/` (duplication, narrating comments, leftover debug)
+- **[technical/SRC_DESLOP_CLEANUP_PLAN.md](technical/SRC_DESLOP_CLEANUP_PLAN.md)** - Planned cleanup for that audit (not started)
 
 ---
 

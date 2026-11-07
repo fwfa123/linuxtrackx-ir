@@ -13,6 +13,14 @@
   
   class section;
   class prefs;
+
+  inline void ltr_stream_pref_field(std::ostream &stream, const std::string &text)
+  {
+    for(size_t i = 0; i < text.size(); ++i){
+      const char c = text[i];
+      stream << ((c == '\n' || c == '\r') ? ' ' : c);
+    }
+  }
   
   class sectionItem{
    public:
@@ -29,7 +37,12 @@
    public:
     keyVal(std::string *k, std::string *v):key(k), value(v){};
     virtual ~keyVal(){delete key; delete value;};
-    virtual void print(std::ostream &stream) const{stream<<*key<<" = "<<*value<<std::endl;};
+    virtual void print(std::ostream &stream) const{
+      ltr_stream_pref_field(stream, *key);
+      stream<<" = ";
+      ltr_stream_pref_field(stream, *value);
+      stream<<std::endl;
+    };
     std::string getKey()const{return std::string(*key);};    
     std::string getValue()const{return std::string(*value);};    
     virtual void registerItself(section &parent);

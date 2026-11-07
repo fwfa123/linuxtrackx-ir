@@ -1,10 +1,10 @@
 #include "scp_form.h"
 
-#include <QLabel>
 #include <QShowEvent>
+#include <QSizePolicy>
+#include <QSplitter>
+#include <QTimer>
 
-#include "ltr_gui_prefs.h"
-#include "ltr_model.h"
 #include "tracker.h"
 
 namespace {
@@ -22,19 +22,109 @@ axis_t axisForListIndex(int index)
   }
 }
 
+const int kDefaultMapsColumnWidth = 220;
+
 }
 
 ScpForm::ScpForm(QWidget *parent)
-  : QWidget(parent), panTuningHint(NULL), modelTweaker(NULL),
-    yaw(NULL), pitch(NULL), roll(NULL), x(NULL), y(NULL), z(NULL)
+  : QWidget(parent),
+    yaw(NULL), pitch(NULL), roll(NULL), x(NULL), y(NULL), z(NULL),
+    embedded(false), savedMapsColumnWidth(kDefaultMapsColumnWidth)
 {
   ui.setupUi(this);
   setupCurves();
+  setupCurveSplitter();
 
-  QObject::connect(ModelTuningSync::inst(), SIGNAL(headCenterChanged(const QString &)),
-    this, SLOT(onHeadCenterChanged(const QString &)));
+  QObject::connect(ui.poseCrosshairs, SIGNAL(expansionChanged(bool)),
+    this, SLOT(onPoseMapsExpansionChanged(bool)));
 
+  applyPoseMapsColumn(ui.poseCrosshairs->isExpanded());
   on_AxisList_currentRowChanged(ui.AxisList->currentRow());
+}
+
+void ScpForm::setEmbedded(bool embed)
+{
+  embedded = embed;
+  ui.SCPCloseButton->setVisible(!embed);
+  if(embed){
+    setWindowFlags(Qt::Widget);
+    /* Width flexible; floor height so Profile axesScroll can scroll on short tabs. */
+    setMinimumWidth(0);
+    setMinimumHeight(480);
+    setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+  }
+  if(ui.curveEditorPane != NULL){
+    ui.curveEditorPane->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+  }
+  if(ui.poseCrosshairs != NULL){
+    ui.poseCrosshairs->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+  }
+}
+
+void ScpForm::setupCurveSplitter()
+{
+  ui.curveSplitter->setStretchFactor(0, 1);
+  ui.curveSplitter->setStretchFactor(1, 0);
+  ui.curveSplitter->setChildrenCollapsible(false);
+}
+
+void ScpForm::applyPoseMapsColumn(bool expanded)
+{
+  if(ui.poseCrosshairs == NULL || ui.curveSplitter == NULL){
+    return;
+  }
+
+  ui.showPoseMapsButton->setVisible(!expanded);
+
+  if(expanded){
+    ui.poseCrosshairs->setVisible(true);
+    ui.poseCrosshairs->setMinimumWidth(200);
+    ui.poseCrosshairs->setMaximumWidth(280);
+    QList<int> sizes = ui.curveSplitter->sizes();
+    int total = 0;
+    for(int i = 0; i < sizes.size(); ++i){
+      total += sizes.at(i);
+    }
+    if(total <= 0){
+      total = width() > 0 ? width() : 900;
+    }
+    int mapsWidth = savedMapsColumnWidth;
+    if(mapsWidth < 200){
+      mapsWidth = kDefaultMapsColumnWidth;
+    }
+    if(mapsWidth > 280){
+      mapsWidth = 280;
+    }
+    const int editorWidth = qMax(400, total - mapsWidth);
+    ui.curveSplitter->setSizes(QList<int>() << editorWidth << mapsWidth);
+  }else{
+    QList<int> sizes = ui.curveSplitter->sizes();
+    if(sizes.size() >= 2 && sizes.at(1) > 40){
+      savedMapsColumnWidth = sizes.at(1);
+    }
+    ui.poseCrosshairs->setMinimumWidth(0);
+    ui.poseCrosshairs->setMaximumWidth(0);
+    ui.poseCrosshairs->setVisible(false);
+    QList<int> sizesNow = ui.curveSplitter->sizes();
+    int total = 0;
+    for(int i = 0; i < sizesNow.size(); ++i){
+      total += sizesNow.at(i);
+    }
+    if(total <= 0){
+      total = width() > 0 ? width() : 900;
+    }
+    ui.curveSplitter->setSizes(QList<int>() << total << 0);
+  }
+}
+
+void ScpForm::onPoseMapsExpansionChanged(bool expanded)
+{
+  applyPoseMapsColumn(expanded);
+}
+
+void ScpForm::on_showPoseMapsButton_clicked()
+{
+  ui.poseCrosshairs->setExpanded(true);
 }
 
 void ScpForm::setupCurves()
@@ -71,79 +161,10 @@ ScpForm::~ScpForm()
 void ScpForm::showEvent(QShowEvent *event)
 {
   QWidget::showEvent(event);
-  refreshPanTuning();
-}
-
-void ScpForm::refreshPanTuning()
-{
-  panTuningSection.clear();
-
-  if(modelTweaker != NULL){
-    ui.panTuningLayout->removeWidget(modelTweaker);
-    delete modelTweaker;
-    modelTweaker = NULL;
-  }
-  if(panTuningHint != NULL){
-    ui.panTuningLayout->removeWidget(panTuningHint);
-    delete panTuningHint;
-    panTuningHint = NULL;
-  }
-
-  QString section;
-  if(!PREF.getActiveModel(section)){
-    panTuningHint = new QLabel(tr("No active model — configure Model Setup first."), ui.panTuningBox);
-    ui.panTuningLayout->addWidget(panTuningHint);
-    return;
-  }
-
-  QString type;
-  if(!PREF.getKeyVal(section, QString::fromUtf8("Model-type"), type)){
-    panTuningHint = new QLabel(tr("Could not read model type for the active model."), ui.panTuningBox);
-    ui.panTuningLayout->addWidget(panTuningHint);
-    return;
-  }
-
-  panTuningSection = section;
-
-  if(type.compare(QString::fromUtf8("Clip"), Qt::CaseInsensitive) == 0){
-    modelTweaker = new ClipTweaking(section, ui.panTuningBox);
-    ui.panTuningLayout->addWidget(modelTweaker);
-    return;
-  }
-  if(type.compare(QString::fromUtf8("Cap"), Qt::CaseInsensitive) == 0){
-    modelTweaker = new CapTweaking(section, ui.panTuningBox);
-    ui.panTuningLayout->addWidget(modelTweaker);
-    return;
-  }
-
-  panTuningHint = new QLabel(
-      tr("Pan tuning head center sliders are available for 3-point Clip or Cap models only."), ui.panTuningBox);
-  panTuningHint->setWordWrap(true);
-  ui.panTuningLayout->addWidget(panTuningHint);
-}
-
-void ScpForm::reloadPanTuningSliders()
-{
-  if(modelTweaker == NULL || panTuningSection.isEmpty()){
-    return;
-  }
-  ClipTweaking *clip = qobject_cast<ClipTweaking *>(modelTweaker);
-  if(clip != NULL){
-    clip->reloadFromPrefs();
-    return;
-  }
-  CapTweaking *cap = qobject_cast<CapTweaking *>(modelTweaker);
-  if(cap != NULL){
-    cap->reloadFromPrefs();
-  }
-}
-
-void ScpForm::onHeadCenterChanged(const QString &section)
-{
-  if(section != panTuningSection){
-    return;
-  }
-  reloadPanTuningSliders();
+  /* Defer splitter sizing until the widget has a real width. */
+  QTimer::singleShot(0, this, [this]() {
+    applyPoseMapsColumn(ui.poseCrosshairs->isExpanded());
+  });
 }
 
 void ScpForm::on_AxisList_currentRowChanged(int row)

@@ -6,15 +6,13 @@
 #include "ui_scp_form.h"
 #include "scurve.h"
 
-class QLabel;
-class QWidget;
-
 class ScpForm : public QWidget
 {
   Q_OBJECT
  public:
   ScpForm(QWidget *parent = 0);
   ~ScpForm();
+  void setEmbedded(bool embedded);
 
  protected:
   void showEvent(QShowEvent *event);
@@ -23,19 +21,19 @@ class ScpForm : public QWidget
   void on_SCPCloseButton_pressed();
   void on_SCPRecenterButton_pressed();
   void on_AxisList_currentRowChanged(int row);
-  void onHeadCenterChanged(const QString &section);
+  void on_showPoseMapsButton_clicked();
+  void onPoseMapsExpansionChanged(bool expanded);
 
  private:
   void setupCurves();
-  void refreshPanTuning();
-  void reloadPanTuningSliders();
+  void setupCurveSplitter();
+  void applyPoseMapsColumn(bool expanded);
 
   Ui::SCPForm ui;
-  QLabel *panTuningHint;
-  QWidget *modelTweaker;
-  QString panTuningSection;
   SCurve *yaw, *pitch, *roll;
   SCurve *x, *y, *z;
+  bool embedded;
+  int savedMapsColumnWidth;
 };
 
 

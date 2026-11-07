@@ -8,6 +8,7 @@ extern "C" {
 #endif
 
 bool ltr_int_do_tr_align(void);
+void ltr_int_set_tr_align(bool state);
 
 #ifdef __cplusplus
 }

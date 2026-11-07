@@ -132,27 +132,54 @@ static bool ltr_int_try_start_master(int *l_master_uplink)
 
 static linuxtrack_pose_t prev_filtered_pose;
 
-static bool ltr_int_process_message(int l_master_uplink)
+/* 1 = full message, 0 = need more data, -1 = peer gone or read error. */
+static int slave_pull_message(int fd, message_t *msg)
 {
-  message_t msg;
+  static message_t acc;
+  static size_t got = 0;
+  static int acc_fd = -1;
+  if(acc_fd != fd){
+    acc_fd = fd;
+    got = 0;
+    memset(&acc, 0, sizeof(acc));
+  }
+  while(got < sizeof(message_t)){
+    ssize_t n = read(fd, ((char *)&acc) + got, sizeof(message_t) - got);
+    if(n > 0){
+      got += (size_t)n;
+      continue;
+    }
+    if(n < 0 && errno == EINTR){
+      continue;
+    }
+    if(n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)){
+      return 0;
+    }
+    if(n < 0){
+      ltr_int_log_message("Slave reader problem!\n");
+      ltr_int_my_perror("read");
+    }
+    got = 0;
+    return -1;
+  }
+  *msg = acc;
+  got = 0;
+  memset(&acc, 0, sizeof(acc));
+  return 1;
+}
+
+static bool ltr_int_process_message(message_t *msg)
+{
   struct ltr_comm *com;
   linuxtrack_pose_t unfiltered;
-  ssize_t bytesRead = ltr_int_socket_receive(l_master_uplink, &msg, sizeof(message_t));
-  if(bytesRead < 0){
-    ltr_int_log_message("Slave reader problem!\n");
-    ltr_int_my_perror("socket_receive");
-    return false;
-  }else if(bytesRead == 0){
-    return true;
-  }
 
-  switch(msg.cmd){
+  switch(msg->cmd){
     case CMD_NOP:
       break;
     case CMD_POSE:
       //printf("Have new pose!\n");
       //printf(">>>>%f %f %f\n", msg.pose.raw_yaw, msg.pose.raw_pitch, msg.pose.raw_tz);
-      ltr_int_postprocess_axes(axes, &(msg.pose.pose), &unfiltered);
+      ltr_int_postprocess_axes(axes, &(msg->pose.pose), &unfiltered);
       //printf(">>>>%f %f %f\n", msg.pose.yaw, msg.pose.pitch, msg.pose.tz);
       //printf("Raw center: %f  %f  %f\n", msg.pose.pose.raw_tx, msg.pose.pose.raw_ty, msg.pose.pose.raw_tz);
       //printf("Raw angles: %f  %f  %f\n", msg.pose.pose.raw_pitch, msg.pose.pose.raw_yaw, msg.pose.pose.raw_roll);
@@ -160,13 +187,13 @@ static bool ltr_int_process_message(int l_master_uplink)
       com = mmm.data;
       ltr_int_lockSemaphore(mmm.sem);
       //printf("STATUS: %d\n", msg.pose.status);
-      if(msg.pose.pose.status == RUNNING){
+      if(msg->pose.pose.status == RUNNING){
         //printf("PASSING TO SHM: %f %f %f\n", msg.pose.yaw, msg.pose.pitch, msg.pose.tz);
-        com->full_pose = msg.pose;
+        com->full_pose = msg->pose;
         com->full_pose.prev_pose = prev_filtered_pose;
-        prev_filtered_pose = msg.pose.pose;
+        prev_filtered_pose = msg->pose.pose;
       }
-      com->state = msg.pose.pose.status;
+      com->state = msg->pose.pose.status;
       com->preparing_start = false;
       ltr_int_unlockSemaphore(mmm.sem);
       if(notify && (notify_pipe > 0)){
@@ -179,33 +206,40 @@ static bool ltr_int_process_message(int l_master_uplink)
     case CMD_PARAM:
       //printf("Changing %s of %s to %f!!!\n", ltr_int_axis_param_get_desc(msg.param.param_id),
       //  ltr_int_axis_get_desc(msg.param.axis_id), msg.param.flt_val);
-      if(msg.param.axis_id == MISC){
-        switch(msg.param.param_id){
+      if(msg->param.axis_id == MISC){
+        switch(msg->param.param_id){
           case MISC_ALTER:
-            ltr_int_set_use_alter(msg.param.flt_val > 0.5f);
+            ltr_int_set_use_alter(msg->param.flt_val > 0.5f);
             break;
           case MISC_ALIGN:
-            ltr_int_set_tr_align(msg.param.flt_val > 0.5f);
+            ltr_int_set_tr_align(msg->param.flt_val > 0.5f);
             break;
           case MISC_LEGR:
-            ltr_int_set_use_oldrot(msg.param.flt_val > 0.5f);
+            ltr_int_set_use_oldrot(msg->param.flt_val > 0.5f);
             break;
           case MISC_FOCAL_LENGTH:
-            ltr_int_set_focal_length(msg.param.flt_val);
+            ltr_int_set_focal_length(msg->param.flt_val);
             break;
           default:
-            ltr_int_log_message("Wrong misc param: %d\n", msg.param.param_id);
+            ltr_int_log_message("Wrong misc param: %d\n", msg->param.param_id);
             return false;
             break;
         }
-      }else if(msg.param.param_id == AXIS_ENABLED){
-        ltr_int_set_axis_bool_param(axes, msg.param.axis_id, msg.param.param_id, msg.param.flt_val > 0.5f);
+      }else if(msg->param.param_id == AXIS_ENABLED ||
+               msg->param.param_id == AXIS_INVERTED){
+        /* Master writes flt_val for bools; do not use bool_val on the wire. */
+        ltr_int_set_axis_bool_param(axes, msg->param.axis_id, msg->param.param_id, msg->param.flt_val > 0.5f);
       }else{
-        ltr_int_set_axis_param(axes, msg.param.axis_id, msg.param.param_id, msg.param.flt_val);
+        ltr_int_set_axis_param(axes, msg->param.axis_id, msg->param.param_id, msg->param.flt_val);
+      }
+      break;
+    case CMD_CURVE:
+      if(!ltr_int_axis_set_curve_string(axes, (enum axis_t)msg->data, msg->str)){
+        ltr_int_log_message("Slave rejected curve update for axis %u\n", msg->data);
       }
       break;
     default:
-      ltr_int_log_message("Slave received unexpected message %d!\n", msg.cmd);
+      ltr_int_log_message("Slave received unexpected message %d!\n", msg->cmd);
       return false;
       break;
   }
@@ -251,11 +285,19 @@ static void *ltr_int_slave_reader_thread(void *param)
         ltr_int_log_message("Got hangup from master uplink.\n");
         break;
       }
-      //We have a new message
-      if(ltr_int_process_message(master_uplink)){
-        ++received_frames;
-        if(received_frames > 20){
-          master_works = true;
+      //We have a new message, or the start of one.
+      {
+        message_t msg;
+        int pulled = slave_pull_message(master_uplink, &msg);
+        if(pulled < 0){
+          ltr_int_log_message("Slave reader lost the master uplink.\n");
+          break;
+        }
+        if(pulled > 0 && ltr_int_process_message(&msg)){
+          ++received_frames;
+          if(received_frames > 20){
+            master_works = true;
+          }
         }
       }
       if(!parent_alive() || quit_flag){

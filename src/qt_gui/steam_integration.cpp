@@ -11,6 +11,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDirIterator>
+#include <QMutex>
 #include <algorithm>
 #include "../utils.h"
 
@@ -373,24 +374,61 @@ QString SteamIntegration::findProtonPrefixInLibrary(const QString &gameId, const
     return QString();
 }
 
+QList<SteamGame> SteamIntegration::cachedGames() const
+{
+    QMutexLocker locker(&gamesMutex);
+    return cachedSteamGames;
+}
+
+bool SteamIntegration::lastRefreshFailed() const
+{
+    QMutexLocker locker(&gamesMutex);
+    return gamesQueryFailed;
+}
+
 QList<SteamGame> SteamIntegration::getSteamGames()
 {
-    QList<SteamGame> allGames;
-    
-    for (const QString& libraryPath : libraryPaths) {
-        QList<SteamGame> libraryGames = scanLibraryForGames(libraryPath);
-        allGames.append(libraryGames);
+    QMutexLocker locker(&gamesMutex);
+
+    if (libraryPaths.isEmpty()) {
+        gamesQueryFailed = !cachedSteamGames.isEmpty();
+        if (gamesQueryFailed)
+            lastError = QStringLiteral("Steam library paths are not available");
+        ltr_int_log_message("SteamIntegration::getSteamGames() - no library paths, cache size %d\n",
+                            cachedSteamGames.size());
+        return cachedSteamGames;
     }
-    
-    // Sort games alphabetically by name
+
+    bool scannedLibrary = false;
+    QList<SteamGame> allGames;
+    for (const QString &libraryPath : libraryPaths) {
+        if (!QDir(libraryPath).exists()) {
+            ltr_int_log_message("SteamIntegration::getSteamGames() - library missing: %s\n",
+                                libraryPath.toUtf8().constData());
+            continue;
+        }
+        scannedLibrary = true;
+        allGames.append(scanLibraryForGames(libraryPath));
+    }
+
+    if (!scannedLibrary) {
+        gamesQueryFailed = true;
+        lastError = QStringLiteral("Steam library folders could not be read");
+        ltr_int_log_message("SteamIntegration::getSteamGames() - scan failed, cache size %d\n",
+                            cachedSteamGames.size());
+        return cachedSteamGames;
+    }
+
     std::sort(allGames.begin(), allGames.end(), [](const SteamGame &a, const SteamGame &b) {
         QString nameA = a.game_name.isEmpty() ? a.game_id : a.game_name;
         QString nameB = b.game_name.isEmpty() ? b.game_id : b.game_name;
         return nameA.compare(nameB, Qt::CaseInsensitive) < 0;
     });
-    
+
+    gamesQueryFailed = false;
+    cachedSteamGames = allGames;
     ltr_int_log_message("SteamIntegration::getSteamGames() - Found %d total games\n", allGames.size());
-    return allGames;
+    return cachedSteamGames;
 }
 
 QList<SteamGame> SteamIntegration::scanLibraryForGames(const QString &libraryPath)
@@ -1004,12 +1042,16 @@ bool SteamIntegration::runWineBridgeInstallerWithProton(
 
 QString SteamIntegration::getLastError() const
 {
+    QMutexLocker locker(&gamesMutex);
     return lastError;
 }
 
 void SteamIntegration::setLastError(const QString &error)
 {
-    lastError = error;
+    {
+        QMutexLocker locker(&gamesMutex);
+        lastError = error;
+    }
     ltr_int_log_message("SteamIntegration::setLastError() - %s\n", error.toUtf8().constData());
 }
 

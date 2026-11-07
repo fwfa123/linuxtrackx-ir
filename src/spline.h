@@ -5,27 +5,44 @@
 extern "C" {
 #endif
 
-typedef struct{
-  float dead_zone;
-  float l_curvature;
-  float r_curvature;
-}splines_def;
+/* One half of an axis response: x,y in [0,1], endpoints pinned at (0,0) and (1,1). */
+#define LTR_CURVE_MAX_POINTS 16
+#define LTR_CURVE_BUCKETS 4096
+#define LTR_CURVE_MIN_GAP 0.01f
+#define LTR_CURVE_HALF_TEXT 256
+#define LTR_CURVE_TEXT 500
+#define LTR_CURVE_DEFAULT_TEXT "0.0000,0.0000;1.0000,1.0000"
 
 typedef struct{
-  float x0, y0;
-  float x1, y1;
-  float x2, y2;
-}spline_pts;
+  float x;
+  float y;
+}ltr_curve_pt;
 
 typedef struct{
-  spline_pts left, right;
+  int count;
+  ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+  float table[LTR_CURVE_BUCKETS];
+}ltr_curve_half;
+
+typedef struct{
+  ltr_curve_half left;
+  ltr_curve_half right;
 }splines;
 
-//Converts curve definition to spline points
-int ltr_int_curve2pts(const splines_def *curve, splines *pts);
+void ltr_int_curve_set_default(ltr_curve_half *half);
+void ltr_int_curve_set_points(ltr_curve_half *half, const ltr_curve_pt *pts, int count);
+int ltr_int_curve_halves_equal(const ltr_curve_half *a, const ltr_curve_half *b);
+float ltr_int_curve_flat_prefix(const ltr_curve_half *half);
 
-//Make sure x belongs to <-1; 1>!
-float ltr_int_spline_point(const splines *pts, float x);
+int ltr_int_curve_format_half(const ltr_curve_half *half, char *buf, int buflen);
+int ltr_int_curve_parse_points(const char *str, ltr_curve_pt *pts, int max_pts);
+int ltr_int_curve_format_both(const splines *curves, char *buf, int buflen);
+int ltr_int_curve_parse_both_points(const char *str,
+                                    ltr_curve_pt *left, int *nleft,
+                                    ltr_curve_pt *right, int *nright,
+                                    int max_pts);
+
+float ltr_int_spline_point(const splines *curves, float x);
 
 #ifdef __cplusplus
 }

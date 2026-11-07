@@ -32,6 +32,8 @@ static const mingw_default_pref_t mingw_default_prefs[] = {
   {"Pitch-left-limit", "80.000000"},
   {"Pitch-right-limit", "80.000000"},
   {"Pitch-filter", "0.3"},
+  {"Pitch-left-points", "0.0000,0.0000;1.0000,1.0000"},
+  {"Pitch-right-points", "0.0000,0.0000;1.0000,1.0000"},
   {"Yaw-enabled", "Yes"},
   {"Yaw-inverted", "No"},
   {"Yaw-deadzone", "0.0"},
@@ -41,6 +43,8 @@ static const mingw_default_pref_t mingw_default_prefs[] = {
   {"Yaw-left-limit", "130.000000"},
   {"Yaw-right-limit", "130.000000"},
   {"Yaw-filter", "0.3"},
+  {"Yaw-left-points", "0.0000,0.0000;1.0000,1.0000"},
+  {"Yaw-right-points", "0.0000,0.0000;1.0000,1.0000"},
   {"Roll-enabled", "Yes"},
   {"Roll-inverted", "No"},
   {"Roll-deadzone", "0.0"},
@@ -50,6 +54,8 @@ static const mingw_default_pref_t mingw_default_prefs[] = {
   {"Roll-left-limit", "45.000000"},
   {"Roll-right-limit", "45.000000"},
   {"Roll-filter", "0.3"},
+  {"Roll-left-points", "0.0000,0.0000;1.0000,1.0000"},
+  {"Roll-right-points", "0.0000,0.0000;1.0000,1.0000"},
   {"Xtranslation-enabled", "Yes"},
   {"Xtranslation-inverted", "No"},
   {"Xtranslation-deadzone", "0.0"},
@@ -59,6 +65,8 @@ static const mingw_default_pref_t mingw_default_prefs[] = {
   {"Xtranslation-left-limit", "300.000000"},
   {"Xtranslation-right-limit", "300.000000"},
   {"Xtranslation-filter", "0.3"},
+  {"Xtranslation-left-points", "0.0000,0.0000;1.0000,1.0000"},
+  {"Xtranslation-right-points", "0.0000,0.0000;1.0000,1.0000"},
   {"Ytranslation-enabled", "Yes"},
   {"Ytranslation-inverted", "No"},
   {"Ytranslation-deadzone", "0.0"},
@@ -68,6 +76,8 @@ static const mingw_default_pref_t mingw_default_prefs[] = {
   {"Ytranslation-left-limit", "300.000000"},
   {"Ytranslation-right-limit", "300.000000"},
   {"Ytranslation-filter", "0.3"},
+  {"Ytranslation-left-points", "0.0000,0.0000;1.0000,1.0000"},
+  {"Ytranslation-right-points", "0.0000,0.0000;1.0000,1.0000"},
   {"Ztranslation-enabled", "Yes"},
   {"Ztranslation-inverted", "No"},
   {"Ztranslation-deadzone", "0.0"},
@@ -77,6 +87,8 @@ static const mingw_default_pref_t mingw_default_prefs[] = {
   {"Ztranslation-left-limit", "300.000000"},
   {"Ztranslation-right-limit", "1.000000"},
   {"Ztranslation-filter", "0.7"},
+  {"Ztranslation-left-points", "0.0000,0.0000;1.0000,1.0000"},
+  {"Ztranslation-right-points", "0.0000,0.0000;1.0000,1.0000"},
   {NULL, NULL}
 };
 
@@ -403,21 +415,28 @@ void ltr_int_get_section_list(void *sections_ptr)
   (void)sections_ptr;
 }
 
+static bool mingw_tr_align_cached = true;
+static bool mingw_tr_align_initialized = false;
+
 bool ltr_int_do_tr_align(void)
 {
-  static bool cached = false;
-  static bool initialized = false;
-  if(!initialized){
+  if(!mingw_tr_align_initialized){
     bool align = true;
     char *tmp = ltr_int_get_key("Global", "Align-translations");
     if(tmp != NULL){
       align = (strcasecmp(tmp, "yes") == 0);
       free(tmp);
     }
-    cached = align;
-    initialized = true;
+    mingw_tr_align_cached = align;
+    mingw_tr_align_initialized = true;
   }
-  return cached;
+  return mingw_tr_align_cached;
+}
+
+void ltr_int_set_tr_align(bool state)
+{
+  mingw_tr_align_cached = state;
+  mingw_tr_align_initialized = true;
 }
 
 #endif

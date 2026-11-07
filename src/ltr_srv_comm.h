@@ -16,7 +16,7 @@ typedef struct{
   uint32_t axis_id;
   uint32_t param_id;
   union{
-    float flt_val;
+    float flt_val; /* master always sends bools as 0.0/1.0 via flt_val */
     bool bool_val;
   };
 } param_t;
@@ -31,8 +31,10 @@ typedef struct{
   };
 } message_t;
 
+/* CMD_FRAMES: slave→master only (request frame publish). CMD_CURVE: point-list string;
+ * master/slave/Wine MinGW builds must match enum order. */
 enum cmds {CMD_NOP, CMD_NEW_SOCKET, CMD_PAUSE, CMD_WAKEUP, CMD_RECENTER, CMD_POSE, CMD_PARAM,
-           CMD_FRAMES};
+           CMD_FRAMES, CMD_CURVE};
 
 #ifdef __cplusplus
 extern "C" {

@@ -2,7 +2,24 @@
 
 This document tracks the changes and improvements made in the LinuxTrack X-IR fork compared to the original LinuxTrack project.
 
-> **Note**: **2.x** development is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
+> **Note**: **3.x** development is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
+
+## [3.0.0] - 2026-11-02
+
+### Changed
+- **Profile tab**: Sensitivity, Enable, and Invert grids removed from the Profile overview. Tracking Rate and Common Smoothing stay in a slim always-visible header with Copy / Restore / Save axis actions.
+- **Curves on Profile**: Detailed axis curves editor is embedded in the Profile tab (no separate Detailed Axes window). Per-axis Enable and Invert live on each curve page with Sensitivity, Smoothing, Limits, and the point editor.
+- **Pose maps sidebar**: Look / Lean / Raise-Roll stack vertically in a column beside the curve editor (saves vertical space); expanded by default; collapsed maps free the graph width and restore via the Pose maps button next to Recenter.
+- **Profile scroll**: Tracking setup scrolls on short displays; scroll-area sizing fixed so embedded curves exceed the viewport and scroll vertically.
+- **Diagnostics**: Live pose remains collapsible (default collapsed). Pan / head-center tuning is Model Setup only (removed from the Tracking setup curves pane).
+- **Help / docs**: Tracking setup, Wine, model setup, news, and game workarounds updated for the embedded curves UI.
+
+### Security
+- **Local tracker socket**: The master socket is owner-only. Unix and loopback TCP clients must be the same user as the server. GUI, native, and already-installed Wine clients keep the same message format.
+- **Preferences**: A profile title that contains a newline is rejected. Saved preference text replaces carriage returns and line feeds with spaces. The install `Prefix` is read only from the start of a line, so a title that mentions Prefix does not change where the server is launched. Titles such as `Operation Flashpoint` still save and load.
+- **Messages**: The master and slave wait for a complete pose message before acting on it. A short read returns to the poll loop until the rest arrives.
+- **Firmware blobs**: Extraction rejects unsafe filenames, including `..` and any name that contains a slash, and rejects sizes that overflow. Firmware is packed with `gzip -f -9` run directly, so a path that contains a space still compresses.
+- **Device permissions**: TrackIR and PS3 Eye udev rules use mode `0660`, group `plugdev`, and `uaccess`, so the logged-in desktop user can open the devices. The permission dialog still adds `plugdev`, `input`, `uinput`, and `video`. The root setup script receives the login name as its own argument.
 
 ## [2.2.1] - 2026-09-30
 

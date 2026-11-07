@@ -40,6 +40,10 @@ This directory contains technical documentation for LinuxTrack.
 - **`ISSUE_69_ASSESSMENT.md`** — Symptom analysis, fix mapping, weekend test checklist, closure path
 - **`ISSUE_69_HOTKEY_FIX_PLAN.md`** — Code-review remediation (Phases 1–3 on `main`)
 
+### Code quality
+- **`SRC_DESLOP_REPORT.md`** — Audit of narrating comments, duplicated blocks, and leftover debug in `src/`
+- **`SRC_DESLOP_CLEANUP_PLAN.md`** — Follow-up cleanup plan (not started; keeps startup timing and success paths)
+
 ---
 
 ## Key Technical Areas

@@ -15,9 +15,7 @@ static pthread_mutex_t axes_mutex = PTHREAD_MUTEX_INITIALIZER;
 struct axis_def{
   bool enabled;
   bool inverted;
-  splines_def curve_defs;
   splines curves;
-  bool valid;
   float factor;
   float l_limit, r_limit;
   float filter_factor;
@@ -47,6 +45,8 @@ char *def_section[][2] = {
   {"Pitch-left-limit", "80.000000"},
   {"Pitch-right-limit", "80.000000"},
   {"Pitch-filter", "0.3"},
+  {"Pitch-left-points", LTR_CURVE_DEFAULT_TEXT},
+  {"Pitch-right-points", LTR_CURVE_DEFAULT_TEXT},
   {"Yaw-enabled", "Yes"},
   {"Yaw-inverted", "No"},
   {"Yaw-deadzone", "0.0"},
@@ -56,6 +56,8 @@ char *def_section[][2] = {
   {"Yaw-left-limit", "130.000000"},
   {"Yaw-right-limit", "130.000000"},
   {"Yaw-filter", "0.3"},
+  {"Yaw-left-points", LTR_CURVE_DEFAULT_TEXT},
+  {"Yaw-right-points", LTR_CURVE_DEFAULT_TEXT},
   {"Roll-enabled", "Yes"},
   {"Roll-inverted", "No"},
   {"Roll-deadzone", "0.0"},
@@ -65,6 +67,8 @@ char *def_section[][2] = {
   {"Roll-left-limit", "45.000000"},
   {"Roll-right-limit", "45.000000"},
   {"Roll-filter", "0.3"},
+  {"Roll-left-points", LTR_CURVE_DEFAULT_TEXT},
+  {"Roll-right-points", LTR_CURVE_DEFAULT_TEXT},
   {"Xtranslation-enabled", "Yes"},
   {"Xtranslation-inverted", "No"},
   {"Xtranslation-deadzone", "0.0"},
@@ -74,6 +78,8 @@ char *def_section[][2] = {
   {"Xtranslation-left-limit", "300.000000"},
   {"Xtranslation-right-limit", "300.000000"},
   {"Xtranslation-filter", "0.3"},
+  {"Xtranslation-left-points", LTR_CURVE_DEFAULT_TEXT},
+  {"Xtranslation-right-points", LTR_CURVE_DEFAULT_TEXT},
   {"Ytranslation-enabled", "Yes"},
   {"Ytranslation-inverted", "No"},
   {"Ytranslation-deadzone", "0.0"},
@@ -83,6 +89,8 @@ char *def_section[][2] = {
   {"Ytranslation-left-limit", "300.000000"},
   {"Ytranslation-right-limit", "300.000000"},
   {"Ytranslation-filter", "0.3"},
+  {"Ytranslation-left-points", LTR_CURVE_DEFAULT_TEXT},
+  {"Ytranslation-right-points", LTR_CURVE_DEFAULT_TEXT},
   {"Ztranslation-enabled", "Yes"},
   {"Ztranslation-inverted", "No"},
   {"Ztranslation-deadzone", "0.0"},
@@ -92,6 +100,8 @@ char *def_section[][2] = {
   {"Ztranslation-left-limit", "300.000000"},
   {"Ztranslation-right-limit", "1.000000"},
   {"Ztranslation-filter", "0.7"},
+  {"Ztranslation-left-points", LTR_CURVE_DEFAULT_TEXT},
+  {"Ztranslation-right-points", LTR_CURVE_DEFAULT_TEXT},
   {NULL, NULL}
 };
 
@@ -229,9 +239,6 @@ float ltr_int_val_on_axis(ltr_axes_t axes, enum axis_t id, float x)
   if(axis->inverted){
     x = -x;
   }
-  if(!(axis->valid)){
-    ltr_int_curve2pts(&(axis->curve_defs), &(axis->curves));
-  }
   float mf = axis->factor;
   float lim = x < 0 ? axis->l_limit : axis->r_limit;
   if(lim < 1e-5){
@@ -278,7 +285,7 @@ bool ltr_int_is_symetrical(ltr_axes_t axes, enum axis_t id)
   pthread_mutex_lock(&axes_mutex);
   struct axis_def *axis = get_axis(axes, id);
   
-  if((fabsf(axis->curve_defs.l_curvature - axis->curve_defs.r_curvature) < 1e-5) &&
+  if(ltr_int_curve_halves_equal(&axis->curves.left, &axis->curves.right) &&
      (fabsf(axis->l_limit - axis->r_limit) < 1e-5)){
     pthread_mutex_unlock(&axes_mutex);
     return true;
@@ -290,26 +297,13 @@ bool ltr_int_is_symetrical(ltr_axes_t axes, enum axis_t id)
 
 bool ltr_int_set_axis_param(ltr_axes_t axes, enum axis_t id, enum axis_param_t param, float val)
 {
+  if(param == AXIS_DEADZONE || param == AXIS_LCURV || param == AXIS_RCURV){
+    return true;
+  }
   pthread_mutex_lock(&axes_mutex);
   struct axis_def *axis = get_axis(axes, id);
-  axis->valid = false;
   
   switch(param){
-    case AXIS_DEADZONE:
-      axis->curve_defs.dead_zone = val;
-      save_val_flt(axes, id, DEADZONE, val);
-      signal_change(axes);
-      break;
-    case AXIS_LCURV:
-      axis->curve_defs.l_curvature = val;
-      save_val_flt(axes, id, LCURV, val);
-      signal_change(axes);
-      break;
-    case AXIS_RCURV: 
-      axis->curve_defs.r_curvature = val;
-      save_val_flt(axes, id, RCURV, val);
-      signal_change(axes);
-      break;
     case AXIS_MULT:
       axis->factor = val;
       save_val_flt(axes, id, MULT, val);
@@ -345,14 +339,18 @@ float ltr_int_get_axis_param(ltr_axes_t axes, enum axis_t id, enum axis_param_t 
   struct axis_def *axis = get_axis(axes, id);
   float res;
   switch(param){
-    case AXIS_DEADZONE: 
-      res = axis->curve_defs.dead_zone;
+    case AXIS_DEADZONE:
+      res = ltr_int_curve_flat_prefix(&axis->curves.left);
+      {
+        float right_prefix = ltr_int_curve_flat_prefix(&axis->curves.right);
+        if(right_prefix > res){
+          res = right_prefix;
+        }
+      }
       break;
     case AXIS_LCURV:
-      res = axis->curve_defs.l_curvature;
-      break;
-    case AXIS_RCURV: 
-      res = axis->curve_defs.r_curvature;
+    case AXIS_RCURV:
+      res = 0.0f;
       break;
     case AXIS_MULT:
       res = axis->factor;
@@ -457,10 +455,65 @@ static char *ltr_int_axis_get_key(const char *section, const char *key_name)
 
 
 
+static const char *curve_suffix(int right)
+{
+  return right ? "-right-points" : "-left-points";
+}
+
+static bool save_curve_half_to_section(struct axis_def *axis, enum axis_t id, int right,
+                                       const char *dest_sec)
+{
+  char text[LTR_CURVE_HALF_TEXT];
+  char *field_name;
+  bool res;
+  const ltr_curve_half *half = right ? &axis->curves.right : &axis->curves.left;
+
+  if(ltr_int_curve_format_half(half, text, sizeof(text)) < 0){
+    return false;
+  }
+  field_name = ltr_int_my_strcat(get_axis_prefix(id), curve_suffix(right));
+  res = ltr_int_change_key(dest_sec, field_name, text);
+  free(field_name);
+  return res;
+}
+
+static void load_curve_half(const char *sec_name, struct axis_def *axis, int right)
+{
+  char *field_name = ltr_int_my_strcat(axis->prefix, curve_suffix(right));
+  char *string = ltr_int_axis_get_key(sec_name, field_name);
+  ltr_curve_half *half = right ? &axis->curves.right : &axis->curves.left;
+  ltr_curve_pt pts[LTR_CURVE_MAX_POINTS];
+  int count = 0;
+
+  if(string != NULL){
+    count = ltr_int_curve_parse_points(string, pts, LTR_CURVE_MAX_POINTS);
+  }
+  if(count >= 2){
+    ltr_int_curve_set_points(half, pts, count);
+  }else{
+    ltr_int_curve_set_default(half);
+  }
+  if(string != NULL){
+    free(string);
+  }
+  free(field_name);
+}
+
+static void copy_curve_key(const char *from_sec, const char *to_sec, enum axis_t id, int right)
+{
+  char *field_name = ltr_int_my_strcat(get_axis_prefix(id), curve_suffix(right));
+  char *val = ltr_int_get_key(from_sec, field_name);
+  const char *use = (val != NULL) ? val : LTR_CURVE_DEFAULT_TEXT;
+  ltr_int_change_key(to_sec, field_name, use);
+  if(val != NULL){
+    free(val);
+  }
+  free(field_name);
+}
+
 static void ltr_int_init_axis(const char *sec_name, struct axis_def *axis, const char *prefix)
 {
   assert(axis != NULL);
-  axis->valid = false;
   axis->enabled = true;
   axis->inverted = false;
   axis->prefix = ltr_int_my_strdup(prefix);
@@ -474,9 +527,8 @@ static void ltr_int_init_axis(const char *sec_name, struct axis_def *axis, const
   if(axis->filter_factor > LTR_AXIS_FILTER_MAX){
     axis->filter_factor = LTR_AXIS_FILTER_MAX;
   }
-  axis->curve_defs.dead_zone = 0.0f;
-  axis->curve_defs.l_curvature = 0.5f;
-  axis->curve_defs.r_curvature = 0.5f;
+  ltr_int_curve_set_default(&axis->curves.left);
+  ltr_int_curve_set_default(&axis->curves.right);
 }
 
 static void ltr_int_close_axis(ltr_axes_t axes, enum axis_t id)
@@ -492,16 +544,11 @@ static void ltr_int_close_axis(ltr_axes_t axes, enum axis_t id)
 static void set_axis_field(struct axis_def *axis, axis_fields field, float val, enum axis_t id)
 {
   assert(axis != NULL);
-  axis->valid = false;
   switch(field){
     case(DEADZONE):
-      axis->curve_defs.dead_zone = val;
-      break;
     case(LCURV):
-      axis->curve_defs.l_curvature = val;
-      break;
     case(RCURV):
-      axis->curve_defs.r_curvature = val;
+      (void)val;
       break;
     case(MULT):
       axis->factor = val;
@@ -578,9 +625,10 @@ static bool ltr_int_get_axis(const char *sec_name, enum axis_t id, struct axis_d
     free(field_name);
     field_name = NULL;
   }
-  
-  
-  
+
+  load_curve_half(sec_name, axis, 0);
+  load_curve_half(sec_name, axis, 1);
+
   //Shouldn't be needed... (and causes deadlock now)
   //ltr_int_val_on_axis(id, 0.0f);
   return true;
@@ -749,8 +797,13 @@ bool ltr_int_axes_copy_profile_keys(const char *from_profile_title,
   pthread_mutex_lock(&axes_mutex);
   for(id = PITCH; id <= TZ; id = (enum axis_t)(id + 1)){
     for(field = DEADZONE; field <= ENABLED; ++field){
+      if(field == DEADZONE || field == LCURV || field == RCURV){
+        continue;
+      }
       copy_axis_key_between_sections(from_sec, to_sec, id, (axis_fields)field);
     }
+    copy_curve_key(from_sec, to_sec, id, 0);
+    copy_curve_key(from_sec, to_sec, id, 1);
   }
   pthread_mutex_unlock(&axes_mutex);
 
@@ -797,17 +850,8 @@ static bool write_axis_state_to_section(struct axis_def *axis, enum axis_t id,
   ok &= ltr_int_change_key(dest_sec, field_name, axis->inverted ? "Yes" : "No");
   free(field_name);
 
-  field_name = ltr_int_my_strcat(prefix, fields[DEADZONE]);
-  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->curve_defs.dead_zone);
-  free(field_name);
-
-  field_name = ltr_int_my_strcat(prefix, fields[LCURV]);
-  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->curve_defs.l_curvature);
-  free(field_name);
-
-  field_name = ltr_int_my_strcat(prefix, fields[RCURV]);
-  ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->curve_defs.r_curvature);
-  free(field_name);
+  ok &= save_curve_half_to_section(axis, id, 0, dest_sec);
+  ok &= save_curve_half_to_section(axis, id, 1, dest_sec);
 
   field_name = ltr_int_my_strcat(prefix, fields[MULT]);
   ok &= ltr_int_change_key_flt(dest_sec, field_name, axis->factor);
@@ -856,6 +900,99 @@ bool ltr_int_axes_persist_state_to_profile(ltr_axes_t axes, const char *profile_
 
   free(dest_sec);
   return true;
+}
+
+int ltr_int_axis_get_curve(ltr_axes_t axes, enum axis_t id, int right,
+                           ltr_curve_pt *pts, int max_pts)
+{
+  struct axis_def *axis;
+  const ltr_curve_half *half;
+  int n;
+  int i;
+
+  if(axes == NULL || pts == NULL || max_pts <= 0){
+    return 0;
+  }
+  pthread_mutex_lock(&axes_mutex);
+  axis = get_axis(axes, id);
+  half = right ? &axis->curves.right : &axis->curves.left;
+  n = half->count;
+  if(n > max_pts){
+    n = max_pts;
+  }
+  for(i = 0; i < n; ++i){
+    pts[i] = half->pts[i];
+  }
+  pthread_mutex_unlock(&axes_mutex);
+  return n;
+}
+
+bool ltr_int_axis_set_curve(ltr_axes_t axes, enum axis_t id,
+                            const ltr_curve_pt *left, int nleft,
+                            const ltr_curve_pt *right, int nright,
+                            bool persist)
+{
+  struct axis_def *axis;
+
+  if(axes == NULL || left == NULL || right == NULL){
+    return false;
+  }
+  pthread_mutex_lock(&axes_mutex);
+  axis = get_axis(axes, id);
+  ltr_int_curve_set_points(&axis->curves.left, left, nleft);
+  ltr_int_curve_set_points(&axis->curves.right, right, nright);
+  if(persist){
+    save_curve_half_to_section(axis, id, 0, axes->section);
+    save_curve_half_to_section(axis, id, 1, axes->section);
+  }
+  signal_change(axes);
+  pthread_mutex_unlock(&axes_mutex);
+  return true;
+}
+
+bool ltr_int_axis_set_curve_string(ltr_axes_t axes, enum axis_t id, const char *text)
+{
+  ltr_curve_pt left[LTR_CURVE_MAX_POINTS];
+  ltr_curve_pt right[LTR_CURVE_MAX_POINTS];
+  int nleft = 0;
+  int nright = 0;
+
+  if(!ltr_int_curve_parse_both_points(text, left, &nleft, right, &nright, LTR_CURVE_MAX_POINTS)){
+    return false;
+  }
+  return ltr_int_axis_set_curve(axes, id, left, nleft, right, nright, true);
+}
+
+int ltr_int_axis_format_curve(ltr_axes_t axes, enum axis_t id, char *buf, int buflen)
+{
+  struct axis_def *axis;
+  int wrote;
+
+  if(axes == NULL || buf == NULL){
+    return -1;
+  }
+  pthread_mutex_lock(&axes_mutex);
+  axis = get_axis(axes, id);
+  wrote = ltr_int_curve_format_both(&axis->curves, buf, buflen);
+  pthread_mutex_unlock(&axes_mutex);
+  return wrote;
+}
+
+float ltr_int_axis_flat_prefix(ltr_axes_t axes, enum axis_t id)
+{
+  struct axis_def *axis;
+  float left_prefix;
+  float right_prefix;
+
+  if(axes == NULL){
+    return 0.f;
+  }
+  pthread_mutex_lock(&axes_mutex);
+  axis = get_axis(axes, id);
+  left_prefix = ltr_int_curve_flat_prefix(&axis->curves.left);
+  right_prefix = ltr_int_curve_flat_prefix(&axis->curves.right);
+  pthread_mutex_unlock(&axes_mutex);
+  return (right_prefix > left_prefix) ? right_prefix : left_prefix;
 }
 
 

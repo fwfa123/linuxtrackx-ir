@@ -45,6 +45,12 @@ public:
     bool isLutrisInstalledFlatpak();
     QStringList getAvailableGames();
     QList<LutrisGame> getLutrisGames();
+    /** Last successful game list. Does not open the database. */
+    QList<LutrisGame> cachedGames() const { return cachedLutrisGames; }
+    /** True when the most recent refresh failed and the returned list is the previous cache (or empty). */
+    bool lastRefreshFailed() const { return gamesQueryFailed; }
+    /** Wine-runner row count. Uses this object's connection; does not close it. */
+    bool databaseHasWineGames(bool *ok = nullptr);
     bool installToLutrisGame(const QString &gameSlug);
     bool installToLutrisGame(const LutrisGame &game);
     bool installToLutrisPrefix(const QString &prefixPath, const QString &wineVersion = QString());
@@ -92,6 +98,9 @@ public:
 
 private:
     QSqlDatabase lutrisDb;
+    QString connectionName;
+    QList<LutrisGame> cachedLutrisGames;
+    bool gamesQueryFailed = false;
     QString lastError;
     QString debugInfo;
     QString databasePath;
@@ -113,6 +122,8 @@ private:
     QWidget *installPromptParent = nullptr;
     WineBridgeInstall::InstallOutcome lastInstallOutcome = WineBridgeInstall::InstallOutcome::Failed;
     QString getHomeDirectory();
+    bool connectionOpenOnThisThread() const;
+    void releaseStaleDatabase();
     bool detectLutrisFlatpak();
     void setupFlatpakLutrisPaths();
     bool createWineEnvironment(const LutrisGame &game);
