@@ -3,8 +3,8 @@ class LinuxtrackXIr < Formula
   homepage "https://gitlab.com/fwfa123/linuxtrackx-ir"
   url "https://gitlab.com/fwfa123/linuxtrackx-ir.git",
       using: :git,
-      revision: "<update this on release>"
-  version "2.2.0"
+      revision: "V3.0.0"
+  version "3.0.0"
   license "MIT"
   revision 1
   head "https://gitlab.com/fwfa123/linuxtrackx-ir.git", branch: "main"
