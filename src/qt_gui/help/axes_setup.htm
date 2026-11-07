@@ -8,15 +8,15 @@
 <h1>Tracking setup</h1>
 <p>When you have the tracking device and model set up, then you can proceed to the tracking customization.</p>
 
+<p>The screenshot below shows the complete Tracking Setup tab with all controls visible — profile header, axis curve editor, per-axis settings, and diagnostics are all embedded directly in this single tab:</p>
+
 <table>
 <tr>
 <td>
-<img src="Tracking.png" alt="Tracking setup pane.">
+<img src="Tracking-DetAxis.png" alt="Complete Tracking setup tab showing profile header, axis list, curve editor, per-axis controls, and pose maps with numbered callouts.">
 </td>
 </tr>
 </table>
-
-<p>Here you can set sensitivities, dead zones, response curves and filtration for each axis separately; you can also turn unwanted axes off, specify limits of each axis and so on. All this can be done separately for each target program/game. Axis curves and diagnostics are embedded directly in the Tracking setup tab.</p>
 
 <h2>Default profile</h2>
 <p>The Default profile is quite special - when an unknown game/program is run for the first time, the Default profile is copied over as a base of the new profile.</p>
@@ -36,28 +36,33 @@
 <p>All the controls have immediate effect on the tracking, so you can directly see the impact of the change. Also note, that while it is possible to run ltr_gui in parallel with a client program/game, it is not recommended. The tracking does work without the GUI running, unlike other popular alternatives (NP, FreeTrack, FaceTrack NoIR...).</p>
 
 <h2>Axis curves</h2>
-<p>Below the header, select an axis from the list (Pitch, Yaw, Roll, and the three translations). The curve editor for that axis is shown in the center of the tab.</p>
+<p>Select an axis from the list (Pitch, Yaw, Roll, X Translation, Y Translation, Z Translation). The curve editor for that axis is shown in the center of the tab. See the overview screenshot above for the full layout with numbered callouts.</p>
 
-<table>
-<tr>
-<td>
-<img src="DetAxis.png" alt="Sensitivity curves setup with pose maps sidebar and per-axis S-curve controls.">
-</td>
-</tr>
-</table>
+<h3>Numbered regions (see screenshot above)</h3>
+<ol>
+<li><strong>Profile header</strong> — Profile name dropdown, Tracking Rate (FPS) slider, and Common Smoothing slider.</li>
+<li><strong>Action buttons</strong> — Copy From Default Profile, Restore Axis Defaults, and Save as Axis Defaults.</li>
+<li><strong>Live pose</strong> — Collapsible checkbox showing measured values before curves are applied.</li>
+<li><strong>Axis list</strong> — Select an axis to edit: Pitch, Yaw, Roll, X Translation, Y Translation, or Z Translation.</li>
+<li><strong>Curve editor</strong> — Graph for the selected axis showing Measured, Curved, and Filtered values. The curve can be edited by clicking on points; interior points can be removed with right-click, Delete key, or the Remove point button.</li>
+<li><strong>Point editing controls</strong> — Input (In) and output (Out) value fields for the selected curve point, plus a Remove point button. A hint above reads "Select a point to edit. Right-click or Delete removes interior points."</li>
+<li><strong>Sensitivity &amp; Smoothing sliders</strong> — Sensitivity controls how responsive the axis is (Low to High). Per-axis Smoothing adds filtration beyond Common smoothing.</li>
+<li><strong>Import / Export Profile buttons</strong> — Located at the bottom of the tab for saving and loading profile files.</li>
+</ol>
 
+<h3>Per-axis controls</h3>
 <ul>
-<li><strong>Enable</strong> and <strong>Invert</strong> on the curve page turn the axis on/off or reverse its response.</li>
-<li>For both halves of an axis you can set an in-game <strong>Limit</strong>. The <strong>Symmetrical</strong> check-box allows you to unchain those halves and set each one separately.</li>
-<li><strong>Sensitivity</strong> changes how responsive the axis is. The higher the sensitivity, the smaller head movement will be necessary for tracking. Just be careful not to set it too high — it might result in a stiff neck, and other problems.</li>
+<li><strong>Enable</strong> (region 9) turns the axis on or off. <strong>Invert</strong> reverses its response direction.</li>
+<li><strong>Limits</strong> (region 10) — For both halves of an axis you can set a separate in-game limit for Right and Left. The <strong>Symmetrical</strong> checkbox links them together so they share the same value; uncheck to set each side independently.</li>
+<li><strong>Sensitivity</strong> changes how responsive the axis is. The higher the sensitivity, the smaller head movement will be necessary for tracking. Just be careful not to set it too high — it might result in a stiff neck and other problems.</li>
 <li>Per-axis <strong>Smoothing</strong> gives that axis additional filtration beyond Common smoothing.</li>
 <li>The response graph lets you edit curve points (select a point to edit coordinates; remove interior points with the button, right-click, or Delete).</li>
 </ul>
 
 <h2>Diagnostics</h2>
 <ul>
-<li><strong>Live pose</strong> (collapsible) shows measured, curved, and filtered values for each axis.</li>
-<li><strong>Pose maps</strong> sit in a collapsible column to the right of the curve editor (Look, Lean, Raise/Roll stacked vertically). Each map uses a dark plot with a center crosshair, teal guide rings, and a <strong>red flat-response region</strong> at the middle. That red area is the flat prefix of the response curves for the map's axes (near-zero output along the curve, e.g. Look uses yaw and pitch); editing those curve points updates the overlay. Teal rings are decorative guides out to the axis limits. A green dot shows the current measured or filtered position (selectable from the drop-down). When Pose maps are collapsed, use the <strong>Pose maps</strong> button next to Recenter to show them again.</li>
+<li><strong>Live pose</strong> (region 3, collapsible) shows measured, curved, and filtered values for each axis.</li>
+<li><strong>Pose maps</strong> (region 11, collapsible column to the right of the curve editor) — Look, Lean, and Raise/Roll maps are stacked vertically. Each map uses a dark plot with a center crosshair, teal guide rings, and a <strong>red flat-response region</strong> at the middle. That red area is the flat prefix of the response curves for the map's axes (near-zero output along the curve, e.g. Look uses yaw and pitch); editing those curve points updates the overlay. Teal rings are decorative guides out to the axis limits. A green dot shows the current measured or filtered position (selectable from the drop-down). When Pose maps are collapsed, use the <strong>Pose maps</strong> button next to Recenter to show them again.</li>
 <li><strong>Recenter</strong> recenters the current head pose.</li>
 <li>Clip/Cap <strong>head-center (pan) tuning</strong> lives on the <strong>Model Setup</strong> tab, not here.</li>
 </ul>
