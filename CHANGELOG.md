@@ -4,6 +4,14 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 > **Note**: **3.x** development is on `main`. **1.0.x** maintenance and the pre-2.0 AppImage line remain on `legacy/1.0.x`.
 
+## [3.0.1] - 2026-11-17
+
+### Changed
+- **Wine / launchers**: The tracking master no longer shuts down when the last game client disconnects; matches TrackIR and keeps the camera up across mission restarts (e.g. Assetto Corsa, Content Manager) until you press Stop or close the GUI (GitLab #71).
+
+### Added
+- **macOS**: Merged PR #8 from wilmai. Native IOUSBHost backend, USB transport split, and a native TrackIR extractor, including TIR5V2 and TIR5V3 support.
+
 ## [3.0.0] - 2026-11-02
 
 ### Changed

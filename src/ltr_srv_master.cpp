@@ -46,7 +46,6 @@ static ltr_status_update_callback_t status_update_hook = NULL;
 static ltr_new_slave_callback_t new_slave_hook = NULL;
 
 static bool save_prefs = true;
-static bool no_slaves = false;
 static pthread_mutex_t send_mx = PTHREAD_MUTEX_INITIALIZER;
 
 /* Flush pending TX for one slave. Returns false if the peer is gone. */
@@ -112,13 +111,12 @@ static bool slave_tx_queue(slave_conn_t &s, const message_t &msg, bool is_pose)
   return slave_tx_flush(s);
 }
 
-static void slave_drop(std::multimap<std::string, slave_conn_t>::iterator &i, bool &checkSlaves)
+static void slave_drop(std::multimap<std::string, slave_conn_t>::iterator &i)
 {
   ltr_int_log_message("Slave @socket %d left!\n", i->second.fd);
   close(i->second.fd);
   i->second.fd = -1;
   slaves.erase(i++);
-  checkSlaves = true;
 }
 
 bool ltr_int_gui_lock(bool do_lock)
@@ -173,12 +171,11 @@ void ltr_int_change(const char *profile, int axis, int elem, float val)
   std::pair<std::multimap<std::string, slave_conn_t>::iterator,
             std::multimap<std::string, slave_conn_t>::iterator> range;
   std::multimap<std::string, slave_conn_t>::iterator i;
-  bool checkSlaves = false;
   if(profile != NULL){
     range = slaves.equal_range(profile);
     for(i = range.first; i != range.second;){
       if(!slave_tx_queue(i->second, msg, false)){
-        slave_drop(i, checkSlaves);
+        slave_drop(i);
       }else{
         ++i;
       }
@@ -186,14 +183,11 @@ void ltr_int_change(const char *profile, int axis, int elem, float val)
   }else{
     for(i = slaves.begin(); i != slaves.end();){
       if(!slave_tx_queue(i->second, msg, false)){
-        slave_drop(i, checkSlaves);
+        slave_drop(i);
       }else{
         ++i;
       }
     }
-  }
-  if(checkSlaves && (slaves.size() == 0)){
-    no_slaves = true;
   }
   pthread_mutex_unlock(&send_mx);
 }
@@ -213,12 +207,11 @@ void ltr_int_change_curve(const char *profile, int axis, const char *curve)
   std::pair<std::multimap<std::string, slave_conn_t>::iterator,
             std::multimap<std::string, slave_conn_t>::iterator> range;
   std::multimap<std::string, slave_conn_t>::iterator i;
-  bool checkSlaves = false;
   if(profile != NULL){
     range = slaves.equal_range(profile);
     for(i = range.first; i != range.second;){
       if(!slave_tx_queue(i->second, msg, false)){
-        slave_drop(i, checkSlaves);
+        slave_drop(i);
       }else{
         ++i;
       }
@@ -226,14 +219,11 @@ void ltr_int_change_curve(const char *profile, int axis, const char *curve)
   }else{
     for(i = slaves.begin(); i != slaves.end();){
       if(!slave_tx_queue(i->second, msg, false)){
-        slave_drop(i, checkSlaves);
+        slave_drop(i);
       }else{
         ++i;
       }
     }
-  }
-  if(checkSlaves && (slaves.size() == 0)){
-    no_slaves = true;
   }
   pthread_mutex_unlock(&send_mx);
 }
@@ -260,17 +250,13 @@ bool ltr_int_broadcast_pose(linuxtrack_full_pose_t &pose)
 
   pthread_mutex_lock(&send_mx);
   std::multimap<std::string, slave_conn_t>::iterator i;
-  bool checkSlaves = false;
   //Send updated pose to all clients (coalesce when peer is not draining)
   for(i = slaves.begin(); i != slaves.end();){
     if(!slave_tx_queue(i->second, msg, true)){
-      slave_drop(i, checkSlaves);
+      slave_drop(i);
     }else{
       ++i;
     }
-  }
-  if(checkSlaves && (slaves.size() == 0)){
-    no_slaves = true;
   }
   pthread_mutex_unlock(&send_mx);
   return true;
@@ -478,7 +464,6 @@ int ltr_int_master_main_loop(int unix_sock, int tcp_listen_sock)
   bool close_conn;
   int heartbeat = 0;
   nfds_t i;
-  no_slaves = false;
 
   struct sockaddr_un address;
   socklen_t address_len = sizeof(address);
@@ -489,8 +474,9 @@ int ltr_int_master_main_loop(int unix_sock, int tcp_listen_sock)
     add_poll_desc(tcp_listen_sock);
   }
   while(1){
+    /* Match TrackIR: keep master up when the last game client exits (GitLab #71). */
     if(gui_shutdown_request || (!ltr_int_gui_lock(false)) ||
-       no_slaves || (ltr_int_get_tracking_state() < LINUXTRACK_OK)){
+       (ltr_int_get_tracking_state() < LINUXTRACK_OK)){
       break;
     }
 
