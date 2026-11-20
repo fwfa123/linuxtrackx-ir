@@ -34,6 +34,8 @@ struct slave_conn_t {
   size_t tx_sent;
   bool tx_pending;
   bool stall_logged;
+  bool tx_deferred_pending;
+  message_t tx_deferred;
 };
 
 static std::multimap<std::string, slave_conn_t> slaves;
@@ -47,6 +49,8 @@ static ltr_new_slave_callback_t new_slave_hook = NULL;
 
 static bool save_prefs = true;
 static pthread_mutex_t send_mx = PTHREAD_MUTEX_INITIALIZER;
+
+static void slave_tx_send_deferred(slave_conn_t &s);
 
 /* Flush pending TX for one slave. Returns false if the peer is gone. */
 static bool slave_tx_flush(slave_conn_t &s)
@@ -63,6 +67,7 @@ static bool slave_tx_flush(slave_conn_t &s)
           ltr_int_log_message("Slave @socket %d send resumed\n", s.fd);
           s.stall_logged = false;
         }
+        slave_tx_send_deferred(s);
       }
       continue;
     }
@@ -84,6 +89,18 @@ static bool slave_tx_flush(slave_conn_t &s)
   return true;
 }
 
+static void slave_tx_send_deferred(slave_conn_t &s)
+{
+  if(!s.tx_deferred_pending || s.tx_pending){
+    return;
+  }
+  s.tx = s.tx_deferred;
+  s.tx_sent = 0;
+  s.tx_pending = true;
+  s.tx_deferred_pending = false;
+  slave_tx_flush(s);
+}
+
 /* Queue a whole message. Returns false if the peer is gone. */
 static bool slave_tx_queue(slave_conn_t &s, const message_t &msg, bool is_pose)
 {
@@ -95,6 +112,10 @@ static bool slave_tx_queue(slave_conn_t &s, const message_t &msg, bool is_pose)
     if(s.tx_pending){
       /* Never tear a partially written message. */
       if(s.tx_sent != 0){
+        if(!is_pose){
+          s.tx_deferred = msg;
+          s.tx_deferred_pending = true;
+        }
         return true;
       }
       /* Unsent pose may be superseded by a newer pose or by control

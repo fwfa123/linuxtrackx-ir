@@ -793,6 +793,9 @@
             <property name="text">
              <string>Disable translation/rotation alignment </string>
             </property>
+            <property name="toolTip">
+             <string>Checked: lean stays in camera axes (absolute). Look left and lean toward the monitor, and you move toward the dashboard. Unchecked: lean follows where you are looking (relative).</string>
+            </property>
            </widget>
           </item>
           <item row="2" column="1">

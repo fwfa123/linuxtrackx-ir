@@ -8,6 +8,7 @@ This document tracks the changes and improvements made in the LinuxTrack X-IR fo
 
 ### Changed
 - **Wine / launchers**: The tracking master no longer shuts down when the last game client disconnects; matches TrackIR and keeps the camera up across mission restarts (e.g. Assetto Corsa, Content Manager) until you press Stop or close the GUI (GitLab #71).
+- **Wine / DCS — absolute vs relative lean:** Alignment updates reach the MinGW NPClient even when profile axes are not ready yet, and control messages are no longer dropped behind a partial pose write, so **Disable translation/rotation alignment** changes in-game lean (GitLab #71).
 
 ### Added
 - **macOS**: Merged PR #8 from wilmai. Native IOUSBHost backend, USB transport split, and a native TrackIR extractor, including TIR5V2 and TIR5V3 support.

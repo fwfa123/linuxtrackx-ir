@@ -951,10 +951,6 @@ static void mingw_apply_param_message(const ltr_message_t *msg)
   if(msg == NULL){
     return;
   }
-  if(!mingw_pose_processing_ensure_axes()){
-    dbg_report("MinGW pose processing: CMD_PARAM skipped: axes not ready\n");
-    return;
-  }
   if(msg->param.axis_id == (uint32_t)MISC){
     if(msg->param.param_id == (uint32_t)MISC_ALIGN){
       /* Master always sends bools as flt_val (0.0/1.0); never read bool_val. */
@@ -962,6 +958,10 @@ static void mingw_apply_param_message(const ltr_message_t *msg)
     }
     dbg_report("MinGW pose processing: PARAM misc id=%u val=%.4f\n",
                (unsigned int)msg->param.param_id, msg->param.flt_val);
+    return;
+  }
+  if(!mingw_pose_processing_ensure_axes()){
+    dbg_report("MinGW pose processing: CMD_PARAM skipped: axes not ready\n");
     return;
   }
   if(msg->param.param_id == (uint32_t)AXIS_ENABLED ||
