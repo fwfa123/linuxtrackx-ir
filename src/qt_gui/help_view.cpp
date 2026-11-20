@@ -40,6 +40,7 @@ static const TocEntry startHere[] = {
 static const TocEntry theWindow[] = {
     {"Device Setup", "dev_setup.htm"},
     {"Model Setup", "model_setup.htm"},
+    {"6DOF tuning", "sixdof_tuning.htm"},
     {"Tracking Setup", "axes_setup.htm"},
     {"Gaming", "gaming_tab.htm"},
     {"System", "misc.htm"},

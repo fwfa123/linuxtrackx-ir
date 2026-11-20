@@ -14,6 +14,7 @@
                 <section title="Tracker Setup" ref="help/dev_setup.htm"/>
                 <section title="TrackIR Permissions" ref="help/trackir_permissions.htm"/>
                 <section title="Model Setup" ref="help/model_setup.htm"/>
+                <section title="6DOF tuning" ref="help/sixdof_tuning.htm"/>
                 <section title="Tracking Setup" ref="help/axes_setup.htm"/>
                 <section title="TrackIR firmware and Wine integration" ref="help/extractor.htm"/>
                 <section title="Gaming Tab" ref="help/gaming_tab.htm"/>

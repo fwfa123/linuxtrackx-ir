@@ -1,0 +1,99 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<title>6DOF tuning</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+</head>
+<body>
+<h1>6DOF tuning: pan (head center) and translation alignment</h1>
+
+<p>This page ties together settings that affect <strong>how your viewpoint moves</strong> beyond simple look left/right. It is especially relevant for <strong>three-point Cap</strong> and <strong>three-point Clip</strong> models. Single-point and face models do not use head-center pan tuning.</p>
+
+<h2>OpenTrack users</h2>
+<ul>
+<li><strong>Relative translation</strong> (OpenTrack) maps to <strong>Disable translation/rotation alignment</strong> on the <a href="misc.htm">System</a> tab — see <a href="#alignment">Translation/rotation alignment</a> below for polarity.</li>
+<li><strong>Neck displacement</strong> (OpenTrack) has no separate on/off switch in LinuxTrack. For three-point models, the same idea is implemented as the <strong>head center</strong> (rotation pivot) stored as <code>Head-X</code>, <code>Head-Y</code>, and <code>Head-Z</code> in the model profile (millimeters from the top reflector). You adjust it with the <strong>finetuning</strong> sliders on <a href="model_setup.htm">Model Setup</a>. With wrong values, pure head rotation still produces unwanted slide in TX/TY/TZ — as if your eyes were glued to the tracker instead of rotating about your neck.</li>
+</ul>
+
+<h2>Two different problems</h2>
+<table border="0" cellpadding="6">
+<tr>
+<th>Topic</th>
+<th>What you are fixing</th>
+<th>Where to configure</th>
+</tr>
+<tr>
+<td><strong>Pan tuning (head center)</strong></td>
+<td>Spurious <strong>translation</strong> while you <em>only</em> rotate your head (yaw/pitch), because the solver assumes rotation about a neck pivot, not about the LEDs.</td>
+<td><a href="model_setup.htm">Model Setup</a> finetuning sliders; tune while watching translation axes on <a href="axes_setup.htm">Tracking Setup</a>.</td>
+</tr>
+<tr>
+<td id="alignment"><strong>Translation/rotation alignment</strong></td>
+<td>How <strong>deliberate lean</strong> (TX/TY/TZ) is interpreted when you are already looking off-center — in head-local axes (relative) or fixed camera/room axes (absolute).</td>
+<td><a href="misc.htm">System</a> tab → <strong>Disable translation/rotation alignment</strong>.</td>
+</tr>
+</table>
+<p>Changing pan tuning does not replace alignment, and vice versa.</p>
+
+<h2>Pan tuning on three-point Cap</h2>
+<p>Cap models expose <strong>two</strong> sliders (no lateral <code>Head-X</code>; the cap is treated as centered on your head). When you create a new Cap model, defaults are typically <code>Head-Y</code> = 160&nbsp;mm and <code>Head-Z</code> = 50&nbsp;mm — starting points only; tune for your anatomy and cap geometry.</p>
+<table border="0" cellpadding="6">
+<tr>
+<th>Slider (UI label)</th>
+<th>While you test</th>
+<th>Watch on Tracking Setup</th>
+</tr>
+<tr>
+<td>First — minimize back/forth while panning <strong>up/down</strong></td>
+<td>Pitch only (look up/down)</td>
+<td><strong>Z Translation</strong> graph and Pose maps</td>
+</tr>
+<tr>
+<td>Second — minimize left/right while panning <strong>left/right</strong></td>
+<td>Yaw only (look left/right)</td>
+<td><strong>X Translation</strong> graph and Pose maps</td>
+</tr>
+</table>
+<p>Procedure (halving the interval, dead zones): <a href="model_setup.htm">Model Setup</a> → Model Tweaking.</p>
+
+<!-- Screenshot: replace placeholder below with <img src="CapFinetuning.png" alt="..."> when available -->
+<table>
+<tr>
+<td style="border: 1px solid #888; padding: 1em; background: #f4f4f4;">
+<p><strong>Figure (placeholder)</strong> — Three point Cap finetuning on the Model Setup tab: <em>Three point Cap finetuning</em> panel with <strong>Head-Y</strong> and <strong>Head-Z</strong> sliders.</p>
+<p>Planned help image: <code>CapFinetuning.png</code> in this help folder (not yet bundled).</p>
+</td>
+</tr>
+</table>
+
+<h2>Pan tuning on three-point Clip</h2>
+<p>Clip models add a third slider and <strong>Head-X</strong> (clip on left or right). See <a href="model_setup.htm">Model Setup</a> for the Clip walkthrough.</p>
+
+<h2>Translation/rotation alignment</h2>
+<p>Stored globally as <code>Align-translations</code> (<code>yes</code> = relative, default when unset).</p>
+<ul>
+<li><strong>Unchecked</strong> (alignment <em>enabled</em>): lean is rotated with your current look — similar to OpenTrack <strong>Relative translation on</strong>.</li>
+<li><strong>Checked</strong> (alignment <em>disabled</em>): lean stays in fixed camera axes — similar to OpenTrack <strong>Relative translation off</strong>. Example: look left and lean toward the monitor; you still move toward the dashboard/world axis, not &ldquo;to your left&rdquo; in head space.</li>
+</ul>
+<h3>When this matters</h3>
+<p>Many games use only yaw, pitch, and roll and ignore translation — then alignment barely matters. It matters when the sim or middleware uses <strong>X/Y/Z translation</strong> (6DOF cockpit, some racing rigs, custom bindings). Quick test: look ~90&deg; off center and lean toward the screen; toggle the checkbox and see whether slide stays room-fixed or follows your gaze.</p>
+
+<h2>Pose maps (Tracking Setup)</h2>
+<ul>
+<li><strong>Look</strong> — primarily rotation (yaw/pitch on the map).</li>
+<li><strong>Lean</strong> — lateral and in/out shift (TX/TY/TZ). Use Lean together with translation axis curves when tuning pan sliders or alignment.</li>
+<li><strong>Raise/Roll</strong> — vertical shift and roll.</li>
+</ul>
+<p>Details: <a href="axes_setup.htm">Tracking Setup</a> → Diagnostics.</p>
+
+<h2>OpenTrack / FreeTrack UDP output</h2>
+<p>The <a href="advanced_tab.htm">Advanced</a> tab <code>ltr_udp</code> bridge sends pose in OpenTrack packet form. Pan tuning and profile curves still shape the pose LinuxTrack computes; the System alignment option applies in the tracker pipeline before output. Games that only consume UDP do not change how you tune head center — they only change how you connect.</p>
+
+<h2>Related pages</h2>
+<ul>
+<li><a href="model_setup.htm">Model Setup</a> — dimensions and finetuning sliders</li>
+<li><a href="axes_setup.htm">Tracking Setup</a> — axis curves, Pose maps, limits</li>
+<li><a href="misc.htm">System</a> — alignment checkbox and focal length</li>
+</ul>
+</body>
+</html>

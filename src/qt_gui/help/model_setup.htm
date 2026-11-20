@@ -53,7 +53,9 @@
 <p>Now fill-in the model dimensions (where applicable) according to the diagram (all dimensions are in millimeters). The last thing to do is to select, if the model uses LEDs (obviously with the exception of face model type) - if it does, check the <strong>Model with LEDs</strong> check-box. After pressing the <strong>Create</strong> button, the new model should become available in the <strong>Model Name</strong> combo-box for you to select it.</p>
 
 <h1>Model Tweaking</h1>
-<p>To minimize unwanted viewpoint movement while panning, you can tweak the 3-point Clip and 3-point Cap model. Note however, that the movement can't be fully suppressed, both due to the head movement model simplification (assuming that all panning is done using a single joint) and also due to the human's inability to stand absolutely still while turning the head. Note also that turning the head inherently contains some viewpoint movement - for example look down at your shoes and realize that your viewpoint shifted forward and down...</p>
+<p>To minimize unwanted viewpoint movement while panning, you can tweak the 3-point Clip and 3-point Cap model. In pose math this adjusts the <strong>head center</strong> (neck pivot relative to the reflectors). OpenTrack users can think of it as <strong>neck displacement</strong> — there is no separate on/off; values are the <code>Head-X</code> / <code>Head-Y</code> / <code>Head-Z</code> keys in your model section (millimeters from the top LED). For the full picture — including how this differs from <strong>translation/rotation alignment</strong> on the System tab — see <a href="sixdof_tuning.htm">6DOF tuning</a>.</p>
+<p>Note however, that the movement can't be fully suppressed, both due to the head movement model simplification (assuming that all panning is done using a single joint) and also due to the human's inability to stand absolutely still while turning the head. Note also that turning the head inherently contains some viewpoint movement - for example look down at your shoes and realize that your viewpoint shifted forward and down...</p>
+<p><strong>Single-point</strong> and <strong>face</strong> models do not show finetuning sliders.</p>
 
 <h2>Model tweaking procedure</h2>
 <p>Both three point model types share the same system of tweaking - there are several sliders, that allow you to adjust the model's center-point and minimize the unwanted movement.</p>
@@ -67,5 +69,13 @@
 <p>The spot you are looking for is somewhere in between the two. Move the slider to the middle and see what the response is in there; for example the look left moves the cross to the right - which is the same direction as the leftmost slider extreme. That means, that the sweet spot lies in the second half of the interval (in this example). Now you can continue by repeating the halving it, or just try moving the slider around in small increments to minimize the movement.</p>
 
 <p>Repeat the above steps for both (3-point Cap)/all three (3-point Clip) sliders to reduce the amount of the unwanted movements; if the result doesn't satisfy you, you can remove the rest of it by increasing the dead-zone for the axis of interest.</p>
+
+<h2>Three point Cap finetuning</h2>
+<p>The Cap panel has <strong>two</strong> sliders (no lateral head-center slider). Defaults for a newly created Cap are often <code>Head-Y</code> = 160 and <code>Head-Z</code> = 50&nbsp;mm — tune for your cap and neck, not your height alone.</p>
+<ul>
+<li><strong>Back/forth while panning up/down</strong> — pitch your head only; minimize drift on <strong>Z Translation</strong> on the Tracking Setup tab.</li>
+<li><strong>Left/right while panning left/right</strong> — yaw only; minimize drift on <strong>X Translation</strong>.</li>
+</ul>
+<p>Cap-specific summary table and finetuning screenshot placeholder: <a href="sixdof_tuning.htm">6DOF tuning</a>.</p>
 </body>
 </html>
