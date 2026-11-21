@@ -10,10 +10,20 @@
 <h1>What's new?</h1>
 This page summarizes the most notable changes in the LinuxTrack X-IR software.
 
-<h2>Help — 6DOF tuning (2026)</h2>
+
+<h2>LinuxTrack X-IR v3.0.1 - macOS support and Wine fixes (2026)</h2>
 <h3>Documentation</h3>
 <p>
 New <a href="sixdof_tuning.htm">6DOF tuning</a> help page for three-point Cap and Clip users and OpenTrack migrants: head-center (neck) pan tuning vs <strong>translation/rotation alignment</strong> on the System tab, Cap slider reference, and Pose map guidance. Model Setup, Tracking Setup, System, and Welcome pages cross-link to it; help TOC lists <strong>6DOF tuning</strong> after Model Setup. A <code>CapFinetuning.png</code> screenshot slot is reserved on that page until we can add a capture of the Cap finetuning panel.
+<h3>macOS</h3>
+Merged PR #8 from wilmai: native IOUSBHost backend, USB transport split, and a native TrackIR extractor including TIR5V2 and TIR5V3 support.
+
+<h3>Wine / launchers</h3>
+The tracking master no longer shuts down when the last game client disconnects; matches TrackIR behavior and keeps the camera up across mission restarts (e.g. Assetto Corsa, Content Manager).
+
+<h3>Wine / DCS — lean alignment</h3>
+Alignment updates reach the MinGW NPClient even when profile axes are not ready yet, and control messages are no longer dropped behind a partial pose write, so <strong>Disable translation/rotation alignment</strong> changes in-game lean.
+
 </p>
 
 <h2>LinuxTrack X-IR v3.0.0 - Embedded Profile curves (2026)</h2>
@@ -23,11 +33,11 @@ Axis curves are embedded in the Tracking setup tab (no separate Detailed Axes wi
 </p>
 <h3>Pose maps sidebar</h3>
 <p>
-<strong>Pose maps</strong> (Look, Lean, Raise/Roll) sit in a vertical column beside the curve editor to save vertical space. Live pose remains collapsible. Pan / head-center tuning stays on the Model Setup tab. The Profile tab scrolls on small displays.
+<strong>Pose maps</strong> (Look, Lean, Raise/Roll) sit in a vertical column beside the curve editor to save vertical space. Live pose remains collapsible. Pan / head-center tuning stays on the Model Setup tab. The Profile tab scrolls on short displays.
 </p>
 <h3>Local security</h3>
 <p>
-The tracker socket accepts only the same user. Profile titles that contain a newline are rejected, and the install path is read only from a <code>Prefix</code> line. Firmware names such as <code>..</code> are not extracted. TrackIR and PS3 Eye device nodes are no longer world-writable; the logged-in desktop user still receives access, and the permission dialog still adds <code>plugdev</code>, <code>input</code>, <code>uinput</code>, and <code>video</code>. Existing Wine bridges keep the same message format.
+The tracker socket accepts only the same user. Profile titles that contain a newline are rejected, and the install path is read only from a <code>Prefix</code> line. Firmware names such as <code>..</code> are not extracted. TrackIR and PS3 Eye device nodes are no longer world-writable; the logged-in desktop user still receives access, and the permission dialog still adds <code>plugdev</code>, <code>input</code>, <code>uinput</code>, and <code>video</code>. Existing Wine bridges keep the same message format. Security hardening: master/slave wait for complete pose messages; firmware extraction rejects unsafe filenames and sizes that overflow.
 </p>
 
 <h2>LinuxTrack X-IR v2.2.1 - New custom skins (2026)</h2>
