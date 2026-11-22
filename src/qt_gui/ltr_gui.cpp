@@ -205,6 +205,10 @@ LinuxtrackGui::LinuxtrackGui(QWidget *parent) : QMainWindow(parent), mainWidget(
   QObject::connect(ui.VideoOnDelayMode, SIGNAL(currentIndexChanged(int)), this, SLOT(on_VideoOnDelayMode_activated(int)));
   QObject::connect(ui.VideoOnDelayValue, SIGNAL(valueChanged(int)), this, SLOT(on_VideoOnDelayValue_valueChanged(int)));
   QObject::connect(ui.UsbResetCheck, SIGNAL(toggled(bool)), this, SLOT(on_UsbResetCheck_toggled(bool)));
+  QObject::connect(ui.LegacyPose, SIGNAL(stateChanged(int)), this, SLOT(on_LegacyPose_stateChanged(int)));
+  QObject::connect(ui.LegacyRotation, SIGNAL(stateChanged(int)), this, SLOT(on_LegacyRotation_stateChanged(int)));
+  QObject::connect(ui.TransRotDisable, SIGNAL(stateChanged(int)), this, SLOT(on_TransRotDisable_stateChanged(int)));
+  QObject::connect(ui.FocalLength, SIGNAL(valueChanged(double)), this, SLOT(on_FocalLength_valueChanged(double)));
 
   // Qt6: ModelEdit and ProfileSelector widgets are now created in showEvent()
   // to avoid Qt6 layout calculation crashes during window construction
